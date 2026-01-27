@@ -1,0 +1,20 @@
+{
+  "name": "mr-letreros-servidor",
+  "version": "4.0.0",
+  "description": "Servidor Node.js para sistema de cotizaciones MR Letreros - Red Local",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "keywords": ["cotizaciones", "gremio", "letreros", "servidor"],
+  "author": "MR Letreros",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
+}

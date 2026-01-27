@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sistema CLIENTES - MR Letreros</title>
+  <link rel="stylesheet" href="css/base.css">
+</head>
+<body>
+  <header class="main-header">
+    <div class="header-left">
+      <img src="img/logo.png" alt="MR Letreros" class="logo-img">
+      <a href="index.html" class="btn-home">← Volver al Inicio</a>
+    </div>
+    <div class="header-title">🔵 SISTEMA CLIENTES</div>
+  </header>
+
+  <div class="content-container">
+    <!-- Rendimientos -->
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">📊 Rendimientos del Sistema Clientes</h2>
+        <button class="btn btn-secondary btn-small" onclick="updateClientStatistics()">🔄 Actualizar</button>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">Total Vendido</div>
+          <div class="stat-value" id="totalVendido">$0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Total Pendiente</div>
+          <div class="stat-value" id="totalPendienteCliente">$0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Cotizaciones Aprobadas</div>
+          <div class="stat-value" id="countApprovedCliente">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Cotizaciones Pendientes</div>
+          <div class="stat-value" id="countPendingCliente">0</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Datos del Cliente -->
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">📋 Datos del Cliente</h2>
+      </div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">Nombre del Cliente *</label>
+          <input type="text" id="clientNameCliente" class="form-input" placeholder="Nombre completo">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Teléfono</label>
+          <input type="tel" id="clientPhoneCliente" class="form-input" placeholder="+54 9 11 1234-5678">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input type="email" id="clientEmailCliente" class="form-input" placeholder="cliente@email.com">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Dirección</label>
+          <input type="text" id="clientAddressCliente" class="form-input" placeholder="Calle 123, Ciudad">
+        </div>
+      </div>
+    </div>
+
+    <!-- Productos de la Cotización -->
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">🛒 Productos de la Cotización</h2>
+        <button class="btn btn-primary" id="btnAddProductCliente">➕ Agregar Producto</button>
+      </div>
+      <div id="productsListCliente">
+        <p class="empty-state">No hay productos agregados</p>
+      </div>
+    </div>
+
+    <!-- Totales -->
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">💰 Totales</h2>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">Subtotal</div>
+          <div class="stat-value" id="subtotalCliente">$0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">IVA (21%)</div>
+          <div class="stat-value" id="ivaCliente">$0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Total Final</div>
+          <div class="stat-value" id="totalCliente">$0</div>
+        </div>
+      </div>
+      <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 2rem;">
+        <button class="btn btn-secondary" onclick="clearClientQuote()">🗑️ Limpiar</button>
+        <button class="btn btn-primary" onclick="saveClientQuote()">💾 Guardar Cotización</button>
+        <button class="btn btn-success" onclick="generateClientPDF()">📄 Generar PDF</button>
+      </div>
+    </div>
+
+    <!-- Historial de Cotizaciones -->
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">📋 Historial de Cotizaciones</h2>
+      </div>
+      <div id="quotesListCliente">
+        <p class="empty-state">No hay cotizaciones guardadas</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Agregar Producto -->
+  <div class="modal" id="productModalCliente">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title">🛒 Agregar Producto</h2>
+        <button class="btn-close" id="btnCloseProductCliente">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Categoría *</label>
+          <select id="productCategoryCliente" class="form-select">
+            <option value="">Seleccionar categoría...</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">Producto *</label>
+          <select id="productNameCliente" class="form-select" disabled>
+            <option value="">Primero selecciona categoría...</option>
+          </select>
+        </div>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Cantidad *</label>
+            <input type="number" id="productQuantityCliente" class="form-input" placeholder="1" min="0.01" step="0.01">
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label">Precio Unitario *</label>
+            <input type="number" id="productPriceCliente" class="form-input" placeholder="0.00" step="0.01" readonly>
+          </div>
+        </div>
+        
+        <div class="calc-display">
+          <div class="calc-label">TOTAL DEL PRODUCTO</div>
+          <div class="calc-value" id="productTotalCliente">$0.00</div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="btnCancelProductCliente">Cancelar</button>
+        <button class="btn btn-primary" id="btnSaveProductCliente">➕ Agregar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="js/shared/modal-system.js"></script>
+  <script src="js/shared/data-manager-network.js"></script>
+  <script src="js/clientes/clientes-main.js"></script>
+</body>
+</html>

@@ -1,0 +1,24 @@
+[
+  {
+    "id": 1769486294143,
+    "categoria": "Lona Front 13 Oz",
+    "productoNombre": "90",
+    "ancho": 0.9,
+    "largo": 50,
+    "m2": 45,
+    "precioRollo": 80000,
+    "costoPorM2": 1777.7777777777778,
+    "fecha": "2026-01-27T03:58:14.143Z"
+  },
+  {
+    "id": 1769486337873,
+    "categoria": "Lona Front 13 Oz",
+    "productoNombre": "107",
+    "ancho": 1.07,
+    "largo": 50,
+    "m2": 53.5,
+    "precioRollo": 100000,
+    "costoPorM2": 1869.1588785046729,
+    "fecha": "2026-01-27T03:58:57.873Z"
+  }
+]

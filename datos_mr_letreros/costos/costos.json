@@ -1,0 +1,124 @@
+{
+  "products": [
+    {
+      "id": "prod_1768759874660",
+      "name": "Vinilo Base Gris",
+      "category": "Vinilos",
+      "unit": "m2",
+      "costs": {
+        "material": 2189,
+        "labor": 0,
+        "indirect": 980,
+        "total": 3169
+      }
+    },
+    {
+      "id": "prod_1768759936735",
+      "name": "Vinilo Oracal",
+      "category": "Vinilo",
+      "unit": "m2",
+      "costs": {
+        "material": 3712,
+        "labor": 0,
+        "indirect": 980,
+        "total": 4692
+      }
+    },
+    {
+      "id": "prod_1768852069643",
+      "name": "vinilo Clear",
+      "category": "Vinilos",
+      "unit": "m2",
+      "costs": {
+        "material": 2680,
+        "labor": 0,
+        "indirect": 980,
+        "total": 3660
+      }
+    },
+    {
+      "id": "prod_1768852134783",
+      "name": "Vinilo microperforado",
+      "category": "Vinilo",
+      "unit": "m2",
+      "costs": {
+        "material": 4240,
+        "labor": 0,
+        "indirect": 980,
+        "total": 5220
+      }
+    },
+    {
+      "id": "prod_1768852209847",
+      "name": "Vinilo Esmerilado",
+      "category": "Vinilo",
+      "unit": "m2",
+      "costs": {
+        "material": 3700,
+        "labor": 1203,
+        "indirect": 980,
+        "total": 5883
+      }
+    },
+    {
+      "id": "prod_1768852265414",
+      "name": "Laca brillo",
+      "category": "Laca",
+      "unit": "m2",
+      "costs": {
+        "material": 1500,
+        "labor": 0,
+        "indirect": 0,
+        "total": 1500
+      }
+    },
+    {
+      "id": "prod_1768852325810",
+      "name": "Pegado de vinilo",
+      "category": "Vinilo",
+      "unit": "m2",
+      "costs": {
+        "material": 0,
+        "labor": 9500,
+        "indirect": 0,
+        "total": 9500
+      }
+    },
+    {
+      "id": "prod_1768857039618",
+      "name": "Lona Front 13 Oz",
+      "category": "Lonas",
+      "unit": "m2",
+      "costs": {
+        "material": 2000,
+        "labor": 0,
+        "indirect": 980,
+        "total": 2980
+      }
+    },
+    {
+      "id": "prod_1768857117704",
+      "name": "Lona Back",
+      "category": "Lonas",
+      "unit": "m2",
+      "costs": {
+        "material": 2663,
+        "labor": 0,
+        "indirect": 980,
+        "total": 3643
+      }
+    },
+    {
+      "id": "prod_1768857188811",
+      "name": "Blue Back",
+      "category": "Papel",
+      "unit": "m2",
+      "costs": {
+        "material": 1400,
+        "labor": 0,
+        "indirect": 980,
+        "total": 2380
+      }
+    }
+  ]
+}

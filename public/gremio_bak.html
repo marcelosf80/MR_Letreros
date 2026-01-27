@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sistema GREMIO - MR Letreros</title>
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/gremio-styles.css">
+</head>
+<body>
+  <header class="main-header">
+    <div class="header-left">
+      <img src="img/logo.png" alt="MR Letreros" class="logo-img">
+      <a href="index.html" class="btn-home">← Volver al Inicio</a>
+    </div>
+    <div class="header-title">🟢 SISTEMA GREMIO</div>
+  </header>
+
+  <div class="content-container">
+    <!-- Rendimientos -->
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">📊 Rendimientos del Sistema Gremio</h2>
+        <button class="btn btn-secondary btn-small" onclick="updateStatistics()">🔄 Actualizar</button>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">Total Aprobado</div>
+          <div class="stat-value" id="totalApproved">$0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Total Pendiente</div>
+          <div class="stat-value" id="totalPending">$0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Cotizaciones Aprobadas</div>
+          <div class="stat-value" id="countApproved">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Cotizaciones Pendientes</div>
+          <div class="stat-value" id="countPending">0</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Cliente -->
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">📋 Datos del Cliente</h2>
+      </div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">Nombre del Cliente *</label>
+          <input type="text" id="clientName" class="form-input" placeholder="Nombre completo">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Teléfono</label>
+          <input type="tel" id="clientPhone" class="form-input" placeholder="+54 9 11 1234-5678">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input type="email" id="clientEmail" class="form-input" placeholder="cliente@email.com">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Dirección</label>
+          <input type="text" id="clientAddress" class="form-input" placeholder="Calle 123, Ciudad">
+        </div>
+      </div>
+    </div>
+
+    <!-- Productos -->
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">🛒 Productos de la Cotización</h2>
+        <button class="btn btn-primary" id="btnAddProduct">➕ Agregar Producto</button>
+      </div>
+      <div id="productsList">
+        <p class="empty-state">No hay productos agregados</p>
+      </div>
+    </div>
+
+    <!-- Servicios de Terceros -->
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">🔧 Servicios de Terceros</h2>
+        <button class="btn btn-primary" id="btnAddTerceroService">➕ Agregar Servicio</button>
+      </div>
+      <div id="terceroServicesList">
+        <p class="empty-state">No hay servicios de terceros agregados</p>
+      </div>
+    </div>
+
+    <!-- Totales -->
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">💰 Totales</h2>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">Subtotal</div>
+          <div class="stat-value" id="subtotal">$0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">IVA (21%)</div>
+          <div class="stat-value" id="iva">$0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Total Final</div>
+          <div class="stat-value" id="total">$0</div>
+        </div>
+      </div>
+      <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 2rem;">
+        <button class="btn btn-secondary" onclick="clearQuote()">🗑️ Limpiar</button>
+        <button class="btn btn-primary" onclick="saveQuote()">💾 Guardar Cotización</button>
+        <button class="btn btn-success" onclick="generatePDF()">📄 Generar PDF</button>
+      </div>
+    </div>
+
+    <!-- Lista de Cotizaciones -->
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">📋 Historial de Cotizaciones</h2>
+      </div>
+      <div id="quotesList">
+        <p class="empty-state">No hay cotizaciones guardadas</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Agregar Producto -->
+  <div class="modal" id="productModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title">� Agregar Producto</h2>
+        <button class="btn-close" id="btnCloseProduct">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Categoría *</label>
+          <select id="productCategory" class="form-select">
+            <option value="">Seleccionar categoría...</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">Producto *</label>
+          <select id="productName" class="form-select" disabled>
+            <option value="">Primero selecciona categoría...</option>
+          </select>
+        </div>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Cantidad *</label>
+            <input type="number" id="productQuantity" class="form-input" placeholder="1" min="0.01" step="0.01">
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label">Precio Unitario *</label>
+            <input type="number" id="productPrice" class="form-input" placeholder="0.00" step="0.01" readonly>
+          </div>
+        </div>
+        
+        <div class="calc-display">
+          <div class="calc-label">TOTAL DEL PRODUCTO</div>
+          <div class="calc-value" id="productTotal">$0.00</div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="btnCancelProduct">Cancelar</button>
+        <button class="btn btn-primary" id="btnSaveProduct">➕ Agregar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="js/shared/modal-system.js?v=3"></script>
+  <script src="js/shared/data-manager-network.js?v=3"></script>
+  <script src="js/gremio/terceros-integration.js?v=3"></script>
+  <script src="js/gremio/gremio-main.js?v=3"></script>
+
+  <!-- Modal Agregar Servicio de Tercero -->
+  <div class="modal" id="terceroServiceModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title">🔧 Agregar Servicio de Tercero</h2>
+        <button class="btn-close" id="btnCloseTerceroService">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label" for="terceroCompany">Empresa *</label>
+          <select id="terceroCompany" class="form-select">
+            <option value="">Seleccionar empresa...</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label" for="terceroService">Servicio *</label>
+          <select id="terceroService" class="form-select" disabled>
+            <option value="">Selecciona empresa primero...</option>
+          </select>
+        </div>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="terceroQuantity">Cantidad *</label>
+            <input type="number" id="terceroQuantity" class="form-input" placeholder="1" min="0.01" step="0.01">
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label" for="terceroPrice">Precio Unitario (tu costo) *</label>
+            <input type="number" id="terceroPrice" class="form-input" placeholder="0.00" step="0.01" readonly>
+          </div>
+        </div>
+        
+        <div class="calc-display">
+          <div class="calc-label">TOTAL DEL SERVICIO (COSTO PARA TI)</div>
+          <div class="calc-value" id="terceroTotal">$0.00</div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="btnCancelTerceroService">Cancelar</button>
+        <button class="btn btn-primary" id="btnSaveTerceroService">➕ Agregar</button>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

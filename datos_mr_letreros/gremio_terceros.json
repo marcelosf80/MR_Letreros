@@ -1,0 +1,27 @@
+[
+  {
+    "id": 1769509000252,
+    "nombre": "test 1",
+    "contacto": "56565656",
+    "servicios": [
+      {
+        "id": 1769509065140,
+        "nombre": "tensado",
+        "categoria": "Lona Front 13 Oz",
+        "unidad": "m²",
+        "costo": 64656,
+        "precio": 565656,
+        "margen": 501000,
+        "fecha": "2026-01-27T10:17:45.140Z"
+      }
+    ],
+    "fecha": "2026-01-27T10:16:40.252Z"
+  },
+  {
+    "id": 1769509215169,
+    "nombre": "test2",
+    "contacto": "9856",
+    "servicios": [],
+    "fecha": "2026-01-27T10:20:15.169Z"
+  }
+]

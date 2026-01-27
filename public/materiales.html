@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Materiales - MR Letreros</title>
+  <link rel="stylesheet" href="css/base.css">
+</head>
+<body>
+  <!-- Partículas de fondo -->
+  <div class="particles" id="particles"></div>
+
+  <!-- Header -->
+  <header class="main-header">
+    <div class="header-left">
+      <img src="img/logo.png" alt="MR Letreros" class="logo-img">
+      <a href="index.html" class="btn-home">← Volver al Inicio</a>
+    </div>
+    <div class="header-title">📦 MATERIALES</div>
+  </header>
+
+  <!-- Content -->
+  <div class="content-container">
+    <div class="section-header">
+      <div class="section-info">
+        <h2>Gestión de Rollos</h2>
+        <p>Sistema de promedio ponderado automático</p>
+      </div>
+      <button class="btn btn-primary" id="btnAddMaterial">➕ Agregar Rollo</button>
+    </div>
+
+    <!-- SECCIÓN: CREAR CATEGORÍAS -->
+    <div class="card" style="margin-bottom: 2rem; border: 2px solid rgba(81, 207, 102, 0.3); background: rgba(81, 207, 102, 0.05);">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <h3 style="margin: 0; color: #51CF66;">📁 Categorías de Materiales</h3>
+        <button class="btn btn-primary btn-small" id="btnAddCategory">➕ Nueva Categoría</button>
+      </div>
+      
+      <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 1rem;">
+        <div id="categoriesList" style="grid-column: 1 / -1; color: rgba(255,255,255,0.5); text-align: center; padding: 2rem;">
+          Cargando categorías...
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal para crear categoría -->
+    <div class="modal" id="categoryModal">
+      <div class="modal-content" style="max-width: 500px;">
+        <div class="modal-header">
+          <h2 class="modal-title">📁 Nueva Categoría</h2>
+          <button class="btn-close" id="btnCloseCategory">×</button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label" for="newCategoryName">Nombre de la Categoría *</label>
+            <input type="text" id="newCategoryName" class="form-input" placeholder="Ej: Lona Front, Vinil, Tela..." oninput="validateCategoryName()">
+            <small id="categoryNameHelp" style="color: rgba(255,255,255,0.5);">Ingresa un nombre único</small>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" id="btnCancelCategory">Cancelar</button>
+          <button class="btn btn-primary" id="btnSaveCategory" disabled>💾 Crear Categoría</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="materialesList">
+      <p style="text-align: center; color: rgba(255, 255, 255, 0.5); padding: 3rem;">
+        No hay rollos configurados. Agregá el primero.
+      </p>
+    </div>
+  </div>
+
+  <!-- Modal -->
+  <div class="modal" id="materialModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title">📦 Agregar Rollo</h2>
+        <button class="btn-close" id="btnCloseMaterial">×</button>
+      </div>
+      <div class="modal-body">
+        
+        <div class="form-group">
+          <label class="form-label" for="materialCategory">Categoría *</label>
+          <select id="materialCategory" class="form-select">
+            <option value="">Seleccionar categoría...</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label" for="materialProductName">Nombre del Producto/Rollo *</label>
+          <input type="text" id="materialProductName" class="form-input" placeholder="Ej: Lona Front 13oz, Vinil Brillante..." value="">
+          <small>Nombre descriptivo para identificar este rollo</small>
+        </div>
+        
+        <div class="highlight-box">
+          <h4>📏 Datos del Rollo</h4>
+          
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="materialAncho">Ancho (cm) *</label>
+              <input type="number" id="materialAncho" placeholder="122" step="1" class="form-input" oninput="calcularM2()">
+              <small>Ej: 122cm, 152cm, 180cm</small>
+            </div>
+            
+            <div class="form-group">
+              <label class="form-label" for="materialLargo">Largo (m) *</label>
+              <input type="number" id="materialLargo" placeholder="50" step="0.1" class="form-input" oninput="calcularM2()">
+              <small>Ej: 50m, 100m</small>
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label" for="materialPrecioRollo">Precio del Rollo Completo *</label>
+            <input type="number" id="materialPrecioRollo" placeholder="400000" step="0.01" class="form-input" oninput="calcularM2()">
+            <small>Lo que pagaste por este rollo</small>
+          </div>
+        </div>
+        
+        <div class="calc-display">
+          <div class="calc-label">TU COSTO POR METRO CUADRADO</div>
+          <div class="calc-value" id="materialCostoCalculado">$--</div>
+          <div class="calc-formula" id="materialFormula">Completa los datos</div>
+        </div>
+        
+        <div class="info-box" id="materialPromedioInfo" style="display: none;"></div>
+
+        <div class="modal-footer">
+          <button class="btn btn-secondary" id="btnCancelMaterial">Cancelar</button>
+          <button class="btn btn-primary" id="btnSaveMaterial" onclick="guardarRollo()">💾 Confirmar y Guardar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- Scripts -->
+  <script src="js/shared/modal-system.js"></script>
+  <script src="js/shared/data-manager-network.js"></script>
+  <script src="js/materiales/categorias-manager.js"></script>
+  <script>
+    // Funciones de utilidad para el modal de materiales
+    function calcularM2() {
+      const anchoCm = parseFloat(document.getElementById('materialAncho')?.value) || 0;
+      const largoM = parseFloat(document.getElementById('materialLargo')?.value) || 0;
+      const precioRollo = parseFloat(document.getElementById('materialPrecioRollo')?.value) || 0;
+
+      console.log('[CALCULAR-M2] anchoCm:', anchoCm, 'largoM:', largoM, 'precioRollo:', precioRollo);
+
+      if (anchoCm <= 0 || largoM <= 0 || precioRollo <= 0) {
+        document.getElementById('materialCostoCalculado').textContent = '$--';
+        document.getElementById('materialFormula').textContent = 'Completa los datos';
+        document.getElementById('materialPromedioInfo').style.display = 'none';
+        console.log('[CALCULAR-M2] Faltan datos');
+        return;
+      }
+
+      const anchoM = anchoCm / 100;
+      const m2 = anchoM * largoM;
+      const costoPorM2 = precioRollo / m2;
+
+      document.getElementById('materialCostoCalculado').textContent = '$' + costoPorM2.toFixed(2);
+      document.getElementById('materialFormula').textContent = 
+        `${precioRollo.toLocaleString('es-AR')} ÷ ${m2.toFixed(2)}m² = $${costoPorM2.toFixed(2)}/m²`;
+      document.getElementById('materialPromedioInfo').style.display = 'none';
+      
+      console.log('[CALCULAR-M2] ✅ Resultado: m²=', m2.toFixed(2), 'costoPorM2=$', costoPorM2.toFixed(2));
+    }
+
+    function limpiarFormulario() {
+      document.getElementById('materialCategory').value = '';
+      document.getElementById('materialProductName').value = '';
+      document.getElementById('materialAncho').value = '';
+      document.getElementById('materialLargo').value = '';
+      document.getElementById('materialPrecioRollo').value = '';
+      document.getElementById('materialCostoCalculado').textContent = '$--';
+      document.getElementById('materialFormula').textContent = 'Completa los datos';
+      document.getElementById('materialPromedioInfo').style.display = 'none';
+    }
+
+    // Función para guardar el rollo
+    async function guardarRollo() {
+      console.log('[GUARDAR-ROLLO] Iniciando guardado...');
+      
+      const categoria = document.getElementById('materialCategory')?.value?.trim();
+      const productoNombre = document.getElementById('materialProductName')?.value?.trim();
+      const anchoCm = parseFloat(document.getElementById('materialAncho')?.value) || 0;
+      const largoM = parseFloat(document.getElementById('materialLargo')?.value) || 0;
+      const precioRollo = parseFloat(document.getElementById('materialPrecioRollo')?.value) || 0;
+
+      console.log('[GUARDAR-ROLLO] Datos recopilados:', { categoria, productoNombre, anchoCm, largoM, precioRollo });
+
+      // Validación
+      if (!categoria || !productoNombre || anchoCm <= 0 || largoM <= 0 || precioRollo <= 0) {
+        console.error('[GUARDAR-ROLLO] ❌ Validación fallida');
+        alert('⚠️ Por favor completa todos los campos correctamente');
+        return false;
+      }
+
+      console.log('[GUARDAR-ROLLO] ✅ Validación pasada');
+
+      // Cálculos
+      const anchoM = anchoCm / 100;
+      const m2 = anchoM * largoM;
+      const costoPorM2 = precioRollo / m2;
+
+      const rollo = {
+        id: Date.now(),
+        categoria,
+        productoNombre,
+        ancho: anchoM,
+        largo: largoM,
+        m2,
+        precioRollo,
+        costoPorM2,
+        fecha: new Date().toISOString()
+      };
+
+      console.log('[GUARDAR-ROLLO] Objeto a guardar:', rollo);
+
+      try {
+        // Obtener los materiales actuales
+        const response = await fetch('/api/materiales');
+        let materiales = [];
+        
+        if (response.ok) {
+          materiales = await response.json();
+          console.log('[GUARDAR-ROLLO] Materiales actuales:', materiales.length);
+        }
+
+        // Agregar el nuevo rollo
+        materiales.push(rollo);
+        console.log('[GUARDAR-ROLLO] Total después de agregar:', materiales.length);
+
+        // Guardar en el servidor
+        console.log('[GUARDAR-ROLLO] Enviando POST al servidor...');
+        const saveResponse = await fetch('/api/materiales', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(materiales)
+        });
+
+        console.log('[GUARDAR-ROLLO] Status de respuesta:', saveResponse.status);
+        const result = await saveResponse.json();
+        console.log('[GUARDAR-ROLLO] Resultado:', result);
+
+        if (result.success) {
+          console.log('[GUARDAR-ROLLO] ✅ Guardado exitoso');
+          alert('✅ Rollo agregado correctamente');
+          
+          // Cerrar el modal
+          const materialModal = document.getElementById('materialModal');
+          if (materialModal) {
+            materialModal.classList.remove('active');
+          }
+          
+          // Limpiar el formulario
+          limpiarFormulario();
+          
+          // Recargar la lista si existe la función
+          if (typeof cargarYMostrarRollos === 'function') {
+            await cargarYMostrarRollos();
+          }
+          if (typeof loadCategorias === 'function') {
+            await loadCategorias();
+          }
+          
+          return true;
+        } else {
+          console.error('[GUARDAR-ROLLO] ❌ Guardado fallido');
+          alert('❌ Error al guardar el rollo');
+          return false;
+        }
+      } catch (error) {
+        console.error('[GUARDAR-ROLLO] ❌ Error:', error);
+        alert('❌ Error al guardar: ' + error.message);
+        return false;
+      }
+    }
+  </script>
+  <script src="js/materiales/materiales-main.js"></script>
+</body>
+</html>

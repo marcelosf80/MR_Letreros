@@ -1,0 +1,29 @@
+[
+  {
+    "productoId": "1769486294143",
+    "categoria": "Lona Front 13 Oz",
+    "producto": "90",
+    "costo": 1823.4683281412254,
+    "area": 45,
+    "precioGremio": 9000,
+    "precioCliente": 28000,
+    "rentabilidadGremio": "406.25",
+    "rentabilidadCliente": "1475.00",
+    "createdAt": "2026-01-27T04:03:06.914Z",
+    "id": "1769486586935",
+    "updatedAt": "2026-01-27T04:04:07.382Z"
+  },
+  {
+    "productoId": "1769486337873",
+    "categoria": "Lona Front 13 Oz",
+    "producto": "107",
+    "costo": 1869.1588785046729,
+    "area": 53.5,
+    "precioGremio": 9000,
+    "precioCliente": 28000,
+    "rentabilidadGremio": "381.50",
+    "rentabilidadCliente": "1398.00",
+    "createdAt": "2026-01-27T04:03:45.021Z",
+    "id": "1769486625037"
+  }
+]

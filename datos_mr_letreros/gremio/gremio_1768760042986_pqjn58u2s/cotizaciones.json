@@ -1,0 +1,48 @@
+{
+  "history": [
+    {
+      "date": "2026-01-19T20:19:47.058Z",
+      "products": [
+        {
+          "id": 1768853979240,
+          "name": "Vinilo Impreso",
+          "category": "vinilo",
+          "quantity": 1,
+          "unitPrice": 9000,
+          "baseTotal": 9000,
+          "lacaPrice": 656,
+          "pegadoPrice": 565,
+          "total": 10221,
+          "notes": "",
+          "includeLaca": true,
+          "includePegado": true
+        }
+      ],
+      "total": 10221,
+      "approved": true,
+      "approvedDate": "2026-01-19T20:35:20.123Z",
+      "approvedBy": "Sistema"
+    },
+    {
+      "date": "2026-01-19T20:16:59.665Z",
+      "products": [
+        {
+          "id": 1768853718022,
+          "name": "Letras Corpóreas",
+          "category": "letras",
+          "quantity": 1,
+          "unitPrice": 565,
+          "baseTotal": 565,
+          "lacaPrice": 0,
+          "pegadoPrice": 0,
+          "total": 565,
+          "notes": "",
+          "includeLaca": true,
+          "includePegado": true
+        }
+      ],
+      "total": 565,
+      "approved": false
+    }
+  ]
+}
