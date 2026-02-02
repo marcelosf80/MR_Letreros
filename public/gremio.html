@@ -28,8 +28,8 @@
           <div class="stat-value" id="totalApproved">$0</div>
         </div>
         <div class="stat-card">
-          <div class="stat-label">Total Pendiente</div>
-          <div class="stat-value" id="totalPending">$0</div>
+          <div class="stat-label">Ganancia Neta</div>
+          <div class="stat-value" id="totalGanancia">$0</div>
         </div>
         <div class="stat-card">
           <div class="stat-label">Cotizaciones Aprobadas</div>
@@ -89,14 +89,33 @@
       </div>
     </div>
 
-    <!-- Totales -->
+    <!-- Totales y Anticipos -->
     <div class="card">
       <div class="card-header">
-        <h2 class="card-title">💰 Totales</h2>
+        <h2 class="card-title">💰 Totales y Financiamiento</h2>
       </div>
+      
+      <!-- Resumen de Costos -->
+      <div style="background: rgba(255, 107, 107, 0.1); padding: 1.5rem; border-radius: 10px; margin-bottom: 1rem; border: 1px solid rgba(255, 107, 107, 0.3);">
+        <h4 style="color: #FF6B6B; margin-bottom: 1rem;">📉 Costos (Lo que gastas)</h4>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+          <span>Costo Materiales:</span>
+          <span id="costoMateriales" style="font-weight: bold;">$0</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; padding-top: 0.5rem; border-top: 1px solid rgba(255, 107, 107, 0.3);">
+          <span>Costo Terceros:</span>
+          <span id="costoTerceros" style="font-weight: bold;">$0</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; padding-top: 0.5rem; border-top: 2px solid rgba(255, 107, 107, 0.5); margin-top: 0.5rem;">
+          <span style="font-weight: bold;">TOTAL COSTOS:</span>
+          <span id="totalCostos" style="font-weight: bold; color: #FF6B6B; font-size: 1.2rem;">$0</span>
+        </div>
+      </div>
+
+      <!-- Totales Cliente -->
       <div class="stats-grid">
         <div class="stat-card">
-          <div class="stat-label">Subtotal</div>
+          <div class="stat-label">Subtotal Cliente</div>
           <div class="stat-value" id="subtotal">$0</div>
         </div>
         <div class="stat-card">
@@ -104,10 +123,32 @@
           <div class="stat-value" id="iva">$0</div>
         </div>
         <div class="stat-card">
-          <div class="stat-label">Total Final</div>
+          <div class="stat-label">Total Final Cliente</div>
           <div class="stat-value" id="total">$0</div>
         </div>
+        <div class="stat-card" style="background: rgba(81, 207, 102, 0.1); border: 1px solid rgba(81, 207, 102, 0.3);">
+          <div class="stat-label">💚 Ganancia Neta</div>
+          <div class="stat-value" id="gananciaNetaDisplay" style="color: #51CF66;">$0</div>
+        </div>
       </div>
+
+      <!-- Anticipo -->
+      <div style="margin-top: 1.5rem; padding: 1.5rem; background: rgba(255, 193, 7, 0.1); border-radius: 10px; border: 1px solid rgba(255, 193, 7, 0.3);">
+        <h4 style="color: #FFC107; margin-bottom: 1rem;">💵 Anticipo (Opcional)</h4>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Monto del Anticipo</label>
+            <input type="number" id="montoAnticipo" class="form-input" placeholder="0.00" step="0.01" oninput="calcularSaldo()">
+            <small style="color: var(--text-secondary);">Deja en 0 si no hay anticipo</small>
+          </div>
+          <div style="padding: 1rem; background: rgba(0, 0, 0, 0.3); border-radius: 8px; display: flex; flex-direction: column; justify-content: center;">
+            <span style="color: var(--text-secondary); font-size: 0.9rem;">Saldo Pendiente:</span>
+            <span id="saldoPendiente" style="font-size: 1.5rem; font-weight: bold; color: var(--primary-color);">$0</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Acciones -->
       <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 2rem;">
         <button class="btn btn-secondary" onclick="clearQuote()">🗑️ Limpiar</button>
         <button class="btn btn-primary" onclick="saveQuote()">💾 Guardar Cotización</button>
@@ -119,6 +160,7 @@
     <div class="card">
       <div class="card-header">
         <h2 class="card-title">📋 Historial de Cotizaciones</h2>
+        <button class="btn btn-secondary btn-small" onclick="loadQuotations()">🔄 Actualizar</button>
       </div>
       <div id="quotesList">
         <p class="empty-state">No hay cotizaciones guardadas</p>
@@ -126,7 +168,7 @@
     </div>
   </div>
 
-  <!-- Modal Agregar Producto/Material MEJORADO -->
+  <!-- Modal Agregar Producto -->
   <div class="modal" id="productModal">
     <div class="modal-content" style="max-width: 700px;">
       <div class="modal-header">
@@ -134,26 +176,20 @@
         <button class="btn-close" id="btnCloseProduct">×</button>
       </div>
       <div class="modal-body">
-        
-        <!-- Selector de Producto -->
         <div class="highlight-box" style="margin-bottom: 1.5rem;">
           <h4>🎯 Seleccionar Material</h4>
-          
           <div class="form-group">
             <label class="form-label">Categoría *</label>
             <select id="productCategory" class="form-select" onchange="loadProductsByCategory()">
               <option value="">Seleccionar categoría...</option>
             </select>
           </div>
-          
           <div class="form-group">
             <label class="form-label">Producto *</label>
             <select id="productName" class="form-select" onchange="loadProductPrice()" disabled>
               <option value="">Primero selecciona categoría...</option>
             </select>
           </div>
-          
-          <!-- Info del Precio Gremio -->
           <div id="priceInfo" style="display: none; margin-top: 1rem; padding: 1rem; background: rgba(81, 207, 102, 0.1); border-radius: 8px; border: 1px solid rgba(81, 207, 102, 0.3);">
             <div style="display: flex; justify-content: space-between; align-items: center;">
               <span style="color: var(--text-secondary);">💚 Precio Gremio por m²:</span>
@@ -161,40 +197,31 @@
             </div>
           </div>
         </div>
-
-        <!-- Medidas y Cantidad -->
         <div class="highlight-box">
           <h4>📏 Medidas y Cantidad</h4>
-          
           <div class="form-row">
             <div class="form-group">
               <label class="form-label">Ancho (cm) *</label>
               <input type="number" id="productAncho" class="form-input" placeholder="100" min="0.01" step="0.01" oninput="calcularTotalMaterial()">
               <small style="color: var(--text-secondary);">Ingresa en centímetros</small>
             </div>
-            
             <div class="form-group">
               <label class="form-label">Alto (cm) *</label>
               <input type="number" id="productAlto" class="form-input" placeholder="100" min="0.01" step="0.01" oninput="calcularTotalMaterial()">
               <small style="color: var(--text-secondary);">Ingresa en centímetros</small>
             </div>
           </div>
-          
           <div class="form-group">
             <label class="form-label">Cantidad *</label>
             <input type="number" id="productCantidad" class="form-input" placeholder="1" min="1" step="1" oninput="calcularTotalMaterial()">
             <small style="color: var(--text-secondary);">Número de unidades</small>
           </div>
         </div>
-
-        <!-- Cálculo en Tiempo Real -->
         <div class="calc-display" style="margin-top: 1.5rem;">
           <div class="calc-label">TOTAL DEL MATERIAL</div>
           <div class="calc-value" id="productTotal">$0.00</div>
           <div class="calc-formula" id="productFormula">Completa los datos para ver el cálculo</div>
         </div>
-
-        <!-- Información adicional del cálculo -->
         <div id="calculoDetalle" style="display: none; margin-top: 1rem; padding: 1rem; background: rgba(255, 255, 255, 0.05); border-radius: 8px;">
           <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
             <span style="color: var(--text-secondary);">Metros cuadrados por unidad:</span>
@@ -210,7 +237,6 @@
           </div>
         </div>
       </div>
-
       <div class="modal-footer">
         <button class="btn btn-secondary" id="btnCancelProduct">Cancelar</button>
         <button class="btn btn-primary" id="btnSaveProduct">➕ Agregar a Cotización</button>
@@ -240,13 +266,25 @@
           </div>
           
           <div class="form-group">
-            <label class="form-label">Precio Unitario (tu costo) *</label>
-            <input type="number" id="terceroPrice" class="form-input" placeholder="0.00" step="0.01" readonly>
+            <label class="form-label">Tu Costo Unitario *</label>
+            <input type="number" id="terceroCosto" class="form-input" placeholder="0.00" step="0.01" readonly>
+            <small style="color: #FF6B6B;">Lo que te cuesta</small>
           </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Precio para Cliente *</label>
+          <input type="number" id="terceroPrecioCliente" class="form-input" placeholder="0.00" step="0.01" readonly>
+          <small style="color: #51CF66;">Lo que cobras</small>
         </div>
         
         <div class="calc-display">
-          <div class="calc-label">TOTAL DEL SERVICIO (COSTO PARA TI)</div>
+          <div class="calc-label">COSTO TOTAL (PARA TI)</div>
+          <div class="calc-value" id="terceroTotalCosto" style="color: #FF6B6B;">$0.00</div>
+        </div>
+
+        <div class="calc-display" style="margin-top: 1rem;">
+          <div class="calc-label">TOTAL PARA CLIENTE</div>
           <div class="calc-value" id="terceroTotal">$0.00</div>
         </div>
       </div>
@@ -262,5 +300,6 @@
   <script src="js/shared/modal-system.js"></script>
   <script src="js/shared/data-manager-network.js"></script>
   <script src="js/gremio/gremio-main.js"></script>
+  <!-- ⚠️ NO CARGAR terceros-integration.js - Ya está integrado en gremio-main.js -->
 </body>
 </html>

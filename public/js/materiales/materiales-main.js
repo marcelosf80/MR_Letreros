@@ -1,6 +1,53 @@
 // ==================== MATERIALES MODULE - MAIN ==================== 
 
-let allCategorias = []; // Variable global para almacenar categorías
+// NOTA: 'allCategorias' ya está declarada en categorias-manager.js, no redeclarar aquí.
+
+// ==================== GLOBAL FUNCTIONS ====================
+
+window.calcularCosto = function() {
+  try {
+    const largoInput = document.getElementById('materialLargo');
+    const precioInput = document.getElementById('materialPrecioRollo');
+    const unidadInput = document.getElementById('materialUnidad');
+    const display = document.getElementById('materialCalcDisplay');
+    
+    if (!largoInput || !precioInput || !display) return;
+
+    const largo = parseFloat(largoInput.value) || 0; // m
+    const precio = parseFloat(precioInput.value) || 0;
+    const unidad = unidadInput ? unidadInput.value : 'ml';
+    
+    if (largo > 0 && precio > 0) {
+      const costoLineal = precio / largo;
+      let label = 'Costo por Metro';
+      if (unidad === 'unidad') label = 'Costo por Unidad';
+      if (unidad === 'm²') label = 'Costo por m²';
+
+      display.innerHTML = `<div style="color: #51CF66; font-weight: bold; font-size: 1.4em; text-align: center; padding: 5px;">${label}: $${costoLineal.toLocaleString('es-AR', {minimumFractionDigits: 2})}</div>`;
+      display.style.display = 'block';
+    } else {
+      display.style.display = 'none';
+    }
+  } catch (e) {
+    console.error('Error en calcularCosto:', e);
+  }
+};
+
+window.updateLargoLabel = function() {
+  const unidad = document.getElementById('materialUnidad')?.value || 'ml';
+  const label = document.querySelector('label[for="materialLargo"]');
+  const input = document.getElementById('materialLargo');
+  
+  if (label) {
+    if (unidad === 'unidad') {
+      label.textContent = 'Cantidad (unidades) *';
+      if(input) input.placeholder = 'Ej: 100';
+    } else {
+      label.textContent = 'Largo (m) *';
+      if(input) input.placeholder = 'Ej: 50';
+    }
+  }
+};
 
 document.addEventListener('DOMContentLoaded', function() {
   
@@ -25,6 +72,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
   console.log('[MATERIALES] ✅ Todos los elementos encontrados');
 
+  // Ocultar campo de Ancho (se asume 1 metro por defecto)
+  const inputAncho = document.getElementById('materialAncho');
+  if (inputAncho) {
+    inputAncho.value = '100';
+  }
+
+  // Precargar categorías al iniciar para asegurar que el selector no esté vacío
+  if (typeof actualizarSelectorCategorias === 'function') {
+    actualizarSelectorCategorias();
+  }
+
   // ==================== OPEN MODAL ====================
   
   btnAddMaterial.addEventListener('click', async () => {
@@ -32,7 +90,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     try {
       // Llamar a la función centralizada para actualizar el selector
-      await actualizarSelectorCategorias();
+      if (typeof actualizarSelectorCategorias === 'function') {
+        await actualizarSelectorCategorias();
+      }
     } catch (error) {
       console.error('[MATERIALES] ❌ Error actualizando selector:', error);
       alert('⚠️ Error al cargar categorías. Intenta nuevamente.');
@@ -40,7 +100,11 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Limpiar formulario
     limpiarFormulario();
-    materialModal.classList.add('active');
+    if (window.MRModals) {
+      window.MRModals.open(materialModal);
+    } else {
+      materialModal.classList.add('active');
+    }
   });
 
   // ==================== CLOSE MODAL ====================
@@ -48,16 +112,69 @@ document.addEventListener('DOMContentLoaded', function() {
   if (btnCloseMaterial) {
     btnCloseMaterial.addEventListener('click', () => {
       console.log('[MATERIALES] Cerrando modal (X)...');
-      materialModal.classList.remove('active');
+      if (window.MRModals) {
+        window.MRModals.close(materialModal);
+      } else {
+        materialModal.classList.remove('active');
+      }
     });
   }
 
   if (btnCancelMaterial) {
     btnCancelMaterial.addEventListener('click', () => {
       console.log('[MATERIALES] Cerrando modal (Cancelar)...');
-      materialModal.classList.remove('active');
+      if (window.MRModals) {
+        window.MRModals.close(materialModal);
+      } else {
+        materialModal.classList.remove('active');
+      }
     });
   }
+
+  // ==================== FORM UTILS & LIVE CALCULATION ====================
+
+  function limpiarFormulario() {
+    if(document.getElementById('materialCategory')) document.getElementById('materialCategory').value = '';
+    if(document.getElementById('materialProductName')) document.getElementById('materialProductName').value = '';
+    if(document.getElementById('materialAncho')) document.getElementById('materialAncho').value = '100'; // Por defecto 1 metro para agilizar
+    if(document.getElementById('materialUnidad')) document.getElementById('materialUnidad').value = 'ml';
+    if(document.getElementById('materialLargo')) document.getElementById('materialLargo').value = '';
+    if(document.getElementById('materialPrecioRollo')) document.getElementById('materialPrecioRollo').value = '';
+    
+    const display = document.getElementById('materialCalcDisplay');
+    if (display) {
+      display.innerHTML = '';
+      display.style.display = 'none';
+    }
+
+    // REFUERZO: Asegurar que el ancho esté oculto y en 100 cada vez que se limpia
+    const inputAncho = document.getElementById('materialAncho');
+    if (inputAncho) {
+      inputAncho.value = '100';
+    }
+
+    // Limpiar fecha de actualización si existe
+    const dateDisplay = document.getElementById('materialLastUpdate');
+    if (dateDisplay) {
+      dateDisplay.style.display = 'none';
+    }
+    
+    const btnSave = document.getElementById('btnSaveMaterial');
+    if (btnSave) {
+      btnSave.textContent = '💾 Confirmar y Guardar';
+      btnSave.dataset.editingId = '';
+    }
+    window.updateLargoLabel();
+  }
+
+  // Alias para compatibilidad
+  window.calcularM2 = window.calcularCosto;
+
+  // Agregar listeners
+  ['materialAncho', 'materialLargo', 'materialPrecioRollo'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('input', window.calcularCosto);
+  });
 
   // ==================== LOAD AND DISPLAY MATERIALS ====================
   
@@ -121,7 +238,8 @@ document.addEventListener('DOMContentLoaded', function() {
                   <div class="rollo-info">
                     <strong>Rollo ${idx + 1}:</strong> ${rollo.ancho}m × ${rollo.largo}m = ${rollo.m2.toFixed(2)}m²
                     <br>
-                    <span style="color: #FF8C42;">Costo: $${rollo.costoPorM2.toFixed(2)}/m²</span>
+                    <span style="color: #FF8C42;">Costo m²: $${rollo.costoPorM2.toFixed(2)}</span>
+                    <span style="color: #51CF66; margin-left: 10px; font-weight: bold;">Costo ml: $${(rollo.precioRollo / rollo.largo).toFixed(2)}</span>
                     <br>
                     <span style="color: rgba(255, 255, 255, 0.5); font-size: 0.85rem;">Pagado: $${rollo.precioRollo.toLocaleString('es-AR')}</span>
                   </div>
@@ -156,15 +274,45 @@ document.addEventListener('DOMContentLoaded', function() {
       }
       
       document.getElementById('materialCategory').value = rollo.categoria;
-      document.getElementById('materialProducto').value = rollo.productoId;
-      document.getElementById('materialAncho').value = rollo.ancho;
+      // FIX: Corregido ID del elemento y propiedad correcta (nombre, no ID)
+      document.getElementById('materialProductName').value = rollo.productoNombre || rollo.producto || '';
+      document.getElementById('materialUnidad').value = rollo.unidad || 'ml';
+      
+      // FIX: Forzar ancho a 100cm (1m) para mantener consistencia en cálculo lineal
+      const inputAncho = document.getElementById('materialAncho');
+      if (inputAncho) inputAncho.value = '100';
+      
       document.getElementById('materialLargo').value = rollo.largo;
       document.getElementById('materialPrecioRollo').value = rollo.precioRollo;
       
+      // Mostrar fecha de última actualización
+      let dateDisplay = document.getElementById('materialLastUpdate');
+      if (!dateDisplay) {
+        dateDisplay = document.createElement('div');
+        dateDisplay.id = 'materialLastUpdate';
+        dateDisplay.style.fontSize = '0.8rem';
+        dateDisplay.style.color = '#aaa';
+        dateDisplay.style.marginTop = '15px';
+        dateDisplay.style.textAlign = 'right';
+        dateDisplay.style.fontStyle = 'italic';
+        // Insertar en el cuerpo del modal
+        const modalBody = document.querySelector('#materialModal .modal-body') || document.querySelector('#materialModal .modal-content');
+        if (modalBody) modalBody.appendChild(dateDisplay);
+      }
+
+      if (rollo.fecha) {
+        const date = new Date(rollo.fecha);
+        dateDisplay.textContent = '📅 Última actualización: ' + date.toLocaleString('es-AR');
+        dateDisplay.style.display = 'block';
+      } else {
+        dateDisplay.style.display = 'none';
+      }
+
       btnSaveMaterial.textContent = '💾 Actualizar Rollo';
       btnSaveMaterial.dataset.editingId = rolloId;
       
       calcularCosto();
+      window.updateLargoLabel();
       
       materialModal.classList.add('active');
       
@@ -209,16 +357,33 @@ document.addEventListener('DOMContentLoaded', function() {
       
       const categoria = document.getElementById('materialCategory')?.value;
       const productoNombre = document.getElementById('materialProductName')?.value || '';
-      const anchoCm = parseFloat(document.getElementById('materialAncho')?.value) || 0;
+      const unidad = document.getElementById('materialUnidad')?.value || 'ml';
+      
+      let anchoCm = parseFloat(document.getElementById('materialAncho')?.value);
+      if (isNaN(anchoCm) || anchoCm <= 0) anchoCm = 100; // Default: 100cm (1 metro) si está vacío
+
       const largoM = parseFloat(document.getElementById('materialLargo')?.value) || 0;
       const precioRollo = parseFloat(document.getElementById('materialPrecioRollo')?.value) || 0;
       const editingId = btnSaveMaterial.dataset.editingId;
       
-      console.log('[MATERIALES] Valores recibidos:', { categoria, productoNombre, anchoCm, largoM, precioRollo });
+      console.log('[MATERIALES] Valores recibidos:', { categoria, productoNombre, unidad, anchoCm, largoM, precioRollo });
       
-      if (!categoria || !productoNombre.trim() || anchoCm <= 0 || largoM <= 0 || precioRollo <= 0) {
+      // Validaciones específicas para saber qué falla
+      if (!categoria) {
+        alert('⚠️ Debes seleccionar una Categoría.');
+        return;
+      }
+      if (!productoNombre.trim()) {
+        alert('⚠️ Debes ingresar el Nombre del Producto.');
+        return;
+      }
+      if (largoM <= 0) {
+        alert('⚠️ El Largo debe ser mayor a 0.');
+        return;
+      }
+      if (precioRollo <= 0) {
         console.error('[MATERIALES] ❌ Validación fallida');
-        alert('⚠️ Por favor completa todos los campos del rollo');
+        alert('⚠️ El Precio debe ser mayor a 0.');
         return;
       }
 
@@ -248,11 +413,28 @@ document.addEventListener('DOMContentLoaded', function() {
           console.log('[MATERIALES] Modo edición - ID:', editingId);
           const index = rollos.findIndex(r => r.id == editingId);
           if (index !== -1) {
+            // >>> INICIO: Verificación de variación de precio
+            const oldRollo = rollos[index];
+            const oldPrice = oldRollo.costoPorM2;
+            const newPrice = costoPorM2;
+
+            if (oldPrice > 0) { // Evitar división por cero y comparar solo si había precio
+              const variation = ((newPrice - oldPrice) / oldPrice) * 100;
+              if (Math.abs(variation) > 10) {
+                if (!confirm(`⚠️ ¡ATENCIÓN! El precio ha variado un ${variation.toFixed(1)}%.\n\nPrecio anterior: $${oldPrice.toFixed(2)}/m²\nPrecio nuevo: $${newPrice.toFixed(2)}/m²\n\n¿Deseas continuar y guardar el cambio?`)) {
+                  console.log('[MATERIALES] ❌ Guardado cancelado por el usuario debido a la variación de precio.');
+                  return; // Detener el proceso de guardado
+                }
+              }
+            }
+            // <<< FIN: Verificación de variación de precio
+
             rollos[index] = {
               ...rollos[index],
               categoria,
               producto: productoNombre,
               productoNombre: productoNombre,
+              unidad,
               ancho: anchoM,
               largo: largoM,
               m2,
@@ -269,6 +451,7 @@ document.addEventListener('DOMContentLoaded', function() {
             productoId: Date.now().toString(),
             producto: productoNombre,
             productoNombre: productoNombre,
+            unidad,
             ancho: anchoM,
             largo: largoM,
             m2,
@@ -290,12 +473,17 @@ document.addEventListener('DOMContentLoaded', function() {
           const mensaje = editingId ? '✅ Rollo actualizado correctamente' : '✅ Rollo agregado correctamente';
           console.log('[MATERIALES] ✅', mensaje);
           alert(mensaje);
-          materialModal.classList.remove('active');
+          if (window.MRModals) {
+            window.MRModals.close(materialModal);
+          } else {
+            materialModal.classList.remove('active');
+            document.body.style.overflow = '';
+          }
           btnSaveMaterial.dataset.editingId = '';
           btnSaveMaterial.textContent = '💾 Confirmar y Guardar';
           limpiarFormulario();
           await cargarYMostrarRollos();
-          await loadCategorias();
+          if (typeof loadCategorias === 'function') await loadCategorias();
         } else {
           console.error('[MATERIALES] ❌ Error: saveMateriales retornó false');
           alert('❌ Error al guardar el rollo');

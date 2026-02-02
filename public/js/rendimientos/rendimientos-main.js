@@ -28,9 +28,9 @@ const rendimientosManager = {
       console.log('[RENDIMIENTOS] Cargando datos financieros...');
       
       // Obtener todas las cotizaciones y gastos
-      const cotizacionesGremio = (await window.dataManager?.getGremioQuotes?.()) || [];
-      const cotizacionesClientes = (await window.dataManager?.getClientQuotes?.()) || [];
-      const gastos = (await window.dataManager?.getGastos?.()) || [];
+      const cotizacionesGremio = (await window.mrDataManager?.getGremioCotizaciones?.()) || [];
+      const cotizacionesClientes = (await window.mrDataManager?.getClientesCotizaciones?.()) || [];
+      const gastos = (await window.mrDataManager?.getGastos?.()) || [];
       
       console.log('[RENDIMIENTOS] Cotizaciones Gremio:', cotizacionesGremio.length);
       console.log('[RENDIMIENTOS] Cotizaciones Clientes:', cotizacionesClientes.length);
@@ -230,7 +230,7 @@ const rendimientosManager = {
 
   async getGastos() {
     try {
-      return (await window.dataManager?.getGastos?.()) || [];
+      return (await window.mrDataManager?.getGastos?.()) || [];
     } catch (error) {
       console.error('[GASTOS] Error leyendo gastos:', error);
       return [];
@@ -239,7 +239,7 @@ const rendimientosManager = {
 
   async saveGastosToStorage(gastos) {
     try {
-      await window.dataManager?.saveGastos?.(gastos);
+      await window.mrDataManager?.saveGastos?.(gastos);
       console.log('[GASTOS] Guardados correctamente');
       return true;
     } catch (error) {

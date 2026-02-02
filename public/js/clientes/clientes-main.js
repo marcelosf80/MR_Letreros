@@ -1,21 +1,22 @@
 /**
- * GREMIO - Sistema de Cotizaciones (Versión de Red)
+ * CLIENTES - Sistema de Cotizaciones (Versión de Red)
  * Conectado al servidor Node.js a través de data-manager-network.js
+ * Adaptado de gremio-main.js para usar precios públicos
  */
 
 // ==================== VARIABLES GLOBALES ====================
-let listaCostos = []; // Antes 'materiales', ahora solo para buscar costos
-let preciosGremio = [];
+let listaCostos = []; 
+let preciosClientes = [];
 let terceros = [];
 let currentQuoteProducts = [];
 let currentQuoteTerceros = [];
-let currentPrecioGremio = 0;
+let currentPrecioCliente = 0;
 let currentCostoMaterial = 0;
 let currentProductData = null;
-let cotizacionesGremio = [];
-let currentClientId = null; // ID del cliente seleccionado
-let allClients = []; // Lista para el buscador
-let currentTotals = { // Almacén para totales numéricos reales
+let cotizacionesClientes = [];
+let currentClientId = null;
+let allClients = [];
+let currentTotals = {
   costoTotal: 0,
   subtotal: 0,
   iva: 0,
@@ -35,24 +36,29 @@ function formatM2(number) {
 // ==================== INICIALIZACIÓN ====================
 
 document.addEventListener('DOMContentLoaded', async function() {
-  console.log('[GREMIO] 🚀 Inicializando con conexión al servidor...');
+  console.log('[CLIENTES] 🚀 Inicializando...');
+
+  // 1. Inyectar controles UI inmediatamente (Botones Buscar/Guardar)
+  ensureClientControlsExist();
+  ensureTerceroInputs();
+  ensureProductModalTercerosUI();
   
-  // Esperar a que el dataManager se conecte
+  // 2. Verificar conexión
   if (!window.mrDataManager || !(await window.mrDataManager.checkConnection())) {
-    console.error('[GREMIO] ❌ No se pudo conectar al servidor. La aplicación no funcionará.');
-    // El dataManager ya muestra un error visual.
+    console.error('[CLIENTES] ❌ No se pudo conectar al servidor.');
     return;
   }
   
+  // 3. Cargar datos y configurar eventos
   await loadAllData();
   setupEventListeners();
   await loadQuotations();
   updateStatistics();
   
-  console.log('[GREMIO] ✅ Sistema listo y conectado.');
+  console.log('[CLIENTES] ✅ Sistema listo y conectado.');
 });
 
-// ==================== CARGA DE DATOS DESDE EL SERVIDOR ====================
+// ==================== CARGA DE DATOS ====================
 
 async function loadAllData() {
   await Promise.all([
@@ -64,22 +70,15 @@ async function loadAllData() {
 
 async function loadCostosData() {
   try {
-    // 1. Cargar Costos (Productos definidos)
     const costos = await window.mrDataManager.getCostos();
-    
-    // 2. Cargar Materiales (Inventario físico) para asegurar que todo esté disponible
     const inventario = await window.mrDataManager.getMateriales();
     
-    // Combinar: Usar Costos como base
     let listaCombinada = [...costos];
-    
-    // Crear un Set de nombres existentes en costos para evitar duplicados
     const existentes = new Set(costos.map(c => (c.name || c.producto || '').toLowerCase().trim()));
     
     inventario.forEach(m => {
         const nombre = (m.producto || m.name || m.productoNombre || '').toLowerCase().trim();
         if (nombre && !existentes.has(nombre)) {
-            // Este material no está en costos, lo agregamos temporalmente para cotizar
             listaCombinada.push({
                 id: m.id,
                 name: m.producto || m.name || m.productoNombre,
@@ -92,42 +91,39 @@ async function loadCostosData() {
     });
 
     listaCostos = listaCombinada;
-    console.log('[GREMIO] ✅ Datos de Costos cargados para referencia:', listaCostos.length);
   } catch (error) {
-    console.error('[GREMIO] ❌ Error cargando datos de costos:', error);
+    console.error('[CLIENTES] ❌ Error cargando costos:', error);
     listaCostos = [];
   }
 }
 
 async function loadPrecios() {
   try {
-    preciosGremio = await window.mrDataManager.getPrecios();
-    console.log('[GREMIO] ✅ Precios cargados:', preciosGremio.length);
+    preciosClientes = await window.mrDataManager.getPrecios();
+    console.log('[CLIENTES] ✅ Precios cargados:', preciosClientes.length);
   } catch (error) {
-    console.error('[GREMIO] ❌ Error cargando precios:', error);
-    preciosGremio = [];
+    console.error('[CLIENTES] ❌ Error cargando precios:', error);
+    preciosClientes = [];
   }
 }
 
 async function loadTerceros() {
   try {
     const empresas = await window.mrDataManager.getTerceros();
-    // Aplanar la lista de servicios de todas las empresas para el dropdown
     terceros = [];
     empresas.forEach(empresa => {
       if (empresa.servicios) {
         empresa.servicios.forEach(servicio => {
           terceros.push({
             ...servicio,
-            empresaNombre: empresa.nombre // Añadir el nombre de la empresa al servicio
+            empresaNombre: empresa.nombre
           });
         });
       }
     });
-    console.log('[GREMIO] ✅ Terceros cargados y aplanados:', terceros.length);
     populateTerceros();
   } catch (error) {
-    console.error('[GREMIO] ❌ Error cargando terceros:', error);
+    console.error('[CLIENTES] ❌ Error cargando terceros:', error);
     terceros = [];
   }
 }
@@ -135,7 +131,7 @@ async function loadTerceros() {
 // ==================== EVENT LISTENERS ====================
 
 function setupEventListeners() {
-  // --- MODAL PRODUCTOS ---
+  // Modal Productos
   const btnSaveProduct = document.getElementById('btnSaveProduct');
   const btnAddProduct = document.getElementById('btnAddProduct');
   const btnCloseProduct = document.getElementById('btnCloseProduct');
@@ -143,7 +139,6 @@ function setupEventListeners() {
   const productModal = document.getElementById('productModal');
 
   if (btnAddProduct) btnAddProduct.addEventListener('click', () => {
-    // VALIDACIÓN: Obligar a cargar cliente antes de cotizar
     if (!currentClientId) {
       alert('⚠️ Para cotizar, primero debes CARGAR o GUARDAR un cliente.');
       return;
@@ -155,20 +150,18 @@ function setupEventListeners() {
   if (btnCloseProduct) btnCloseProduct.addEventListener('click', () => window.MRModals.close(productModal));
   if (btnCancelProduct) btnCancelProduct.addEventListener('click', () => window.MRModals.close(productModal));
 
-  // --- LISTENERS FORMULARIO PRODUCTO ---
   const productCategory = document.getElementById('productCategory');
   const productName = document.getElementById('productName');
   
   if (productCategory) productCategory.addEventListener('change', window.loadProductsByCategory);
   if (productName) productName.addEventListener('change', window.loadProductPrice);
   
-  // Listeners para cálculo automático al escribir
   ['productAncho', 'productAlto', 'productCantidad'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.addEventListener('input', window.calcularTotalMaterial);
   });
 
-  // --- MODAL TERCEROS ---
+  // Modal Terceros
   const btnSaveTercero = document.getElementById('btnSaveTerceroService');
   const btnAddTercero = document.getElementById('btnAddTerceroService');
   const btnCloseTercero = document.getElementById('btnCloseTerceroService');
@@ -180,7 +173,6 @@ function setupEventListeners() {
   if (btnCloseTercero) btnCloseTercero.addEventListener('click', () => window.MRModals.close(terceroModal));
   if (btnCancelTercero) btnCancelTercero.addEventListener('click', () => window.MRModals.close(terceroModal));
 
-  // 🛠️ FIX: Activar cálculo automático en Modal de Terceros
   const terceroServiceSelect = document.getElementById('terceroService');
   if (terceroServiceSelect) {
     terceroServiceSelect.addEventListener('change', window.loadTerceroPrice);
@@ -190,17 +182,8 @@ function setupEventListeners() {
   if (terceroQuantityInput) {
     terceroQuantityInput.addEventListener('input', window.calcularTotalTercero);
   }
-  
-  // --- CLIENTES (BUSCADOR Y GUARDADO) ---
-  // 🛠️ FIX: Asegurar que existan los controles de cliente (Inyección Automática)
-  ensureClientControlsExist();
-  
-  // 🛠️ FIX: Asegurar controles de medidas para terceros
-  ensureTerceroInputs();
-  
-  // 🛠️ FIX: Inyectar selector de terceros en modal de producto
-  ensureProductModalTercerosUI();
 
+  // Clientes (Buscador y Guardado)
   const btnSearchClient = document.getElementById('btnSearchClient');
   const searchClientInput = document.getElementById('searchClientInput');
   const searchClientModal = document.getElementById('searchClientModal');
@@ -210,10 +193,9 @@ function setupEventListeners() {
 
   if (btnSearchClient) {
     btnSearchClient.addEventListener('click', async () => {
-      allClients = await window.mrDataManager.getGremioClientes();
+      allClients = await window.mrDataManager.getClientesClientes() || [];
       renderClientSearchList(allClients);
       window.MRModals.open(searchClientModal);
-      // Enfocar el input de búsqueda
       setTimeout(() => { if(searchClientInput) searchClientInput.focus(); }, 100);
     });
   }
@@ -233,25 +215,15 @@ function setupEventListeners() {
   if (btnCancelSearch) btnCancelSearch.addEventListener('click', () => window.MRModals.close(searchClientModal));
   
   if (btnSaveClient) btnSaveClient.addEventListener('click', window.saveNewClient);
-
-  console.log('[GREMIO] ✅ Event listeners configurados');
 }
 
-// ==================== INYECCIÓN DE CONTROLES DE CLIENTE ====================
+// ==================== INYECCIONES UI ====================
 
 function ensureClientControlsExist() {
   const clientNameInput = document.getElementById('clientName');
-  if (!clientNameInput) {
-    console.warn('[GREMIO] ⚠️ No se encontró el input "clientName". No se pueden inyectar controles.');
-    return;
-  }
+  if (!clientNameInput) return;
+  const parent = clientNameInput.parentNode;
 
-  const parent = clientNameInput.parentNode; // El contenedor del input
-  
-  // Asegurar que el contenedor permita elementos en línea (flex o inline-block)
-  // Si el parent es muy estricto, insertamos un wrapper, pero por ahora intentamos directo.
-
-  // 1. Botón BUSCAR (🔍)
   if (!document.getElementById('btnSearchClient')) {
     const btn = document.createElement('button');
     btn.id = 'btnSearchClient';
@@ -259,18 +231,11 @@ function ensureClientControlsExist() {
     btn.className = 'btn btn-primary';
     btn.style.marginLeft = '5px';
     btn.style.padding = '0 10px';
-    btn.title = 'Buscar Cliente';
     btn.type = 'button';
-    
-    // Insertar justo después del input de nombre
-    if (clientNameInput.nextSibling) {
-      parent.insertBefore(btn, clientNameInput.nextSibling);
-    } else {
-      parent.appendChild(btn);
-    }
+    if (clientNameInput.nextSibling) parent.insertBefore(btn, clientNameInput.nextSibling);
+    else parent.appendChild(btn);
   }
 
-  // 2. Botón GUARDAR (💾)
   if (!document.getElementById('btnSaveClient')) {
     const btn = document.createElement('button');
     btn.id = 'btnSaveClient';
@@ -278,19 +243,12 @@ function ensureClientControlsExist() {
     btn.className = 'btn btn-success';
     btn.style.marginLeft = '5px';
     btn.style.padding = '0 10px';
-    btn.title = 'Guardar Datos del Cliente';
     btn.type = 'button';
-    
-    // Insertar después del botón de buscar
     const btnSearch = document.getElementById('btnSearchClient');
-    if (btnSearch && btnSearch.nextSibling) {
-      parent.insertBefore(btn, btnSearch.nextSibling);
-    } else {
-      parent.appendChild(btn);
-    }
+    if (btnSearch && btnSearch.nextSibling) parent.insertBefore(btn, btnSearch.nextSibling);
+    else parent.appendChild(btn);
   }
 
-  // 3. Modal de Búsqueda (Si no existe en el HTML)
   if (!document.getElementById('searchClientModal')) {
     const modal = document.createElement('div');
     modal.id = 'searchClientModal';
@@ -302,7 +260,7 @@ function ensureClientControlsExist() {
           <button class="close-modal" id="btnCloseSearchClient">&times;</button>
         </div>
         <div class="modal-body">
-          <input type="text" id="searchClientInput" placeholder="Escribe el nombre del cliente..." class="form-control" style="width: 100%; margin-bottom: 1rem; padding: 0.5rem;">
+          <input type="text" id="searchClientInput" placeholder="Escribe el nombre..." class="form-control" style="width: 100%; margin-bottom: 1rem; padding: 0.5rem;">
           <div id="clientSearchResults" style="max-height: 300px; overflow-y: auto; border: 1px solid #eee; border-radius: 4px;"></div>
         </div>
         <div class="modal-footer">
@@ -314,16 +272,13 @@ function ensureClientControlsExist() {
   }
 }
 
-// ==================== INYECCIÓN DE CONTROLES TERCEROS ====================
-
 function ensureTerceroInputs() {
   const quantityInput = document.getElementById('terceroQuantity');
-  // Si no existe el input de cantidad o ya existen los de medidas, salir
   if (!quantityInput || document.getElementById('terceroAncho')) return;
 
   const container = document.createElement('div');
   container.id = 'terceroDimensiones';
-  container.style.display = 'none'; // Oculto por defecto
+  container.style.display = 'none';
   container.style.gridTemplateColumns = '1fr 1fr';
   container.style.gap = '10px';
   container.style.marginBottom = '1rem';
@@ -335,11 +290,9 @@ function ensureTerceroInputs() {
   
   quantityInput.parentNode.insertBefore(container, quantityInput);
   
-  // Listeners para cálculo
   document.getElementById('terceroAncho').addEventListener('input', window.calcularTotalTercero);
   document.getElementById('terceroAlto').addEventListener('input', window.calcularTotalTercero);
   
-  // Input para cantidad de material (placas)
   const matContainer = document.createElement('div');
   matContainer.id = 'terceroMaterialGroup';
   matContainer.style.display = 'none';
@@ -350,12 +303,9 @@ function ensureTerceroInputs() {
   matContainer.innerHTML = `
     <label style="display:block; margin-bottom:5px; font-size:0.9rem; color:#FFC107;">📦 Cantidad de Material (Placas)</label>
     <input type="number" id="terceroCantMaterial" class="form-control" placeholder="1" value="1" style="width:100%; padding:8px;">
-    <small style="color:#aaa; display:block; margin-top:3px;">Se sumará el costo del material multiplicado por esta cantidad.</small>
   `;
   
-  // Insertar antes de las dimensiones
   container.parentNode.insertBefore(matContainer, container);
-  
   document.getElementById('terceroCantMaterial').addEventListener('input', window.calcularTotalTercero);
 }
 
@@ -379,16 +329,13 @@ function ensureProductModalTercerosUI() {
     <div id="productModalTerceroInfo" style="font-size:0.85rem; color:#666; margin-top:5px; display:none;"></div>
   `;
 
-  // Insertar después del selector de nombre de producto
   if (productNameSelect.parentNode) {
     productNameSelect.parentNode.insertBefore(wrapper, productNameSelect.nextSibling);
   }
-  
-  // Poblar inmediatamente
   populateTerceros();
 }
 
-// ==================== GESTIÓN DE CLIENTES ====================
+// ==================== CLIENTES ====================
 
 function renderClientSearchList(clients) {
   const container = document.getElementById('clientSearchResults');
@@ -400,7 +347,7 @@ function renderClientSearchList(clients) {
   }
   
   container.innerHTML = clients.map(c => `
-    <div class="client-item" style="padding: 0.8rem; border-bottom: 1px solid #eee; cursor: pointer; hover:background: #f5f5f5;" onclick="window.selectClient('${c.id}')">
+    <div class="client-item" style="padding: 0.8rem; border-bottom: 1px solid #eee; cursor: pointer;" onclick="window.selectClient('${c.id}')">
       <strong>${c.name}</strong><br>
       <small style="color: #666;">${c.contact || 'Sin contacto'}</small>
     </div>
@@ -417,14 +364,14 @@ window.selectClient = function(id) {
     if(document.getElementById('clientAddress')) document.getElementById('clientAddress').value = client.direccion || '';
     
     window.MRModals.close(document.getElementById('searchClientModal'));
-    alert(`✅ Cliente cargado: ${client.name}\nAhora puedes comenzar a cotizar.`);
+    alert(`✅ Cliente cargado: ${client.name}`);
   }
 };
 
 window.saveNewClient = async function() {
   const name = document.getElementById('clientName').value.trim();
   if (!name) {
-    alert('⚠️ Ingresa el nombre del cliente para guardarlo.');
+    alert('⚠️ Ingresa el nombre del cliente.');
     return;
   }
 
@@ -438,42 +385,31 @@ window.saveNewClient = async function() {
   let result = null;
 
   if (currentClientId) {
-    // ACTUALIZAR: Si ya hay un cliente cargado, actualizamos sus datos
-    result = await window.mrDataManager.updateGremioCliente(currentClientId, clientData);
-    if (result) alert(`✅ Datos del cliente "${name}" actualizados correctamente.`);
+    result = await window.mrDataManager.updateClientesCliente(currentClientId, clientData);
+    if (result) alert(`✅ Cliente "${name}" actualizado.`);
   } else {
-    // CREAR: Si no hay cliente, creamos uno nuevo
-    clientData.id = 'gremio_cli_' + Date.now();
+    clientData.id = 'cliente_cli_' + Date.now();
     clientData.fechaRegistro = new Date().toISOString();
-    result = await window.mrDataManager.saveGremioCliente(clientData);
+    result = await window.mrDataManager.saveClientesCliente(clientData);
     if (result) {
       currentClientId = clientData.id;
-      alert(`✅ Cliente "${name}" guardado correctamente.\nYa puedes cotizar.`);
+      alert(`✅ Cliente "${name}" guardado.`);
     }
   }
 
-  if (!result) {
-    alert('❌ Error al guardar el cliente.');
-  }
+  if (!result) alert('❌ Error al guardar el cliente.');
 };
 
-// ==================== POBLAR SELECTOR DE PRODUCTOS ====================
+// ==================== PRODUCTOS ====================
 
 function populateProductSelect() {
   const selectCategoria = document.getElementById('productCategory');
+  if (!selectCategoria) return;
   
-  if (!selectCategoria) {
-    console.error('[GREMIO] ❌ Select productCategory no encontrado');
-    return;
-  }
-  
-  // Obtener categorías únicas
-  const categorias = [...new Set(preciosGremio.map(p => p.category || p.categoria))].filter(Boolean).sort();
+  const categorias = [...new Set(preciosClientes.map(p => p.category || p.categoria))].filter(Boolean).sort();
   
   selectCategoria.innerHTML = '<option value="">Seleccionar categoría...</option>' + 
     categorias.map(cat => `<option value="${cat}">${cat}</option>`).join('');
-  
-  console.log('[GREMIO] ✅ Categorías pobladas:', categorias.length);
 }
 
 window.loadProductsByCategory = function() {
@@ -489,32 +425,24 @@ window.loadProductsByCategory = function() {
     return;
   }
 
-  // Filtrar productos por categoría
-  const productos = preciosGremio.filter(p => 
+  const productos = preciosClientes.filter(p => 
     (p.category === categoria || p.categoria === categoria)
   );
   
   if (productos.length === 0) {
-    productSelect.innerHTML = '<option value="">No hay productos en esta categoría</option>';
+    productSelect.innerHTML = '<option value="">No hay productos</option>';
     productSelect.disabled = true;
-    console.warn('[GREMIO] ⚠️ No hay productos para categoría:', categoria);
     return;
   }
   
   productSelect.innerHTML = '<option value="">Seleccionar producto...</option>' + 
     productos.map((p, index) => {
-      // Detectar nombre del producto (puede ser .nombre, .name o .producto)
       const nombreProducto = p.name || p.nombre || p.producto || 'Sin nombre';
-      const dimensiones = p.ancho && p.largo ? ` (${p.ancho}x${p.largo}m)` : '';
-      return `<option value="${index}">${nombreProducto}${dimensiones}</option>`;
+      return `<option value="${index}">${nombreProducto}</option>`;
     }).join('');
   
   productSelect.disabled = false;
-  
-  // Guardar productos filtrados en variable temporal
   window.productosFiltrados = productos;
-  
-  console.log('[GREMIO] ✅ Productos poblados:', productos.length);
 };
 
 window.loadProductPrice = function() {
@@ -529,27 +457,19 @@ window.loadProductPrice = function() {
   }
 
   const precioItem = window.productosFiltrados[productIndex];
-  
-  if (!precioItem) {
-    console.error('[GREMIO] ❌ Producto no encontrado');
-    return;
-  }
-
-  console.log('[GREMIO] 🔍 Producto seleccionado (Precio):', precioItem);
   currentProductData = precioItem;
 
-  // 1. ESTABLECER PRECIO (Directo del objeto seleccionado)
-  currentPrecioGremio = parseFloat(
-    precioItem.priceGremio || 
-    precioItem.precioGremio || 
-    precioItem.gremio || 
-    precioItem.price || 
-    precioItem.precio || 
-    precioItem.costo || 
+  // USAR PRECIO PÚBLICO
+  currentPrecioCliente = parseFloat(
+    precioItem.priceCliente || 
+    precioItem.precioCliente || 
+    precioItem.cliente || 
+    precioItem.publico || 
+    precioItem.pricePublico || 
+    precioItem.pricePublic ||
     0
   );
 
-  // 2. BUSCAR COSTO (En listaCostos)
   const nombreBuscado = (precioItem.name || precioItem.nombre || precioItem.producto || '').trim().toLowerCase();
   const categoriaBuscada = (precioItem.category || precioItem.categoria || '').trim().toLowerCase();
 
@@ -561,53 +481,32 @@ window.loadProductPrice = function() {
 
   if (costoItem) {
     currentCostoMaterial = parseFloat(costoItem.costs?.total || 0);
-    console.log('[GREMIO] ✅ Costo encontrado:', currentCostoMaterial);
   } else if (precioItem.costo) {
     currentCostoMaterial = parseFloat(precioItem.costo);
-    console.log('[GREMIO] ✅ Costo encontrado en precio:', currentCostoMaterial);
   } else {
     currentCostoMaterial = 0;
-    console.warn('[GREMIO] ⚠️ No se encontró costo para este producto. Se usará 0.');
   }
 
-  // LÓGICA DE PRECIO: Si es 0, intentar usar costo
-  if (currentPrecioGremio === 0 && currentCostoMaterial > 0) {
-    console.log('[GREMIO] ℹ️ Usando costo promedio como precio de cotización');
-    currentPrecioGremio = currentCostoMaterial;
-  }
-
-  if (currentPrecioGremio > 0) {
-    const displayElement = document.getElementById('precioGremioDisplay');
+  if (currentPrecioCliente > 0) {
+    const displayElement = document.getElementById('precioClienteDisplay');
     if (displayElement) {
-      displayElement.textContent = '$' + formatCurrency(currentPrecioGremio) + '/m²';
+      displayElement.textContent = '$' + formatCurrency(currentPrecioCliente) + '/m²';
     }
-    
-    if (priceInfo) {
-      priceInfo.style.display = 'block';
-    }
-    
-    console.log('[GREMIO] ✅ Precio Gremio:', currentPrecioGremio);
-    console.log('[GREMIO] ✅ Costo Material:', currentCostoMaterial);
-
+    if (priceInfo) priceInfo.style.display = 'block';
     calcularTotalMaterial();
   } else {
-    console.error('[GREMIO] ❌ No se encontró precio para este producto');
-    alert('⚠️ Este producto no tiene precio de Gremio ni costo promedio válido.');
+    alert('⚠️ Este producto no tiene precio Público configurado.');
     if (priceInfo) priceInfo.style.display = 'none';
-    currentPrecioGremio = 0;
+    currentPrecioCliente = 0;
   }
 };
-
-// ==================== CÁLCULO MATERIAL ====================
 
 window.calcularTotalMaterial = function() {
   const ancho = parseFloat(document.getElementById('productAncho')?.value) || 0;
   const alto = parseFloat(document.getElementById('productAlto')?.value) || 0;
   const cantidad = parseInt(document.getElementById('productCantidad')?.value) || 0;
 
-  console.log('[CÁLCULO] Input:', { ancho, alto, cantidad, precioGremio: currentPrecioGremio, costo: currentCostoMaterial });
-
-  if (currentPrecioGremio === 0 || ancho === 0 || alto === 0 || cantidad === 0) {
+  if (currentPrecioCliente === 0 || ancho === 0 || alto === 0 || cantidad === 0) {
     document.getElementById('productTotal').textContent = '$0.00';
     document.getElementById('productFormula').textContent = 'Completa todos los datos';
     const detalle = document.getElementById('calculoDetalle');
@@ -615,64 +514,38 @@ window.calcularTotalMaterial = function() {
     return;
   }
 
-  // FÓRMULA: ((Ancho * Alto) / 10000) * Cantidad * PrecioGremio
   const m2PorUnidad = (ancho * alto) / 10000;
   const m2Totales = m2PorUnidad * cantidad;
-  const precioUnitario = m2PorUnidad * currentPrecioGremio;
-  const totalMaterial = m2Totales * currentPrecioGremio;
+  const precioUnitario = m2PorUnidad * currentPrecioCliente;
+  const totalMaterial = m2Totales * currentPrecioCliente;
 
-  console.log('[CÁLCULO] Resultado:', {
-    m2PorUnidad,
-    m2Totales,
-    precioUnitario,
-    totalMaterial
-  });
-
-  // Mostrar resultado
   document.getElementById('productTotal').textContent = '$' + formatCurrency(totalMaterial);
-  
-  // Mostrar fórmula
   document.getElementById('productFormula').textContent = 
-    `((${ancho} × ${alto}) ÷ 10000) × ${cantidad} × $${formatCurrency(currentPrecioGremio)}/m²`;
+    `((${ancho} × ${alto}) ÷ 10000) × ${cantidad} × $${formatCurrency(currentPrecioCliente)}/m²`;
 
-  // Mostrar detalle
   const detalle = document.getElementById('calculoDetalle');
   if (detalle) {
-    const m2Elem = document.getElementById('m2PorUnidad');
-    const m2TotElem = document.getElementById('m2Totales');
-    const precioUnitElem = document.getElementById('precioUnitario');
-    
-    if (m2Elem) m2Elem.textContent = formatM2(m2PorUnidad) + ' m²';
-    if (m2TotElem) m2TotElem.textContent = formatM2(m2Totales) + ' m²';
-    if (precioUnitElem) precioUnitElem.textContent = '$' + formatCurrency(precioUnitario);
-    
+    document.getElementById('m2PorUnidad').textContent = formatM2(m2PorUnidad) + ' m²';
+    document.getElementById('m2Totales').textContent = formatM2(m2Totales) + ' m²';
+    document.getElementById('precioUnitario').textContent = '$' + formatCurrency(precioUnitario);
     detalle.style.display = 'block';
   }
 };
 
 function resetCalculos() {
-  currentPrecioGremio = 0;
+  currentPrecioCliente = 0;
   currentCostoMaterial = 0;
   currentProductData = null;
-  
   ['productAncho', 'productAlto', 'productCantidad'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = '';
   });
-  
-  const totalElem = document.getElementById('productTotal');
-  const formulaElem = document.getElementById('productFormula');
-  const detalleElem = document.getElementById('calculoDetalle');
-  
-  if (totalElem) totalElem.textContent = '$0.00';
-  if (formulaElem) formulaElem.textContent = 'Completa los datos';
-  if (detalleElem) detalleElem.style.display = 'none';
+  document.getElementById('productTotal').textContent = '$0.00';
+  document.getElementById('productFormula').textContent = 'Completa los datos';
+  document.getElementById('calculoDetalle').style.display = 'none';
 }
 
-// ==================== AGREGAR PRODUCTO ====================
-
 function addProductToQuote() {
-  // VALIDACIÓN DOBLE (Por seguridad)
   if (!currentClientId) {
     alert('⚠️ Debes cargar un cliente primero.');
     return;
@@ -687,42 +560,33 @@ function addProductToQuote() {
     return;
   }
 
-  if (currentPrecioGremio === 0 || currentCostoMaterial === 0) {
-    alert('⚠️ Sin precio de Gremio o sin costo');
-    return;
-  }
-
   const m2PorUnidad = (ancho * alto) / 10000;
   const m2Totales = m2PorUnidad * cantidad;
   const costoUnitario = m2PorUnidad * currentCostoMaterial;
-  const precioUnitario = m2PorUnidad * currentPrecioGremio;
+  const precioUnitario = m2PorUnidad * currentPrecioCliente;
   const totalCosto = m2Totales * currentCostoMaterial;
-  const totalPrecio = m2Totales * currentPrecioGremio;
+  const totalPrecio = m2Totales * currentPrecioCliente;
 
   const nombreProducto = currentProductData.name || currentProductData.nombre || currentProductData.producto;
   const categoriaProducto = currentProductData.category || currentProductData.categoria;
 
-  // --- LÓGICA TERCERO VINCULADO ---
+  // Tercero vinculado
   const tercSelect = document.getElementById('productModalTercero');
   if (tercSelect && tercSelect.value !== "") {
     const tIndex = parseInt(tercSelect.value);
     if (terceros[tIndex]) {
       const t = terceros[tIndex];
-      
       let factor = cantidad;
       let detalleMedidas = '';
-      
-      // Verificar unidad del tercero
       const unidadT = t.unidad || 'unidad';
       if ((unidadT === 'm²' || unidadT === 'm2') && ancho > 0 && alto > 0) {
-         factor = m2Totales; // Usar m² totales calculados arriba
+         factor = m2Totales;
          detalleMedidas = ` (${ancho}x${alto}cm)`;
       }
-      
       const costoT = parseFloat(t.costo || 0);
       const precioT = parseFloat(t.precio || 0);
       
-      const terceroItem = {
+      currentQuoteTerceros.push({
         id: Date.now().toString() + '_t',
         tipo: 'tercero',
         nombre: (t.nombre || 'Servicio') + detalleMedidas + ' (Vinculado)',
@@ -736,14 +600,11 @@ function addProductToQuote() {
         unidad: unidadT,
         totalCosto: factor * costoT,
         total: factor * precioT
-      };
-      
-      currentQuoteTerceros.push(terceroItem);
-      console.log('[GREMIO] ✅ Tercero vinculado agregado:', terceroItem);
+      });
     }
   }
 
-  const quoteItem = {
+  currentQuoteProducts.push({
     id: Date.now().toString(),
     tipo: 'material',
     categoria: categoriaProducto,
@@ -756,20 +617,16 @@ function addProductToQuote() {
     costoMaterial: currentCostoMaterial,
     costoUnitario,
     costoTotal: totalCosto,
-    precioGremio: currentPrecioGremio,
+    precioCliente: currentPrecioCliente,
     precioUnitario,
     total: totalPrecio
-  };
-
-  console.log('[GREMIO] ✅ Producto agregado:', quoteItem);
-  currentQuoteProducts.push(quoteItem);
+  });
   
   window.MRModals.close(document.getElementById('productModal'));
   resetCalculos();
   document.getElementById('productCategory').value = '';
   document.getElementById('productName').value = '';
-  const priceInfo = document.getElementById('priceInfo');
-  if (priceInfo) priceInfo.style.display = 'none';
+  document.getElementById('priceInfo').style.display = 'none';
   if (document.getElementById('productModalTercero')) {
     document.getElementById('productModalTercero').value = '';
     document.getElementById('productModalTerceroInfo').style.display = 'none';
@@ -777,8 +634,7 @@ function addProductToQuote() {
   
   renderQuoteProducts();
   calculateTotals();
-  renderTerceros(); // Actualizar lista de terceros también
-  
+  renderTerceros();
   alert('✅ Material agregado');
 }
 
@@ -786,10 +642,7 @@ function addProductToQuote() {
 
 function populateTerceros() {
   const select = document.getElementById('terceroService');
-  if (!select) {
-    console.error('[GREMIO] ❌ Select terceroService no encontrado');
-    return;
-  }
+  if (!select) return;
   
   if (terceros.length === 0) {
     select.innerHTML = '<option value="">No hay terceros configurados</option>';
@@ -797,30 +650,19 @@ function populateTerceros() {
     return;
   }
   
-  select.innerHTML = '<option value="">Seleccionar servicio...</option>' + 
+  const options = '<option value="">Seleccionar servicio...</option>' + 
     terceros.map((t, index) => {
-      const nombreServicio = t.nombre || 'Sin nombre';
-      const empresaNombre = t.empresaNombre || 'Sin empresa';
-      return `<option value="${index}">${nombreServicio} (${empresaNombre})</option>`;
+      return `<option value="${index}">${t.nombre || 'Sin nombre'} (${t.empresaNombre || 'Sin empresa'})</option>`;
     }).join('');
-  
+    
+  select.innerHTML = options;
   select.disabled = false;
-  console.log('[GREMIO] ✅ Terceros poblados:', terceros.length);
   
-  // Poblar también el selector incrustado en modal de productos
   const selectEmbedded = document.getElementById('productModalTercero');
   if (selectEmbedded) {
-    if (terceros.length === 0) {
-      selectEmbedded.innerHTML = '<option value="">No hay terceros configurados</option>';
-    } else {
-      selectEmbedded.innerHTML = '<option value="">-- Ninguno --</option>' + 
-        terceros.map((t, index) => {
-          const nombreServicio = t.nombre || 'Sin nombre';
-          const empresaNombre = t.empresaNombre || 'Sin empresa';
-          return `<option value="${index}">${nombreServicio} (${empresaNombre})</option>`;
-        }).join('');
-    }
-    // Listener para mostrar info
+    selectEmbedded.innerHTML = '<option value="">-- Ninguno --</option>' + 
+      terceros.map((t, index) => `<option value="${index}">${t.nombre} (${t.empresaNombre})</option>`).join('');
+      
     selectEmbedded.onchange = function() {
       const info = document.getElementById('productModalTerceroInfo');
       if (this.value && terceros[this.value]) {
@@ -838,32 +680,22 @@ window.loadTerceroPrice = function() {
   const select = document.getElementById('terceroService');
   const terceroIndex = parseInt(select.value);
   
-  if (isNaN(terceroIndex) || terceroIndex < 0 || terceroIndex >= terceros.length) {
+  if (isNaN(terceroIndex)) {
     document.getElementById('terceroCosto').value = '';
     document.getElementById('terceroPrecioCliente').value = '';
     return;
   }
 
   const tercero = terceros[terceroIndex];
+  document.getElementById('terceroCosto').value = parseFloat(tercero.costo || 0).toFixed(2);
+  document.getElementById('terceroPrecioCliente').value = parseFloat(tercero.precio || 0).toFixed(2);
   
-  console.log('[TERCERO] Seleccionado:', tercero);
-  
-  const costo = parseFloat(tercero.costo || 0);
-  const precioVenta = parseFloat(tercero.precio || 0);
-  const costoMaterial = parseFloat(tercero.costoMaterial || 0);
-  const precioMaterial = parseFloat(tercero.precioMaterial || 0);
-  
-  document.getElementById('terceroCosto').value = costo.toFixed(2);
-  document.getElementById('terceroPrecioCliente').value = precioVenta.toFixed(2);
-  
-  // Mostrar/Ocultar dimensiones según unidad
   const dimsContainer = document.getElementById('terceroDimensiones');
   const unidad = tercero.unidad || 'unidad';
   
   if (dimsContainer) {
     if (unidad === 'm²' || unidad === 'm2') {
       dimsContainer.style.display = 'grid';
-      // Si hay un producto principal seleccionado, copiar sus medidas por defecto
       if (document.getElementById('productAncho')?.value) document.getElementById('terceroAncho').value = document.getElementById('productAncho').value;
       if (document.getElementById('productAlto')?.value) document.getElementById('terceroAlto').value = document.getElementById('productAlto').value;
     } else {
@@ -873,10 +705,9 @@ window.loadTerceroPrice = function() {
     }
   }
   
-  // Mostrar/Ocultar input de material extra
   const matGroup = document.getElementById('terceroMaterialGroup');
   if (matGroup) {
-    if (costoMaterial > 0 || precioMaterial > 0) {
+    if ((tercero.costoMaterial || 0) > 0 || (tercero.precioMaterial || 0) > 0) {
       matGroup.style.display = 'block';
       document.getElementById('terceroCantMaterial').value = '1';
     } else {
@@ -884,68 +715,42 @@ window.loadTerceroPrice = function() {
     }
   }
   
-  console.log('[TERCERO] Precios cargados:', { costo, precioVenta });
-  
   calcularTotalTercero();
-};
+}
 
 window.calcularTotalTercero = function() {
   let cantidad = parseFloat(document.getElementById('terceroQuantity').value) || 0;
   const costo = parseFloat(document.getElementById('terceroCosto').value) || 0;
   const precioCliente = parseFloat(document.getElementById('terceroPrecioCliente').value) || 0;
   
-  // Material extra
   const select = document.getElementById('terceroService');
   const tercero = terceros[select.value] || {};
   const costoMaterial = parseFloat(tercero.costoMaterial || 0);
   const precioMaterial = parseFloat(tercero.precioMaterial || 0);
   const cantMaterial = parseFloat(document.getElementById('terceroCantMaterial')?.value) || 0;
   
-  // Verificar si usamos dimensiones
   const ancho = parseFloat(document.getElementById('terceroAncho')?.value) || 0;
   const alto = parseFloat(document.getElementById('terceroAlto')?.value) || 0;
   const dimsVisible = document.getElementById('terceroDimensiones')?.style.display !== 'none';
 
-  let factor = cantidad; // Por defecto es la cantidad (unidades)
+  let factor = cantidad;
 
   if (dimsVisible && ancho > 0 && alto > 0) {
-    // Si es por m², el factor es (m² * cantidad de copias)
     const m2 = (ancho * alto) / 10000;
     factor = m2 * cantidad;
-    // Mostrar info visual
-    const info = document.getElementById('terceroInfo') || createTerceroInfo();
-    info.textContent = `${ancho}x${alto}cm = ${m2.toFixed(2)}m² x ${cantidad}u = ${factor.toFixed(2)}m² totales`;
-  } else {
-    const info = document.getElementById('terceroInfo');
-    if (info) info.textContent = '';
   }
 
   let totalCosto = factor * costo;
   let totalPrecio = factor * precioCliente;
   
-  // Sumar material si aplica
   if (costoMaterial > 0 || precioMaterial > 0) {
     totalCosto += (costoMaterial * cantMaterial);
     totalPrecio += (precioMaterial * cantMaterial);
   }
   
-  console.log('[TERCERO] Cálculo:', { cantidad, costo, precioCliente, totalCosto, totalPrecio });
-  
   document.getElementById('terceroTotalCosto').textContent = '$' + formatCurrency(totalCosto);
   document.getElementById('terceroTotal').textContent = '$' + formatCurrency(totalPrecio);
 };
-
-function createTerceroInfo() {
-  const div = document.createElement('div');
-  div.id = 'terceroInfo';
-  div.style.fontSize = '0.85rem';
-  div.style.color = '#666';
-  div.style.marginBottom = '10px';
-  div.style.textAlign = 'right';
-  const parent = document.getElementById('terceroTotal').parentNode;
-  parent.insertBefore(div, document.getElementById('terceroTotal'));
-  return div;
-}
 
 function addTerceroToQuote() {
   const select = document.getElementById('terceroService');
@@ -958,17 +763,13 @@ function addTerceroToQuote() {
   }
 
   const tercero = terceros[terceroIndex];
-  
-  const nombreTercero = tercero.nombre || 'Servicio sin nombre';
-  const empresaNombre = tercero.empresaNombre || 'Sin empresa';
   const costo = parseFloat(tercero.costo || 0);
   const precioVenta = parseFloat(tercero.precio || 0);
-  const unidad = tercero.unidad || tercero.unit || 'unidad';
+  const unidad = tercero.unidad || 'unidad';
   const costoMaterial = parseFloat(tercero.costoMaterial || 0);
   const precioMaterial = parseFloat(tercero.precioMaterial || 0);
   const cantMaterial = parseFloat(document.getElementById('terceroCantMaterial')?.value) || 0;
   
-  // Recalcular totales finales para guardar
   const ancho = parseFloat(document.getElementById('terceroAncho')?.value) || 0;
   const alto = parseFloat(document.getElementById('terceroAlto')?.value) || 0;
   const dimsVisible = document.getElementById('terceroDimensiones')?.style.display !== 'none';
@@ -984,46 +785,35 @@ function addTerceroToQuote() {
 
   let totalCosto = factor * costo;
   let totalPrecio = factor * precioVenta;
-  
   let detalleMaterial = '';
+  
   if (costoMaterial > 0 || precioMaterial > 0) {
     totalCosto += (costoMaterial * cantMaterial);
     totalPrecio += (precioMaterial * cantMaterial);
     detalleMaterial = ` + ${cantMaterial} Placa(s)`;
   }
 
-  const terceroItem = {
+  currentQuoteTerceros.push({
     id: Date.now().toString(),
     tipo: 'tercero',
-    nombre: nombreTercero + detalleMedidas + detalleMaterial,
-    empresa: empresaNombre,
+    nombre: (tercero.nombre || 'Servicio') + detalleMedidas + detalleMaterial,
+    empresa: tercero.empresaNombre,
     cantidad,
     ancho: dimsVisible ? ancho : 0,
     alto: dimsVisible ? alto : 0,
-    factorCalculo: factor, // m² totales o unidades totales
+    factorCalculo: factor,
     costo,
     precioCliente: precioVenta,
     unidad,
     totalCosto,
     total: totalPrecio
-  };
-
-  console.log('[GREMIO] ✅ Tercero agregado:', terceroItem);
-  currentQuoteTerceros.push(terceroItem);
+  });
   
   window.MRModals.close(document.getElementById('terceroServiceModal'));
   document.getElementById('terceroService').value = '';
   document.getElementById('terceroQuantity').value = '';
-  document.getElementById('terceroCosto').value = '';
-  document.getElementById('terceroPrecioCliente').value = '';
-  if(document.getElementById('terceroAncho')) document.getElementById('terceroAncho').value = '';
-  if(document.getElementById('terceroAlto')) document.getElementById('terceroAlto').value = '';
-  document.getElementById('terceroTotalCosto').textContent = '$0.00';
-  document.getElementById('terceroTotal').textContent = '$0.00';
-  
   renderTerceros();
   calculateTotals();
-  
   alert('✅ Servicio agregado');
 }
 
@@ -1031,7 +821,6 @@ function addTerceroToQuote() {
 
 function renderQuoteProducts() {
   const container = document.getElementById('productsList');
-  
   if (!container) return;
   
   if (currentQuoteProducts.length === 0) {
@@ -1048,32 +837,16 @@ function renderQuoteProducts() {
         </div>
         <button class="btn btn-danger btn-small" onclick="removeProduct('${item.id}')">🗑️</button>
       </div>
-      
       <div style="background: rgba(0, 0, 0, 0.3); padding: 1rem; border-radius: 8px;">
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 0.8rem;">
-          <div>
-            <span style="color: var(--text-secondary); font-size: 0.9rem;">Medidas:</span>
-            <p style="margin: 0; font-weight: bold;">${item.ancho} cm × ${item.alto} cm</p>
-          </div>
-          <div>
-            <span style="color: var(--text-secondary); font-size: 0.9rem;">Cantidad:</span>
-            <p style="margin: 0; font-weight: bold;">${item.cantidad} unidad(es)</p>
-          </div>
-          <div>
-            <span style="color: var(--text-secondary); font-size: 0.9rem;">m² totales:</span>
-            <p style="margin: 0; font-weight: bold;">${formatM2(item.m2Totales)} m²</p>
-          </div>
-          <div>
-            <span style="color: var(--text-secondary); font-size: 0.9rem;">Tu costo:</span>
-            <p style="margin: 0; font-weight: bold; color: #FF6B6B;">$${formatCurrency(item.costoTotal)}</p>
-          </div>
+          <div><span style="color: #aaa;">Medidas:</span> <strong>${item.ancho}x${item.alto} cm</strong></div>
+          <div><span style="color: #aaa;">Cantidad:</span> <strong>${item.cantidad}</strong></div>
+          <div><span style="color: #aaa;">m² totales:</span> <strong>${formatM2(item.m2Totales)}</strong></div>
+          <div><span style="color: #aaa;">Tu costo:</span> <strong style="color: #FF6B6B;">$${formatCurrency(item.costoTotal)}</strong></div>
         </div>
-        
-        <div style="border-top: 2px solid rgba(81, 207, 102, 0.3); padding-top: 0.8rem; margin-top: 0.8rem;">
-          <div style="display: flex; justify-content: space-between;">
-            <span style="font-weight: bold;">TOTAL CLIENTE:</span>
-            <span style="color: #51CF66; font-size: 1.3rem; font-weight: bold;">$${formatCurrency(item.total)}</span>
-          </div>
+        <div style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 0.8rem; display: flex; justify-content: space-between;">
+          <strong>TOTAL CLIENTE:</strong>
+          <strong style="color: #51CF66; font-size: 1.2rem;">$${formatCurrency(item.total)}</strong>
         </div>
       </div>
     </div>
@@ -1089,7 +862,6 @@ window.removeProduct = function(id) {
 
 function renderTerceros() {
   const container = document.getElementById('terceroServicesList');
-  
   if (!container) return;
   
   if (currentQuoteTerceros.length === 0) {
@@ -1101,9 +873,9 @@ function renderTerceros() {
     <div class="product-card" style="background: rgba(78, 205, 196, 0.05); border: 1px solid rgba(78, 205, 196, 0.2);">
       <div style="display: flex; justify-content: space-between; align-items: start;">
         <div>
-          <h3 style="margin: 0 0 0.5rem 0; color: #4ECDC4;">${item.nombre} <small style="color: #aaa; font-size: 0.8em;">(${item.empresa || 'Sin empresa'})</small></h3>
-          <p style="margin: 0;">Cantidad: ${item.cantidad} ${item.unidad}</p>
-          <p style="margin: 0; color: #FF6B6B;">Tu costo: $${formatCurrency(item.totalCosto)}</p>
+          <h3 style="margin: 0 0 0.5rem 0; color: #4ECDC4;">${item.nombre}</h3>
+          <p style="margin: 0;">${item.cantidad} ${item.unidad} • ${item.empresa}</p>
+          <p style="margin: 0; color: #FF6B6B;">Costo: $${formatCurrency(item.totalCosto)}</p>
           <p style="margin: 0; color: #51CF66;"><strong>Cobras: $${formatCurrency(item.total)}</strong></p>
         </div>
         <button class="btn btn-danger btn-small" onclick="removeTercero('${item.id}')">🗑️</button>
@@ -1131,57 +903,35 @@ function calculateTotals() {
   const subtotal = subtotalProductos + subtotalTerceros;
   const iva = subtotal * 0.21;
   const total = subtotal + iva;
-
   const ganancia = total - totalCostos;
 
-  console.log('[TOTALES]', { costoMateriales, costoTerceros, totalCostos, subtotal, iva, total, ganancia });
+  currentTotals = { costoTotal: totalCostos, subtotal, iva, totalCliente: total, ganancia };
 
-  // Guardar totales numéricos para uso interno (guardado)
-  currentTotals = {
-    costoTotal: totalCostos,
-    subtotal: subtotal,
-    iva: iva,
-    totalCliente: total,
-    ganancia: ganancia
-  };
-
-  const elements = {
-    costoMateriales: formatCurrency(costoMateriales),
-    costoTerceros: formatCurrency(costoTerceros),
-    totalCostos: formatCurrency(totalCostos),
-    subtotal: formatCurrency(subtotal),
-    iva: formatCurrency(iva),
-    total: formatCurrency(total),
-    gananciaNetaDisplay: formatCurrency(ganancia)
-  };
-
-  Object.keys(elements).forEach(id => {
-    const elem = document.getElementById(id);
-    if (elem) elem.textContent = '$' + elements[id]; // formatCurrency ya devuelve el número formateado
-  });
+  document.getElementById('costoMateriales').textContent = '$' + formatCurrency(costoMateriales);
+  document.getElementById('costoTerceros').textContent = '$' + formatCurrency(costoTerceros);
+  document.getElementById('totalCostos').textContent = '$' + formatCurrency(totalCostos);
+  document.getElementById('subtotal').textContent = '$' + formatCurrency(subtotal);
+  document.getElementById('iva').textContent = '$' + formatCurrency(iva);
+  document.getElementById('total').textContent = '$' + formatCurrency(total);
+  document.getElementById('gananciaNetaDisplay').textContent = '$' + formatCurrency(ganancia);
 
   calcularSaldo();
 }
 
 window.calcularSaldo = function() {
-  // Usar el valor numérico real almacenado en currentTotals
   const total = currentTotals.totalCliente || 0;
   const anticipo = parseFloat(document.getElementById('montoAnticipo')?.value) || 0;
   const saldo = total - anticipo;
-  
-  const saldoElem = document.getElementById('saldoPendiente');
-  if (saldoElem) {
-    saldoElem.textContent = '$' + formatCurrency(saldo);
-  }
+  document.getElementById('saldoPendiente').textContent = '$' + formatCurrency(saldo);
 };
 
-// ==================== GUARDAR/LIMPIAR ====================
+// ==================== GUARDAR ====================
 
 window.saveQuote = async function() {
   const clientName = document.getElementById('clientName')?.value.trim();
   
   if (!currentClientId) {
-    alert('⚠️ Error: No hay un cliente cargado. Por favor busca o guarda el cliente primero.');
+    alert('⚠️ Error: No hay un cliente cargado.');
     return;
   }
 
@@ -1190,50 +940,45 @@ window.saveQuote = async function() {
     return;
   }
 
-  // Usar valores numéricos de currentTotals en lugar de parsear el DOM formateado
-  const costoTotal = currentTotals.costoTotal;
-  const totalCliente = currentTotals.totalCliente;
-  const ganancia = currentTotals.ganancia;
   const anticipo = parseFloat(document.getElementById('montoAnticipo')?.value) || 0;
-  const saldo = totalCliente - anticipo;
-
+  
   const quote = {
     id: Date.now().toString(),
-    clientId: currentClientId, // Vinculamos la cotización al ID del cliente
+    clientId: currentClientId,
     cliente: {
       nombre: clientName,
       telefono: document.getElementById('clientPhone')?.value || '',
       email: document.getElementById('clientEmail')?.value || '',
       direccion: document.getElementById('clientAddress')?.value || ''
     },
+    fechaEntrega: document.getElementById('deliveryDate')?.value || '',
     productos: currentQuoteProducts,
     terceros: currentQuoteTerceros,
-    costoTotal,
+    costoTotal: currentTotals.costoTotal,
     subtotal: currentTotals.subtotal,
     iva: currentTotals.iva,
-    totalCliente,
-    ganancia,
+    totalCliente: currentTotals.totalCliente,
+    ganancia: currentTotals.ganancia,
     anticipo,
-    saldo,
+    saldo: currentTotals.totalCliente - anticipo,
     fecha: new Date().toISOString(),
     estado: 'pendiente'
   };
 
-  // Guardar en el servidor
   try {
-    const cotizaciones = await window.mrDataManager.getGremioCotizaciones();
+    const cotizaciones = await window.mrDataManager.getClientesCotizaciones();
     cotizaciones.push(quote);
-    const success = await window.mrDataManager.saveGremioCotizaciones(cotizaciones);
+    const success = await window.mrDataManager.saveClientesCotizaciones(cotizaciones);
     
     if (success) {
-      alert('✅ Cotización guardada en el servidor');
+      alert('✅ Cotización guardada');
       clearQuote();
       await loadQuotations();
     } else {
-      alert('❌ Error al guardar la cotización en el servidor.');
+      alert('❌ Error al guardar');
     }
   } catch (error) {
-    console.error('[GREMIO] Error guardando:', error);
+    console.error('[CLIENTES] Error guardando:', error);
     alert('❌ Error al guardar');
   }
 };
@@ -1241,10 +986,9 @@ window.saveQuote = async function() {
 window.clearQuote = function() {
   currentQuoteProducts = [];
   currentQuoteTerceros = [];
-  currentClientId = null; // Resetear cliente para obligar a cargar uno nuevo
+  currentClientId = null;
   
-  const fields = ['clientName', 'clientPhone', 'clientEmail', 'clientAddress', 'montoAnticipo'];
-  fields.forEach(id => {
+  ['clientName', 'clientPhone', 'clientEmail', 'clientAddress', 'montoAnticipo', 'deliveryDate'].forEach(id => {
     const elem = document.getElementById(id);
     if (elem) elem.value = '';
   });
@@ -1254,34 +998,28 @@ window.clearQuote = function() {
   calculateTotals();
 };
 
-window.generatePDF = function() {
-  alert('📄 Función PDF próximamente');
-};
-
 window.loadQuotations = async function() {
   try {
-    cotizacionesGremio = await window.mrDataManager.getGremioCotizaciones() || [];
-    cotizacionesGremio.sort((a, b) => new Date(b.fecha) - new Date(a.fecha)); // Ordenar por fecha
+    cotizacionesClientes = await window.mrDataManager.getClientesCotizaciones() || [];
+    cotizacionesClientes.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
     renderQuotations();
     updateStatistics();
-    console.log('[GREMIO] Cotizaciones cargadas:', cotizacionesGremio.length);
   } catch (error) {
-    console.error('[GREMIO] Error cargando cotizaciones:', error);
-    cotizacionesGremio = [];
+    console.error('[CLIENTES] Error cargando cotizaciones:', error);
+    cotizacionesClientes = [];
   }
 };
 
 function renderQuotations() {
   const container = document.getElementById('quotesList');
-  
   if (!container) return;
   
-  if (cotizacionesGremio.length === 0) {
+  if (cotizacionesClientes.length === 0) {
     container.innerHTML = '<p class="empty-state">No hay cotizaciones</p>';
     return;
   }
 
-  container.innerHTML = cotizacionesGremio.map(cot => {
+  container.innerHTML = cotizacionesClientes.map(cot => {
     const estadoColor = cot.estado === 'aprobada' ? '#51CF66' : '#FFC107';
     const estadoTexto = cot.estado === 'aprobada' ? '✅ APROBADA' : '⏳ PENDIENTE';
     
@@ -1294,14 +1032,10 @@ function renderQuotations() {
           </div>
           <span style="color: ${estadoColor}; font-weight: bold;">${estadoTexto}</span>
         </div>
-        
         <div style="background: rgba(0, 0, 0, 0.3); padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
           <p>Total Cliente: <strong>$${formatCurrency(cot.totalCliente || 0)}</strong></p>
           <p>Ganancia: <strong style="color: #51CF66;">$${formatCurrency(cot.ganancia || 0)}</strong></p>
-          ${cot.anticipo > 0 ? `<p>Anticipo: $${formatCurrency(cot.anticipo)}</p>` : ''}
-          ${cot.anticipo > 0 ? `<p>Saldo: $${formatCurrency(cot.saldo)}</p>` : ''}
         </div>
-        
         ${cot.estado === 'pendiente' ? `
           <button class="btn btn-success btn-small" onclick="aprobarCotizacion('${cot.id}')">✅ Aprobar</button>
         ` : ''}
@@ -1314,8 +1048,7 @@ window.aprobarCotizacion = async function(id) {
   if (!confirm('¿Aprobar cotización? Esto registrará los movimientos de ingresos y egresos.')) return;
 
   try {
-    // 1. Actualizar la cotización
-    const cotizaciones = await window.mrDataManager.getGremioCotizaciones();
+    const cotizaciones = await window.mrDataManager.getClientesCotizaciones();
     const cotizacion = cotizaciones.find(c => c.id === id);
     
     if (!cotizacion) {
@@ -1324,72 +1057,60 @@ window.aprobarCotizacion = async function(id) {
     }
     
     cotizacion.estado = 'aprobada';
-    cotizacion.approved = true; // Compatibilidad con sistema de rendimientos
+    cotizacion.approved = true;
     cotizacion.fechaAprobacion = new Date().toISOString();
     
-    const successCot = await window.mrDataManager.saveGremioCotizaciones(cotizaciones);
-    if (!successCot) {
-      alert('❌ Error al actualizar el estado de la cotización.');
-      return;
-    }
+    const successCot = await window.mrDataManager.saveClientesCotizaciones(cotizaciones);
+    if (!successCot) return;
 
-    // 2. Registrar movimientos en Gastos/Rendimientos
     const gastos = await window.mrDataManager.getGastos();
     const fechaAprobacion = new Date().toISOString();
     const cotiIdShort = cotizacion.id.slice(-6);
 
-    // Egreso por el costo total
     if (cotizacion.costoTotal > 0) {
       gastos.push({
-        id: `gasto_coti_${cotizacion.id}`,
+        id: `gasto_coti_cli_${cotizacion.id}`,
         tipo: 'egreso',
-        descripcion: `Costo Total - Coti Gremio #${cotiIdShort} (${cotizacion.cliente.nombre})`,
+        descripcion: `Costo Total - Coti Cliente #${cotiIdShort} (${cotizacion.cliente.nombre})`,
         monto: cotizacion.costoTotal,
         fecha: fechaAprobacion,
-        categoria: 'costo_venta_gremio'
+        categoria: 'costo_venta_cliente'
       });
     }
 
-    // Ingreso por la venta total
     gastos.push({
-      id: `ingreso_coti_${cotizacion.id}`,
+      id: `ingreso_coti_cli_${cotizacion.id}`,
       tipo: 'ingreso',
-      descripcion: `Venta Gremio - Coti #${cotiIdShort} (${cotizacion.cliente.nombre})`,
+      descripcion: `Venta Cliente - Coti #${cotiIdShort} (${cotizacion.cliente.nombre})`,
       monto: cotizacion.totalCliente,
       fecha: fechaAprobacion,
-      categoria: 'venta_gremio'
+      categoria: 'venta_cliente'
     });
 
-    const successGastos = await window.mrDataManager.saveGastos(gastos);
-    if (!successGastos) {
-      alert('⚠️ El estado de la cotización se actualizó, pero hubo un error al registrar los movimientos financieros.');
-    }
+    await window.mrDataManager.saveGastos(gastos);
     
     alert('✅ Cotización aprobada y movimientos registrados.');
     await loadQuotations();
     updateStatistics();
   } catch (error) {
-    console.error('[GREMIO] Error:', error);
+    console.error('[CLIENTES] Error:', error);
     alert('❌ Error al aprobar');
   }
 };
 
-window.updateStatistics = function() { // Esta función ahora se llama desde loadQuotations
-  const aprobadas = cotizacionesGremio.filter(c => c.estado === 'aprobada');
-  const pendientes = cotizacionesGremio.filter(c => c.estado === 'pendiente');
+window.updateStatistics = function() {
+  const aprobadas = cotizacionesClientes.filter(c => c.estado === 'aprobada');
+  const pendientes = cotizacionesClientes.filter(c => c.estado === 'pendiente');
   
   const totalAprobado = aprobadas.reduce((sum, c) => sum + (c.totalCliente || 0), 0);
   const totalGanancia = aprobadas.reduce((sum, c) => sum + (c.ganancia || 0), 0);
   
-  const elem1 = document.getElementById('totalApproved');
-  const elem2 = document.getElementById('totalGanancia');
-  const elem3 = document.getElementById('countApproved');
-  const elem4 = document.getElementById('countPending');
-  
-  if (elem1) elem1.textContent = '$' + totalAprobado.toLocaleString('es-AR', { minimumFractionDigits: 2 });
-  if (elem2) elem2.textContent = '$' + totalGanancia.toLocaleString('es-AR', { minimumFractionDigits: 2 });
-  if (elem3) elem3.textContent = aprobadas.length;
-  if (elem4) elem4.textContent = pendientes.length;
+  document.getElementById('totalApproved').textContent = '$' + totalAprobado.toLocaleString('es-AR', { minimumFractionDigits: 2 });
+  document.getElementById('totalGanancia').textContent = '$' + totalGanancia.toLocaleString('es-AR', { minimumFractionDigits: 2 });
+  document.getElementById('countApproved').textContent = aprobadas.length;
+  document.getElementById('countPending').textContent = pendientes.length;
 };
 
-console.log('[GREMIO] 🚀 Script de red cargado');
+window.generatePDF = function() {
+  alert('📄 Función PDF próximamente');
+};

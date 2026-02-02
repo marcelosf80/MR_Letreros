@@ -5,6 +5,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Rendimientos - MR Letreros</title>
   <link rel="stylesheet" href="css/base.css">
+  <style>
+    .charts-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem; margin-bottom: 2rem; }
+    @media (max-width: 768px) { .charts-grid { grid-template-columns: 1fr; } }
+    .chart-container { background: rgba(0, 0, 0, 0.2); border-radius: 12px; padding: 1rem; height: 300px; position: relative; }
+    
+    /* Semáforo */
+    .semaforo-container { display: flex; justify-content: center; gap: 2rem; margin: 2rem 0; }
+    .luz { width: 60px; height: 60px; border-radius: 50%; background: rgba(255, 255, 255, 0.1); border: 2px solid rgba(255, 255, 255, 0.2); transition: all 0.3s; }
+    .luz.verde.active { background: #4CAF50; box-shadow: 0 0 20px #4CAF50; }
+    .luz.amarillo.active { background: #FFC107; box-shadow: 0 0 20px #FFC107; }
+    .luz.rojo.active { background: #FF5252; box-shadow: 0 0 20px #FF5252; }
+  </style>
 </head>
 <body>
   <!-- Header -->
@@ -29,11 +41,23 @@
       </div>
       <div class="stat-card">
         <div class="stat-label">Ganancia Neta</div>
-        <div class="stat-value" id="gananciaNeta">$0</div>
+        <div class="stat-value" id="ganancia">$0</div>
       </div>
       <div class="stat-card">
         <div class="stat-label">Margen %</div>
-        <div class="stat-value" id="margenPorcentaje">0%</div>
+        <div class="stat-value" id="margen">0%</div>
+      </div>
+    </div>
+
+    <!-- Gráficos -->
+    <div class="charts-grid">
+      <div class="card">
+        <div class="card-header"><h2 class="card-title">📈 Flujo de Caja</h2></div>
+        <div class="chart-container"><canvas id="chartBarras"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><h2 class="card-title">🍰 Distribución</h2></div>
+        <div class="chart-container"><canvas id="chartPie"></canvas></div>
       </div>
     </div>
 
@@ -42,14 +66,20 @@
         <h2 class="card-title">📈 Semáforo de Rendimiento</h2>
       </div>
       <div id="semaforoRendimiento" class="text-center">
-        <p class="empty-state">Cargando datos...</p>
+        <div class="semaforo-container">
+          <div class="luz rojo"></div>
+          <div class="luz amarillo"></div>
+          <div class="luz verde"></div>
+        </div>
+        <h3 id="semaforoTitulo" style="margin-bottom: 1rem;">Analizando...</h3>
+        <p id="recomendacion" style="color: var(--text-secondary); max-width: 600px; margin: 0 auto;">Esperando datos...</p>
       </div>
     </div>
 
     <div class="card">
       <div class="card-header">
         <h2 class="card-title">💸 Gastos del Período</h2>
-        <button class="btn btn-primary" id="btnAddGasto">➕ Agregar Gasto</button>
+        <button class="btn btn-primary" id="btnAddGasto" onclick="openGastoModal()">➕ Agregar Gasto</button>
       </div>
       <div id="gastList">
         <p class="empty-state">No hay gastos registrados</p>
@@ -67,7 +97,7 @@
       <div class="modal-body">
         <div class="form-group">
           <label class="form-label">Concepto *</label>
-          <input type="text" id="gastoConcepto" placeholder="Ej: Alquiler" class="form-input">
+          <input type="text" id="gastoDesc" placeholder="Ej: Alquiler" class="form-input">
         </div>
         
         <div class="form-row">
@@ -81,19 +111,10 @@
             <input type="date" id="gastoFecha" class="form-input">
           </div>
         </div>
-        
-        <div class="form-group">
-          <label class="form-label">Categoría</label>
-          <select id="gastoCategoria" class="form-select">
-            <option value="fijo">Gasto Fijo</option>
-            <option value="variable">Gasto Variable</option>
-            <option value="extraordinario">Extraordinario</option>
-          </select>
-        </div>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-secondary" id="btnCancelGasto">Cancelar</button>
-        <button class="btn btn-primary" id="btnSaveGasto">💾 Guardar</button>
+        <button class="btn btn-secondary" id="btnCancelGasto" onclick="closeGastoModal()">Cancelar</button>
+        <button class="btn btn-primary" id="btnSaveGasto" onclick="saveGasto()">💾 Guardar</button>
       </div>
     </div>
   </div>

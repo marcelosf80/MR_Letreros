@@ -1,1 +1,58 @@
-[]
+[
+  {
+    "id": "1769813156569",
+    "clientId": "cliente_cli_1769813040434",
+    "cliente": {
+      "nombre": "test",
+      "telefono": "03425276549",
+      "email": "marcelojmaidana@gmail.com",
+      "direccion": "Ruperto Godoy 3362"
+    },
+    "fechaEntrega": "",
+    "productos": [
+      {
+        "id": "1769813131551",
+        "tipo": "material",
+        "categoria": "Lona Front 13 Oz",
+        "producto": "90",
+        "ancho": 240,
+        "alto": 50,
+        "cantidad": 1,
+        "m2PorUnidad": 1.2,
+        "m2Totales": 1.2,
+        "costoMaterial": 1823.4683281412254,
+        "costoUnitario": 2188.1619937694704,
+        "costoTotal": 2188.1619937694704,
+        "precioCliente": 28000,
+        "precioUnitario": 33600,
+        "total": 33600
+      }
+    ],
+    "terceros": [
+      {
+        "id": "1769813131551_t",
+        "tipo": "tercero",
+        "nombre": "tensado (240x50cm) (Vinculado)",
+        "empresa": "test 1",
+        "cantidad": 1,
+        "ancho": 240,
+        "alto": 50,
+        "factorCalculo": 1.2,
+        "costo": 7000,
+        "precioCliente": 14000,
+        "unidad": "m²",
+        "totalCosto": 8400,
+        "total": 16800
+      }
+    ],
+    "costoTotal": 10588.16199376947,
+    "subtotal": 50400,
+    "iva": 10584,
+    "totalCliente": 60984,
+    "ganancia": 50395.83800623053,
+    "anticipo": 0,
+    "saldo": 60984,
+    "fecha": "2026-01-30T22:45:56.569Z",
+    "estado": "pendiente"
+  }
+]

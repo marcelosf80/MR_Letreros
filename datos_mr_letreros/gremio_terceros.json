@@ -9,19 +9,12 @@
         "nombre": "tensado",
         "categoria": "Lona Front 13 Oz",
         "unidad": "m²",
-        "costo": 64656,
-        "precio": 565656,
-        "margen": 501000,
-        "fecha": "2026-01-27T10:17:45.140Z"
+        "costo": 7000,
+        "precio": 14000,
+        "margen": 7000,
+        "fecha": "2026-01-29T23:33:47.829Z"
       }
     ],
     "fecha": "2026-01-27T10:16:40.252Z"
-  },
-  {
-    "id": 1769509215169,
-    "nombre": "test2",
-    "contacto": "9856",
-    "servicios": [],
-    "fecha": "2026-01-27T10:20:15.169Z"
   }
 ]

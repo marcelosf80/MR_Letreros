@@ -3,10 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sistema CLIENTES - MR Letreros</title>
+  <title>Clientes - MR Letreros</title>
   <link rel="stylesheet" href="css/base.css">
 </head>
 <body>
+  <!-- Partículas de fondo -->
+  <div class="particles" id="particles"></div>
+
+  <!-- Header -->
   <header class="main-header">
     <div class="header-left">
       <img src="img/logo.png" alt="MR Letreros" class="logo-img">
@@ -16,155 +20,302 @@
   </header>
 
   <div class="content-container">
-    <!-- Rendimientos -->
-    <div class="card">
-      <div class="card-header">
-        <h2 class="card-title">📊 Rendimientos del Sistema Clientes</h2>
-        <button class="btn btn-secondary btn-small" onclick="updateClientStatistics()">🔄 Actualizar</button>
+    <!-- Estadísticas -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-value" id="totalApproved">$0.00</div>
+        <div class="stat-label">Ventas Aprobadas</div>
       </div>
-      <div class="stats-grid">
-        <div class="stat-card">
-          <div class="stat-label">Total Vendido</div>
-          <div class="stat-value" id="totalVendido">$0</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">Total Pendiente</div>
-          <div class="stat-value" id="totalPendienteCliente">$0</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">Cotizaciones Aprobadas</div>
-          <div class="stat-value" id="countApprovedCliente">0</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">Cotizaciones Pendientes</div>
-          <div class="stat-value" id="countPendingCliente">0</div>
-        </div>
+      <div class="stat-card">
+        <div class="stat-value" id="totalGanancia" style="color: #51CF66;">$0.00</div>
+        <div class="stat-label">Ganancia Estimada</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="countApproved">0</div>
+        <div class="stat-label">Cotizaciones Aprobadas</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="countPending" style="color: #FFC107;">0</div>
+        <div class="stat-label">Pendientes</div>
       </div>
     </div>
 
-    <!-- Datos del Cliente -->
-    <div class="card">
-      <div class="card-header">
-        <h2 class="card-title">📋 Datos del Cliente</h2>
-      </div>
-      <div class="form-grid">
-        <div class="form-group">
-          <label class="form-label">Nombre del Cliente *</label>
-          <input type="text" id="clientNameCliente" class="form-input" placeholder="Nombre completo">
+    <div class="main-grid">
+      <!-- Panel Izquierdo: Nueva Cotización -->
+      <div class="card">
+        <div class="section-header">
+          <h2>📑 Nueva Cotización (Cliente Final)</h2>
+          <div class="actions">
+            <button class="btn btn-secondary" onclick="clearQuote()">Limpiar</button>
+            <button class="btn btn-primary" onclick="saveQuote()">💾 Guardar</button>
+          </div>
         </div>
-        <div class="form-group">
-          <label class="form-label">Teléfono</label>
-          <input type="tel" id="clientPhoneCliente" class="form-input" placeholder="+54 9 11 1234-5678">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Email</label>
-          <input type="email" id="clientEmailCliente" class="form-input" placeholder="cliente@email.com">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Dirección</label>
-          <input type="text" id="clientAddressCliente" class="form-input" placeholder="Calle 123, Ciudad">
-        </div>
-      </div>
-    </div>
 
-    <!-- Productos de la Cotización -->
-    <div class="card">
-      <div class="card-header">
-        <h2 class="card-title">🛒 Productos de la Cotización</h2>
-        <button class="btn btn-primary" id="btnAddProductCliente">➕ Agregar Producto</button>
-      </div>
-      <div id="productsListCliente">
-        <p class="empty-state">No hay productos agregados</p>
-      </div>
-    </div>
+        <!-- Datos del Cliente -->
+        <div class="form-section">
+          <h3>👤 Datos del Cliente</h3>
+          <div class="form-group">
+            <label class="form-label">Nombre del Cliente *</label>
+            <div style="display: flex; align-items: center;">
+              <input type="text" id="clientName" class="form-input" placeholder="Buscar o ingresar nombre..." style="flex: 1;">
+              <!-- Botones inyectados por JS aquí -->
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Teléfono</label>
+              <input type="text" id="clientPhone" class="form-input" placeholder="Ej: 11 1234-5678">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Email</label>
+              <input type="email" id="clientEmail" class="form-input" placeholder="cliente@email.com">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Dirección</label>
+              <input type="text" id="clientAddress" class="form-input" placeholder="Dirección de entrega/facturación">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Fecha de Entrega</label>
+              <input type="date" id="deliveryDate" class="form-input">
+            </div>
+          </div>
+        </div>
 
-    <!-- Totales -->
-    <div class="card">
-      <div class="card-header">
-        <h2 class="card-title">💰 Totales</h2>
-      </div>
-      <div class="stats-grid">
-        <div class="stat-card">
-          <div class="stat-label">Subtotal</div>
-          <div class="stat-value" id="subtotalCliente">$0</div>
+        <!-- Productos -->
+        <div class="form-section">
+          <div class="section-header">
+            <h3>📦 Productos / Materiales</h3>
+            <button class="btn btn-primary btn-small" id="btnAddProduct">➕ Agregar Producto</button>
+          </div>
+          <div id="productsList" class="items-list">
+            <p class="empty-state">No hay productos agregados</p>
+          </div>
         </div>
-        <div class="stat-card">
-          <div class="stat-label">IVA (21%)</div>
-          <div class="stat-value" id="ivaCliente">$0</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">Total Final</div>
-          <div class="stat-value" id="totalCliente">$0</div>
-        </div>
-      </div>
-      <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 2rem;">
-        <button class="btn btn-secondary" onclick="clearClientQuote()">🗑️ Limpiar</button>
-        <button class="btn btn-primary" onclick="saveClientQuote()">💾 Guardar Cotización</button>
-        <button class="btn btn-success" onclick="generateClientPDF()">📄 Generar PDF</button>
-      </div>
-    </div>
 
-    <!-- Historial de Cotizaciones -->
-    <div class="card">
-      <div class="card-header">
-        <h2 class="card-title">📋 Historial de Cotizaciones</h2>
+        <!-- Servicios Terceros -->
+        <div class="form-section">
+          <div class="section-header">
+            <h3>🔧 Servicios Adicionales / Terceros</h3>
+            <button class="btn btn-secondary btn-small" id="btnAddTerceroService">➕ Agregar Servicio</button>
+          </div>
+          <div id="terceroServicesList" class="items-list">
+            <p class="empty-state">No hay servicios agregados</p>
+          </div>
+        </div>
+
+        <!-- Totales y Financiamiento (Igual a Gremio) -->
+        <div class="card" style="margin: 0; padding: 0; background: transparent; border: none; box-shadow: none;">
+          <div class="section-header">
+            <h3 style="margin: 0;">💰 Totales y Financiamiento</h3>
+          </div>
+          
+          <!-- Resumen de Costos -->
+          <div style="background: rgba(255, 107, 107, 0.1); padding: 1.5rem; border-radius: 10px; margin-bottom: 1rem; border: 1px solid rgba(255, 107, 107, 0.3);">
+            <h4 style="color: #FF6B6B; margin-bottom: 1rem;">📉 Costos (Lo que gastas)</h4>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+              <span>Costo Materiales:</span>
+              <span id="costoMateriales" style="font-weight: bold;">$0</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding-top: 0.5rem; border-top: 1px solid rgba(255, 107, 107, 0.3);">
+              <span>Costo Terceros:</span>
+              <span id="costoTerceros" style="font-weight: bold;">$0</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding-top: 0.5rem; border-top: 2px solid rgba(255, 107, 107, 0.5); margin-top: 0.5rem;">
+              <span style="font-weight: bold;">TOTAL COSTOS:</span>
+              <span id="totalCostos" style="font-weight: bold; color: #FF6B6B; font-size: 1.2rem;">$0</span>
+            </div>
+          </div>
+
+          <!-- Totales Cliente -->
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-label">Subtotal Cliente</div>
+              <div class="stat-value" id="subtotal">$0</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">IVA (21%)</div>
+              <div class="stat-value" id="iva">$0</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Total Final Cliente</div>
+              <div class="stat-value" id="total">$0</div>
+            </div>
+            <div class="stat-card" style="background: rgba(81, 207, 102, 0.1); border: 1px solid rgba(81, 207, 102, 0.3);">
+              <div class="stat-label">💚 Ganancia Neta</div>
+              <div class="stat-value" id="gananciaNetaDisplay" style="color: #51CF66;">$0</div>
+            </div>
+          </div>
+
+          <!-- Anticipo -->
+          <div style="margin-top: 1.5rem; padding: 1.5rem; background: rgba(255, 193, 7, 0.1); border-radius: 10px; border: 1px solid rgba(255, 193, 7, 0.3);">
+            <h4 style="color: #FFC107; margin-bottom: 1rem;">💵 Anticipo (Opcional)</h4>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Monto del Anticipo</label>
+                <input type="number" id="montoAnticipo" class="form-input" placeholder="0.00" step="0.01" oninput="calcularSaldo()">
+                <small style="color: var(--text-secondary);">Deja en 0 si no hay anticipo</small>
+              </div>
+              <div style="padding: 1rem; background: rgba(0, 0, 0, 0.3); border-radius: 8px; display: flex; flex-direction: column; justify-content: center;">
+                <span style="color: var(--text-secondary); font-size: 0.9rem;">Saldo Pendiente:</span>
+                <span id="saldoPendiente" style="font-size: 1.5rem; font-weight: bold; color: var(--primary-color);">$0</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Acciones -->
+          <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 2rem;">
+            <button class="btn btn-secondary" onclick="clearQuote()">🗑️ Limpiar</button>
+            <button class="btn btn-primary" onclick="saveQuote()">💾 Guardar Cotización</button>
+            <button class="btn btn-success" onclick="generatePDF()">📄 Generar PDF</button>
+          </div>
+        </div>
       </div>
-      <div id="quotesListCliente">
-        <p class="empty-state">No hay cotizaciones guardadas</p>
+
+      <!-- Panel Derecho: Historial -->
+      <div class="card">
+        <div class="section-header">
+          <h2>📜 Historial de Cotizaciones</h2>
+          <button class="btn btn-small" onclick="loadQuotations()">🔄 Actualizar</button>
+        </div>
+        <div id="quotesList" class="quotes-list">
+          <p class="empty-state">Cargando...</p>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- Modal Agregar Producto -->
-  <div class="modal" id="productModalCliente">
+  <!-- Modal Producto -->
+  <div class="modal" id="productModal">
     <div class="modal-content">
       <div class="modal-header">
-        <h2 class="modal-title">🛒 Agregar Producto</h2>
-        <button class="btn-close" id="btnCloseProductCliente">×</button>
+        <h2 class="modal-title">📦 Agregar Producto</h2>
+        <button class="btn-close" id="btnCloseProduct">×</button>
       </div>
       <div class="modal-body">
         <div class="form-group">
-          <label class="form-label">Categoría *</label>
-          <select id="productCategoryCliente" class="form-select">
-            <option value="">Seleccionar categoría...</option>
+          <label class="form-label">Categoría</label>
+          <select id="productCategory" class="form-select">
+            <option value="">Cargando...</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Producto</label>
+          <select id="productName" class="form-select" disabled>
+            <option value="">Selecciona una categoría primero</option>
+          </select>
+        </div>
+        
+        <div id="priceInfo" style="display: none; background: rgba(81, 207, 102, 0.1); padding: 10px; border-radius: 5px; margin-bottom: 15px; border: 1px solid rgba(81, 207, 102, 0.3);">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span>Precio Público:</span>
+            <strong id="precioClienteDisplay" style="font-size: 1.2rem; color: #51CF66;">$0.00</strong>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Ancho (cm)</label>
+            <input type="number" id="productAncho" class="form-input" placeholder="Ej: 100">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Alto (cm)</label>
+            <input type="number" id="productAlto" class="form-input" placeholder="Ej: 100">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Cantidad</label>
+          <input type="number" id="productCantidad" class="form-input" value="1">
+        </div>
+
+        <!-- Resultado Cálculo -->
+        <div class="calc-result" style="background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 8px; text-align: center; margin-top: 1rem;">
+          <div style="font-size: 0.9rem; color: #aaa; margin-bottom: 0.5rem;">Precio Total del Item</div>
+          <div id="productTotal" style="font-size: 2rem; font-weight: bold; color: #51CF66;">$0.00</div>
+          <div id="productFormula" style="font-size: 0.8rem; color: #666; margin-top: 0.5rem;">Completa los datos</div>
+          
+          <div id="calculoDetalle" style="display: none; margin-top: 10px; font-size: 0.85rem; text-align: left; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px;">
+            <div>m² por unidad: <strong id="m2PorUnidad">0</strong></div>
+            <div>m² totales: <strong id="m2Totales">0</strong></div>
+            <div>Precio unitario: <strong id="precioUnitario">0</strong></div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="btnCancelProduct">Cancelar</button>
+        <button class="btn btn-primary" id="btnSaveProduct">Agregar a Cotización</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Terceros -->
+  <div class="modal" id="terceroServiceModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title">� Agregar Servicio de Tercero</h2>
+        <button class="btn-close" id="btnCloseTerceroService">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Servicio / Proveedor</label>
+          <select id="terceroService" class="form-select">
+            <option value="">Cargando...</option>
           </select>
         </div>
         
         <div class="form-group">
-          <label class="form-label">Producto *</label>
-          <select id="productNameCliente" class="form-select" disabled>
-            <option value="">Primero selecciona categoría...</option>
-          </select>
+          <label class="form-label">Cantidad</label>
+          <input type="number" id="terceroQuantity" class="form-input" placeholder="1">
         </div>
-        
+
         <div class="form-row">
           <div class="form-group">
-            <label class="form-label">Cantidad *</label>
-            <input type="number" id="productQuantityCliente" class="form-input" placeholder="1" min="0.01" step="0.01">
+            <label class="form-label">Costo ($)</label>
+            <input type="number" id="terceroCosto" class="form-input" readonly style="background: rgba(255,255,255,0.05);">
           </div>
-          
           <div class="form-group">
-            <label class="form-label">Precio Unitario *</label>
-            <input type="number" id="productPriceCliente" class="form-input" placeholder="0.00" step="0.01" readonly>
+            <label class="form-label">Precio Cliente ($)</label>
+            <input type="number" id="terceroPrecioCliente" class="form-input" readonly style="background: rgba(255,255,255,0.05);">
           </div>
         </div>
-        
-        <div class="calc-display">
-          <div class="calc-label">TOTAL DEL PRODUCTO</div>
-          <div class="calc-value" id="productTotalCliente">$0.00</div>
+
+        <div class="calc-result" style="background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 8px; margin-top: 1rem;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+            <span>Costo Total:</span>
+            <strong id="terceroTotalCosto" style="color: #FF6B6B;">$0.00</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between; font-size: 1.2rem;">
+            <span>Total Cliente:</span>
+            <strong id="terceroTotal" style="color: #51CF66;">$0.00</strong>
+          </div>
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-secondary" id="btnCancelProductCliente">Cancelar</button>
-        <button class="btn btn-primary" id="btnSaveProductCliente">➕ Agregar</button>
+        <button class="btn btn-secondary" id="btnCancelTerceroService">Cancelar</button>
+        <button class="btn btn-primary" id="btnSaveTerceroService">Agregar</button>
       </div>
     </div>
   </div>
 
   <!-- Scripts -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="js/shared/modal-system.js"></script>
-  <script src="js/shared/data-manager-network.js"></script>
-  <script src="js/clientes/clientes-main.js"></script>
+  <script src="js/shared/modal-system.js?v=10"></script>
+  <script src="js/shared/data-manager-network.js?v=10"></script>
+  <script src="js/clientes/clientes-main.js?v=12"></script>
+  
+  <script>
+    // Partículas
+    const particlesContainer = document.getElementById('particles');
+    if(particlesContainer) {
+      for (let i = 0; i < 30; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'particle';
+        particle.style.left = Math.random() * 100 + '%';
+        particle.style.animationDelay = Math.random() * 5 + 's';
+        particlesContainer.appendChild(particle);
+      }
+    }
+  </script>
 </body>
 </html>

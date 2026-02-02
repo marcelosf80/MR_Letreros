@@ -30,6 +30,28 @@
       <button class="btn btn-primary" id="btnAddTercero">➕ Agregar Empresa</button>
     </div>
 
+    <!-- NUEVA SECCIÓN: PAGOS PENDIENTES -->
+    <div class="card" style="margin-top: 2rem; border-top: 4px solid #FFC107;">
+      <div class="card-header">
+        <h2 class="card-title">💸 Cuentas por Pagar (Terceros)</h2>
+        <button class="btn btn-secondary btn-small" onclick="tercerosManager.loadPagosPendientes()">🔄 Actualizar</button>
+      </div>
+      <div id="pagosPendientesList" class="stats-grid">
+        <p class="empty-state">Cargando pagos pendientes...</p>
+      </div>
+    </div>
+
+    <!-- NUEVA SECCIÓN: HISTORIAL DE PAGOS -->
+    <div class="card" style="margin-top: 2rem; border-top: 4px solid #4CAF50;">
+      <div class="card-header">
+        <h2 class="card-title">📜 Historial de Pagos Realizados</h2>
+        <button class="btn btn-secondary btn-small" onclick="tercerosManager.loadHistorialPagos()">🔄 Actualizar</button>
+      </div>
+      <div id="historialPagosList" style="max-height: 300px; overflow-y: auto;">
+        <p class="empty-state">Cargando historial...</p>
+      </div>
+    </div>
+
     <!-- TERCEROS COMPANIES -->
     <div class="section-header" style="margin-top: 2rem;">
       <div>
@@ -101,6 +123,21 @@
           </div>
         </div>
         
+        <div id="materialBaseGroup" style="display: none; background: rgba(255,255,255,0.05); padding: 10px; border-radius: 5px; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.1);">
+          <h5 style="margin: 0 0 10px 0; color: #FFC107; font-size: 0.9rem;">📦 Material Base (Adicional por Placa/Global)</h5>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="servicioCostoMaterial">Costo Material</label>
+              <input type="number" id="servicioCostoMaterial" placeholder="0.00" step="0.01" class="form-input">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="servicioPrecioMaterial">Precio Material</label>
+              <input type="number" id="servicioPrecioMaterial" placeholder="0.00" step="0.01" class="form-input">
+            </div>
+          </div>
+          <small style="color: #aaa; display: block; margin-top: 5px;">Este valor se suma aparte de la unidad (ej: costo de la placa entera).</small>
+        </div>
+
         <div class="highlight-box">
           <h4>💰 Precios</h4>
           

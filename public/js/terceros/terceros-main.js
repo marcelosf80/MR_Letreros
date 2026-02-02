@@ -11,6 +11,8 @@ const tercerosManager = {
     console.log('[TERCEROS-INIT] Iniciando...');
     await this.loadEmpresas();
     await this.loadCategorias();
+    await this.loadPagosPendientes();
+    await this.loadHistorialPagos();
     this.setupEventListeners();
     this.render();
     this.generateParticles();
@@ -41,6 +43,196 @@ const tercerosManager = {
     } catch (error) {
       console.error('[TERCEROS-CATEGORIAS-ERROR]', error);
       this.categorias = [];
+    }
+  },
+
+  async loadPagosPendientes() {
+    const container = document.getElementById('pagosPendientesList');
+    if (!container) return;
+    
+    container.innerHTML = '<p class="empty-state">Calculando...</p>';
+
+    try {
+      let gremioQuotes = [];
+      let clientQuotes = [];
+
+      // Intentar usar mrDataManager si está disponible
+      if (window.mrDataManager) {
+          gremioQuotes = await window.mrDataManager.getGremioCotizaciones();
+          clientQuotes = await window.mrDataManager.getClientesCotizaciones();
+      } else {
+          // Fallback a fetch directo
+          try {
+            const resG = await fetch('/api/gremio/data');
+            if (resG.ok) gremioQuotes = await resG.json();
+            const resC = await fetch('/api/clientes/data');
+            if (resC.ok) clientQuotes = await resC.json();
+          } catch(err) { console.error(err); }
+      }
+      
+      const allQuotes = [...(Array.isArray(gremioQuotes) ? gremioQuotes : []), ...(Array.isArray(clientQuotes) ? clientQuotes : [])];
+      
+      // Filtrar solo las APROBADAS
+      const approved = allQuotes.filter(q => q.estado === 'aprobada' || q.approved === true);
+      
+      const pagosPorEmpresa = {};
+      let totalDeuda = 0;
+      
+      approved.forEach(quote => {
+        if (quote.terceros && Array.isArray(quote.terceros)) {
+          quote.terceros.forEach(item => {
+            if (item.pagado) return; // Ignorar ítems ya pagados
+            const empresa = item.empresa || 'Sin Empresa Asignada';
+            const monto = parseFloat(item.totalCosto) || 0;
+            
+            if (!pagosPorEmpresa[empresa]) pagosPorEmpresa[empresa] = 0;
+            pagosPorEmpresa[empresa] += monto;
+            totalDeuda += monto;
+          });
+        }
+      });
+      
+      if (Object.keys(pagosPorEmpresa).length === 0) {
+        container.innerHTML = '<p class="empty-state">✅ Al día: No hay deudas pendientes con terceros.</p>';
+        return;
+      }
+      
+      let html = `
+        <div class="stat-card" style="background: rgba(255, 193, 7, 0.1); border: 1px solid #FFC107; padding: 1rem; border-radius: 8px; display: flex; flex-direction: column; justify-content: center;">
+          <div class="stat-label" style="color: #aaa; font-size: 0.9rem; text-transform: uppercase;">Total a Pagar</div>
+          <div class="stat-value" style="color: #FFC107; font-size: 1.8rem; font-weight: bold;">$${totalDeuda.toLocaleString('es-AR', {minimumFractionDigits: 2})}</div>
+        </div>
+      `;
+
+      Object.entries(pagosPorEmpresa).forEach(([empresa, monto]) => {
+        const safeEmpresa = empresa.replace(/'/g, "\\'"); // Escapar comillas para el onclick
+        html += `
+          <div class="stat-card" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); padding: 1rem; border-radius: 8px;">
+            <div class="stat-label" style="color: #fff; font-weight: bold; font-size: 1.1rem; margin-bottom: 0.5rem;">${empresa}</div>
+            <div class="stat-value" style="color: #FF5252; font-size: 1.4rem; font-weight: bold;">$${monto.toLocaleString('es-AR', {minimumFractionDigits: 2})}</div>
+            <div style="font-size: 0.8rem; color: #aaa; margin-top: 0.5rem;">Acumulado Aprobado</div>
+            <button class="btn btn-success btn-small" style="margin-top: 1rem; width: 100%;" onclick="tercerosManager.markAsPaid('${safeEmpresa}')">✅ Marcar como Pagado</button>
+          </div>
+        `;
+      });
+      
+      container.innerHTML = html;
+      
+    } catch (e) {
+      console.error('[TERCEROS] Error calculando pagos:', e);
+      container.innerHTML = '<p class="empty-state" style="color: #FF5252;">Error al calcular pagos pendientes.</p>';
+    }
+  },
+
+  async loadHistorialPagos() {
+    const container = document.getElementById('historialPagosList');
+    if (!container) return;
+
+    container.innerHTML = '<p class="empty-state">Cargando historial...</p>';
+
+    try {
+      let gremioQuotes = [];
+      let clientQuotes = [];
+
+      if (window.mrDataManager) {
+          gremioQuotes = await window.mrDataManager.getGremioCotizaciones();
+          clientQuotes = await window.mrDataManager.getClientesCotizaciones();
+      }
+      
+      const allQuotes = [...(Array.isArray(gremioQuotes) ? gremioQuotes : []), ...(Array.isArray(clientQuotes) ? clientQuotes : [])];
+      const approved = allQuotes.filter(q => q.estado === 'aprobada' || q.approved === true);
+      
+      const pagos = [];
+      
+      approved.forEach(quote => {
+        if (quote.terceros && Array.isArray(quote.terceros)) {
+          quote.terceros.forEach(item => {
+            if (item.pagado) {
+               pagos.push({
+                 fecha: item.fechaPago || quote.fechaAprobacion || quote.date,
+                 empresa: item.empresa || 'Sin Empresa',
+                 servicio: item.nombre,
+                 monto: parseFloat(item.totalCosto) || 0
+               });
+            }
+          });
+        }
+      });
+
+      // Ordenar por fecha (más reciente primero)
+      pagos.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+
+      if (pagos.length === 0) {
+        container.innerHTML = '<p class="empty-state">No hay pagos registrados en el historial.</p>';
+        return;
+      }
+
+      container.innerHTML = pagos.map(p => `
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.8rem; border-bottom: 1px solid rgba(255,255,255,0.05); background: rgba(255,255,255,0.02);">
+          <div>
+            <div style="font-weight: bold; color: #fff;">${p.empresa}</div>
+            <div style="font-size: 0.85rem; color: #aaa;">${new Date(p.fecha).toLocaleDateString('es-AR')} • ${p.servicio}</div>
+          </div>
+          <div style="font-weight: bold; color: #4CAF50;">$${p.monto.toLocaleString('es-AR', {minimumFractionDigits: 2})}</div>
+        </div>
+      `).join('');
+
+    } catch (e) {
+      console.error('[TERCEROS] Error cargando historial:', e);
+    }
+  },
+
+  async markAsPaid(empresaName) {
+    if (!confirm(`¿Confirmas que has pagado todo lo pendiente a "${empresaName}"?\n\nEsta acción marcará los servicios como pagados y desaparecerán de la lista de deudas.`)) return;
+
+    try {
+      // 1. Cargar todas las cotizaciones
+      const gremioQuotes = await window.mrDataManager.getGremioCotizaciones();
+      const clientQuotes = await window.mrDataManager.getClientesCotizaciones();
+      
+      let gremioModified = false;
+      let clientModified = false;
+
+      // 2. Actualizar cotizaciones de Gremio
+      gremioQuotes.forEach(quote => {
+        if (quote.terceros && Array.isArray(quote.terceros)) {
+          quote.terceros.forEach(item => {
+            const itemEmpresa = item.empresa || 'Sin Empresa Asignada';
+            // Solo marcar si coincide la empresa, no está pagado y la cotización está aprobada
+            if (itemEmpresa === empresaName && !item.pagado && (quote.estado === 'aprobada' || quote.approved === true)) {
+              item.pagado = true;
+              item.fechaPago = new Date().toISOString();
+              gremioModified = true;
+            }
+          });
+        }
+      });
+
+      // 3. Actualizar cotizaciones de Clientes
+      clientQuotes.forEach(quote => {
+        if (quote.terceros && Array.isArray(quote.terceros)) {
+          quote.terceros.forEach(item => {
+            const itemEmpresa = item.empresa || 'Sin Empresa Asignada';
+            if (itemEmpresa === empresaName && !item.pagado && (quote.estado === 'aprobada' || quote.approved === true)) {
+              item.pagado = true;
+              item.fechaPago = new Date().toISOString();
+              clientModified = true;
+            }
+          });
+        }
+      });
+
+      // 4. Guardar cambios
+      if (gremioModified) await window.mrDataManager.saveGremioCotizaciones(gremioQuotes);
+      if (clientModified) await window.mrDataManager.saveClientesCotizaciones(clientQuotes);
+
+      alert('✅ Pagos registrados correctamente.');
+      this.loadPagosPendientes(); // Recargar la lista
+      this.loadHistorialPagos(); // Recargar historial
+
+    } catch (error) {
+      console.error('[TERCEROS] Error al marcar como pagado:', error);
+      alert('❌ Error al registrar el pago.');
     }
   },
 
@@ -81,6 +273,7 @@ const tercerosManager = {
     const btnCancelServicio = document.getElementById('btnCancelServicio');
     const costInput = document.getElementById('servicioCosto');
     const precioInput = document.getElementById('servicioPrecio');
+    const unidadSelect = document.getElementById('servicioUnidad');
 
     if (btnCloseServicio) btnCloseServicio.addEventListener('click', () => this.closeServicioModal());
     if (btnSaveServicio) btnSaveServicio.addEventListener('click', () => this.saveServicio());
@@ -90,6 +283,7 @@ const tercerosManager = {
     if (servicioModal) servicioModal.addEventListener('click', (e) => {
       if (e.target === servicioModal) this.closeServicioModal();
     });
+    if (unidadSelect) unidadSelect.addEventListener('change', () => this.toggleMaterialInputs());
   },
 
   openEmpresaModal(empresaIndex = null) {
@@ -116,6 +310,13 @@ const tercerosManager = {
   closeEmpresaModal() {
     const modal = document.getElementById('empresaModal');
     if (modal) modal.classList.remove('active');
+    if (modal) {
+      if (window.MRModals) window.MRModals.close(modal);
+      else {
+        modal.classList.remove('active');
+        document.body.style.overflow = '';
+      }
+    }
     this.currentEditingEmpresa = null;
   },
 
@@ -166,6 +367,8 @@ const tercerosManager = {
     document.getElementById('servicioUnidad').value = 'm²';
     document.getElementById('servicioCosto').value = '';
     document.getElementById('servicioPrecio').value = '';
+    document.getElementById('servicioCostoMaterial').value = '';
+    document.getElementById('servicioPrecioMaterial').value = '';
 
     this.updateCategorySelect();
 
@@ -177,17 +380,35 @@ const tercerosManager = {
       document.getElementById('servicioUnidad').value = servicio.unidad || 'm²';
       document.getElementById('servicioCosto').value = servicio.costo || '';
       document.getElementById('servicioPrecio').value = servicio.precio || '';
+      document.getElementById('servicioCostoMaterial').value = servicio.costoMaterial || '';
+      document.getElementById('servicioPrecioMaterial').value = servicio.precioMaterial || '';
     } else {
       title.textContent = '🔧 Agregar Servicio';
     }
 
+    this.toggleMaterialInputs();
     this.updateMarginDisplay();
     modal.classList.add('active');
+  },
+
+  toggleMaterialInputs() {
+    const unidad = document.getElementById('servicioUnidad').value;
+    const group = document.getElementById('materialBaseGroup');
+    if (group) {
+      group.style.display = (unidad === 'unidad') ? 'block' : 'none';
+    }
   },
 
   closeServicioModal() {
     const modal = document.getElementById('servicioModal');
     if (modal) modal.classList.remove('active');
+    if (modal) {
+      if (window.MRModals) window.MRModals.close(modal);
+      else {
+        modal.classList.remove('active');
+        document.body.style.overflow = '';
+      }
+    }
     this.currentEditingServicio = null;
   },
 
@@ -213,6 +434,8 @@ const tercerosManager = {
     const unidad = document.getElementById('servicioUnidad').value;
     const costo = parseFloat(document.getElementById('servicioCosto').value) || 0;
     const precio = parseFloat(document.getElementById('servicioPrecio').value) || 0;
+    const costoMaterial = parseFloat(document.getElementById('servicioCostoMaterial').value) || 0;
+    const precioMaterial = parseFloat(document.getElementById('servicioPrecioMaterial').value) || 0;
 
     if (!nombre) {
       alert('Por favor ingresa el nombre del servicio');
@@ -233,6 +456,8 @@ const tercerosManager = {
       unidad,
       costo,
       precio,
+      costoMaterial,
+      precioMaterial,
       margen: precio - costo,
       fecha: new Date().toISOString()
     };

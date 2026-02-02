@@ -348,16 +348,18 @@ app.get('/api/statistics/today', async (req, res) => {
     
     const today = new Date().toISOString().split('T')[0];
     
-    const gremioToday = gremioData.filter(item => 
-      item.date && item.date.startsWith(today) && item.approved === true
-    );
+    const gremioToday = gremioData.filter(item => {
+      const date = item.date || item.fecha;
+      return date && date.startsWith(today) && (item.approved === true || item.estado === 'aprobada');
+    });
     
-    const clientesToday = clientesData.filter(item => 
-      item.date && item.date.startsWith(today) && item.approved === true
-    );
+    const clientesToday = clientesData.filter(item => {
+      const date = item.date || item.fecha;
+      return date && date.startsWith(today) && (item.approved === true || item.estado === 'aprobada');
+    });
     
-    const facturadoGremio = gremioToday.reduce((sum, item) => sum + (parseFloat(item.total) || 0), 0);
-    const facturadoClientes = clientesToday.reduce((sum, item) => sum + (parseFloat(item.total) || 0), 0);
+    const facturadoGremio = gremioToday.reduce((sum, item) => sum + (parseFloat(item.total || item.totalCliente) || 0), 0);
+    const facturadoClientes = clientesToday.reduce((sum, item) => sum + (parseFloat(item.total || item.totalCliente) || 0), 0);
     
     res.json({
       total: gremioToday.length + clientesToday.length,
@@ -376,23 +378,76 @@ app.get('/api/rendimientos', async (req, res) => {
     const clientesData = await readJSON(FILES.clientes_data);
     const gastos = await readJSON(FILES.gastos);
     
-    const gremioAprobadas = gremioData.filter(item => item.approved === true);
-    const clientesAprobadas = clientesData.filter(item => item.approved === true);
+    // 1. Calcular desglose por categorías de productos (Ventas)
+    const breakdown = {};
     
-    const ingresosGremio = gremioAprobadas.reduce((sum, item) => sum + (parseFloat(item.total) || 0), 0);
-    const ingresosClientes = clientesAprobadas.reduce((sum, item) => sum + (parseFloat(item.total) || 0), 0);
-    const totalIngresos = ingresosGremio + ingresosClientes;
+    const processQuotes = (quotes) => {
+      quotes.forEach(q => {
+        // Normalizar estado de aprobación (soporta formato nuevo y viejo)
+        const isApproved = q.approved === true || q.estado === 'aprobada';
+        if (!isApproved) return;
+        
+        const items = q.items || q.productos || [];
+        
+        if (items.length > 0) {
+          items.forEach(item => {
+            // Normalizar campos
+            const cat = item.category || item.categoria || 'Sin Categoría';
+            const venta = parseFloat(item.total || item.price || 0);
+            const costo = parseFloat(item.costoTotal || item.totalCosto || 0);
+            
+            if (!breakdown[cat]) breakdown[cat] = { categoria: cat, ingresos: 0, costos: 0, cantidad: 0 };
+            breakdown[cat].ingresos += venta;
+            breakdown[cat].costos += costo;
+            breakdown[cat].cantidad += (parseFloat(item.quantity || item.cantidad) || 1);
+          });
+        } else {
+          // Cotizaciones antiguas sin items detallados o fallos de estructura
+          const cat = 'General';
+          const venta = parseFloat(q.total || q.totalCliente || 0);
+          const costo = parseFloat(q.costoTotal || 0);
+          
+          if (!breakdown[cat]) breakdown[cat] = { categoria: cat, ingresos: 0, costos: 0, cantidad: 1 };
+          breakdown[cat].ingresos += venta;
+          breakdown[cat].costos += costo;
+        }
+      });
+    };
     
-    const totalGastos = gastos.reduce((sum, g) => sum + (parseFloat(g.monto) || 0), 0);
+    processQuotes(gremioData);
+    processQuotes(clientesData);
     
-    const ganancia = totalIngresos - totalGastos;
-    const margen = totalIngresos > 0 ? (ganancia / totalIngresos) * 100 : 0;
+    const categorias = Object.values(breakdown).map(c => ({
+      ...c,
+      ganancia: c.ingresos - c.costos,
+      margen: c.ingresos > 0 ? ((c.ingresos - c.costos) / c.ingresos * 100) : 0
+    })).sort((a, b) => b.ingresos - a.ingresos);
+    
+    // 2. Calcular Totales Generales
+    const totalIngresos = categorias.reduce((sum, c) => sum + c.ingresos, 0);
+    
+    // 3. Gastos Operativos (Todo lo que sea egreso en gastos.json)
+    const gastosTotales = gastos
+      .filter(g => g.tipo !== 'ingreso')
+      .reduce((sum, g) => sum + (parseFloat(g.monto) || 0), 0);
+    
+    // Desglose de gastos por categoría de gasto
+    const gastosPorCategoria = {};
+    gastos.filter(g => g.tipo !== 'ingreso').forEach(g => {
+        const cat = g.categoria || 'General';
+        if (!gastosPorCategoria[cat]) gastosPorCategoria[cat] = 0;
+        gastosPorCategoria[cat] += (parseFloat(g.monto) || 0);
+    });
     
     res.json({
-      ingresos: totalIngresos,
-      gastos: totalGastos,
-      ganancia: ganancia,
-      margen: margen
+      resumen: {
+        ingresos: totalIngresos,
+        gastosOperativos: gastosTotales,
+        gananciaNeta: totalIngresos - gastosTotales,
+        margenTotal: totalIngresos > 0 ? ((totalIngresos - gastosTotales) / totalIngresos * 100) : 0
+      },
+      porCategoria: categorias,
+      gastosDetalle: gastosPorCategoria
     });
   } catch (error) {
     res.status(500).json({ error: error.message });

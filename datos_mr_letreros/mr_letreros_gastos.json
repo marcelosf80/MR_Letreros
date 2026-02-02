@@ -4,5 +4,69 @@
     "descripcion": "vhgvj6",
     "monto": 898,
     "fecha": "2026-01-24"
+  },
+  {
+    "id": "gasto_coti_1769731582596",
+    "tipo": "egreso",
+    "descripcion": "Costo Total - Coti Gremio #582596 (marcelo maidsna)",
+    "monto": 20831.11111111111,
+    "fecha": "2026-01-30T00:06:34.771Z",
+    "categoria": "costo_venta_gremio"
+  },
+  {
+    "id": "ingreso_coti_1769731582596",
+    "tipo": "ingreso",
+    "descripcion": "Venta Gremio - Coti #582596 (marcelo maidsna)",
+    "monto": 101664.2,
+    "fecha": "2026-01-30T00:06:34.771Z",
+    "categoria": "venta_gremio"
+  },
+  {
+    "id": "gasto_coti_1769731252971",
+    "tipo": "egreso",
+    "descripcion": "Costo Total - Coti Gremio #252971 (marcelo maidsna)",
+    "monto": 9666.67,
+    "fecha": "2026-01-30T00:06:42.169Z",
+    "categoria": "costo_venta_gremio"
+  },
+  {
+    "id": "ingreso_coti_1769731252971",
+    "tipo": "ingreso",
+    "descripcion": "Venta Gremio - Coti #252971 (marcelo maidsna)",
+    "monto": 33275,
+    "fecha": "2026-01-30T00:06:42.169Z",
+    "categoria": "venta_gremio"
+  },
+  {
+    "id": "gasto_coti_1769735813845",
+    "tipo": "egreso",
+    "descripcion": "Costo Total - Coti Gremio #813845 (marcelo maidsna)",
+    "monto": 39938.88888888889,
+    "fecha": "2026-01-30T01:17:08.446Z",
+    "categoria": "costo_venta_gremio"
+  },
+  {
+    "id": "ingreso_coti_1769735813845",
+    "tipo": "ingreso",
+    "descripcion": "Venta Gremio - Coti #813845 (marcelo maidsna)",
+    "monto": 126626.5,
+    "fecha": "2026-01-30T01:17:08.446Z",
+    "categoria": "venta_gremio"
+  },
+  {
+    "id": "gasto_coti_1769736336871",
+    "tipo": "egreso",
+    "descripcion": "Costo Total - Coti Gremio #336871 (marcelo maidsna)",
+    "monto": 9269.333333333334,
+    "fecha": "2026-01-30T01:26:00.674Z",
+    "categoria": "costo_venta_gremio"
+  },
+  {
+    "id": "ingreso_coti_1769736336871",
+    "tipo": "ingreso",
+    "descripcion": "Venta Gremio - Coti #336871 (marcelo maidsna)",
+    "monto": 29388.48,
+    "fecha": "2026-01-30T01:26:00.674Z",
+    "categoria": "venta_gremio"
   }
 ]
