@@ -11,6 +11,8 @@ const { spawn } = require('child_process'); // Módulo para ejecutar otros progr
 const app = express();
 const PORT = 3000;
 
+let pythonCmd = 'python'; // Comando por defecto, se actualizará si se detecta 'py'
+
 // ==================== CONFIGURACIÓN DE RUTAS ====================
 
 const BASE_PATH = 'C:\\MR_Letreros';
@@ -79,33 +81,36 @@ async function initializeDataStructure() {
 async function checkPython() {
   return new Promise((resolve) => {
     console.log('🔍 Verificando la instalación de Python...');
-    const pythonProcess = spawn('python', ['--version']);
+    
+    // Función auxiliar para probar un comando
+    const tryCommand = (cmd) => {
+        return new Promise(r => {
+            const p = spawn(cmd, ['--version']);
+            p.on('error', () => r(false));
+            p.on('close', code => r(code === 0));
+        });
+    };
 
-    let errorOutput = '';
+    (async () => {
+        // 1. Intentar con 'py' (Lanzador de Windows, evita conflictos con Inkscape)
+        if (await tryCommand('py')) {
+             console.log('   ✅ Python encontrado (Lanzador "py").');
+             pythonCmd = 'py';
+             resolve(true);
+             return;
+        }
+        
+        // 2. Intentar con 'python' estándar
+        if (await tryCommand('python')) {
+             console.log('   ✅ Python encontrado (Comando "python").');
+             pythonCmd = 'python';
+             resolve(true);
+             return;
+        }
 
-    pythonProcess.on('error', (err) => {
-      // Este evento se dispara si el comando 'python' no se puede encontrar.
-      errorOutput += `Error al ejecutar 'python': ${err.message}.`;
-    });
-
-    pythonProcess.stderr.on('data', (data) => {
-      // Python a menudo imprime la versión en la salida de error (stderr).
-      console.log(`   Respuesta de Python: ${data.toString().trim()}`);
-    });
-
-    pythonProcess.stdout.on('data', (data) => {
-      console.log(`   Respuesta de Python: ${data.toString().trim()}`);
-    });
-
-    pythonProcess.on('close', (code) => {
-      if (errorOutput || code !== 0) {
-        console.error(`   ❌ Python no parece estar instalado o no está en el PATH del sistema.`);
+        console.error('   ❌ No se encontró una instalación de Python válida.');
         resolve(false);
-      } else {
-        console.log('   ✅ Python encontrado y funcionando.');
-        resolve(true);
-      }
-    });
+    })();
   });
 }
 
@@ -502,7 +507,7 @@ app.get('/api/health', (req, res) => {
 // ==================== ENDPOINT PARA PROCESADO DE ARCHIVOS CON PYTHON ====================
 
 app.post('/api/process-file', (req, res) => {
-    const pythonProcess = spawn('python', ['file_processor.py']);
+    const pythonProcess = spawn(pythonCmd, ['file_processor.py']);
 
     let resultData = '';
     let errorData = '';
@@ -546,7 +551,7 @@ app.post('/api/process-file', (req, res) => {
 
 app.post('/api/nesting/solve', (req, res) => {
     // 1. Ejecuta el script de Python como un proceso hijo
-    const pythonProcess = spawn('python', ['nesting_solver.py']);
+    const pythonProcess = spawn(pythonCmd, ['nesting_solver.py']);
 
     let resultData = '';
     let errorData = '';

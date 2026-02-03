@@ -139,6 +139,21 @@ def shape_to_path_d(shape):
 
     return d
 
+def scale_path(path, scale):
+    if scale == 1.0:
+        return path
+    for segment in path:
+        segment.start *= scale
+        segment.end *= scale
+        if hasattr(segment, 'control1'):
+            segment.control1 *= scale
+            segment.control2 *= scale
+        elif hasattr(segment, 'control'):
+            segment.control *= scale
+        elif hasattr(segment, 'radius'):
+            segment.radius *= scale
+    return path
+
 # --- Función Principal de Procesamiento ---
 
 def process_svg(svg_string, options):
@@ -171,7 +186,8 @@ def process_svg(svg_string, options):
         d = shape_to_path_d(el)
         if not d: continue
         
-        path_obj = parse_path(d).scaled(scale_factor)
+        path_obj = parse_path(d)
+        scale_path(path_obj, scale_factor)
         bbox, points = get_bbox_and_points(path_obj)
         
         if bbox['w'] > 0.1 and bbox['h'] > 0.1:
