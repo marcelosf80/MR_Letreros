@@ -238,6 +238,9 @@ function drawGrid(ctx, w, h, scale) {
 }
 
 function drawToolpathOverlay(ctx, bin, scale) {
+    // FIX: Asegurar que no se dibuje ni calcule si no está marcado
+    if (!document.getElementById('showToolpath').checked) return;
+
     // 1. MODO ECOCUT (Trayectoria Continua)
     if (document.getElementById('ecoCutMode') && document.getElementById('ecoCutMode').checked) {
         if (typeof getEcoCutPath === 'function') {
