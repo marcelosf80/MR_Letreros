@@ -66,6 +66,72 @@ fileInput.addEventListener('change', (e) => {
         img.src = url;
         img.style.maxWidth = '100%';
         sheetsContainer.appendChild(img);
+    } else if (file.type === 'application/pdf') {
+        // === ES UN PDF VECTORIAL ===
+        statusMsg.innerText = "⏳ Procesando PDF...";
+        statusMsg.style.color = "yellow";
+        vectorOptions.style.display = 'none';
+        imageOps.style.display = 'none';
+
+        // Usar la función de pdf-importer.js
+        processPdf(file).then(svgString => {
+            currentSvgString = svgString;
+            
+            // El resto es similar a cargar un SVG
+            const blob = new Blob([currentSvgString], {type: 'image/svg+xml'});
+            const urlObj = URL.createObjectURL(blob);
+            
+            globalSvgImage = new Image(); // Variable global de globals.js
+            globalSvgImage.src = urlObj;
+            
+            statusMsg.innerText = "✅ PDF convertido a SVG. Listo para acomodar.";
+            statusMsg.style.color = "#51CF66";
+            
+            // Mostrar en visor principal (reutilizando código de SVG)
+            sheetsContainer.innerHTML = '';
+            
+            const vectorDiv = document.createElement('div');
+            vectorDiv.style.width = '100%';
+            vectorDiv.style.textAlign = 'center';
+            vectorDiv.innerHTML = '<h4 style="margin:0 0 10px 0; color:#51CF66;">Vista Previa (PDF importado como SVG)</h4>';
+
+            const editControls = document.createElement('div');
+            editControls.style.marginBottom = '10px';
+            editControls.style.display = 'flex';
+            editControls.style.gap = '5px';
+            editControls.style.justifyContent = 'center';
+            editControls.innerHTML = `
+                <button id="btnToggleEdit" style="background:#444; color:white; border:1px solid #666; padding:5px 10px; cursor:pointer; border-radius:4px; font-size:0.8em;">✏️ Editar / Limpiar</button>
+                <button id="btnWeldSelected" style="background:#7950f2; color:white; border:none; padding:5px 10px; cursor:pointer; border-radius:4px; font-size:0.8em; display:none;">🔗 Soldar (0)</button>
+                <button id="btnExplodeSelected" style="background:#fd7e14; color:white; border:none; padding:5px 10px; cursor:pointer; border-radius:4px; font-size:0.8em; display:none;">💥 Desagrupar</button>
+                <button id="btnDeleteSelected" style="background:#e03131; color:white; border:none; padding:5px 10px; cursor:pointer; border-radius:4px; font-size:0.8em; display:none;">🗑️ Borrar (0)</button>
+                <button id="btnUndo" style="background:#f59f00; color:white; border:none; padding:5px 10px; cursor:pointer; border-radius:4px; font-size:0.8em; display:none;">↩️ Deshacer</button>
+                <button id="btnSaveEdit" style="background:#51CF66; color:white; border:none; padding:5px 10px; cursor:pointer; border-radius:4px; font-size:0.8em; display:none;">💾 Guardar</button>
+            `;
+            vectorDiv.appendChild(editControls);
+
+            const div = document.createElement('div');
+            div.innerHTML = currentSvgString;
+            const svg = div.querySelector('svg');
+            if(svg) {
+                svg.style.maxWidth = '100%';
+                svg.style.height = 'auto';
+                svg.style.border = '1px solid #555';
+                svg.style.borderRadius = '4px';
+                svg.style.background = '#fff';
+                
+                if (typeof setupVectorEditor === 'function') {
+                    setupVectorEditor(svg, editControls, statusMsg);
+                }
+                vectorDiv.appendChild(svg);
+            }
+            sheetsContainer.appendChild(vectorDiv);
+
+        }).catch(error => {
+            console.error("Error procesando PDF:", error);
+            statusMsg.innerText = "❌ Error al procesar el PDF.";
+            statusMsg.style.color = "red";
+        });
     } else {
         // === ES UN SVG NORMAL ===
         vectorOptions.style.display = 'none';
@@ -87,14 +153,43 @@ fileInput.addEventListener('change', (e) => {
             
             // Mostrar en visor principal
             sheetsContainer.innerHTML = '';
+            
+            const vectorDiv = document.createElement('div');
+            vectorDiv.style.width = '100%';
+            vectorDiv.style.textAlign = 'center';
+            vectorDiv.innerHTML = '<h4 style="margin:0 0 10px 0; color:#51CF66;">Vista Previa (SVG)</h4>';
+
+            const editControls = document.createElement('div');
+            editControls.style.marginBottom = '10px';
+            editControls.style.display = 'flex';
+            editControls.style.gap = '5px';
+            editControls.style.justifyContent = 'center';
+            editControls.innerHTML = `
+                <button id="btnToggleEdit" style="background:#444; color:white; border:1px solid #666; padding:5px 10px; cursor:pointer; border-radius:4px; font-size:0.8em;">✏️ Editar / Limpiar</button>
+                <button id="btnWeldSelected" style="background:#7950f2; color:white; border:none; padding:5px 10px; cursor:pointer; border-radius:4px; font-size:0.8em; display:none;">🔗 Soldar (0)</button>
+                <button id="btnExplodeSelected" style="background:#fd7e14; color:white; border:none; padding:5px 10px; cursor:pointer; border-radius:4px; font-size:0.8em; display:none;">💥 Desagrupar</button>
+                <button id="btnDeleteSelected" style="background:#e03131; color:white; border:none; padding:5px 10px; cursor:pointer; border-radius:4px; font-size:0.8em; display:none;">🗑️ Borrar (0)</button>
+                <button id="btnUndo" style="background:#f59f00; color:white; border:none; padding:5px 10px; cursor:pointer; border-radius:4px; font-size:0.8em; display:none;">↩️ Deshacer</button>
+                <button id="btnSaveEdit" style="background:#51CF66; color:white; border:none; padding:5px 10px; cursor:pointer; border-radius:4px; font-size:0.8em; display:none;">💾 Guardar</button>
+            `;
+            vectorDiv.appendChild(editControls);
+
             const div = document.createElement('div');
             div.innerHTML = currentSvgString;
             const svg = div.querySelector('svg');
             if(svg) {
                 svg.style.maxWidth = '100%';
                 svg.style.height = 'auto';
-                sheetsContainer.appendChild(svg);
+                svg.style.border = '1px solid #555';
+                svg.style.borderRadius = '4px';
+                svg.style.background = '#fff';
+                
+                if (typeof setupVectorEditor === 'function') {
+                    setupVectorEditor(svg, editControls, statusMsg);
+                }
+                vectorDiv.appendChild(svg);
             }
+            sheetsContainer.appendChild(vectorDiv);
         };
         reader.readAsText(file);
     }

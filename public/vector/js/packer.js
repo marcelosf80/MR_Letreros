@@ -24,14 +24,19 @@ class Part {
         this.rotated = false;
         
         // Guardamos posiciÃ³n original para poder "recortar" la imagen luego
-        this.originalX = this.x;
-        this.originalY = this.y;
+        this.originalX = 0;
+        this.originalY = 0;
+        this.originalW = 0;
+        this.originalH = 0;
 
         // Cargar huecos si existen (Nesting dentro de huecos)
         this.holes = [];
         if (element.dataset && element.dataset.holes) {
             try { this.holes = JSON.parse(element.dataset.holes); } catch(e) {}
         }
+
+        // Geometría Normalizada (Polígonos)
+        this.geometry = element.geometry || null;
     }
 }
 
@@ -51,34 +56,55 @@ class Bin {
     // Intenta meter una pieza en esta placa
     tryFit(part, allowRotation) {
         let bestSpaceIndex = -1;
-        let rotateThis = false;
+        let bestShortSideFit = Infinity; // Heurística: Mejor ajuste del lado corto
+        let bestRotate = false;
 
-        // Buscar espacio
+        // Buscar el MEJOR espacio disponible (no solo el primero)
         for (let i = 0; i < this.spaces.length; i++) {
             const space = this.spaces[i];
             
+            const gappedW = part.w + this.gap;
+            const gappedH = part.h + this.gap;
+
             // Cabe normal?
-            const fitsNormal = (space.w >= part.w + this.gap) && (space.h >= part.h + this.gap);
+            const fitsNormal = (space.w >= gappedW) && (space.h >= gappedH);
             // Cabe rotada?
             let fitsRotated = false;
             if (allowRotation) {
-                fitsRotated = (space.w >= part.h + this.gap) && (space.h >= part.w + this.gap);
+                // gapped dimensions are swapped
+                fitsRotated = (space.w >= gappedH) && (space.h >= gappedW);
             }
 
             if (fitsNormal) {
-                bestSpaceIndex = i;
-                rotateThis = false;
-                break; 
-            } else if (fitsRotated) {
-                bestSpaceIndex = i;
-                rotateThis = true;
-                break; 
+                const leftoverW = space.w - gappedW;
+                const leftoverH = space.h - gappedH;
+                const shortSide = Math.min(leftoverW, leftoverH);
+                
+                if (shortSide < bestShortSideFit) {
+                    bestShortSideFit = shortSide;
+                    bestSpaceIndex = i;
+                    bestRotate = false;
+                }
+            }
+            
+            if (fitsRotated) {
+                // Use gapped dimensions for heuristic
+                const leftoverW = space.w - gappedH;
+                const leftoverH = space.h - gappedW;
+                const shortSide = Math.min(leftoverW, leftoverH);
+
+                if (shortSide < bestShortSideFit) {
+                    bestShortSideFit = shortSide;
+                    bestSpaceIndex = i;
+                    bestRotate = true;
+                }
             }
         }
 
         if (bestSpaceIndex !== -1) {
             // Encontramos lugar
             const space = this.spaces[bestSpaceIndex];
+            const rotateThis = bestRotate;
             
             // Guardar datos en la pieza
             part.placed = true;
@@ -111,8 +137,12 @@ class Bin {
             
             this.spaces.splice(bestSpaceIndex, 1);
 
-            if (downSpace.w > 0 && downSpace.h > 0) this.spaces.push(downSpace);
-            if (rightSpace.w > 0 && rightSpace.h > 0) this.spaces.push(rightSpace);
+            // FIX: Si es un hueco, NO agregamos el espacio sobrante porque el posicionamiento
+            // centrado hace que el cálculo de right/down sea incorrecto y cause superposiciones.
+            if (!space.isHole) {
+                if (downSpace.w > 0 && downSpace.h > 0) this.spaces.push(downSpace);
+                if (rightSpace.w > 0 && rightSpace.h > 0) this.spaces.push(rightSpace);
+            }
 
             // --- NESTING EN HUECOS ---
             // Si la pieza tiene huecos, los agregamos como espacios libres

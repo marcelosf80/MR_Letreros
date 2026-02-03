@@ -15,12 +15,31 @@ function runNesting() {
     const packer = new Packer(sheetW, sheetH, gap, useVertical);
     lastPacker = packer;
     
-    globalParts.forEach(p => { p.placed = false; p.binId = -1; });
+    // --- FIX: Separar Nesting de la visualización de Trayectoria ---
+    // Al acomodar, siempre ocultamos la trayectoria.
+    // Se mostrará solo al presionar "Crear Trayectoria".
+    document.getElementById('showToolpath').checked = false;
+    const cncActions = document.querySelectorAll('.cnc-actions');
+    if (cncActions) cncActions.forEach(el => el.style.display = 'none');
+
+    globalParts.forEach(p => { p.placed = false; p.binId = -1; p.nestedInHole = false; });
     packer.fit(globalParts, allowRotation);
     drawResults(packer);
 }
 
 function drawResults(packer) {
+    // Detectar si globalSvgImage no está cargada correctamente
+    if (!globalSvgImage || !globalSvgImage.complete || globalSvgImage.width === 0) {
+        console.log('[DEBUG] Regenerando globalSvgImage desde currentSvgString');
+        if (currentSvgString) {
+            const blob = new Blob([currentSvgString], {type: 'image/svg+xml'});
+            globalSvgImage = new Image();
+            globalSvgImage.onload = () => drawResults(packer); // Re-dibujar
+            globalSvgImage.src = URL.createObjectURL(blob);
+            return;
+        }
+    }
+
     const bins = packer.bins;
     let totalPlaced = 0;
     const containerW = document.querySelector('.preview').clientWidth - 40;
@@ -29,9 +48,29 @@ function drawResults(packer) {
     const sheetsContainer = document.getElementById('sheetsContainer');
     const statsBar = document.getElementById('statsBar');
     const statusMsg = document.getElementById('statusMsg');
-
-    const imgScaleX = globalSvgImage.width / svgViewBox.w;
-    const imgScaleY = globalSvgImage.height / svgViewBox.h;
+    
+    // --- FIX: Calcular la escala de la imagen correctamente ---
+    // El `svgViewBox` global está en mm (escalado), pero `globalSvgImage` se renderizó
+    // desde el SVG original. Necesitamos el viewBox ORIGINAL.
+    let originalVbW = 1000, originalVbH = 1000;
+    if (currentSvgString) {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(currentSvgString, "image/svg+xml");
+        const svg = doc.querySelector('svg');
+        if (svg) {
+            const vb = svg.getAttribute('viewBox');
+            if (vb) {
+                const parts = vb.split(' ');
+                originalVbW = parseFloat(parts[2]);
+                originalVbH = parseFloat(parts[3]);
+            } else {
+                originalVbW = parseFloat(svg.getAttribute('width')) || globalSvgImage.width;
+                originalVbH = parseFloat(svg.getAttribute('height')) || globalSvgImage.height;
+            }
+        }
+    }
+    const imgScaleX = globalSvgImage.width / originalVbW;
+    const imgScaleY = globalSvgImage.height / originalVbH;
 
     bins.forEach(bin => {
         const wrapper = document.createElement('div');
@@ -106,11 +145,12 @@ function drawResults(packer) {
                 const cy = destY + (part.rotated ? destW : destH) / 2;
                 pdfCtx.translate(cx, cy);
                 if (part.rotated) pdfCtx.rotate(-90 * Math.PI / 180);
-
+                
+                // FIX: Usar dimensiones originales para el recorte
                 const srcX = part.originalX * imgScaleX;
                 const srcY = part.originalY * imgScaleY;
-                const srcW = part.w * imgScaleX;
-                const srcH = part.h * imgScaleY;
+                const srcW = part.originalW * imgScaleX;
+                const srcH = part.originalH * imgScaleY;
                 try {
                     pdfCtx.drawImage(globalSvgImage, srcX, srcY, srcW, srcH, -destW/2, -destH/2, destW, destH);
                 } catch(err) {}
@@ -165,11 +205,11 @@ function drawResults(packer) {
             ctx.translate(cx, cy);
             if (part.rotated) ctx.rotate(-90 * Math.PI / 180);
 
+            // FIX: Usar las dimensiones y coordenadas originales (sin escalar) para recortar la imagen
             const srcX = part.originalX * imgScaleX;
             const srcY = part.originalY * imgScaleY;
-            const srcW = part.w * imgScaleX;
-            const srcH = part.h * imgScaleY;
-
+            const srcW = part.originalW * imgScaleX;
+            const srcH = part.originalH * imgScaleY;
             try {
                 ctx.drawImage(globalSvgImage, srcX, srcY, srcW, srcH, -destW/2, -destH/2, destW, destH);
             } catch(err) {}
@@ -195,62 +235,6 @@ function drawGrid(ctx, w, h, scale) {
     for(let x=0; x<w; x+=step) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,h); ctx.stroke(); }
     for(let y=0; y<h; y+=step) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(w,y); ctx.stroke(); }
     ctx.restore();
-}
-
-function getOptimizedSequence(bin) {
-    let partsToCut = [...bin.parts];
-    let currentPos = { x: 0, y: 0 };
-    const sortedParts = [];
-
-    while (partsToCut.length > 0) {
-        let nearestIdx = -1;
-        let minDist = Infinity;
-        for (let i = 0; i < partsToCut.length; i++) {
-            const p = partsToCut[i];
-            const dist = (p.fit.x - currentPos.x) ** 2 + (p.fit.y - currentPos.y) ** 2;
-            if (dist < minDist) { minDist = dist; nearestIdx = i; }
-        }
-        const nextPart = partsToCut.splice(nearestIdx, 1)[0];
-        sortedParts.push(nextPart);
-        currentPos = { x: nextPart.fit.x, y: nextPart.fit.y };
-    }
-
-    if (document.getElementById('reversePath') && document.getElementById('reversePath').checked) {
-        sortedParts.reverse();
-    }
-
-    const finalSequence = [];
-    const hiddenSvg = document.getElementById('hiddenSvgContainer').querySelector('svg');
-
-    sortedParts.forEach(part => {
-        const el = part.element;
-        if (el.tagName.toLowerCase() === 'path') {
-            const d = el.getAttribute('d');
-            const subPathStrings = d.split(/(?=[Mm])/).filter(s => s.trim().length > 5); // Filtro de ruido
-            if (subPathStrings.length > 1 && hiddenSvg) {
-                const tempEls = subPathStrings.map(s => {
-                    const tempEl = document.createElementNS("http://www.w3.org/2000/svg", "path");
-                    tempEl.setAttribute('d', s);
-                    return tempEl;
-                });
-                const measured = tempEls.map(tempEl => {
-                    hiddenSvg.appendChild(tempEl);
-                    let area = 0;
-                    try { const bbox = tempEl.getBBox(); area = bbox.width * bbox.height; } catch(e) {}
-                    tempEl.remove();
-                    return { el: tempEl, area };
-                });
-                // Ordenar: Menor área primero (Huecos) -> Mayor área al final (Contorno)
-                measured.sort((a, b) => a.area - b.area); 
-                measured.forEach((m, idx) => {
-                    finalSequence.push({ element: m.el, parentPart: part, type: (idx < measured.length - 1) ? 'Hueco' : 'Contorno' });
-                });
-                return;
-            }
-        }
-        finalSequence.push({ element: el, parentPart: part, type: 'Contorno' });
-    });
-    return finalSequence;
 }
 
 function drawToolpathOverlay(ctx, bin, scale) {
@@ -305,66 +289,66 @@ function drawToolpathOverlay(ctx, bin, scale) {
     const styleRapid = { color: 'rgba(255, 0, 0, 0.6)', width: 1, dash: [3, 3] };
     const styleCut = { color: 'rgba(0, 100, 255, 0.9)', width: 2, dash: [] };
 
-    const sequence = getOptimizedSequence(bin);
+    // Ordenar piezas
+    let partsToCut = [...bin.parts];
+    // (Simple sort by position for drawing)
+    partsToCut.sort((a, b) => (a.fit.x - b.fit.x) || (a.fit.y - b.fit.y));
 
-    sequence.forEach(item => {
-        const part = item.parentPart;
-        const el = item.element;
-        const totalLen = el.getTotalLength();
+    partsToCut.forEach(part => {
+        if (!part.geometry) return;
 
-        const getScreenPos = (p) => {
-            const relX = p.x - part.x;
-            const relY = p.y - part.y;
-            let finalX, finalY;
-            if (part.rotated) {
-                finalX = part.fit.x + relY;
-                finalY = part.fit.y + (part.w - relX); 
-            } else {
-                finalX = part.fit.x + relX;
-                finalY = part.fit.y + relY;
-            }
-            return { x: finalX * scale, y: finalY * scale };
+        // Helper para transformar a pantalla
+        const toScreen = (pts) => {
+            // 1. Get Global Points (mm)
+            const global = getGlobalPoints(part, pts);
+            // 2. Scale to Screen (px)
+            return global.map(p => ({ x: p.x * scale, y: p.y * scale }));
         };
 
-        // Discretizar para visualización
-        const step = 2.0; 
-        let points = [];
-        for (let len = 0; len <= totalLen; len += step) {
-            points.push(getScreenPos(el.getPointAtLength(len)));
-        }
-        points.push(getScreenPos(el.getPointAtLength(totalLen)));
+        // Dibujar Huecos
+        part.geometry.holes.forEach(holePts => {
+            const points = toScreen(holePts);
+            if (points.length === 0) return;
 
-        // Optimizar Inicio
-        points = optimizePathStart(points, {x: currentX, y: currentY});
-
-        if (points.length > 0) {
-            const start = points[0];
-
-            // Movimiento Rápido (G0)
-            const travelPath = getSafeTravelPath({x: currentX, y: currentY}, {x: start.x, y: start.y}, bin.width * scale, bin.height * scale);
-            
             ctx.beginPath();
-            ctx.strokeStyle = styleRapid.color;
-            ctx.lineWidth = styleRapid.width;
-            ctx.setLineDash(styleRapid.dash);
-            ctx.moveTo(currentX, currentY);
-            travelPath.forEach(p => ctx.lineTo(p.x, p.y));
-            ctx.stroke();
-
-            // Movimiento de Corte (G1)
-            ctx.beginPath();
-            ctx.strokeStyle = styleCut.color;
+            ctx.strokeStyle = '#ff922b'; // Naranja
             ctx.lineWidth = styleCut.width;
             ctx.setLineDash(styleCut.dash);
-            ctx.moveTo(start.x, start.y);
-            for (let i = 1; i < points.length; i++) {
-                ctx.lineTo(points[i].x, points[i].y);
-            }
+            ctx.moveTo(points[0].x, points[0].y);
+            for (let i = 1; i < points.length; i++) ctx.lineTo(points[i].x, points[i].y);
             ctx.stroke();
+        });
 
-            currentX = points[points.length - 1].x;
-            currentY = points[points.length - 1].y;
-        }
+        // Dibujar Contorno
+        const outerPoints = toScreen(part.geometry.outer);
+        if (outerPoints.length === 0) return;
+
+        // Optimizar Inicio
+        let points = optimizePathStart(outerPoints, {x: currentX, y: currentY});
+        
+        // Travel
+        const start = points[0];
+        const travelPath = getSafeTravelPath({x: currentX, y: currentY}, start, bin.width * scale, bin.height * scale);
+
+        ctx.beginPath();
+        ctx.strokeStyle = styleRapid.color;
+        ctx.lineWidth = styleRapid.width;
+        ctx.setLineDash(styleRapid.dash);
+        ctx.moveTo(currentX, currentY);
+        travelPath.forEach(p => ctx.lineTo(p.x, p.y));
+        ctx.stroke();
+
+        // Cut
+        ctx.beginPath();
+        ctx.strokeStyle = styleCut.color;
+        ctx.lineWidth = styleCut.width;
+        ctx.setLineDash(styleCut.dash);
+        ctx.moveTo(start.x, start.y);
+        for (let i = 1; i < points.length; i++) ctx.lineTo(points[i].x, points[i].y);
+        ctx.stroke();
+
+        currentX = points[points.length - 1].x;
+        currentY = points[points.length - 1].y;
     });
 
     // Volver a Home (Parking)

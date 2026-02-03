@@ -122,6 +122,8 @@ function runVectorization() {
             editControls.style.justifyContent = 'center';
             editControls.innerHTML = `
                 <button id="btnToggleEdit" style="background:#444; color:white; border:1px solid #666; padding:5px 10px; cursor:pointer; border-radius:4px; font-size:0.8em;">✏️ Editar / Limpiar</button>
+                <button id="btnWeldSelected" style="background:#7950f2; color:white; border:none; padding:5px 10px; cursor:pointer; border-radius:4px; font-size:0.8em; display:none;">🔗 Soldar (0)</button>
+                <button id="btnExplodeSelected" style="background:#fd7e14; color:white; border:none; padding:5px 10px; cursor:pointer; border-radius:4px; font-size:0.8em; display:none;">💥 Desagrupar</button>
                 <button id="btnDeleteSelected" style="background:#e03131; color:white; border:none; padding:5px 10px; cursor:pointer; border-radius:4px; font-size:0.8em; display:none;">🗑️ Borrar (0)</button>
                 <button id="btnUndo" style="background:#f59f00; color:white; border:none; padding:5px 10px; cursor:pointer; border-radius:4px; font-size:0.8em; display:none;">↩️ Deshacer</button>
                 <button id="btnSaveEdit" style="background:#51CF66; color:white; border:none; padding:5px 10px; cursor:pointer; border-radius:4px; font-size:0.8em; display:none;">💾 Guardar</button>
@@ -145,7 +147,8 @@ function runVectorization() {
 
             sheetsContainer.appendChild(vectorDiv);
         };
-        globalSvgImage.src = currentImgUrl;
+        const blob = new Blob([currentSvgString], {type: 'image/svg+xml'});
+        globalSvgImage.src = URL.createObjectURL(blob);
     };
 }
 
@@ -155,6 +158,8 @@ function setupVectorEditor(svg, controls, statusMsg) {
     let isEditing = false;
 
     const btnToggle = controls.querySelector('#btnToggleEdit');
+    const btnWeld = controls.querySelector('#btnWeldSelected');
+    const btnExplode = controls.querySelector('#btnExplodeSelected');
     const btnDel = controls.querySelector('#btnDeleteSelected');
     const btnUndo = controls.querySelector('#btnUndo');
     const btnSave = controls.querySelector('#btnSaveEdit');
@@ -162,6 +167,21 @@ function setupVectorEditor(svg, controls, statusMsg) {
     const updateButtons = () => {
         btnDel.innerText = `🗑️ Borrar (${selectedPaths.size})`;
         btnDel.style.display = selectedPaths.size > 0 ? 'inline-block' : 'none';
+        btnWeld.innerText = `🔗 Soldar (${selectedPaths.size})`;
+        btnWeld.style.display = selectedPaths.size > 1 ? 'inline-block' : 'none';
+        
+        // Lógica para mostrar botón Desagrupar
+        let canExplode = false;
+        selectedPaths.forEach(p => {
+            const d = p.getAttribute('d') || '';
+            // Si tiene más de un comando M (Move), es compuesto y se puede desagrupar
+            if ((d.match(/[Mm]/g) || []).length > 1) canExplode = true;
+        });
+        if (btnExplode) {
+            btnExplode.style.display = (selectedPaths.size > 0 && canExplode) ? 'inline-block' : 'none';
+            btnExplode.innerText = `💥 Desagrupar (${selectedPaths.size})`;
+        }
+
         btnUndo.style.display = deletedStack.length > 0 ? 'inline-block' : 'none';
     };
 
@@ -196,6 +216,8 @@ function setupVectorEditor(svg, controls, statusMsg) {
             btnToggle.style.background = '#444';
             btnToggle.innerText = '✏️ Editar / Limpiar';
             btnSave.style.display = 'none';
+                        btnWeld.style.display = 'none';
+            if (btnExplode) btnExplode.style.display = 'none';
             btnDel.style.display = 'none';
             btnUndo.style.display = 'none';
             selectedPaths.forEach(p => { if(p.parentNode) p.setAttribute('fill', p.dataset.originalFill); });
@@ -203,6 +225,83 @@ function setupVectorEditor(svg, controls, statusMsg) {
             svg.querySelectorAll('path').forEach(p => { p.style.cursor = 'default'; p.onmouseover = null; p.onmouseout = null; p.onclick = null; });
         }
     };
+
+                btnWeld.onclick = () => {
+                    const pathsToWeld = Array.from(selectedPaths);
+                    if (pathsToWeld.length < 2) return;
+                    
+                    let combinedD = "";
+                    pathsToWeld.forEach(p => {
+                        combinedD += p.getAttribute('d') + " ";
+                        p.remove();
+                    });
+                    
+                    const newPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                    newPath.setAttribute('d', combinedD);
+                    newPath.setAttribute('fill', pathsToWeld[0].dataset.originalFill || '#000');
+                    newPath.dataset.originalFill = pathsToWeld[0].dataset.originalFill || '#000';
+                    newPath.dataset.welded = "true";
+                    
+                    // Attach listeners to new path
+                    newPath.style.cursor = 'pointer';
+                    newPath.onmouseover = () => { if(!selectedPaths.has(newPath)) newPath.setAttribute('fill', '#ff0000'); };
+                    newPath.onmouseout = () => { if(!selectedPaths.has(newPath)) newPath.setAttribute('fill', newPath.dataset.originalFill); };
+                    newPath.onclick = (e) => {
+                         e.preventDefault();
+                         if (selectedPaths.has(newPath)) {
+                             selectedPaths.delete(newPath);
+                             newPath.setAttribute('fill', newPath.dataset.originalFill);
+                         } else {
+                             selectedPaths.add(newPath);
+                             newPath.setAttribute('fill', '#ff0000');
+                         }
+                         updateButtons();
+                    };
+
+                    svg.appendChild(newPath);
+                    selectedPaths.clear();
+                    updateButtons();
+                };
+
+                if (btnExplode) {
+                    btnExplode.onclick = () => {
+                        const pathsToExplode = Array.from(selectedPaths);
+                        if (pathsToExplode.length === 0) return;
+
+                        pathsToExplode.forEach(p => {
+                            const d = p.getAttribute('d') || '';
+                            const subPaths = d.split(/(?=[Mm])/).filter(s => s.trim().length > 0);
+                            
+                            if (subPaths.length > 1) {
+                                subPaths.forEach(sp => {
+                                    const newPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                                    newPath.setAttribute('d', sp);
+                                    newPath.setAttribute('fill', p.dataset.originalFill || '#000');
+                                    newPath.dataset.originalFill = p.dataset.originalFill || '#000';
+                                    
+                                    newPath.style.cursor = 'pointer';
+                                    newPath.onmouseover = () => { if(!selectedPaths.has(newPath)) newPath.setAttribute('fill', '#ff0000'); };
+                                    newPath.onmouseout = () => { if(!selectedPaths.has(newPath)) newPath.setAttribute('fill', newPath.dataset.originalFill); };
+                                    newPath.onclick = (e) => {
+                                         e.preventDefault();
+                                         if (selectedPaths.has(newPath)) {
+                                             selectedPaths.delete(newPath);
+                                             newPath.setAttribute('fill', newPath.dataset.originalFill);
+                                         } else {
+                                             selectedPaths.add(newPath);
+                                             newPath.setAttribute('fill', '#ff0000');
+                                         }
+                                         updateButtons();
+                                    };
+                                    svg.appendChild(newPath);
+                                });
+                                p.remove();
+                                selectedPaths.delete(p);
+                            }
+                        });
+                        updateButtons();
+                    };
+                }
 
     btnDel.onclick = () => {
         const pathsToRemove = Array.from(selectedPaths);
@@ -302,6 +401,11 @@ function parseSvgParts(svgString) {
             const tempEl = document.createElementNS("http://www.w3.org/2000/svg", "path");
             tempEl.setAttribute('d', scaledSp);
             svgEl.appendChild(tempEl);
+
+            // --- FIX: Crear elemento temporal con path original para obtener BBox sin escalar ---
+            const tempOriginalEl = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            tempOriginalEl.setAttribute('d', sp);
+            svgEl.appendChild(tempOriginalEl);
             
             try {
                 const bbox = tempEl.getBBox();
@@ -314,9 +418,12 @@ function parseSvgParts(svgString) {
                     const pt = tempEl.getPointAtLength((i / samples) * totalLen);
                     points.push({ x: pt.x, y: pt.y });
                 }
+
+                const originalBbox = tempOriginalEl.getBBox();
                 simpleShapes.push({
                     d: scaledSp,
                     bbox: bbox,
+                    originalBbox: originalBbox, // Guardar BBox original
                     area: bbox.width * bbox.height,
                     points: points,
                     children: [],
@@ -324,6 +431,7 @@ function parseSvgParts(svgString) {
                 });
             } catch(e) {}
             tempEl.remove();
+            tempOriginalEl.remove();
         });
         el.remove(); // Eliminar original
     });
@@ -359,24 +467,33 @@ function parseSvgParts(svgString) {
     };
 
     const isContained = (inner, outer) => {
-        // BBox Check rápido
-        if (inner.bbox.x < outer.bbox.x || inner.bbox.y < outer.bbox.y ||
-            (inner.bbox.x + inner.bbox.width) > (outer.bbox.x + outer.bbox.width) ||
-            (inner.bbox.y + inner.bbox.height) > (outer.bbox.y + outer.bbox.height)) {
+        // BBox Check con Tolerancia (Epsilon) para evitar errores de punto flotante
+        const epsilon = 0.5; 
+        if (inner.bbox.x < outer.bbox.x - epsilon || 
+            inner.bbox.y < outer.bbox.y - epsilon ||
+            (inner.bbox.x + inner.bbox.width) > (outer.bbox.x + outer.bbox.width) + epsilon ||
+            (inner.bbox.y + inner.bbox.height) > (outer.bbox.y + outer.bbox.height) + epsilon) {
             return false;
         }
+
         // RayCasting con el primer punto del inner
         if (inner.points.length === 0 || outer.points.length === 0) return true;
         
-        // 1. Probar con el centro del BBox (Más robusto para letras)
+        // 1. Probar con el centro del BBox
         const center = {
             x: inner.bbox.x + inner.bbox.width / 2,
             y: inner.bbox.y + inner.bbox.height / 2
         };
         if (isPointInPoly(center, outer.points)) return true;
 
-        // 2. Fallback: Probar con el primer punto del perímetro
-        return isPointInPoly(inner.points[0], outer.points);
+        // 2. Fallback: Probar múltiples puntos del perímetro para robustez
+        // Probamos inicio, medio y final
+        const indices = [0, Math.floor(inner.points.length / 2), inner.points.length - 1];
+        for (let idx of indices) {
+            if (isPointInPoly(inner.points[idx], outer.points)) return true;
+        }
+        
+        return false;
     };
 
     const addToTree = (shape, nodes) => {
@@ -392,13 +509,28 @@ function parseSvgParts(svgString) {
     simpleShapes.forEach(shape => addToTree(shape, rootNodes));
 
     // 4. Reconstruir SVG con huecos combinados
+    const getPointsFromPath = (d, step = 1.0) => {
+        const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        path.setAttribute('d', d);
+        const len = path.getTotalLength();
+        const points = [];
+        for (let l = 0; l <= len; l += step) {
+            const p = path.getPointAtLength(l);
+            points.push({x: p.x, y: p.y});
+        }
+        return points;
+    };
+
     const processNode = (node, level) => {
         // Nivel par = Sólido, Nivel impar = Hueco (se ignora aquí, se procesa con el padre)
         if (level % 2 === 0) {
             let combinedD = node.d;
+            // Propagar el BBox original de la pieza principal
+            const originalBbox = node.originalBbox;
             
             // Recolectar huecos útiles para nesting
             const holesData = [];
+            const holePolys = [];
 
             node.children.forEach(hole => {
                 combinedD += " " + hole.d;
@@ -416,15 +548,31 @@ function parseSvgParts(svgString) {
                 if (hW > 10 && hH > 10) { // Solo huecos mayores a 10mm
                     holesData.push({ x: hX, y: hY, w: hW, h: hH });
                 }
+                
+                holePolys.push(getPointsFromPath(hole.d));
             });
             
             const newPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
             newPath.setAttribute('d', combinedD);
             
+            // Normalización de Geometría (Polígonos Relativos)
+            const originX = node.bbox.x;
+            const originY = node.bbox.y;
+            const normalize = p => ({x: p.x - originX, y: p.y - originY});
+
+            const geometry = {
+                outer: getPointsFromPath(node.d).map(normalize),
+                holes: holePolys.map(poly => poly.map(normalize))
+            };
+            newPath.geometry = geometry; // Adjuntar objeto directo al elemento DOM
+
             // Guardar datos de huecos en el elemento para el Packer
             if (holesData.length > 0) {
                 newPath.dataset.holes = JSON.stringify(holesData);
             }
+
+            // Adjuntar BBox original al elemento para usarlo al crear el objeto Part
+            newPath.originalBbox = originalBbox;
 
             newPath.setAttribute('fill', node.originalColor);
             newPath.setAttribute('fill-rule', 'evenodd');
@@ -444,8 +592,19 @@ function parseSvgParts(svgString) {
         
         const p = new Part(el, idCount);
         if (p.w > 0.1 && p.h > 0.1) {
-            p.originalX = p.x;
-            p.originalY = p.y;
+            // FIX: Asignar las coordenadas y dimensiones originales (sin escalar) para el recorte de la imagen
+            if (el.originalBbox) {
+                p.originalX = el.originalBbox.x;
+                p.originalY = el.originalBbox.y;
+                p.originalW = el.originalBbox.width;
+                p.originalH = el.originalBbox.height;
+            } else {
+                // Fallback por si algo falla (aproximación)
+                p.originalX = p.x / (scaleFactor || 1);
+                p.originalY = p.y / (scaleFactor || 1);
+                p.originalW = p.w / (scaleFactor || 1);
+                p.originalH = p.h / (scaleFactor || 1);
+            }
             globalParts.push(p);
             idCount++;
         }
@@ -462,6 +621,9 @@ function convertPrimitivesToPaths(svg) {
         const tag = shape.tagName.toLowerCase();
         let d = '';
         
+        // Constante Kappa para aproximación de círculos con Bezier
+        const k = 0.5522847498;
+        
         if (tag === 'rect') {
             const x = parseFloat(shape.getAttribute('x')) || 0;
             const y = parseFloat(shape.getAttribute('y')) || 0;
@@ -473,7 +635,19 @@ function convertPrimitivesToPaths(svg) {
             if (rx || ry) {
                 const r_x = rx || ry;
                 const r_y = ry || rx;
-                d = `M ${x+r_x},${y} L ${x+w-r_x},${y} A ${r_x},${r_y} 0 0,1 ${x+w},${y+r_y} L ${x+w},${y+h-r_y} A ${r_x},${r_y} 0 0,1 ${x+w-r_x},${y+h} L ${x+r_x},${y+h} A ${r_x},${r_y} 0 0,1 ${x},${y+h-r_y} L ${x},${y+r_y} A ${r_x},${r_y} 0 0,1 ${x+r_x},${y} Z`;
+                const kx = r_x * k;
+                const ky = r_y * k;
+                
+                // Usar Curvas Bezier (C) en lugar de Arcos (A) para evitar errores de escalado
+                d = `M ${x + r_x},${y} ` +
+                    `L ${x + w - r_x},${y} ` +
+                    `C ${x + w - r_x + kx},${y} ${x + w},${y + r_y - ky} ${x + w},${y + r_y} ` +
+                    `L ${x + w},${y + h - r_y} ` +
+                    `C ${x + w},${y + h - r_y + ky} ${x + w - r_x + kx},${y + h} ${x + w - r_x},${y + h} ` +
+                    `L ${x + r_x},${y + h} ` +
+                    `C ${x + r_x - kx},${y + h} ${x},${y + h - r_y + ky} ${x},${y + h - r_y} ` +
+                    `L ${x},${y + r_y} ` +
+                    `C ${x},${y + r_y - ky} ${x + r_x - kx},${y} ${x + r_x},${y} Z`;
             } else {
                 d = `M ${x},${y} h ${w} v ${h} h ${-w} Z`;
             }
@@ -481,13 +655,24 @@ function convertPrimitivesToPaths(svg) {
             const cx = parseFloat(shape.getAttribute('cx')) || 0;
             const cy = parseFloat(shape.getAttribute('cy')) || 0;
             const r = parseFloat(shape.getAttribute('r')) || 0;
-            d = `M ${cx-r},${cy} a ${r},${r} 0 1,0 ${r*2},0 a ${r},${r} 0 1,0 ${-r*2},0 Z`;
+            const kr = r * k;
+            d = `M ${cx - r},${cy} ` +
+                `C ${cx - r},${cy - kr} ${cx - kr},${cy - r} ${cx},${cy - r} ` +
+                `C ${cx + kr},${cy - r} ${cx + r},${cy - kr} ${cx + r},${cy} ` +
+                `C ${cx + r},${cy + kr} ${cx + kr},${cy + r} ${cx},${cy + r} ` +
+                `C ${cx - kr},${cy + r} ${cx - r},${cy + kr} ${cx - r},${cy} Z`;
         } else if (tag === 'ellipse') {
             const cx = parseFloat(shape.getAttribute('cx')) || 0;
             const cy = parseFloat(shape.getAttribute('cy')) || 0;
             const rx = parseFloat(shape.getAttribute('rx')) || 0;
             const ry = parseFloat(shape.getAttribute('ry')) || 0;
-            d = `M ${cx-rx},${cy} a ${rx},${ry} 0 1,0 ${rx*2},0 a ${rx},${ry} 0 1,0 ${-rx*2},0 Z`;
+            const kx = rx * k;
+            const ky = ry * k;
+            d = `M ${cx - rx},${cy} ` +
+                `C ${cx - rx},${cy - ky} ${cx - kx},${cy - ry} ${cx},${cy - ry} ` +
+                `C ${cx + kx},${cy - ry} ${cx + rx},${cy - ky} ${cx + rx},${cy} ` +
+                `C ${cx + rx},${cy + ky} ${cx + kx},${cy + ry} ${cx},${cy + ry} ` +
+                `C ${cx - kx},${cy + ry} ${cx - rx},${cy + ky} ${cx - rx},${cy} Z`;
         } else if (tag === 'line') {
             const x1 = parseFloat(shape.getAttribute('x1')) || 0;
             const y1 = parseFloat(shape.getAttribute('y1')) || 0;

@@ -43,8 +43,8 @@
         <div class="controls">
             <h3>⚙️ Configuración</h3>
             
-            <label>1. Cargar Archivo (SVG, JPG, PNG)</label>
-            <input type="file" id="fileInput" accept=".svg, .jpg, .jpeg, .png, .bmp">
+            <label>1. Cargar Archivo (SVG, PDF, JPG, PNG)</label>
+            <input type="file" id="fileInput" accept=".svg,.pdf,.jpg,.jpeg,.png,.bmp">
             
             <!-- NUEVO: Pequeña vista previa inmediata -->
             <div id="miniPreview" style="margin-top:10px; border:1px dashed #555; padding:5px; display:none;">
@@ -229,11 +229,16 @@
                 <div>
                     <button id="btnZoomIn" style="background:#339AF0; border:none; padding:5px 10px; cursor:pointer; border-radius:4px; color:white; margin-right:5px; font-weight:bold;" title="Acercar">+</button>
                     <button id="btnZoomOut" style="background:#339AF0; border:none; padding:5px 10px; cursor:pointer; border-radius:4px; color:white; margin-right:5px; font-weight:bold;" title="Alejar">-</button>
+                    <button id="btnRotateCCW" style="background:#444; border:none; padding:5px 10px; cursor:pointer; border-radius:4px; color:white; margin-right:5px;" title="Rotar Anti-Horario">↺</button>
+                    <button id="btnRotateCW" style="background:#444; border:none; padding:5px 10px; cursor:pointer; border-radius:4px; color:white; margin-right:5px;" title="Rotar Horario">↻</button>
+                    <button id="btnFlipX" style="background:#444; border:none; padding:5px 10px; cursor:pointer; border-radius:4px; color:white; margin-right:5px;" title="Espejo Horizontal">↔</button>
+                    <button id="btnFlipY" style="background:#444; border:none; padding:5px 10px; cursor:pointer; border-radius:4px; color:white; margin-right:15px;" title="Espejo Vertical">↕</button>
+                    <button id="btnDeletePart" style="background:#e03131; border:none; padding:5px 15px; cursor:pointer; border-radius:4px; color:white; margin-right:5px; font-weight:bold;" title="Eliminar Pieza">🗑️</button>
                     <button id="btnSaveFabric" style="background:#51CF66; border:none; padding:5px 15px; cursor:pointer; border-radius:4px; font-weight:bold;">💾 Guardar Cambios</button>
                     <button onclick="document.getElementById('fabricModal').style.display='none'" style="background:#e03131; border:none; padding:5px 15px; cursor:pointer; border-radius:4px; color:white;">❌ Cancelar</button>
                 </div>
             </div>
-            <div style="flex:1; background:#fff; overflow:hidden; border-radius:4px; position:relative;">
+            <div id="fabricContainer" style="flex:1; background:#fff; overflow:hidden; border-radius:4px; position:relative;">
                 <canvas id="fabricCanvas"></canvas>
             </div>
             <p style="color:#aaa; font-size:0.8em; margin-top:5px;">Usa los controles azules para escalar y rotar. Arrastra para mover.</p>
@@ -245,11 +250,19 @@
     </footer>
 
     <!-- Scripts -->
+    <!-- PDF.js para importación de PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.107/pdf.min.js"></script>
+    <script>
+        // Configuración del "worker" para que PDF.js pueda procesar archivos en segundo plano.
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.107/pdf.worker.min.js';
+    </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/imagetracerjs@1.2.6/imagetracer_v1.2.6.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/javascript-clipper/6.4.2.2/clipper.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="js/pdf-importer.js"></script>
     <script src="js/globals.js"></script>
     <script src="js/utils.js"></script>
     <script src="js/settings.js"></script>

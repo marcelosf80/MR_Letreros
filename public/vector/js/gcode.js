@@ -1,5 +1,23 @@
 // Generador de G-Code
 
+function getGlobalPoints(part, points) {
+    // Aplica rotación y traslación a un array de puntos normalizados (0,0)
+    return points.map(p => {
+        let x = p.x;
+        let y = p.y;
+        
+        if (part.rotated) {
+            // Rotación -90 grados: x' = y, y' = w - x
+            const oldX = x;
+            x = y;
+            y = part.w - oldX;
+        }
+        
+        // Traslación a posición final en placa
+        return { x: x + part.fit.x, y: y + part.fit.y };
+    });
+}
+
 function downloadGCode(bin) {
     if (document.getElementById('ecoCutMode') && document.getElementById('ecoCutMode').checked) {
         downloadGCodeEcoCut(bin);
@@ -20,45 +38,36 @@ function downloadGCode(bin) {
     gcode.push(`G0 X0 Y0`);
     gcode.push(``);
 
-    const sequence = getOptimizedSequence(bin);
+    // Ordenar piezas por cercanía (TSP simple)
+    let partsToCut = [...bin.parts];
     let currentPos = { x: 0, y: 0 };
+    const sequence = [];
 
-    sequence.forEach(item => {
-        const part = item.parentPart;
-        const el = item.element;
-        gcode.push(`(Corte ID: ${part.id} - ${item.type})`);
-        
-        const totalLen = el.getTotalLength();
-        const step = 1.0;
-        
-        const transformPoint = (p) => {
-            const relX = p.x - part.x;
-            const relY = p.y - part.y;
-            let finalX, finalY;
-            if (part.rotated) {
-                finalX = part.fit.x + relY;
-                finalY = part.fit.y + (part.w - relX); 
-            } else {
-                finalX = part.fit.x + relX;
-                finalY = part.fit.y + relY;
-            }
-            return { x: finalX, y: finalY };
-        };
-
-        let points = [];
-        for (let len = 0; len <= totalLen; len += step) points.push(transformPoint(el.getPointAtLength(len)));
-        points.push(transformPoint(el.getPointAtLength(totalLen)));
-        points = optimizePathStart(points, currentPos);
-
-        if (points.length > 0) {
-            gcode.push(`M5`);
-            const travelPath = getSafeTravelPath(currentPos, points[0], bin.width, bin.height);
-            travelPath.forEach(p => gcode.push(`G0 X${p.x.toFixed(3)} Y${p.y.toFixed(3)}`));
-            gcode.push(`M3`);
-            gcode.push(`G1 X${points[1].x.toFixed(3)} Y${points[1].y.toFixed(3)} F${FEED_RATE}`);
-            for (let i = 2; i < points.length; i++) gcode.push(`G1 X${points[i].x.toFixed(3)} Y${points[i].y.toFixed(3)}`);
-            currentPos = points[points.length - 1];
+    while (partsToCut.length > 0) {
+        let nearestIdx = -1;
+        let minDist = Infinity;
+        for (let i = 0; i < partsToCut.length; i++) {
+            const p = partsToCut[i];
+            const dist = (p.fit.x - currentPos.x) ** 2 + (p.fit.y - currentPos.y) ** 2;
+            if (dist < minDist) { minDist = dist; nearestIdx = i; }
         }
+        const nextPart = partsToCut.splice(nearestIdx, 1)[0];
+        sequence.push(nextPart);
+        currentPos = { x: nextPart.fit.x, y: nextPart.fit.y };
+    }
+
+    sequence.forEach(part => {
+        if (!part.geometry) return;
+
+        // 1. Cortar Huecos Primero
+        part.geometry.holes.forEach((holePoints, idx) => {
+            gcode.push(`(Pieza ${part.id} - Hueco ${idx+1})`);
+            writePathToGcode(getGlobalPoints(part, holePoints), gcode, FEED_RATE);
+        });
+
+        // 2. Cortar Contorno Exterior
+        gcode.push(`(Pieza ${part.id} - Contorno)`);
+        writePathToGcode(getGlobalPoints(part, part.geometry.outer), gcode, FEED_RATE);
         gcode.push(``);
     });
 
@@ -73,6 +82,22 @@ function downloadGCode(bin) {
     a.href = url;
     a.download = `corte_placa_${bin.id}.nc`;
     a.click();
+}
+
+function writePathToGcode(points, gcode, feedRate) {
+    if (points.length === 0) return;
+    
+    // Optimizar inicio (buscar punto más cercano al actual no implementado aquí para brevedad, pero recomendado)
+    // Asumimos points[0] es el inicio
+    
+    gcode.push(`M5`);
+    gcode.push(`G0 X${points[0].x.toFixed(3)} Y${points[0].y.toFixed(3)}`);
+    gcode.push(`M3`);
+    gcode.push(`G1 F${feedRate}`); // Asegurar feedrate
+    
+    for (let i = 1; i < points.length; i++) {
+        gcode.push(`G1 X${points[i].x.toFixed(3)} Y${points[i].y.toFixed(3)}`);
+    }
 }
 
 function getEcoCutPath(bin) {

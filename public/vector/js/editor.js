@@ -8,7 +8,7 @@ function openFabricEditor(part) {
     currentEditingPart = part;
     fabricModal.style.display = 'flex';
     
-    const container = document.querySelector('#fabricModal > div > div:nth-child(2)');
+    const container = document.getElementById('fabricContainer');
 
     // Seguridad: Si el contenedor no tiene tamaño aún (renderizado pendiente), esperar un poco
     if (container.clientWidth === 0 || container.clientHeight === 0) {
@@ -24,6 +24,7 @@ function openFabricEditor(part) {
     } else {
         fabricCanvas.setWidth(container.clientWidth);
         fabricCanvas.setHeight(container.clientHeight);
+        fabricCanvas.calcOffset(); // CRÍTICO: Recalcular offsets al mostrar el modal
     }
     fabricCanvas.clear();
     fabricCanvas.setBackgroundColor('#fff');
@@ -43,40 +44,58 @@ function openFabricEditor(part) {
 
         const obj = fabric.util.groupSVGElements(objects, options);
         
-        // Resetear propiedades para evitar conflictos de posición/escala del SVG original
+        // Configuración base del objeto
         obj.set({
-            scaleX: 1,
-            scaleY: 1,
-            left: 0,
-            top: 0,
             originX: 'center',
             originY: 'center',
-            hasControls: true,
-            padding: 10
-        });
-        
-        obj.set({
             borderColor: '#51CF66',
             cornerColor: 'white',
             cornerSize: 10,
             transparentCorners: false,
-            // Asegurar visibilidad: si no tiene relleno, ponerle gris oscuro
-            fill: (obj.fill === 'none' || !obj.fill) ? '#555' : obj.fill,
-            stroke: obj.stroke || '#333',
-            strokeWidth: obj.strokeWidth || 1
+            hasControls: true,
+            padding: 10
         });
+        
+        // Asegurar visibilidad (Manejar Grupos y Paths individuales)
+        const ensureVisible = (o) => {
+            const hasFill = o.fill && o.fill !== 'none' && o.fill !== 'transparent';
+            const hasStroke = o.stroke && o.stroke !== 'none' && o.stroke !== 'transparent';
+            
+            if (!hasFill && !hasStroke) {
+                o.set('fill', '#555'); // Si no tiene nada, poner relleno gris
+            }
+            // Si tiene stroke pero es muy fino o nulo, asegurar que se vea si no hay fill
+            if (!hasFill && (!o.strokeWidth || o.strokeWidth === 0)) {
+                 o.set({ stroke: '#333', strokeWidth: 1 });
+            }
+        };
+
+        if (obj.type === 'group') {
+            obj.forEachObject(ensureVisible);
+        } else {
+            ensureVisible(obj);
+        }
 
         fabricCanvas.add(obj);
         
-        // 1. Centrar explícitamente
-        obj.setPositionByOrigin(new fabric.Point(fabricCanvas.width / 2, fabricCanvas.height / 2), 'center', 'center');
-
-        // 2. Calcular Zoom para que la pieza quepa perfecta (80% del canvas)
-        const scaleX = (fabricCanvas.width * 0.8) / obj.width;
-        const scaleY = (fabricCanvas.height * 0.8) / obj.height;
-        const zoom = Math.min(scaleX, scaleY);
+        // Centrar y Escalar
+        const canvasW = fabricCanvas.width;
+        const canvasH = fabricCanvas.height;
         
-        if (isFinite(zoom) && zoom > 0) obj.scale(zoom);
+        // Resetear escala para medir dimensiones reales
+        obj.scale(1);
+        
+        // Calcular escala para ajustar al 80% del canvas
+        if (obj.width > 0 && obj.height > 0) {
+            const scale = Math.min(
+                (canvasW * 0.8) / obj.width,
+                (canvasH * 0.8) / obj.height
+            );
+            obj.scale(scale);
+        }
+
+        // Posicionar en el centro absoluto del canvas
+        obj.setPositionByOrigin(new fabric.Point(canvasW / 2, canvasH / 2), 'center', 'center');
 
         obj.setCoords(); // Actualizar caja de control
         fabricCanvas.setActiveObject(obj);
@@ -110,6 +129,65 @@ document.getElementById('btnZoomOut').addEventListener('click', () => {
     fabricCanvas.zoomToPoint(new fabric.Point(fabricCanvas.width / 2, fabricCanvas.height / 2), zoom);
 });
 
+// --- NUEVAS FUNCIONES DE EDICIÓN ---
+
+document.getElementById('btnRotateCCW').addEventListener('click', () => {
+    if (!fabricCanvas) return;
+    const obj = fabricCanvas.getObjects().find(o => !o.excludeFromExport);
+    if (obj) {
+        obj.rotate((obj.angle || 0) - 90);
+        fabricCanvas.renderAll();
+    }
+});
+
+document.getElementById('btnRotateCW').addEventListener('click', () => {
+    if (!fabricCanvas) return;
+    const obj = fabricCanvas.getObjects().find(o => !o.excludeFromExport);
+    if (obj) {
+        obj.rotate((obj.angle || 0) + 90);
+        fabricCanvas.renderAll();
+    }
+});
+
+document.getElementById('btnFlipX').addEventListener('click', () => {
+    if (!fabricCanvas) return;
+    const obj = fabricCanvas.getObjects().find(o => !o.excludeFromExport);
+    if (obj) {
+        obj.set('flipX', !obj.flipX);
+        fabricCanvas.renderAll();
+    }
+});
+
+document.getElementById('btnFlipY').addEventListener('click', () => {
+    if (!fabricCanvas) return;
+    const obj = fabricCanvas.getObjects().find(o => !o.excludeFromExport);
+    if (obj) {
+        obj.set('flipY', !obj.flipY);
+        fabricCanvas.renderAll();
+    }
+});
+
+document.getElementById('btnDeletePart').addEventListener('click', () => {
+    if (!currentEditingPart) return;
+    
+    if (confirm("¿Estás seguro de eliminar esta pieza del trabajo?")) {
+        // 1. Eliminar de la lista global de piezas
+        const gIdx = globalParts.indexOf(currentEditingPart);
+        if (gIdx > -1) globalParts.splice(gIdx, 1);
+
+        // 2. Eliminar de la placa actual (visualización)
+        if (lastPacker && lastPacker.bins) {
+            lastPacker.bins.forEach(bin => {
+                const pIdx = bin.parts.indexOf(currentEditingPart);
+                if (pIdx > -1) bin.parts.splice(pIdx, 1);
+            });
+            drawResults(lastPacker); // Redibujar nesting
+        }
+        
+        document.getElementById('fabricModal').style.display = 'none';
+    }
+});
+
 document.getElementById('btnSaveFabric').addEventListener('click', () => {
     if (!currentEditingPart || !fabricCanvas) return;
     
@@ -128,6 +206,30 @@ document.getElementById('btnSaveFabric').addEventListener('click', () => {
     if (newPath) {
         currentEditingPart.element.setAttribute('d', newPath.getAttribute('d'));
         currentEditingPart.element.setAttribute('transform', newPath.getAttribute('transform') || '');
+        
+        // --- FIX: Actualizar dimensiones y geometría de la pieza para el Packer ---
+        try {
+            const bbox = currentEditingPart.element.getBBox();
+            currentEditingPart.x = bbox.x;
+            currentEditingPart.y = bbox.y;
+            currentEditingPart.w = bbox.width;
+            currentEditingPart.h = bbox.height;
+            
+            // Recalcular geometría para G-Code (aproximada)
+            const totalLen = currentEditingPart.element.getTotalLength();
+            const samples = Math.max(100, Math.ceil(totalLen / 2));
+            const points = [];
+            for (let i = 0; i < samples; i++) {
+                const pt = currentEditingPart.element.getPointAtLength((i / samples) * totalLen);
+                // Normalizar respecto al nuevo bbox
+                points.push({ x: pt.x - bbox.x, y: pt.y - bbox.y });
+            }
+            // Actualizar outer geometry (huecos se pierden en edición simple, o se asume sólido)
+            if (!currentEditingPart.geometry) currentEditingPart.geometry = { holes: [] };
+            currentEditingPart.geometry.outer = points;
+        } catch(e) { console.error("Error actualizando geometría", e); }
+        // -----------------------------------------------------------
+
         alert("✅ Pieza actualizada.");
         if (typeof drawResults === 'function' && typeof lastPacker !== 'undefined') drawResults(lastPacker);
     }
