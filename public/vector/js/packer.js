@@ -210,12 +210,13 @@ class Packer {
         this.bins = []; // Array de placas (bins)
     }
 
-    fit(parts, allowRotation) {
+    async fit(parts, allowRotation, onProgress) {
         // Ordenar piezas (Las grandes primero)
         parts.sort((a, b) => Math.max(b.w, b.h) - Math.max(a.w, a.h));
 
         // Iterar cada pieza
-        for (let part of parts) {
+        for (let i = 0; i < parts.length; i++) {
+            let part = parts[i];
             let placed = false;
 
             // 1. Intentar en placas existentes
@@ -242,6 +243,13 @@ class Packer {
                     console.warn(`Pieza #${part.id} es demasiado grande para la placa.`);
                 }
             }
+
+            // Liberar el hilo cada 5 piezas para actualizar la UI (evita que el navegador se congele)
+            if (i % 5 === 0) {
+                if (onProgress) onProgress(i + 1, parts.length);
+                await new Promise(r => setTimeout(r, 0));
+            }
         }
+        if (onProgress) onProgress(parts.length, parts.length);
     }
 }

@@ -6,6 +6,7 @@ const express = require('express');
 const fs = require('fs').promises;
 const path = require('path');
 const cors = require('cors');
+const { spawn } = require('child_process'); // Módulo para ejecutar otros programas
 
 const app = express();
 const PORT = 3000;
@@ -72,6 +73,40 @@ async function initializeDataStructure() {
   } catch (error) {
     console.error('❌ Error al inicializar:', error);
   }
+}
+
+// Función para verificar si Python está disponible
+async function checkPython() {
+  return new Promise((resolve) => {
+    console.log('🔍 Verificando la instalación de Python...');
+    const pythonProcess = spawn('python', ['--version']);
+
+    let errorOutput = '';
+
+    pythonProcess.on('error', (err) => {
+      // Este evento se dispara si el comando 'python' no se puede encontrar.
+      errorOutput += `Error al ejecutar 'python': ${err.message}.`;
+    });
+
+    pythonProcess.stderr.on('data', (data) => {
+      // Python a menudo imprime la versión en la salida de error (stderr).
+      console.log(`   Respuesta de Python: ${data.toString().trim()}`);
+    });
+
+    pythonProcess.stdout.on('data', (data) => {
+      console.log(`   Respuesta de Python: ${data.toString().trim()}`);
+    });
+
+    pythonProcess.on('close', (code) => {
+      if (errorOutput || code !== 0) {
+        console.error(`   ❌ Python no parece estar instalado o no está en el PATH del sistema.`);
+        resolve(false);
+      } else {
+        console.log('   ✅ Python encontrado y funcionando.');
+        resolve(true);
+      }
+    });
+  });
 }
 
 // Obtener IP local
@@ -464,11 +499,107 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// ==================== ENDPOINT PARA PROCESADO DE ARCHIVOS CON PYTHON ====================
+
+app.post('/api/process-file', (req, res) => {
+    const pythonProcess = spawn('python', ['file_processor.py']);
+
+    let resultData = '';
+    let errorData = '';
+
+    pythonProcess.stdout.on('data', (data) => {
+        resultData += data.toString();
+    });
+
+    pythonProcess.stderr.on('data', (data) => {
+        errorData += data.toString();
+    });
+
+    pythonProcess.on('close', (code) => {
+        if (code !== 0 || errorData) {
+            // Intenta parsear el error por si Python envió un JSON
+            try {
+                const errJson = JSON.parse(errorData);
+                console.error(`Error del script de Python (file_processor.py): ${errJson.error}`);
+                res.status(500).json({ error: 'Error durante el procesamiento del archivo.', details: errJson.error });
+                return;
+            } catch (e) {
+                // Si no es JSON, es un error del sistema
+                console.error(`Error del script de Python (file_processor.py): ${errorData}`);
+                res.status(500).json({ error: 'Error durante el procesamiento del archivo.', details: errorData });
+            }
+        } else {
+            try {
+                const result = JSON.parse(resultData);
+                res.json(result);
+            } catch (e) {
+                res.status(500).json({ error: 'Fallo al leer el resultado del script de Python.' });
+            }
+        }
+    });
+
+    pythonProcess.stdin.write(JSON.stringify(req.body));
+    pythonProcess.stdin.end();
+});
+
+// ==================== ENDPOINT PARA NESTING CON PYTHON ====================
+
+app.post('/api/nesting/solve', (req, res) => {
+    // 1. Ejecuta el script de Python como un proceso hijo
+    const pythonProcess = spawn('python', ['nesting_solver.py']);
+
+    let resultData = '';
+    let errorData = '';
+
+    // 2. Escucha la salida de datos del script (el resultado JSON)
+    pythonProcess.stdout.on('data', (data) => {
+        resultData += data.toString();
+    });
+
+    // 3. Escucha si hay errores durante la ejecución del script
+    pythonProcess.stderr.on('data', (data) => {
+        errorData += data.toString();
+    });
+
+    // 4. Cuando el script de Python termina, se ejecuta este bloque
+    pythonProcess.on('close', (code) => {
+        if (code !== 0 || errorData) {
+            console.error(`Error del script de Python: ${errorData}`);
+            res.status(500).json({ error: 'Error durante el proceso de nesting en el servidor.', details: errorData });
+        } else {
+            try {
+                // 5. Si todo salió bien, parsea el resultado y lo envía de vuelta al navegador
+                const result = JSON.parse(resultData);
+                res.json(result);
+            } catch (e) {
+                console.error(`Error al parsear la salida de Python: ${e}`);
+                res.status(500).json({ error: 'Fallo al leer el resultado del script de Python.' });
+            }
+        }
+    });
+
+    // 6. Envía los datos que llegaron del navegador (las piezas) al script de Python
+    try {
+        pythonProcess.stdin.write(JSON.stringify(req.body));
+        pythonProcess.stdin.end();
+    } catch (error) {
+        console.error('Error al escribir en el stdin de Python:', error);
+        res.status(500).json({ error: 'No se pudieron enviar los datos al proceso de Python.' });
+    }
+});
+
 // ==================== INICIAR SERVIDOR ====================
 
 initializeDataStructure().then(() => {
-  app.listen(PORT, '0.0.0.0', () => {
-    // El mensaje ya se muestra en initializeDataStructure
+  // Verificar Python antes de iniciar el servidor web
+  checkPython().then(pythonOk => {
+    if (!pythonOk) {
+      console.error('\n⚠️ ADVERTENCIA: La función de nesting en el servidor (Python) NO funcionará.');
+      console.error('   Por favor, instala Python y asegúrate de que esté en el PATH del sistema.\n');
+    }
+    app.listen(PORT, '0.0.0.0', () => {
+      // El mensaje principal ya se muestra en initializeDataStructure
+    });
   });
 });
 

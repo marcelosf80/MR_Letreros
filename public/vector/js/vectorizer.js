@@ -331,7 +331,7 @@ function setupVectorEditor(svg, controls, statusMsg) {
     };
 }
 
-function parseSvgParts(svgString) {
+async function parseSvgParts(svgString, onProgress) {
     const hiddenContainer = document.getElementById('hiddenSvgContainer');
     const statusMsg = document.getElementById('statusMsg');
     const realWidthInput = document.getElementById('realWidthCm');
@@ -378,7 +378,8 @@ function parseSvgParts(svgString) {
     const allPaths = Array.from(svgEl.querySelectorAll('path'));
     let simpleShapes = [];
     
-    allPaths.forEach(el => {
+    for (let i = 0; i < allPaths.length; i++) {
+        const el = allPaths[i];
         const d = el.getAttribute('d') || '';
         // Dividir por comando M (MoveTo) para encontrar sub-trayectos
         // Si está soldado (welded), no dividimos
@@ -389,7 +390,7 @@ function parseSvgParts(svgString) {
             subPaths = d.split(/(?=[Mm])/).filter(s => s.trim().length > 0);
         }
         
-        subPaths.forEach(sp => {
+        for (const sp of subPaths) {
             // APLICAR ESCALA DIRECTAMENTE A LAS COORDENADAS DEL PATH
             let scaledSp = sp;
             if (scaleFactor !== 1) {
@@ -414,8 +415,11 @@ function parseSvgParts(svgString) {
                 const points = [];
                 const totalLen = tempEl.getTotalLength();
                 const samples = Math.max(100, Math.ceil(totalLen / 2)); // Muestreo dinámico para mayor precisión
-                for (let i = 0; i < samples; i++) {
-                    const pt = tempEl.getPointAtLength((i / samples) * totalLen);
+                for (let j = 0; j < samples; j++) {
+                    if (j > 0 && j % 1000 === 0) { // Yield to prevent freezing on complex paths
+                        await new Promise(r => setTimeout(r, 0));
+                    }
+                    const pt = tempEl.getPointAtLength((j / samples) * totalLen);
                     points.push({ x: pt.x, y: pt.y });
                 }
 
@@ -432,9 +436,14 @@ function parseSvgParts(svgString) {
             } catch(e) {}
             tempEl.remove();
             tempOriginalEl.remove();
-        });
+        }
         el.remove(); // Eliminar original
-    });
+
+        if (i > 0 && i % 20 === 0) {
+            if (onProgress) onProgress(i, allPaths.length, 'Analizando vectores...');
+            await new Promise(r => setTimeout(r, 0));
+        }
+    }
 
     // 2. Ordenar por Área Descendente
     simpleShapes.sort((a, b) => b.area - a.area);
@@ -454,7 +463,7 @@ function parseSvgParts(svgString) {
     // 3. Construir Jerarquía (Árbol) para manejar huecos
     const rootNodes = [];
 
-    const isPointInPoly = (p, polygon) => {
+    const isPointInPolyAsync = async (p, polygon) => {
         let inside = false;
         for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
             const xi = polygon[i].x, yi = polygon[i].y;
@@ -462,11 +471,15 @@ function parseSvgParts(svgString) {
             const intersect = ((yi > p.y) !== (yj > p.y)) &&
                 (p.x < (xj - xi) * (p.y - yi) / (yj - yi) + xi);
             if (intersect) inside = !inside;
+
+            if (i > 0 && i % 2000 === 0) { // Yield on very large polygons
+                await new Promise(r => setTimeout(r, 0));
+            }
         }
         return inside;
     };
 
-    const isContained = (inner, outer) => {
+    const isContainedAsync = async (inner, outer) => {
         // BBox Check con Tolerancia (Epsilon) para evitar errores de punto flotante
         const epsilon = 0.5; 
         if (inner.bbox.x < outer.bbox.x - epsilon || 
@@ -484,29 +497,35 @@ function parseSvgParts(svgString) {
             x: inner.bbox.x + inner.bbox.width / 2,
             y: inner.bbox.y + inner.bbox.height / 2
         };
-        if (isPointInPoly(center, outer.points)) return true;
+        if (await isPointInPolyAsync(center, outer.points)) return true;
 
         // 2. Fallback: Probar múltiples puntos del perímetro para robustez
         // Probamos inicio, medio y final
         const indices = [0, Math.floor(inner.points.length / 2), inner.points.length - 1];
         for (let idx of indices) {
-            if (isPointInPoly(inner.points[idx], outer.points)) return true;
+            if (await isPointInPolyAsync(inner.points[idx], outer.points)) return true;
         }
         
         return false;
     };
 
-    const addToTree = (shape, nodes) => {
+    const addToTreeAsync = async (shape, nodes) => {
         for (let node of nodes) {
-            if (isContained(shape, node)) {
-                addToTree(shape, node.children);
+            if (await isContainedAsync(shape, node)) {
+                await addToTreeAsync(shape, node.children);
                 return;
             }
         }
         nodes.push(shape);
     };
 
-    simpleShapes.forEach(shape => addToTree(shape, rootNodes));
+    for (let i = 0; i < simpleShapes.length; i++) {
+        await addToTreeAsync(simpleShapes[i], rootNodes);
+        if (i > 0 && i % 20 === 0) {
+            if (onProgress) onProgress(i, simpleShapes.length, 'Construyendo jerarquía...');
+            await new Promise(r => setTimeout(r, 0));
+        }
+    }
 
     // 4. Reconstruir SVG con huecos combinados
     const getPointsFromPath = (d, step = 1.0) => {

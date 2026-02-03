@@ -31,168 +31,122 @@ const showToolpath = document.getElementById('showToolpath');
 
 // --- EVENTOS ---
 
+function displayFinalSvg(svgString) {
+    // Cargar imagen para recortes
+    const blob = new Blob([svgString], {type: 'image/svg+xml'});
+    const urlObj = URL.createObjectURL(blob);
+    
+    globalSvgImage = new Image(); // Variable global de globals.js
+    globalSvgImage.src = urlObj;
+    
+    statusMsg.innerText = "✅ Archivo procesado. Listo para acomodar.";
+    statusMsg.style.color = "#51CF66";
+    
+    // Mostrar en visor principal
+    sheetsContainer.innerHTML = '';
+    
+    const vectorDiv = document.createElement('div');
+    vectorDiv.style.width = '100%';
+    vectorDiv.style.textAlign = 'center';
+    vectorDiv.innerHTML = '<h4 style="margin:0 0 10px 0; color:#51CF66;">Vista Previa (Procesado por Servidor)</h4>';
+
+    const editControls = document.createElement('div');
+    editControls.style.marginBottom = '10px';
+    editControls.style.display = 'flex';
+    editControls.style.gap = '5px';
+    editControls.style.justifyContent = 'center';
+    editControls.innerHTML = `
+        <button id="btnToggleEdit" style="background:#444; color:white; border:1px solid #666; padding:5px 10px; cursor:pointer; border-radius:4px; font-size:0.8em;">✏️ Editar / Limpiar</button>
+        <button id="btnWeldSelected" style="background:#7950f2; color:white; border:none; padding:5px 10px; cursor:pointer; border-radius:4px; font-size:0.8em; display:none;">🔗 Soldar (0)</button>
+        <button id="btnExplodeSelected" style="background:#fd7e14; color:white; border:none; padding:5px 10px; cursor:pointer; border-radius:4px; font-size:0.8em; display:none;">💥 Desagrupar</button>
+        <button id="btnDeleteSelected" style="background:#e03131; color:white; border:none; padding:5px 10px; cursor:pointer; border-radius:4px; font-size:0.8em; display:none;">🗑️ Borrar (0)</button>
+        <button id="btnUndo" style="background:#f59f00; color:white; border:none; padding:5px 10px; cursor:pointer; border-radius:4px; font-size:0.8em; display:none;">↩️ Deshacer</button>
+        <button id="btnSaveEdit" style="background:#51CF66; color:white; border:none; padding:5px 10px; cursor:pointer; border-radius:4px; font-size:0.8em; display:none;">💾 Guardar</button>
+    `;
+    vectorDiv.appendChild(editControls);
+
+    const div = document.createElement('div');
+    div.innerHTML = svgString;
+    const svg = div.querySelector('svg');
+    if(svg) {
+        svg.style.maxWidth = '100%';
+        svg.style.height = 'auto';
+        svg.style.border = '1px solid #555';
+        svg.style.borderRadius = '4px';
+        svg.style.background = '#fff';
+        
+        if (typeof setupVectorEditor === 'function') {
+            setupVectorEditor(svg, editControls, statusMsg);
+        }
+        vectorDiv.appendChild(svg);
+    }
+    sheetsContainer.appendChild(vectorDiv);
+}
+
 // 1. Cargar Archivo (Auto-ejecutar)
 fileInput.addEventListener('change', (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    // UI Reset
-    sheetsContainer.innerHTML = '';
-    statusMsg.innerText = "📂 Archivo cargado. Seleccione una acción.";
-    statusMsg.style.color = "yellow";
-    workflowActions.style.display = 'block';
-    
-    btnDownloadPng.style.display = 'none';
-    btnDownloadSvg.style.display = 'none';
-    btnCalcToolpath.disabled = true; 
-    btnNest.disabled = false;
-    
-    // Preview IMG
-    const url = URL.createObjectURL(file);
-    sourcePreviewImg.src = url;
-    currentImgUrl = url; // Variable global de globals.js
-    miniPreview.style.display = 'block';
-    currentSvgString = null; // Variable global de globals.js
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+        const fileContent = event.target.result;
 
-    // DETECTAR TIPO DE ARCHIVO
-    if (file.type.startsWith('image/') && !file.type.includes('svg')) {
-        // === ES UNA IMAGEN (JPG, PNG) ===
-        vectorOptions.style.display = 'block';
-        imageOps.style.display = 'block';
-        btnNest.disabled = true;
-        statusMsg.innerText = "🖼️ Imagen cargada. Quite el fondo o vectorice.";
-        
-        const img = document.createElement('img');
-        img.src = url;
-        img.style.maxWidth = '100%';
-        sheetsContainer.appendChild(img);
-    } else if (file.type === 'application/pdf') {
-        // === ES UN PDF VECTORIAL ===
-        statusMsg.innerText = "⏳ Procesando PDF...";
+        // Reiniciar UI y mostrar progreso
+        sheetsContainer.innerHTML = '';
+        statusMsg.innerText = "⏳ Procesando archivo en el servidor...";
         statusMsg.style.color = "yellow";
-        vectorOptions.style.display = 'none';
-        imageOps.style.display = 'none';
-
-        // Usar la función de pdf-importer.js
-        processPdf(file).then(svgString => {
-            currentSvgString = svgString;
-            
-            // El resto es similar a cargar un SVG
-            const blob = new Blob([currentSvgString], {type: 'image/svg+xml'});
-            const urlObj = URL.createObjectURL(blob);
-            
-            globalSvgImage = new Image(); // Variable global de globals.js
-            globalSvgImage.src = urlObj;
-            
-            statusMsg.innerText = "✅ PDF convertido a SVG. Listo para acomodar.";
-            statusMsg.style.color = "#51CF66";
-            
-            // Mostrar en visor principal (reutilizando código de SVG)
-            sheetsContainer.innerHTML = '';
-            
-            const vectorDiv = document.createElement('div');
-            vectorDiv.style.width = '100%';
-            vectorDiv.style.textAlign = 'center';
-            vectorDiv.innerHTML = '<h4 style="margin:0 0 10px 0; color:#51CF66;">Vista Previa (PDF importado como SVG)</h4>';
-
-            const editControls = document.createElement('div');
-            editControls.style.marginBottom = '10px';
-            editControls.style.display = 'flex';
-            editControls.style.gap = '5px';
-            editControls.style.justifyContent = 'center';
-            editControls.innerHTML = `
-                <button id="btnToggleEdit" style="background:#444; color:white; border:1px solid #666; padding:5px 10px; cursor:pointer; border-radius:4px; font-size:0.8em;">✏️ Editar / Limpiar</button>
-                <button id="btnWeldSelected" style="background:#7950f2; color:white; border:none; padding:5px 10px; cursor:pointer; border-radius:4px; font-size:0.8em; display:none;">🔗 Soldar (0)</button>
-                <button id="btnExplodeSelected" style="background:#fd7e14; color:white; border:none; padding:5px 10px; cursor:pointer; border-radius:4px; font-size:0.8em; display:none;">💥 Desagrupar</button>
-                <button id="btnDeleteSelected" style="background:#e03131; color:white; border:none; padding:5px 10px; cursor:pointer; border-radius:4px; font-size:0.8em; display:none;">🗑️ Borrar (0)</button>
-                <button id="btnUndo" style="background:#f59f00; color:white; border:none; padding:5px 10px; cursor:pointer; border-radius:4px; font-size:0.8em; display:none;">↩️ Deshacer</button>
-                <button id="btnSaveEdit" style="background:#51CF66; color:white; border:none; padding:5px 10px; cursor:pointer; border-radius:4px; font-size:0.8em; display:none;">💾 Guardar</button>
-            `;
-            vectorDiv.appendChild(editControls);
-
-            const div = document.createElement('div');
-            div.innerHTML = currentSvgString;
-            const svg = div.querySelector('svg');
-            if(svg) {
-                svg.style.maxWidth = '100%';
-                svg.style.height = 'auto';
-                svg.style.border = '1px solid #555';
-                svg.style.borderRadius = '4px';
-                svg.style.background = '#fff';
-                
-                if (typeof setupVectorEditor === 'function') {
-                    setupVectorEditor(svg, editControls, statusMsg);
-                }
-                vectorDiv.appendChild(svg);
-            }
-            sheetsContainer.appendChild(vectorDiv);
-
-        }).catch(error => {
-            console.error("Error procesando PDF:", error);
-            statusMsg.innerText = "❌ Error al procesar el PDF.";
-            statusMsg.style.color = "red";
-        });
-    } else {
-        // === ES UN SVG NORMAL ===
-        vectorOptions.style.display = 'none';
-        imageOps.style.display = 'none';
+        workflowActions.style.display = 'block';
+        btnNest.disabled = true;
         
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-            currentSvgString = ev.target.result;
-            
-            // Cargar imagen para recortes
-            const blob = new Blob([currentSvgString], {type: 'image/svg+xml'});
-            const urlObj = URL.createObjectURL(blob);
-            
-            globalSvgImage = new Image(); // Variable global de globals.js
-            globalSvgImage.src = urlObj;
-            
-            statusMsg.innerText = "✅ SVG listo para acomodar.";
-            statusMsg.style.color = "#51CF66";
-            
-            // Mostrar en visor principal
-            sheetsContainer.innerHTML = '';
-            
-            const vectorDiv = document.createElement('div');
-            vectorDiv.style.width = '100%';
-            vectorDiv.style.textAlign = 'center';
-            vectorDiv.innerHTML = '<h4 style="margin:0 0 10px 0; color:#51CF66;">Vista Previa (SVG)</h4>';
+        const progressContainer = document.getElementById('nestingProgressContainer');
+        if (progressContainer) progressContainer.style.display = 'block';
 
-            const editControls = document.createElement('div');
-            editControls.style.marginBottom = '10px';
-            editControls.style.display = 'flex';
-            editControls.style.gap = '5px';
-            editControls.style.justifyContent = 'center';
-            editControls.innerHTML = `
-                <button id="btnToggleEdit" style="background:#444; color:white; border:1px solid #666; padding:5px 10px; cursor:pointer; border-radius:4px; font-size:0.8em;">✏️ Editar / Limpiar</button>
-                <button id="btnWeldSelected" style="background:#7950f2; color:white; border:none; padding:5px 10px; cursor:pointer; border-radius:4px; font-size:0.8em; display:none;">🔗 Soldar (0)</button>
-                <button id="btnExplodeSelected" style="background:#fd7e14; color:white; border:none; padding:5px 10px; cursor:pointer; border-radius:4px; font-size:0.8em; display:none;">💥 Desagrupar</button>
-                <button id="btnDeleteSelected" style="background:#e03131; color:white; border:none; padding:5px 10px; cursor:pointer; border-radius:4px; font-size:0.8em; display:none;">🗑️ Borrar (0)</button>
-                <button id="btnUndo" style="background:#f59f00; color:white; border:none; padding:5px 10px; cursor:pointer; border-radius:4px; font-size:0.8em; display:none;">↩️ Deshacer</button>
-                <button id="btnSaveEdit" style="background:#51CF66; color:white; border:none; padding:5px 10px; cursor:pointer; border-radius:4px; font-size:0.8em; display:none;">💾 Guardar</button>
-            `;
-            vectorDiv.appendChild(editControls);
-
-            const div = document.createElement('div');
-            div.innerHTML = currentSvgString;
-            const svg = div.querySelector('svg');
-            if(svg) {
-                svg.style.maxWidth = '100%';
-                svg.style.height = 'auto';
-                svg.style.border = '1px solid #555';
-                svg.style.borderRadius = '4px';
-                svg.style.background = '#fff';
-                
-                if (typeof setupVectorEditor === 'function') {
-                    setupVectorEditor(svg, editControls, statusMsg);
-                }
-                vectorDiv.appendChild(svg);
+        const payload = {
+            fileContent: fileContent,
+            fileType: file.type,
+            fileName: file.name,
+            options: {
+                realWidthCm: parseFloat(realWidthInput.value) || 0
             }
-            sheetsContainer.appendChild(vectorDiv);
         };
-        reader.readAsText(file);
-    }
+
+        try {
+            const response = await fetch('/api/process-file', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.details || 'El servidor devolvió un error al procesar el archivo.');
+            }
+
+            const result = await response.json();
+
+            // Guardar resultados en variables globales
+            currentSvgString = result.svgString;
+            svgViewBox = result.viewBox;
+            
+            // Reconstruir los objetos Part en el frontend a partir de los datos del backend
+            await parseSvgParts(currentSvgString, () => {});
+
+            // Mostrar el SVG resultante
+            displayFinalSvg(currentSvgString);
+            btnNest.disabled = false;
+
+        } catch (error) {
+            console.error('Error procesando el archivo en el backend:', error);
+            statusMsg.innerText = `❌ Error: ${error.message}`;
+            statusMsg.style.color = 'red';
+        } finally {
+            if (progressContainer) progressContainer.style.display = 'none';
+        }
+    };
+
+    // Lee el archivo como texto para enviarlo al backend.
+    reader.readAsText(file);
 });
 
 // --- ACCIONES DE BOTONES ---
@@ -218,14 +172,18 @@ btnDownloadSvg.addEventListener('click', () => {
     a.click();
 });
 
-btnNest.addEventListener('click', () => {
-    if (!currentSvgString) {
-        alert("⚠️ No hay vectores para acomodar. Vectoriza la imagen primero.");
+btnNest.addEventListener('click', async () => {
+    if (globalParts.length === 0) {
+        alert("⚠️ No hay piezas procesadas para acomodar. Carga un archivo primero.");
         return;
     }
-    parseSvgParts(currentSvgString); // Función de vectorizer.js
-    runNesting(); // Función de nester.js
-    btnCalcToolpath.disabled = false;
+    try {
+        await runNesting(); // Función de nester.js (YA ERA ASÍNCRONA)
+        btnCalcToolpath.disabled = false;
+    } catch (error) {
+        console.error("Error en el proceso de nesting:", error);
+        statusMsg.innerText = `❌ Error: ${error.message}`;
+    }
 });
 
 btnCalcToolpath.addEventListener('click', () => {

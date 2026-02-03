@@ -1,30 +1,90 @@
 // Lógica de Nesting y Dibujo 2D
 
-function runNesting() {
+async function runNesting() {
     const statusMsg = document.getElementById('statusMsg');
-    statusMsg.innerText = "⏳ Optimizando...";
+    statusMsg.innerText = "⏳ Optimizando con el servidor...";
     document.getElementById('sheetsContainer').innerHTML = '';
 
     const sheetW = parseFloat(document.getElementById('sheetWidth').value);
     const sheetH = parseFloat(document.getElementById('sheetHeight').value);
     const gap = parseFloat(document.getElementById('gap').value);
     const allowRotation = document.getElementById('allowRotation').checked;
-    const direction = document.getElementById('nestDirection').value;
-    const useVertical = (direction === 'vertical');
-
-    const packer = new Packer(sheetW, sheetH, gap, useVertical);
-    lastPacker = packer;
     
     // --- FIX: Separar Nesting de la visualización de Trayectoria ---
-    // Al acomodar, siempre ocultamos la trayectoria.
-    // Se mostrará solo al presionar "Crear Trayectoria".
     document.getElementById('showToolpath').checked = false;
     const cncActions = document.querySelectorAll('.cnc-actions');
     if (cncActions) cncActions.forEach(el => el.style.display = 'none');
 
     globalParts.forEach(p => { p.placed = false; p.binId = -1; p.nestedInHole = false; });
-    packer.fit(globalParts, allowRotation);
-    drawResults(packer);
+    
+    // Mostrar barra de progreso (indicando que se está procesando en el servidor)
+    const progressContainer = document.getElementById('nestingProgressContainer');
+    const progressBar = document.getElementById('nestingProgressBar');
+    const progressText = document.getElementById('nestingProgressText');
+    if (progressContainer) progressContainer.style.display = 'block';
+    if (progressBar) progressBar.style.width = '50%';
+    if (progressText) progressText.innerText = 'Optimizando en servidor... (0%)';
+
+    // 1. Preparar datos para enviar al backend
+    const partsForBackend = globalParts.map(p => ({ id: p.id, w: p.w, h: p.h }));
+    const payload = {
+        parts: partsForBackend,
+        sheetW: sheetW,
+        sheetH: sheetH,
+        gap: gap,
+        allowRotation: allowRotation
+    };
+
+    try {
+        // 2. Llamar a la API del backend
+        const response = await fetch('/api/nesting/solve', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (progressText) progressText.innerText = 'Optimizando en servidor... (50%)';
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.details || 'El servidor devolvió un error.');
+        }
+
+        const nestingResult = await response.json();
+
+        if (progressText) progressText.innerText = 'Optimizando en servidor... (100%)';
+        // 3. Procesar el resultado de Python para que `drawResults` lo entienda
+        const packerResult = {
+            bins: [],
+            sheetW: sheetW,
+            sheetH: sheetH
+        };
+        
+        nestingResult.forEach(binData => {
+            const newBin = { id: binData.bin_id, parts: [] };
+            binData.parts.forEach(placedPartData => {
+                const originalPart = globalParts.find(p => p.id === placedPartData.id);
+                if (originalPart) {
+                    originalPart.placed = true;
+                    originalPart.rotated = placedPartData.rotated;
+                    originalPart.binId = placedPartData.bin;
+                    originalPart.fit = { x: placedPartData.x, y: placedPartData.y };
+                    newBin.parts.push(originalPart);
+                }
+            });
+            packerResult.bins.push(newBin);
+        });
+        
+        lastPacker = packerResult; // Guardar para usarlo en G-Code, etc.
+
+        if (progressContainer) progressContainer.style.display = 'none';
+        drawResults(packerResult);
+
+    } catch (error) {
+        console.error('Error llamando al backend de nesting:', error);
+        statusMsg.innerText = `❌ Error: ${error.message}`;
+        statusMsg.style.color = 'red';
+        if (progressContainer) progressContainer.style.display = 'none';
+    }
 }
 
 function drawResults(packer) {
