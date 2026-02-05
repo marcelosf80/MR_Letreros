@@ -4,6 +4,10 @@
 
 // ==================== GLOBAL FUNCTIONS ====================
 
+function formatCurrency(number) {
+  return new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(number);
+}
+
 window.calcularCosto = function() {
   try {
     const largoInput = document.getElementById('materialLargo');
@@ -16,14 +20,30 @@ window.calcularCosto = function() {
     const largo = parseFloat(largoInput.value) || 0; // m
     const precio = parseFloat(precioInput.value) || 0;
     const unidad = unidadInput ? unidadInput.value : 'ml';
+    const priceType = document.getElementById('priceTypeSelect')?.value;
+    const isPerM2 = priceType === 'm2';
+    const anchoCm = parseFloat(document.getElementById('materialAncho')?.value) || 100;
+    const anchoM = anchoCm / 100;
     
     if (largo > 0 && precio > 0) {
-      const costoLineal = precio / largo;
-      let label = 'Costo por Metro';
-      if (unidad === 'unidad') label = 'Costo por Unidad';
-      if (unidad === 'm²') label = 'Costo por m²';
+      if (isPerM2) {
+          // El input es Costo por m², mostramos el Total del Rollo
+          const m2 = anchoM * largo;
+          const total = precio * m2;
+          display.innerHTML = `<div style="color: #51CF66; font-weight: bold; font-size: 1.4em; text-align: center; padding: 5px;">Costo Total del Rollo: $${formatCurrency(total)}</div>`;
+      } else {
+          // El input es Precio Total, mostramos costo lineal y m2
+          const costoLineal = precio / largo;
+          let label = 'Costo por Metro';
+          if (unidad === 'unidad') label = 'Costo por Unidad';
+          if (unidad === 'm²') label = 'Costo por m²';
+          
+          const m2 = anchoM * largo;
+          const costoM2 = m2 > 0 ? precio / m2 : 0;
 
-      display.innerHTML = `<div style="color: #51CF66; font-weight: bold; font-size: 1.4em; text-align: center; padding: 5px;">${label}: $${costoLineal.toLocaleString('es-AR', {minimumFractionDigits: 2})}</div>`;
+          display.innerHTML = `<div style="color: #51CF66; font-weight: bold; font-size: 1.4em; text-align: center; padding: 5px;">${label}: $${formatCurrency(costoLineal)}</div>
+                               <div style="color: #FF8C42; font-size: 0.9em; text-align: center;">($${formatCurrency(costoM2)} / m²)</div>`;
+      }
       display.style.display = 'block';
     } else {
       display.style.display = 'none';
@@ -43,8 +63,8 @@ window.updateLargoLabel = function() {
       label.textContent = 'Cantidad (unidades) *';
       if(input) input.placeholder = 'Ej: 100';
     } else {
-      label.textContent = 'Largo (m) *';
-      if(input) input.placeholder = 'Ej: 50';
+      label.textContent = 'Largo (cm) *';
+      if(input) input.placeholder = 'Ej: 5000';
     }
   }
 };
@@ -82,6 +102,9 @@ document.addEventListener('DOMContentLoaded', function() {
   if (typeof actualizarSelectorCategorias === 'function') {
     actualizarSelectorCategorias();
   }
+  
+  // Inyectar el toggle de modo de precio
+  injectPriceTypeSelector();
 
   // ==================== OPEN MODAL ====================
   
@@ -147,6 +170,12 @@ document.addEventListener('DOMContentLoaded', function() {
       display.style.display = 'none';
     }
 
+    // Resetear toggle
+    if(document.getElementById('priceTypeSelect')) {
+        document.getElementById('priceTypeSelect').value = 'total';
+        window.calcularCosto();
+    }
+
     // REFUERZO: Asegurar que el ancho esté oculto y en 100 cada vez que se limpia
     const inputAncho = document.getElementById('materialAncho');
     if (inputAncho) {
@@ -175,6 +204,31 @@ document.addEventListener('DOMContentLoaded', function() {
     const el = document.getElementById(id);
     if (el) el.addEventListener('input', window.calcularCosto);
   });
+
+  // Función para inyectar el checkbox de modo de precio
+  function injectPriceTypeSelector() {
+    const priceInput = document.getElementById('materialPrecioRollo');
+    if (priceInput && !document.getElementById('priceTypeSelect')) {
+        // Limpiar checkbox antiguo si existe
+        const oldCheck = document.getElementById('priceModeToggle');
+        if (oldCheck && oldCheck.parentNode) oldCheck.parentNode.remove();
+
+        const div = document.createElement('div');
+        div.style.marginBottom = '10px';
+        div.innerHTML = `
+            <label class="form-label" style="font-size:0.9rem; color:#FF8C42;">Tipo de Precio Ingresado</label>
+            <select id="priceTypeSelect" class="form-select" style="margin-bottom: 5px;">
+                <option value="total">Precio Total del Rollo/Pieza</option>
+                <option value="m2">Precio por m²</option>
+            </select>
+        `;
+        priceInput.parentNode.insertBefore(div, priceInput);
+        
+        document.getElementById('priceTypeSelect').addEventListener('change', function(e) {
+            window.calcularCosto();
+        });
+    }
+  }
 
   // ==================== LOAD AND DISPLAY MATERIALS ====================
   
@@ -228,8 +282,8 @@ document.addEventListener('DOMContentLoaded', function() {
             
             <div class="promedio-box">
               <div class="promedio-label">PROMEDIO PONDERADO (${rollosDelProducto.length} rollo${rollosDelProducto.length > 1 ? 's' : ''})</div>
-              <div class="promedio-value">$${promedioPonderado.toFixed(2)}/m²</div>
-              <div class="promedio-info">${totalM2.toFixed(2)}m² por $${totalCosto.toLocaleString('es-AR')}</div>
+              <div class="promedio-value">$${formatCurrency(promedioPonderado)}/m²</div>
+              <div class="promedio-info">${totalM2.toFixed(2)}m² por $${formatCurrency(totalCosto)}</div>
             </div>
             
             <div class="rollos-list">
@@ -238,10 +292,10 @@ document.addEventListener('DOMContentLoaded', function() {
                   <div class="rollo-info">
                     <strong>Rollo ${idx + 1}:</strong> ${rollo.ancho}m × ${rollo.largo}m = ${rollo.m2.toFixed(2)}m²
                     <br>
-                    <span style="color: #FF8C42;">Costo m²: $${rollo.costoPorM2.toFixed(2)}</span>
-                    <span style="color: #51CF66; margin-left: 10px; font-weight: bold;">Costo ml: $${(rollo.precioRollo / rollo.largo).toFixed(2)}</span>
+                    <span style="color: #FF8C42;">Costo m²: $${formatCurrency(rollo.costoPorM2)}</span>
+                    <span style="color: #51CF66; margin-left: 10px; font-weight: bold;">Costo ml: $${formatCurrency(rollo.precioRollo / rollo.largo)}</span>
                     <br>
-                    <span style="color: rgba(255, 255, 255, 0.5); font-size: 0.85rem;">Pagado: $${rollo.precioRollo.toLocaleString('es-AR')}</span>
+                    <span style="color: rgba(255, 255, 255, 0.5); font-size: 0.85rem;">Pagado: $${formatCurrency(rollo.precioRollo)}</span>
                   </div>
                   <div class="rollo-actions">
                     <button class="btn-edit" onclick="window.editarRollo('${rollo.id}')">✏️ Editar</button>
@@ -282,7 +336,12 @@ document.addEventListener('DOMContentLoaded', function() {
       const inputAncho = document.getElementById('materialAncho');
       if (inputAncho) inputAncho.value = '100';
       
-      document.getElementById('materialLargo').value = rollo.largo;
+      // Convertir metros guardados a cm para el input, si no es unidad
+      let largoVal = rollo.largo;
+      if (rollo.unidad !== 'unidad') {
+          largoVal = largoVal * 100;
+      }
+      document.getElementById('materialLargo').value = largoVal;
       document.getElementById('materialPrecioRollo').value = rollo.precioRollo;
       
       // Mostrar fecha de última actualización
@@ -362,11 +421,13 @@ document.addEventListener('DOMContentLoaded', function() {
       let anchoCm = parseFloat(document.getElementById('materialAncho')?.value);
       if (isNaN(anchoCm) || anchoCm <= 0) anchoCm = 100; // Default: 100cm (1 metro) si está vacío
 
-      const largoM = parseFloat(document.getElementById('materialLargo')?.value) || 0;
-      const precioRollo = parseFloat(document.getElementById('materialPrecioRollo')?.value) || 0;
+      const largoInput = parseFloat(document.getElementById('materialLargo')?.value) || 0;
+      const precioInput = parseFloat(document.getElementById('materialPrecioRollo')?.value) || 0;
+      const priceType = document.getElementById('priceTypeSelect')?.value;
+      const isPerM2 = priceType === 'm2';
       const editingId = btnSaveMaterial.dataset.editingId;
       
-      console.log('[MATERIALES] Valores recibidos:', { categoria, productoNombre, unidad, anchoCm, largoM, precioRollo });
+      console.log('[MATERIALES] Valores recibidos:', { categoria, productoNombre, unidad, anchoCm, largoInput, precioInput });
       
       // Validaciones específicas para saber qué falla
       if (!categoria) {
@@ -377,11 +438,11 @@ document.addEventListener('DOMContentLoaded', function() {
         alert('⚠️ Debes ingresar el Nombre del Producto.');
         return;
       }
-      if (largoM <= 0) {
+      if (largoInput <= 0) {
         alert('⚠️ El Largo debe ser mayor a 0.');
         return;
       }
-      if (precioRollo <= 0) {
+      if (precioInput <= 0) {
         console.error('[MATERIALES] ❌ Validación fallida');
         alert('⚠️ El Precio debe ser mayor a 0.');
         return;
@@ -399,8 +460,24 @@ document.addEventListener('DOMContentLoaded', function() {
 
       // Convertir ancho de cm a metros
       const anchoM = anchoCm / 100;
+      
+      // Convertir largo de cm a metros si no es unidad
+      let largoM = largoInput;
+      if (unidad !== 'unidad') {
+          largoM = largoInput / 100;
+      }
+      
       const m2 = anchoM * largoM;
-      const costoPorM2 = precioRollo / m2;
+      
+      let precioRollo, costoPorM2;
+      
+      if (isPerM2) {
+          costoPorM2 = precioInput;
+          precioRollo = costoPorM2 * m2;
+      } else {
+          precioRollo = precioInput;
+          costoPorM2 = precioRollo / m2;
+      }
       
       console.log('[MATERIALES] Cálculos: anchoM=', anchoM, 'm2=', m2, 'costoPorM2=', costoPorM2);
       

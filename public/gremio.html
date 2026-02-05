@@ -5,14 +5,28 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Sistema GREMIO - MR Letreros</title>
   <link rel="stylesheet" href="css/base.css">
+  <!-- Nuevos módulos de gestión -->
+  <script src="js/shared/pricing-manager.js"></script>
+  <script src="js/shared/order-status-manager.js"></script>
+  <script src="js/shared/discount-config.js"></script>
+  <script src="js/shared/multi-category-manager.js"></script>
+  <script src="js/shared/work-manager.js"></script>
+  <script src="js/shared/quote-editor.js"></script>
 </head>
 <body>
   <header class="main-header">
     <div class="header-left">
       <img src="img/logo.png" alt="MR Letreros" class="logo-img">
       <a href="index.html" class="btn-home">← Volver al Inicio</a>
+      <a href="trabajos.html" class="btn-home" id="btnTrabajosNav" style="margin-left: 10px;">🔨 Trabajos</a>
     </div>
-    <div class="header-title">🟢 SISTEMA GREMIO</div>
+    <div class="header-title" style="display: flex; align-items: center; gap: 20px;">
+        <span>🟢 SISTEMA GREMIO</span>
+        <div class="notification-bell" id="notificationBell" style="position: relative; cursor: pointer; font-size: 1.2rem;" onclick="window.location.href='trabajos.html'">
+            🔔
+            <span id="notificationBadge" style="display: none; position: absolute; top: -5px; right: -10px; background: #FF4444; color: white; border-radius: 50%; font-size: 0.7rem; padding: 2px 6px; border: 1px solid white;">0</span>
+        </div>
+    </div>
   </header>
 
   <div class="content-container">
@@ -71,7 +85,6 @@
     <div class="card">
       <div class="card-header">
         <h2 class="card-title">🛒 Productos de la Cotización</h2>
-        <button class="btn btn-primary" id="btnAddProduct">➕ Agregar Material</button>
       </div>
       <div id="productsList">
         <p class="empty-state">No hay productos agregados</p>
@@ -82,7 +95,6 @@
     <div class="card">
       <div class="card-header">
         <h2 class="card-title">🔧 Servicios de Terceros</h2>
-        <button class="btn btn-primary" id="btnAddTerceroService">➕ Agregar Servicio</button>
       </div>
       <div id="terceroServicesList">
         <p class="empty-state">No hay servicios de terceros agregados</p>
@@ -119,7 +131,13 @@
           <div class="stat-value" id="subtotal">$0</div>
         </div>
         <div class="stat-card">
-          <div class="stat-label">IVA (21%)</div>
+          <div class="stat-label">
+            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+              <input type="checkbox" id="ivaCheckbox" checked onchange="toggleIVA()" 
+                     style="width: 18px; height: 18px; cursor: pointer;">
+              IVA (21%)
+            </label>
+          </div>
           <div class="stat-value" id="iva">$0</div>
         </div>
         <div class="stat-card">
@@ -130,6 +148,17 @@
           <div class="stat-label">💚 Ganancia Neta</div>
           <div class="stat-value" id="gananciaNetaDisplay" style="color: #51CF66;">$0</div>
         </div>
+      </div>
+
+      <!-- Información de descuentos -->
+      <div id="discountInfo" style="display: none; margin-top: 1rem; padding: 1rem; background: rgba(76, 175, 80, 0.1); border-radius: 8px; border: 1px solid rgba(76, 175, 80, 0.3);">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <span>🎁 Descuento Aplicado (<span id="discountPercent">0</span>%):</span>
+          <span style="font-weight: bold; color: #4CAF50;" id="discountAmount">$0</span>
+        </div>
+        <small style="display: block; margin-top: 0.5rem; opacity: 0.8;">
+          Total metros: <span id="totalMeters">0</span> m²
+        </small>
       </div>
 
       <!-- Anticipo -->
@@ -299,7 +328,10 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="js/shared/modal-system.js"></script>
   <script src="js/shared/data-manager-network.js"></script>
+  <script src="js/shared/data-manager-extension.js"></script>
   <script src="js/gremio/gremio-main.js"></script>
+  <script src="js/gremio/gremio-extensions.js"></script>
+  <script src="js/gremio/gremio-extensions-v2.js"></script>
   <!-- ⚠️ NO CARGAR terceros-integration.js - Ya está integrado en gremio-main.js -->
 </body>
 </html>

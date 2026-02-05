@@ -25,5 +25,31 @@
     "rentabilidadCliente": "1398.00",
     "createdAt": "2026-01-27T04:03:45.021Z",
     "id": "1769486625037"
+  },
+  {
+    "productoId": "1770248791786",
+    "categoria": "Laqueado",
+    "producto": "Laca",
+    "costo": 1000,
+    "area": 0.01,
+    "precioGremio": 7000,
+    "precioCliente": 7000,
+    "rentabilidadGremio": "600.00",
+    "rentabilidadCliente": "600.00",
+    "createdAt": "2026-02-05T01:07:36.680Z",
+    "id": "1770248955941"
+  },
+  {
+    "productoId": "1770249057719",
+    "categoria": "Tintas",
+    "producto": "Tinta Marabu",
+    "costo": 980,
+    "area": 0.01,
+    "precioGremio": 1200,
+    "precioCliente": 1500,
+    "rentabilidadGremio": "22.45",
+    "rentabilidadCliente": "53.06",
+    "createdAt": "2026-02-04T23:51:34.722Z",
+    "id": "1770249095049"
   }
 ]

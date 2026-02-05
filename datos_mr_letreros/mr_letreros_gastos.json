@@ -68,5 +68,45 @@
     "monto": 29388.48,
     "fecha": "2026-01-30T01:26:00.674Z",
     "categoria": "venta_gremio"
+  },
+  {
+    "id": "gasto_coti_1770252488963",
+    "tipo": "egreso",
+    "descripcion": "Costo Total - Coti Gremio #488963 (marcelo maidsna)",
+    "monto": 8033.64,
+    "fecha": "2026-02-05T00:48:36.257Z",
+    "categoria": "costo_venta_gremio"
+  },
+  {
+    "id": "ingreso_coti_1770252488963",
+    "tipo": "ingreso",
+    "descripcion": "Venta Gremio - Coti #488963 (marcelo maidsna)",
+    "monto": 53760,
+    "fecha": "2026-02-05T00:48:36.257Z",
+    "categoria": "venta_gremio"
+  },
+  {
+    "id": "gasto_coti_1770253855543",
+    "tipo": "egreso",
+    "descripcion": "Costo Total - Coti Gremio #855543 (marcelo maidsna)",
+    "monto": 144251,
+    "fecha": "2026-02-05T01:11:07.518Z",
+    "categoria": "costo_venta_gremio"
+  },
+  {
+    "id": "gasto_coti_1770254442483",
+    "tipo": "egreso",
+    "descripcion": "Costo Total - Coti Gremio #442483 (marcelo maidsna)",
+    "monto": 3783.45,
+    "fecha": "2026-02-05T01:21:06.835Z",
+    "categoria": "costo_venta_gremio"
+  },
+  {
+    "id": "gasto_coti_1770255467543",
+    "tipo": "egreso",
+    "descripcion": "Costo Total - Coti Gremio #467543 (Gremio Galvez)",
+    "monto": 8091.78,
+    "fecha": "2026-02-05T01:38:03.464Z",
+    "categoria": "costo_venta_gremio"
   }
 ]

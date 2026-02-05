@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Trabajos - MR Letreros</title>
+    <link rel="stylesheet" href="css/base.css">
+    <style>
+        .dashboard-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .filters-bar {
+            background: var(--card-bg);
+            padding: 1rem;
+            border-radius: 10px;
+            margin-bottom: 2rem;
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            align-items: center;
+            border: 1px solid var(--border-color);
+        }
+        .works-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 1.5rem;
+        }
+        .work-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+            transition: transform 0.2s;
+            padding: 1rem;
+        }
+        .work-card:hover { transform: translateY(-5px); }
+        
+        .work-header { display: flex; justify-content: space-between; margin-bottom: 1rem; }
+        .work-actions { display: flex; gap: 0.5rem; margin-top: 1rem; flex-wrap: wrap; }
+        .badge { padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.8rem; font-weight: bold; color: white; }
+        
+        /* Notificaciones Panel */
+        .notification-panel {
+            position: fixed; top: 80px; right: -400px; width: 350px; height: calc(100vh - 100px);
+            background: var(--card-bg); border-left: 1px solid var(--border-color);
+            transition: right 0.3s ease; z-index: 1000; padding: 1rem; overflow-y: auto;
+            backdrop-filter: blur(10px);
+        }
+        .notification-panel.show { right: 0; }
+        .notification-item { padding: 1rem; border-bottom: 1px solid rgba(255,255,255,0.1); cursor: pointer; }
+        .notification-item:hover { background: rgba(255,255,255,0.05); }
+        .notification-item.unread { border-left: 3px solid var(--primary-color); }
+    </style>
+</head>
+<body>
+    <header class="main-header">
+        <div class="header-left">
+            <img src="img/logo.png" alt="MR Letreros" class="logo-img">
+            <a href="index.html" class="btn-home">← Volver al Inicio</a>
+        </div>
+        <div class="header-title">🔨 GESTIÓN DE TRABAJOS</div>
+        <button id="btnNotifications" class="btn btn-secondary" style="position: relative;">
+            🔔 <span id="notificationBadge" class="badge" style="background: red; position: absolute; top: -5px; right: -5px; display: none;">0</span>
+        </button>
+    </header>
+
+    <div class="content-container">
+        <!-- Dashboard Stats -->
+        <div class="dashboard-stats">
+            <div class="stat-card">
+                <div class="stat-label">Pendientes</div>
+                <div class="stat-value" id="countPending">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">En Proceso</div>
+                <div class="stat-value" id="countInProgress">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Completados</div>
+                <div class="stat-value" id="countCompleted">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Ingresos (Pagados)</div>
+                <div class="stat-value" id="totalRevenue">$0</div>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="filters-bar">
+            <input type="text" id="filterSearch" class="form-input" placeholder="🔍 Buscar por cliente..." style="flex: 1; min-width: 200px;">
+            <select id="filterStatus" class="form-select" style="width: auto;">
+                <option value="">Todos los Estados</option>
+                <option value="pending">Pendiente</option>
+                <option value="in_progress">En Proceso</option>
+                <option value="completed">Completado</option>
+            </select>
+            <select id="filterPayment" class="form-select" style="width: auto;">
+                <option value="">Todos los Pagos</option>
+                <option value="paid">Pagado</option>
+                <option value="pending">Pendiente</option>
+            </select>
+            <select id="filterPriority" class="form-select" style="width: auto;">
+                <option value="">Todas las Prioridades</option>
+                <option value="urgent">Urgente</option>
+                <option value="high">Alta</option>
+                <option value="normal">Normal</option>
+            </select>
+            <button class="btn btn-secondary" onclick="applyFilters()">Filtrar</button>
+            <button class="btn btn-secondary" onclick="clearFilters()">Limpiar</button>
+        </div>
+
+        <!-- Grid -->
+        <div id="worksList" class="works-grid"></div>
+    </div>
+
+    <!-- Panel Notificaciones -->
+    <div id="notificationPanel" class="notification-panel">
+        <h3>Notificaciones</h3>
+        <div id="notificationsList"></div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/shared/data-manager-extension.js"></script>
+    <script src="js/shared/work-manager.js"></script>
+    <script src="js/trabajos/trabajos-main.js"></script>
+</body>
+</html>

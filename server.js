@@ -21,16 +21,17 @@ const PUBLIC_DIR = path.join(BASE_PATH, 'public');
 
 // Archivos de datos principales
 const FILES = {
-  gremio_clientes: path.join(DATA_DIR, 'gremio_clientes.json'),
-  gremio_data: path.join(DATA_DIR, 'gremio_cotizaciones.json'),
-  clientes_clientes: path.join(DATA_DIR, 'clientes_clientes.json'),
-  clientes_data: path.join(DATA_DIR, 'clientes_cotizaciones.json'),
+  gremio_clientes: path.join(DATA_DIR, 'gremio', 'clientes.json'),
+  gremio_data: path.join(DATA_DIR, 'gremio', 'cotizaciones.json'),
+  clientes_clientes: path.join(DATA_DIR, 'clientes', 'clientes.json'),
+  clientes_data: path.join(DATA_DIR, 'clientes', 'cotizaciones.json'),
   precios: path.join(DATA_DIR, 'gremio_precios_db.json'),
   costos: path.join(DATA_DIR, 'gremio_costos_db.json'),
   gastos: path.join(DATA_DIR, 'mr_letreros_gastos.json'),
   materiales: path.join(DATA_DIR, 'gremio_materiales.json'),
   categorias: path.join(DATA_DIR, 'gremio_categorias.json'),
-  terceros: path.join(DATA_DIR, 'gremio_terceros.json')
+  terceros: path.join(DATA_DIR, 'gremio_terceros.json'),
+  trabajos: path.join(DATA_DIR, 'trabajos.json')
 };
 
 // Middleware
@@ -47,6 +48,8 @@ async function initializeDataStructure() {
     // Crear directorios
     await fs.mkdir(DATA_DIR, { recursive: true });
     await fs.mkdir(PUBLIC_DIR, { recursive: true });
+    await fs.mkdir(path.join(DATA_DIR, 'gremio'), { recursive: true });
+    await fs.mkdir(path.join(DATA_DIR, 'clientes'), { recursive: true });
     
     // Crear archivos iniciales si no existen
     for (const [name, filepath] of Object.entries(FILES)) {
@@ -54,7 +57,8 @@ async function initializeDataStructure() {
         await fs.access(filepath);
         console.log(`   ✅ ${name}: existe`);
       } catch {
-        await fs.writeFile(filepath, JSON.stringify([], null, 2));
+        const initialData = name === 'trabajos' ? { works: [], notifications: [] } : [];
+        await fs.writeFile(filepath, JSON.stringify(initialData, null, 2));
         console.log(`   📝 ${name}: creado`);
       }
     }
@@ -417,6 +421,7 @@ app.get('/api/rendimientos', async (req, res) => {
     const gremioData = await readJSON(FILES.gremio_data);
     const clientesData = await readJSON(FILES.clientes_data);
     const gastos = await readJSON(FILES.gastos);
+    const trabajosData = await readJSON(FILES.trabajos);
     
     // 1. Calcular desglose por categorías de productos (Ventas)
     const breakdown = {};
@@ -478,13 +483,22 @@ app.get('/api/rendimientos', async (req, res) => {
         if (!gastosPorCategoria[cat]) gastosPorCategoria[cat] = 0;
         gastosPorCategoria[cat] += (parseFloat(g.monto) || 0);
     });
+
+    // 4. Calcular Pendiente a Cobrar (Desde Trabajos)
+    let pendienteCobrar = 0;
+    if (trabajosData && trabajosData.works) {
+        pendienteCobrar = trabajosData.works.reduce((sum, w) => {
+            return sum + (parseFloat(w.balance) || 0);
+        }, 0);
+    }
     
     res.json({
       resumen: {
         ingresos: totalIngresos,
         gastosOperativos: gastosTotales,
         gananciaNeta: totalIngresos - gastosTotales,
-        margenTotal: totalIngresos > 0 ? ((totalIngresos - gastosTotales) / totalIngresos * 100) : 0
+        margenTotal: totalIngresos > 0 ? ((totalIngresos - gastosTotales) / totalIngresos * 100) : 0,
+        pendienteCobrar: pendienteCobrar
       },
       porCategoria: categorias,
       gastosDetalle: gastosPorCategoria
@@ -590,6 +604,45 @@ app.post('/api/nesting/solve', (req, res) => {
     } catch (error) {
         console.error('Error al escribir en el stdin de Python:', error);
         res.status(500).json({ error: 'No se pudieron enviar los datos al proceso de Python.' });
+    }
+});
+
+// ==================== ENDPOINTS DE TRABAJOS ====================
+
+app.get('/api/trabajos', async (req, res) => {
+    const filePath = path.join(DATA_DIR, 'trabajos.json');
+    try {
+        // Si no existe, devolver estructura vacía
+        try {
+            await fs.access(filePath);
+        } catch {
+            return res.json({ works: [], notifications: [] });
+        }
+
+        let data = await readJSON(filePath);
+        
+        // Si es un array (por inicialización por defecto o error), convertir a objeto
+        if (Array.isArray(data)) {
+            data = { works: [], notifications: [] };
+        }
+        
+        // Asegurar estructura
+        if (!data.works) data.works = [];
+        if (!data.notifications) data.notifications = [];
+        res.json(data);
+    } catch (error) {
+        console.error('Error leyendo trabajos:', error);
+        res.status(500).json({ error: 'Error leyendo trabajos' });
+    }
+});
+
+app.post('/api/trabajos', async (req, res) => {
+    const filePath = path.join(DATA_DIR, 'trabajos.json');
+    const success = await writeJSON(filePath, req.body);
+    if (success) {
+        res.json({ success: true });
+    } else {
+        res.status(500).json({ error: 'Error guardando trabajos' });
     }
 });
 

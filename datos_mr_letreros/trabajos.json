@@ -1,0 +1,80 @@
+{
+  "works": [
+    {
+      "id": "work_1770253867545",
+      "quoteId": "1770253855543",
+      "clientName": "marcelo maidsna",
+      "clientPhone": "+543424842417",
+      "clientEmail": "marcelojmaidana@gmail.com",
+      "clientAddress": "Ruperto Godoy 3362",
+      "total": 1063285.08,
+      "totalCost": 144251,
+      "profit": 919034.0800000001,
+      "paidAmount": 0,
+      "balance": 1063285.08,
+      "status": "pending",
+      "paymentStatus": "pending",
+      "priority": "normal",
+      "createdAt": "2026-02-05T01:11:07.546Z",
+      "timeline": [
+        {
+          "type": "created",
+          "description": "Trabajo creado automáticamente desde Gremio",
+          "timestamp": "2026-02-05T01:11:07.546Z"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "id": "work_1770254466988",
+      "quoteId": "1770254442483",
+      "clientName": "marcelo maidsna",
+      "clientPhone": "+543424842417",
+      "clientEmail": "marcelojmaidana@gmail.com",
+      "clientAddress": "Ruperto Godoy 3362",
+      "total": 23048,
+      "totalCost": 3783.45,
+      "profit": 19264.55,
+      "paidAmount": 0,
+      "balance": 23048,
+      "status": "pending",
+      "paymentStatus": "pending",
+      "priority": "normal",
+      "createdAt": "2026-02-05T01:21:06.989Z",
+      "timeline": [
+        {
+          "type": "created",
+          "description": "Trabajo creado automáticamente desde Gremio",
+          "timestamp": "2026-02-05T01:21:06.989Z"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "id": "work_1770255485521",
+      "quoteId": "1770255467543",
+      "clientName": "Gremio Galvez",
+      "clientPhone": "",
+      "clientEmail": "",
+      "clientAddress": "",
+      "total": 49293.48,
+      "totalCost": 8091.78,
+      "profit": 41201.700000000004,
+      "paidAmount": 0,
+      "balance": 49293.48,
+      "status": "pending",
+      "paymentStatus": "pending",
+      "priority": "normal",
+      "createdAt": "2026-02-05T01:38:05.521Z",
+      "timeline": [
+        {
+          "type": "created",
+          "description": "Trabajo creado automáticamente desde Gremio",
+          "timestamp": "2026-02-05T01:38:05.521Z"
+        }
+      ],
+      "notes": []
+    }
+  ],
+  "notifications": []
+}

@@ -5,9 +5,9 @@
  */
 
 // ==================== VARIABLES GLOBALES ====================
-let listaCostos = []; 
-let preciosClientes = [];
-let terceros = [];
+window.listaCostos = []; 
+window.preciosClientes = [];
+window.terceros = [];
 let currentQuoteProducts = [];
 let currentQuoteTerceros = [];
 let currentPrecioCliente = 0;
@@ -55,6 +55,9 @@ document.addEventListener('DOMContentLoaded', async function() {
   await loadQuotations();
   updateStatistics();
   
+  // Iniciar monitoreo
+  startNotificationPolling();
+  
   console.log('[CLIENTES] ✅ Sistema listo y conectado.');
 });
 
@@ -90,31 +93,31 @@ async function loadCostosData() {
         }
     });
 
-    listaCostos = listaCombinada;
+    window.listaCostos = listaCombinada;
   } catch (error) {
     console.error('[CLIENTES] ❌ Error cargando costos:', error);
-    listaCostos = [];
+    window.listaCostos = [];
   }
 }
 
 async function loadPrecios() {
   try {
-    preciosClientes = await window.mrDataManager.getPrecios();
-    console.log('[CLIENTES] ✅ Precios cargados:', preciosClientes.length);
+    window.preciosClientes = await window.mrDataManager.getPrecios();
+    console.log('[CLIENTES] ✅ Precios cargados:', window.preciosClientes.length);
   } catch (error) {
     console.error('[CLIENTES] ❌ Error cargando precios:', error);
-    preciosClientes = [];
+    window.preciosClientes = [];
   }
 }
 
 async function loadTerceros() {
   try {
     const empresas = await window.mrDataManager.getTerceros();
-    terceros = [];
+    window.terceros = [];
     empresas.forEach(empresa => {
       if (empresa.servicios) {
         empresa.servicios.forEach(servicio => {
-          terceros.push({
+          window.terceros.push({
             ...servicio,
             empresaNombre: empresa.nombre
           });
@@ -124,7 +127,7 @@ async function loadTerceros() {
     populateTerceros();
   } catch (error) {
     console.error('[CLIENTES] ❌ Error cargando terceros:', error);
-    terceros = [];
+    window.terceros = [];
   }
 }
 
@@ -402,11 +405,21 @@ window.saveNewClient = async function() {
 
 // ==================== PRODUCTOS ====================
 
-function populateProductSelect() {
+async function populateProductSelect() {
   const selectCategoria = document.getElementById('productCategory');
   if (!selectCategoria) return;
   
-  const categorias = [...new Set(preciosClientes.map(p => p.category || p.categoria))].filter(Boolean).sort();
+  // 1. Categorías de productos
+  const categoriasProductos = [...new Set(window.preciosClientes.map(p => p.category || p.categoria))].filter(Boolean);
+  
+  // 2. Categorías guardadas (archivo gremio_categorias.json)
+  let categoriasGuardadas = [];
+  if (window.mrDataManager) {
+      categoriasGuardadas = await window.mrDataManager.getCategorias();
+  }
+  
+  // 3. Combinar
+  const categorias = [...new Set([...categoriasProductos, ...categoriasGuardadas])].sort();
   
   selectCategoria.innerHTML = '<option value="">Seleccionar categoría...</option>' + 
     categorias.map(cat => `<option value="${cat}">${cat}</option>`).join('');
@@ -935,7 +948,9 @@ window.saveQuote = async function() {
     return;
   }
 
-  if (currentQuoteProducts.length === 0 && currentQuoteTerceros.length === 0) {
+  const hasMulti = window.multiCategoryManager && window.multiCategoryManager.getCategories().length > 0;
+
+  if (currentQuoteProducts.length === 0 && currentQuoteTerceros.length === 0 && !hasMulti) {
     alert('⚠️ Agrega al menos un producto');
     return;
   }
@@ -954,6 +969,7 @@ window.saveQuote = async function() {
     fechaEntrega: document.getElementById('deliveryDate')?.value || '',
     productos: currentQuoteProducts,
     terceros: currentQuoteTerceros,
+    multiCategories: window.multiCategoryManager ? window.multiCategoryManager.exportState() : null,
     costoTotal: currentTotals.costoTotal,
     subtotal: currentTotals.subtotal,
     iva: currentTotals.iva,
@@ -987,6 +1003,10 @@ window.clearQuote = function() {
   currentQuoteProducts = [];
   currentQuoteTerceros = [];
   currentClientId = null;
+  
+  if (window.multiCategoryManager) {
+      window.multiCategoryManager.clearCategories();
+  }
   
   ['clientName', 'clientPhone', 'clientEmail', 'clientAddress', 'montoAnticipo', 'deliveryDate'].forEach(id => {
     const elem = document.getElementById(id);
@@ -1038,6 +1058,7 @@ function renderQuotations() {
         </div>
         ${cot.estado === 'pendiente' ? `
           <button class="btn btn-success btn-small" onclick="aprobarCotizacion('${cot.id}')">✅ Aprobar</button>
+          <button class="btn btn-danger btn-small" onclick="borrarCotizacion('${cot.id}')" style="margin-left: 5px;">🗑️ Borrar</button>
         ` : ''}
       </div>
     `;
@@ -1078,23 +1099,96 @@ window.aprobarCotizacion = async function(id) {
       });
     }
 
-    gastos.push({
-      id: `ingreso_coti_cli_${cotizacion.id}`,
-      tipo: 'ingreso',
-      descripcion: `Venta Cliente - Coti #${cotiIdShort} (${cotizacion.cliente.nombre})`,
-      monto: cotizacion.totalCliente,
-      fecha: fechaAprobacion,
-      categoria: 'venta_cliente'
-    });
+    // Ingreso por el ANTICIPO (si existe)
+    const montoIngreso = parseFloat(cotizacion.anticipo) || 0;
+    if (montoIngreso > 0) {
+        gastos.push({
+          id: `ingreso_coti_cli_${cotizacion.id}`,
+          tipo: 'ingreso',
+          descripcion: `Anticipo Cliente - Coti #${cotiIdShort} (${cotizacion.cliente.nombre})`,
+          monto: montoIngreso,
+          fecha: fechaAprobacion,
+          categoria: 'venta_cliente'
+        });
+    }
+
+    // 3. Crear TRABAJO automáticamente
+    let worksData = { works: [], notifications: [] };
+    try {
+        if (window.mrDataManager.getWorks) {
+            worksData = await window.mrDataManager.getWorks();
+        }
+    } catch (e) { console.warn('Error obteniendo trabajos, iniciando nuevo:', e); }
+
+    // Validación de estructura
+    if (!worksData || typeof worksData !== 'object' || Array.isArray(worksData)) {
+        worksData = { works: [], notifications: [] };
+    }
+    if (!Array.isArray(worksData.works)) worksData.works = [];
+
+    // Valores seguros
+    const clientName = cotizacion.cliente?.nombre || cotizacion.clientName || 'Cliente';
+    const total = parseFloat(cotizacion.totalCliente || cotizacion.total || 0);
+    const cost = parseFloat(cotizacion.costoTotal || 0);
+    const profit = parseFloat(cotizacion.ganancia || 0);
+    const balance = total - montoIngreso;
+
+    const newWork = {
+        id: `work_${Date.now()}`,
+        quoteId: cotizacion.id,
+        clientName: clientName,
+        clientPhone: cotizacion.cliente?.telefono || '',
+        clientEmail: cotizacion.cliente?.email || '',
+        clientAddress: cotizacion.cliente?.direccion || '',
+        total: total,
+        totalCost: cost,
+        profit: profit,
+        paidAmount: montoIngreso,
+        balance: balance,
+        status: 'pending',
+        paymentStatus: (montoIngreso >= total - 1) ? 'paid' : 'pending',
+        priority: 'normal',
+        createdAt: new Date().toISOString(),
+        timeline: [{ type: 'created', description: 'Trabajo creado automáticamente desde Clientes', timestamp: new Date().toISOString() }],
+        notes: []
+    };
+    worksData.works.push(newWork);
+    
+    // Guardado robusto
+    let saveSuccess = false;
+    if (window.mrDataManager && window.mrDataManager.saveWorks) {
+        saveSuccess = await window.mrDataManager.saveWorks(worksData);
+    } else {
+        const res = await fetch('/api/trabajos', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(worksData) });
+        const json = await res.json();
+        saveSuccess = json.success;
+    }
+    console.log('[CLIENTES] Resultado guardado trabajo:', saveSuccess);
 
     await window.mrDataManager.saveGastos(gastos);
     
-    alert('✅ Cotización aprobada y movimientos registrados.');
+    alert('✅ Cotización aprobada, Trabajo creado y movimientos registrados.');
     await loadQuotations();
     updateStatistics();
   } catch (error) {
     console.error('[CLIENTES] Error:', error);
     alert('❌ Error al aprobar');
+  }
+};
+
+window.borrarCotizacion = async function(id) {
+  if (!confirm('⚠️ ¿Estás seguro de eliminar esta cotización?')) return;
+  
+  try {
+    const cotizaciones = await window.mrDataManager.getClientesCotizaciones();
+    const filtered = cotizaciones.filter(c => c.id !== id);
+    await window.mrDataManager.saveClientesCotizaciones(filtered);
+    alert('🗑️ Cotización eliminada.');
+    await loadQuotations();
+    updateStatistics();
+  } catch (error) {
+    console.error('[CLIENTES] Error al borrar:', error);
+    alert('❌ Error al borrar');
   }
 };
 
@@ -1114,3 +1208,39 @@ window.updateStatistics = function() {
 window.generatePDF = function() {
   alert('📄 Función PDF próximamente');
 };
+
+window.startNotificationPolling = function() {
+    checkNotifications();
+    setInterval(checkNotifications, 10000);
+};
+
+async function checkNotifications() {
+    try {
+        const response = await fetch('/api/trabajos');
+        if (!response.ok) return;
+        const data = await response.json();
+        
+        const unreadCount = (data.notifications || []).filter(n => !n.read).length;
+        const badge = document.getElementById('notificationBadge');
+        const btnTrabajos = document.getElementById('btnTrabajosNav');
+        
+        if (unreadCount > 0) {
+            if (badge) {
+                badge.textContent = unreadCount;
+                badge.style.display = 'block';
+            }
+            if (btnTrabajos) {
+                btnTrabajos.style.backgroundColor = '#FFC107';
+                btnTrabajos.style.color = '#000';
+                btnTrabajos.innerHTML = `🔨 Trabajos <span style="background:red; color:white; border-radius:50%; padding:2px 6px; font-size:0.8em; margin-left:5px;">${unreadCount}</span>`;
+            }
+        } else {
+            if (badge) badge.style.display = 'none';
+            if (btnTrabajos) {
+                btnTrabajos.style.backgroundColor = '';
+                btnTrabajos.style.color = '';
+                btnTrabajos.innerHTML = '🔨 Trabajos';
+            }
+        }
+    } catch (e) { console.error('Error polling notifications:', e); }
+}

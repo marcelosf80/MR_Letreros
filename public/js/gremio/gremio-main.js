@@ -4,9 +4,9 @@
  */
 
 // ==================== VARIABLES GLOBALES ====================
-let listaCostos = []; // Antes 'materiales', ahora solo para buscar costos
-let preciosGremio = [];
-let terceros = [];
+window.listaCostos = []; // Antes 'materiales', ahora solo para buscar costos
+window.preciosGremio = [];
+window.terceros = [];
 let currentQuoteProducts = [];
 let currentQuoteTerceros = [];
 let currentPrecioGremio = 0;
@@ -48,6 +48,9 @@ document.addEventListener('DOMContentLoaded', async function() {
   setupEventListeners();
   await loadQuotations();
   updateStatistics();
+  
+  // Iniciar monitoreo de notificaciones
+  startNotificationPolling();
   
   console.log('[GREMIO] ✅ Sistema listo y conectado.');
 });
@@ -91,21 +94,21 @@ async function loadCostosData() {
         }
     });
 
-    listaCostos = listaCombinada;
-    console.log('[GREMIO] ✅ Datos de Costos cargados para referencia:', listaCostos.length);
+    window.listaCostos = listaCombinada;
+    console.log('[GREMIO] ✅ Datos de Costos cargados para referencia:', window.listaCostos.length);
   } catch (error) {
     console.error('[GREMIO] ❌ Error cargando datos de costos:', error);
-    listaCostos = [];
+    window.listaCostos = [];
   }
 }
 
 async function loadPrecios() {
   try {
-    preciosGremio = await window.mrDataManager.getPrecios();
-    console.log('[GREMIO] ✅ Precios cargados:', preciosGremio.length);
+    window.preciosGremio = await window.mrDataManager.getPrecios();
+    console.log('[GREMIO] ✅ Precios cargados:', window.preciosGremio.length);
   } catch (error) {
     console.error('[GREMIO] ❌ Error cargando precios:', error);
-    preciosGremio = [];
+    window.preciosGremio = [];
   }
 }
 
@@ -113,22 +116,22 @@ async function loadTerceros() {
   try {
     const empresas = await window.mrDataManager.getTerceros();
     // Aplanar la lista de servicios de todas las empresas para el dropdown
-    terceros = [];
+    window.terceros = [];
     empresas.forEach(empresa => {
       if (empresa.servicios) {
         empresa.servicios.forEach(servicio => {
-          terceros.push({
+          window.terceros.push({
             ...servicio,
             empresaNombre: empresa.nombre // Añadir el nombre de la empresa al servicio
           });
         });
       }
     });
-    console.log('[GREMIO] ✅ Terceros cargados y aplanados:', terceros.length);
+    console.log('[GREMIO] ✅ Terceros cargados y aplanados:', window.terceros.length);
     populateTerceros();
   } catch (error) {
     console.error('[GREMIO] ❌ Error cargando terceros:', error);
-    terceros = [];
+    window.terceros = [];
   }
 }
 
@@ -459,7 +462,7 @@ window.saveNewClient = async function() {
 
 // ==================== POBLAR SELECTOR DE PRODUCTOS ====================
 
-function populateProductSelect() {
+async function populateProductSelect() {
   const selectCategoria = document.getElementById('productCategory');
   
   if (!selectCategoria) {
@@ -467,8 +470,17 @@ function populateProductSelect() {
     return;
   }
   
-  // Obtener categorías únicas
-  const categorias = [...new Set(preciosGremio.map(p => p.category || p.categoria))].filter(Boolean).sort();
+  // 1. Obtener categorías de productos existentes
+  const categoriasProductos = [...new Set(window.preciosGremio.map(p => p.category || p.categoria))].filter(Boolean);
+  
+  // 2. Obtener categorías guardadas (archivo gremio_categorias.json)
+  let categoriasGuardadas = [];
+  if (window.mrDataManager) {
+      categoriasGuardadas = await window.mrDataManager.getCategorias();
+  }
+
+  // 3. Combinar ambas listas y eliminar duplicados
+  const categorias = [...new Set([...categoriasProductos, ...categoriasGuardadas])].sort();
   
   selectCategoria.innerHTML = '<option value="">Seleccionar categoría...</option>' + 
     categorias.map(cat => `<option value="${cat}">${cat}</option>`).join('');
@@ -1185,7 +1197,9 @@ window.saveQuote = async function() {
     return;
   }
 
-  if (currentQuoteProducts.length === 0 && currentQuoteTerceros.length === 0) {
+  const hasMulti = window.multiCategoryManager && window.multiCategoryManager.getCategories().length > 0;
+
+  if (currentQuoteProducts.length === 0 && currentQuoteTerceros.length === 0 && !hasMulti) {
     alert('⚠️ Agrega al menos un producto');
     return;
   }
@@ -1208,6 +1222,7 @@ window.saveQuote = async function() {
     },
     productos: currentQuoteProducts,
     terceros: currentQuoteTerceros,
+    multiCategories: window.multiCategoryManager ? window.multiCategoryManager.exportState() : null,
     costoTotal,
     subtotal: currentTotals.subtotal,
     iva: currentTotals.iva,
@@ -1242,6 +1257,10 @@ window.clearQuote = function() {
   currentQuoteProducts = [];
   currentQuoteTerceros = [];
   currentClientId = null; // Resetear cliente para obligar a cargar uno nuevo
+  
+  if (window.multiCategoryManager) {
+      window.multiCategoryManager.clearCategories();
+  }
   
   const fields = ['clientName', 'clientPhone', 'clientEmail', 'clientAddress', 'montoAnticipo'];
   fields.forEach(id => {
@@ -1304,6 +1323,7 @@ function renderQuotations() {
         
         ${cot.estado === 'pendiente' ? `
           <button class="btn btn-success btn-small" onclick="aprobarCotizacion('${cot.id}')">✅ Aprobar</button>
+          <button class="btn btn-danger btn-small" onclick="borrarCotizacion('${cot.id}')" style="margin-left: 5px;">🗑️ Borrar</button>
         ` : ''}
       </div>
     `;
@@ -1350,27 +1370,99 @@ window.aprobarCotizacion = async function(id) {
       });
     }
 
-    // Ingreso por la venta total
-    gastos.push({
-      id: `ingreso_coti_${cotizacion.id}`,
-      tipo: 'ingreso',
-      descripcion: `Venta Gremio - Coti #${cotiIdShort} (${cotizacion.cliente.nombre})`,
-      monto: cotizacion.totalCliente,
-      fecha: fechaAprobacion,
-      categoria: 'venta_gremio'
-    });
+    // Ingreso por el ANTICIPO (si existe)
+    const montoIngreso = parseFloat(cotizacion.anticipo) || 0;
+    if (montoIngreso > 0) {
+        gastos.push({
+          id: `ingreso_coti_${cotizacion.id}`,
+          tipo: 'ingreso',
+          descripcion: `Anticipo Gremio - Coti #${cotiIdShort} (${cotizacion.cliente.nombre})`,
+          monto: montoIngreso,
+          fecha: fechaAprobacion,
+          categoria: 'venta_gremio'
+        });
+    }
+
+    // 3. Crear TRABAJO automáticamente
+    let worksData = { works: [], notifications: [] };
+    try {
+        if (window.mrDataManager.getWorks) {
+            worksData = await window.mrDataManager.getWorks();
+        }
+    } catch (e) { console.warn('Error obteniendo trabajos, iniciando nuevo:', e); }
+
+    // Validación de estructura para evitar errores si devuelve array vacío
+    if (!worksData || typeof worksData !== 'object' || Array.isArray(worksData)) {
+        worksData = { works: [], notifications: [] };
+    }
+    if (!Array.isArray(worksData.works)) worksData.works = [];
+
+    // Valores seguros (Fallbacks)
+    const clientName = cotizacion.cliente?.nombre || cotizacion.clientName || 'Cliente';
+    const total = parseFloat(cotizacion.totalCliente || cotizacion.total || 0);
+    const cost = parseFloat(cotizacion.costoTotal || 0);
+    const profit = parseFloat(cotizacion.ganancia || 0);
+    const balance = total - montoIngreso;
+
+    const newWork = {
+        id: `work_${Date.now()}`,
+        quoteId: cotizacion.id,
+        clientName: clientName,
+        clientPhone: cotizacion.cliente?.telefono || '',
+        clientEmail: cotizacion.cliente?.email || '',
+        clientAddress: cotizacion.cliente?.direccion || '',
+        total: total,
+        totalCost: cost,
+        profit: profit,
+        paidAmount: montoIngreso,
+        balance: balance,
+        status: 'pending', // Estado inicial del trabajo
+        paymentStatus: (montoIngreso >= total - 1) ? 'paid' : 'pending',
+        priority: 'normal',
+        createdAt: new Date().toISOString(),
+        timeline: [{ type: 'created', description: 'Trabajo creado automáticamente desde Gremio', timestamp: new Date().toISOString() }],
+        notes: []
+    };
+    worksData.works.push(newWork);
+    
+    // Intentar guardar usando el manager, o fallback directo a fetch
+    let saveSuccess = false;
+    if (window.mrDataManager && window.mrDataManager.saveWorks) {
+        saveSuccess = await window.mrDataManager.saveWorks(worksData);
+    } else {
+        const res = await fetch('/api/trabajos', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(worksData) });
+        const json = await res.json();
+        saveSuccess = json.success;
+    }
+    console.log('[GREMIO] Resultado guardado trabajo:', saveSuccess);
 
     const successGastos = await window.mrDataManager.saveGastos(gastos);
     if (!successGastos) {
       alert('⚠️ El estado de la cotización se actualizó, pero hubo un error al registrar los movimientos financieros.');
     }
     
-    alert('✅ Cotización aprobada y movimientos registrados.');
+    alert('✅ Cotización aprobada, Trabajo creado y movimientos registrados.');
     await loadQuotations();
     updateStatistics();
   } catch (error) {
     console.error('[GREMIO] Error:', error);
     alert('❌ Error al aprobar');
+  }
+};
+
+window.borrarCotizacion = async function(id) {
+  if (!confirm('⚠️ ¿Estás seguro de eliminar esta cotización? Esta acción no se puede deshacer.')) return;
+  
+  try {
+    const cotizaciones = await window.mrDataManager.getGremioCotizaciones();
+    const filtered = cotizaciones.filter(c => c.id !== id);
+    await window.mrDataManager.saveGremioCotizaciones(filtered);
+    alert('🗑️ Cotización eliminada.');
+    await loadQuotations();
+    updateStatistics();
+  } catch (error) {
+    console.error('[GREMIO] Error al borrar:', error);
+    alert('❌ Error al borrar');
   }
 };
 
@@ -1391,5 +1483,42 @@ window.updateStatistics = function() { // Esta función ahora se llama desde loa
   if (elem3) elem3.textContent = aprobadas.length;
   if (elem4) elem4.textContent = pendientes.length;
 };
+
+window.startNotificationPolling = function() {
+    checkNotifications();
+    setInterval(checkNotifications, 10000); // Revisar cada 10 segundos
+};
+
+async function checkNotifications() {
+    try {
+        // Usar fetch directo para evitar dependencias
+        const response = await fetch('/api/trabajos');
+        if (!response.ok) return;
+        const data = await response.json();
+        
+        const unreadCount = (data.notifications || []).filter(n => !n.read).length;
+        const badge = document.getElementById('notificationBadge');
+        const btnTrabajos = document.getElementById('btnTrabajosNav');
+        
+        if (unreadCount > 0) {
+            if (badge) {
+                badge.textContent = unreadCount;
+                badge.style.display = 'block';
+            }
+            if (btnTrabajos) {
+                btnTrabajos.style.backgroundColor = '#FFC107'; // Amarillo alerta
+                btnTrabajos.style.color = '#000';
+                btnTrabajos.innerHTML = `🔨 Trabajos <span style="background:red; color:white; border-radius:50%; padding:2px 6px; font-size:0.8em; margin-left:5px;">${unreadCount}</span>`;
+            }
+        } else {
+            if (badge) badge.style.display = 'none';
+            if (btnTrabajos) {
+                btnTrabajos.style.backgroundColor = '';
+                btnTrabajos.style.color = '';
+                btnTrabajos.innerHTML = '🔨 Trabajos';
+            }
+        }
+    } catch (e) { console.error('Error polling notifications:', e); }
+}
 
 console.log('[GREMIO] 🚀 Script de red cargado');

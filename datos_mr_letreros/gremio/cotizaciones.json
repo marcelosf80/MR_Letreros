@@ -1,0 +1,56 @@
+[
+  {
+    "id": "1770255467543",
+    "clientId": "gremio_1768760042986_pqjn58u2s",
+    "cliente": {
+      "nombre": "Gremio Galvez",
+      "telefono": "",
+      "email": "",
+      "direccion": ""
+    },
+    "productos": [],
+    "terceros": [],
+    "multiCategories": {
+      "categories": [
+        {
+          "id": "cat_1770255431415_80uj7cnj7",
+          "name": "90",
+          "costPerM2": 1823.4683281412254,
+          "pricePerM2": 9000,
+          "totalCost": 5225.88,
+          "totalPrice": 25793.1,
+          "margin": 20567.22,
+          "m2": 2.8659
+        },
+        {
+          "id": "cat_1770255453849_e42s18dhd",
+          "name": "Laca",
+          "costPerM2": 1000,
+          "pricePerM2": 7000,
+          "totalCost": 2865.9,
+          "totalPrice": 20061.3,
+          "margin": 17195.4,
+          "m2": 2.8659
+        }
+      ],
+      "sharedDimensions": {
+        "width": 1.23,
+        "height": 2.33,
+        "totalM2": 2.8659
+      },
+      "inkPriceEnabled": true,
+      "inkPricePerM2": 1200
+    },
+    "costoTotal": 8091.78,
+    "subtotal": 49293.48,
+    "iva": 0,
+    "totalCliente": 49293.48,
+    "ganancia": 41201.700000000004,
+    "anticipo": 0,
+    "saldo": 49293.48,
+    "fecha": "2026-02-05T01:37:47.543Z",
+    "estado": "aprobada",
+    "approved": true,
+    "fechaAprobacion": "2026-02-05T01:38:02.573Z"
+  }
+]

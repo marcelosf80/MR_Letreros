@@ -39,6 +39,12 @@
   --shadow-md: 0 8px 25px rgba(0, 0, 0, 0.4);
   --shadow-lg: 0 12px 35px rgba(255, 140, 66, 0.2);
   --shadow-glow: 0 0 20px rgba(255, 140, 66, 0.2);
+
+  /* Prioridades */
+  --priority-low: #48BB78;
+  --priority-normal: #4299E1;
+  --priority-high: #ED8936;
+  --priority-urgent: #F56565;
 }
 
 /* BODY */
@@ -678,4 +684,19 @@ body {
   .logo {
     height: 40px;
   }
+}
+
+/* CLASES DE PRIORIDAD */
+.priority-low { border-left-color: var(--priority-low) !important; }
+.priority-normal { border-left-color: var(--priority-normal) !important; }
+.priority-high { border-left-color: var(--priority-high) !important; }
+.priority-urgent { border-left-color: var(--priority-urgent) !important; }
+
+.badge-priority-low { background-color: var(--priority-low); color: white; }
+.badge-priority-normal { background-color: var(--priority-normal); color: white; }
+.badge-priority-high { background-color: var(--priority-high); color: white; }
+.badge-priority-urgent { background-color: var(--priority-urgent); color: white; }
+
+.work-card {
+    border-left: 4px solid var(--priority-normal);
 }
