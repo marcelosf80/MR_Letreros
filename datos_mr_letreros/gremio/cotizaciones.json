@@ -52,5 +52,59 @@
     "estado": "aprobada",
     "approved": true,
     "fechaAprobacion": "2026-02-05T01:38:02.573Z"
+  },
+  {
+    "id": "1770257382221",
+    "clientId": "gremio_1768872212236_gsmp4tmxp",
+    "cliente": {
+      "nombre": "test",
+      "telefono": "",
+      "email": "",
+      "direccion": ""
+    },
+    "productos": [],
+    "terceros": [],
+    "multiCategories": {
+      "categories": [
+        {
+          "id": "cat_1770257352012_6kmkel37s",
+          "name": "90",
+          "costPerM2": 1823.4683281412254,
+          "pricePerM2": 9000,
+          "totalCost": 8114.43,
+          "totalPrice": 40050,
+          "margin": 31935.57,
+          "m2": 4.45
+        },
+        {
+          "id": "cat_1770257360310_rdwdoaqxk",
+          "name": "Laca",
+          "costPerM2": 1000,
+          "pricePerM2": 7000,
+          "totalCost": 4450,
+          "totalPrice": 31150,
+          "margin": 26700,
+          "m2": 4.45
+        }
+      ],
+      "sharedDimensions": {
+        "width": 1,
+        "height": 4.45,
+        "totalM2": 4.45
+      },
+      "inkPriceEnabled": true,
+      "inkPricePerM2": 1200
+    },
+    "costoTotal": 12564.43,
+    "subtotal": 76540,
+    "iva": 0,
+    "totalCliente": 76540,
+    "ganancia": 63975.57,
+    "anticipo": 0,
+    "saldo": 76540,
+    "fecha": "2026-02-05T02:09:42.221Z",
+    "estado": "aprobada",
+    "approved": true,
+    "fechaAprobacion": "2026-02-05T02:09:53.441Z"
   }
 ]

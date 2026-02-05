@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestión de Trabajos - MR Letreros</title>
     <link rel="stylesheet" href="css/base.css">
+    
+    <!-- IMPORTANTE: Cargar data-manager PRIMERO -->
+    <script src="js/shared/data-manager-network.js"></script>
+    
     <style>
         .dashboard-stats {
             display: grid;
@@ -12,9 +16,25 @@
             gap: 1.5rem;
             margin-bottom: 2rem;
         }
+        .stat-card {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
+            padding: 1.5rem;
+            border-radius: 12px;
+            border: 1px solid rgba(99, 102, 241, 0.3);
+        }
+        .stat-label {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+        }
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
         .filters-bar {
             background: var(--card-bg);
-            padding: 1rem;
+            padding: 1.5rem;
             border-radius: 10px;
             margin-bottom: 2rem;
             display: flex;
@@ -25,34 +45,180 @@
         }
         .works-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
             gap: 1.5rem;
         }
         .work-card {
             background: rgba(255, 255, 255, 0.05);
             border-radius: 12px;
-            overflow: hidden;
             border: 1px solid var(--border-color);
-            transition: transform 0.2s;
-            padding: 1rem;
+            transition: all 0.3s ease;
+            padding: 1.5rem;
+            position: relative;
         }
-        .work-card:hover { transform: translateY(-5px); }
+        .work-card:hover { 
+            transform: translateY(-5px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+            border-color: var(--primary-color);
+        }
         
-        .work-header { display: flex; justify-content: space-between; margin-bottom: 1rem; }
-        .work-actions { display: flex; gap: 0.5rem; margin-top: 1rem; flex-wrap: wrap; }
-        .badge { padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.8rem; font-weight: bold; color: white; }
+        .work-card.priority-urgent {
+            border-left: 4px solid #F44336;
+            animation: pulse 2s infinite;
+        }
+        .work-card.priority-high {
+            border-left: 4px solid #FF9800;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(244, 67, 54, 0.4); }
+            50% { box-shadow: 0 0 0 10px rgba(244, 67, 54, 0); }
+        }
+        
+        .work-header { 
+            display: flex; 
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .work-client {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+        .work-client-info {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-top: 0.25rem;
+        }
+        .work-details {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.75rem;
+            margin: 1rem 0;
+        }
+        .work-detail-item {
+            display: flex;
+            flex-direction: column;
+        }
+        .work-detail-label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .work-detail-value {
+            font-size: 1.1rem;
+            font-weight: bold;
+            margin-top: 0.25rem;
+        }
+        .work-actions { 
+            display: flex; 
+            gap: 0.5rem; 
+            margin-top: 1rem; 
+            flex-wrap: wrap;
+        }
+        .badge { 
+            padding: 0.35rem 0.75rem;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            color: white;
+            white-space: nowrap;
+        }
+        .badge-status-pending { background: #FFC107; }
+        .badge-status-in_progress { background: #2196F3; }
+        .badge-status-completed { background: #4CAF50; }
+        .badge-payment-paid { background: #4CAF50; }
+        .badge-payment-pending { background: #FF9800; }
+        .badge-priority-urgent { background: #F44336; }
+        .badge-priority-high { background: #FF9800; }
+        .badge-priority-normal { background: #2196F3; }
+        
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: var(--text-secondary);
+        }
+        .empty-state-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
         
         /* Notificaciones Panel */
         .notification-panel {
-            position: fixed; top: 80px; right: -400px; width: 350px; height: calc(100vh - 100px);
-            background: var(--card-bg); border-left: 1px solid var(--border-color);
-            transition: right 0.3s ease; z-index: 1000; padding: 1rem; overflow-y: auto;
+            position: fixed;
+            top: 80px;
+            right: -400px;
+            width: 350px;
+            height: calc(100vh - 100px);
+            background: var(--card-bg);
+            border-left: 1px solid var(--border-color);
+            transition: right 0.3s ease;
+            z-index: 1000;
+            padding: 1rem;
+            overflow-y: auto;
             backdrop-filter: blur(10px);
+            box-shadow: -4px 0 20px rgba(0, 0, 0, 0.3);
         }
         .notification-panel.show { right: 0; }
-        .notification-item { padding: 1rem; border-bottom: 1px solid rgba(255,255,255,0.1); cursor: pointer; }
+        .notification-panel h3 {
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid var(--border-color);
+        }
+        .notification-item {
+            padding: 1rem;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            cursor: pointer;
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+            transition: background 0.2s;
+        }
         .notification-item:hover { background: rgba(255,255,255,0.05); }
-        .notification-item.unread { border-left: 3px solid var(--primary-color); }
+        .notification-item.unread {
+            background: rgba(99, 102, 241, 0.1);
+            border-left: 3px solid var(--primary-color);
+        }
+        .notification-badge {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #F44336;
+            color: white;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            font-weight: bold;
+        }
+        
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-secondary);
+        }
+        .spinner {
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-top: 3px solid var(--primary-color);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
@@ -63,7 +229,8 @@
         </div>
         <div class="header-title">🔨 GESTIÓN DE TRABAJOS</div>
         <button id="btnNotifications" class="btn btn-secondary" style="position: relative;">
-            🔔 <span id="notificationBadge" class="badge" style="background: red; position: absolute; top: -5px; right: -5px; display: none;">0</span>
+            🔔 Notificaciones
+            <span id="notificationBadge" class="notification-badge" style="display: none;">0</span>
         </button>
     </header>
 
@@ -71,20 +238,20 @@
         <!-- Dashboard Stats -->
         <div class="dashboard-stats">
             <div class="stat-card">
-                <div class="stat-label">Pendientes</div>
-                <div class="stat-value" id="countPending">0</div>
+                <div class="stat-label">⏳ Trabajos Pendientes</div>
+                <div class="stat-value" id="countPending">-</div>
             </div>
             <div class="stat-card">
-                <div class="stat-label">En Proceso</div>
-                <div class="stat-value" id="countInProgress">0</div>
+                <div class="stat-label">🔧 En Proceso</div>
+                <div class="stat-value" id="countInProgress">-</div>
             </div>
             <div class="stat-card">
-                <div class="stat-label">Completados</div>
-                <div class="stat-value" id="countCompleted">0</div>
+                <div class="stat-label">✅ Completados</div>
+                <div class="stat-value" id="countCompleted">-</div>
             </div>
             <div class="stat-card">
-                <div class="stat-label">Ingresos (Pagados)</div>
-                <div class="stat-value" id="totalRevenue">$0</div>
+                <div class="stat-label">💰 Ingresos (Pagados)</div>
+                <div class="stat-value" id="totalRevenue">$-</div>
             </div>
         </div>
 
@@ -92,39 +259,489 @@
         <div class="filters-bar">
             <input type="text" id="filterSearch" class="form-input" placeholder="🔍 Buscar por cliente..." style="flex: 1; min-width: 200px;">
             <select id="filterStatus" class="form-select" style="width: auto;">
-                <option value="">Todos los Estados</option>
-                <option value="pending">Pendiente</option>
-                <option value="in_progress">En Proceso</option>
-                <option value="completed">Completado</option>
+                <option value="">📊 Todos los Estados</option>
+                <option value="pending">⏳ Pendiente</option>
+                <option value="in_progress">🔧 En Proceso</option>
+                <option value="completed">✅ Completado</option>
             </select>
             <select id="filterPayment" class="form-select" style="width: auto;">
-                <option value="">Todos los Pagos</option>
-                <option value="paid">Pagado</option>
-                <option value="pending">Pendiente</option>
+                <option value="">💳 Todos los Pagos</option>
+                <option value="paid">✅ Pagado</option>
+                <option value="pending">⏳ Pendiente</option>
             </select>
             <select id="filterPriority" class="form-select" style="width: auto;">
-                <option value="">Todas las Prioridades</option>
-                <option value="urgent">Urgente</option>
-                <option value="high">Alta</option>
-                <option value="normal">Normal</option>
+                <option value="">🎯 Todas las Prioridades</option>
+                <option value="urgent">🔴 Urgente</option>
+                <option value="high">🟠 Alta</option>
+                <option value="normal">🟡 Normal</option>
             </select>
-            <button class="btn btn-secondary" onclick="applyFilters()">Filtrar</button>
+            <button class="btn btn-primary" onclick="applyFilters()">Filtrar</button>
             <button class="btn btn-secondary" onclick="clearFilters()">Limpiar</button>
+            <button class="btn btn-success" onclick="loadWorks()">🔄 Actualizar</button>
         </div>
 
-        <!-- Grid -->
+        <!-- Loading State -->
+        <div id="loadingState" class="loading" style="display: none;">
+            <div class="spinner"></div>
+            <p>Cargando trabajos...</p>
+        </div>
+
+        <!-- Works Grid -->
         <div id="worksList" class="works-grid"></div>
     </div>
 
     <!-- Panel Notificaciones -->
     <div id="notificationPanel" class="notification-panel">
-        <h3>Notificaciones</h3>
-        <div id="notificationsList"></div>
+        <h3>🔔 Notificaciones</h3>
+        <div id="notificationsList">
+            <div class="empty-state">
+                <p>No hay notificaciones</p>
+            </div>
+        </div>
     </div>
 
     <!-- Scripts -->
-    <script src="js/shared/data-manager-extension.js"></script>
     <script src="js/shared/work-manager.js"></script>
-    <script src="js/trabajos/trabajos-main.js"></script>
+    <script>
+        // ==================== VARIABLES GLOBALES ====================
+        let workManager;
+        let currentFilters = {};
+        let allWorks = [];
+
+        // ==================== INICIALIZACIÓN ====================
+        document.addEventListener('DOMContentLoaded', async function() {
+            console.log('[TRABAJOS] 🚀 Inicializando...');
+            
+            // Esperar a que mrDataManager esté disponible
+            let attempts = 0;
+            while (!window.mrDataManager && attempts < 20) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+                attempts++;
+            }
+            
+            if (!window.mrDataManager) {
+                console.error('[TRABAJOS] ❌ mrDataManager no disponible');
+                showError('No se pudo conectar al sistema. Recarga la página.');
+                return;
+            }
+            
+            // Inicializar WorkManager
+            workManager = new WorkManager();
+            
+            // Setup listeners
+            setupEventListeners();
+            
+            // Cargar trabajos
+            await loadWorks();
+            
+            console.log('[TRABAJOS] ✅ Sistema listo');
+        });
+
+        // ==================== CARGA DE DATOS ====================
+        async function loadWorks() {
+            const loadingEl = document.getElementById('loadingState');
+            const worksListEl = document.getElementById('worksList');
+            
+            try {
+                loadingEl.style.display = 'block';
+                worksListEl.style.display = 'none';
+                
+                console.log('[TRABAJOS] Cargando trabajos desde servidor...');
+                
+                // Cargar directamente desde el endpoint
+                const response = await fetch('/api/trabajos');
+                if (!response.ok) {
+                    throw new Error('Error al cargar trabajos: ' + response.status);
+                }
+                
+                const data = await response.json();
+                console.log('[TRABAJOS] Datos recibidos:', data);
+                
+                // Guardar en WorkManager
+                if (data && data.works) {
+                    workManager.importData(data);
+                    allWorks = data.works;
+                    console.log('[TRABAJOS] ✅ Trabajos cargados:', allWorks.length);
+                } else {
+                    allWorks = [];
+                    console.warn('[TRABAJOS] No hay trabajos disponibles');
+                }
+                
+                // Renderizar
+                renderWorks();
+                updateStatistics();
+                
+            } catch (error) {
+                console.error('[TRABAJOS] ❌ Error cargando:', error);
+                showError('Error al cargar los trabajos: ' + error.message);
+                allWorks = [];
+                renderWorks();
+            } finally {
+                loadingEl.style.display = 'none';
+                worksListEl.style.display = 'grid';
+            }
+        }
+
+        // ==================== RENDERIZADO ====================
+        function renderWorks() {
+            const container = document.getElementById('worksList');
+            
+            // Aplicar filtros
+            let filteredWorks = [...allWorks];
+            
+            if (currentFilters.search) {
+                const search = currentFilters.search.toLowerCase();
+                filteredWorks = filteredWorks.filter(w =>
+                    (w.clientName || '').toLowerCase().includes(search)
+                );
+            }
+            
+            if (currentFilters.status) {
+                filteredWorks = filteredWorks.filter(w => w.status === currentFilters.status);
+            }
+            
+            if (currentFilters.payment) {
+                filteredWorks = filteredWorks.filter(w => w.paymentStatus === currentFilters.payment);
+            }
+            
+            if (currentFilters.priority) {
+                filteredWorks = filteredWorks.filter(w => w.priority === currentFilters.priority);
+            }
+            
+            // Ordenar por fecha (más recientes primero)
+            filteredWorks.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+            
+            // Renderizar
+            if (filteredWorks.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state" style="grid-column: 1 / -1;">
+                        <div class="empty-state-icon">📋</div>
+                        <h3>No hay trabajos para mostrar</h3>
+                        <p>Los trabajos aparecerán aquí cuando apruebes cotizaciones.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = filteredWorks.map(work => generateWorkCard(work)).join('');
+        }
+
+        function generateWorkCard(work) {
+            const statusBadge = getStatusBadge(work.status);
+            const paymentBadge = getPaymentBadge(work.paymentStatus);
+            const priorityBadge = getPriorityBadge(work.priority);
+            
+            const priorityClass = work.priority === 'urgent' ? 'priority-urgent' : 
+                                 work.priority === 'high' ? 'priority-high' : '';
+            
+            return `
+                <div class="work-card ${priorityClass}">
+                    <div class="work-header">
+                        <div>
+                            <div class="work-client">${work.clientName || 'Sin nombre'}</div>
+                            ${work.clientPhone ? `<div class="work-client-info">📞 ${work.clientPhone}</div>` : ''}
+                        </div>
+                        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: flex-end;">
+                            ${statusBadge}
+                            ${paymentBadge}
+                            ${priorityBadge}
+                        </div>
+                    </div>
+                    
+                    <div class="work-details">
+                        <div class="work-detail-item">
+                            <div class="work-detail-label">ID</div>
+                            <div class="work-detail-value" style="font-size: 0.9rem;">#${work.id.substr(-8)}</div>
+                        </div>
+                        <div class="work-detail-item">
+                            <div class="work-detail-label">Total</div>
+                            <div class="work-detail-value" style="color: #51CF66;">$${formatCurrency(work.total)}</div>
+                        </div>
+                        <div class="work-detail-item">
+                            <div class="work-detail-label">Costo</div>
+                            <div class="work-detail-value" style="color: #FF6B6B;">$${formatCurrency(work.totalCost)}</div>
+                        </div>
+                        <div class="work-detail-item">
+                            <div class="work-detail-label">Ganancia</div>
+                            <div class="work-detail-value" style="color: #4CAF50;">$${formatCurrency(work.profit)}</div>
+                        </div>
+                        <div class="work-detail-item">
+                            <div class="work-detail-label">Pagado</div>
+                            <div class="work-detail-value" style="color: #2196F3;">$${formatCurrency(work.paidAmount || 0)}</div>
+                        </div>
+                        <div class="work-detail-item">
+                            <div class="work-detail-label">Saldo</div>
+                            <div class="work-detail-value" style="color: #FFC107;">$${formatCurrency(work.balance)}</div>
+                        </div>
+                    </div>
+                    
+                    <div style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.5rem;">
+                        📅 Creado: ${formatDate(work.createdAt)}
+                    </div>
+                    
+                    <div class="work-actions">
+                        <button class="btn btn-small btn-primary" onclick="changeStatus('${work.id}')">
+                            🔄 Cambiar Estado
+                        </button>
+                        <button class="btn btn-small btn-success" onclick="markPaid('${work.id}')" ${work.paymentStatus === 'paid' ? 'disabled' : ''}>
+                            💳 Marcar Pagado
+                        </button>
+                        <button class="btn btn-small btn-warning" onclick="changePriority('${work.id}')">
+                            🎯 Prioridad
+                        </button>
+                        <button class="btn btn-small btn-info" onclick="addNote('${work.id}')">
+                            📝 Nota
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // ==================== ESTADÍSTICAS ====================
+        function updateStatistics() {
+            const pending = allWorks.filter(w => w.status === 'pending').length;
+            const inProgress = allWorks.filter(w => w.status === 'in_progress').length;
+            const completed = allWorks.filter(w => w.status === 'completed').length;
+            const revenue = allWorks
+                .filter(w => w.paymentStatus === 'paid')
+                .reduce((sum, w) => sum + (w.paidAmount || 0), 0);
+            
+            document.getElementById('countPending').textContent = pending;
+            document.getElementById('countInProgress').textContent = inProgress;
+            document.getElementById('countCompleted').textContent = completed;
+            document.getElementById('totalRevenue').textContent = '$' + formatCurrency(revenue);
+        }
+
+        // ==================== ACCIONES ====================
+        async function changeStatus(workId) {
+            const work = allWorks.find(w => w.id === workId);
+            if (!work) return;
+            
+            const newStatus = prompt(
+                'Cambiar estado del trabajo:\n\n' +
+                '1 = Pendiente\n' +
+                '2 = En Proceso\n' +
+                '3 = Completado\n\n' +
+                'Estado actual: ' + getStatusLabel(work.status)
+            );
+            
+            const statusMap = {
+                '1': 'pending',
+                '2': 'in_progress',
+                '3': 'completed'
+            };
+            
+            if (statusMap[newStatus]) {
+                work.status = statusMap[newStatus];
+                work.timeline.push({
+                    type: 'status_changed',
+                    description: `Estado cambiado a: ${getStatusLabel(work.status)}`,
+                    timestamp: new Date().toISOString()
+                });
+                
+                await saveWorks();
+                await loadWorks();
+            }
+        }
+
+        async function markPaid(workId) {
+            const work = allWorks.find(w => w.id === workId);
+            if (!work) return;
+            
+            const amount = parseFloat(prompt('Monto del pago:', work.balance));
+            if (!amount || amount <= 0) return;
+            
+            work.paidAmount = (work.paidAmount || 0) + amount;
+            work.balance = work.total - work.paidAmount;
+            
+            if (work.balance <= 1) {
+                work.paymentStatus = 'paid';
+            }
+            
+            work.timeline.push({
+                type: 'payment',
+                description: `Pago recibido: $${amount}`,
+                timestamp: new Date().toISOString()
+            });
+            
+            await saveWorks();
+            await loadWorks();
+            alert('✅ Pago registrado');
+        }
+
+        async function changePriority(workId) {
+            const work = allWorks.find(w => w.id === workId);
+            if (!work) return;
+            
+            const newPriority = prompt(
+                'Cambiar prioridad:\n\n' +
+                '1 = Normal\n' +
+                '2 = Alta\n' +
+                '3 = URGENTE'
+            );
+            
+            const priorityMap = {
+                '1': 'normal',
+                '2': 'high',
+                '3': 'urgent'
+            };
+            
+            if (priorityMap[newPriority]) {
+                work.priority = priorityMap[newPriority];
+                work.timeline.push({
+                    type: 'priority_changed',
+                    description: `Prioridad: ${work.priority}`,
+                    timestamp: new Date().toISOString()
+                });
+                
+                await saveWorks();
+                await loadWorks();
+            }
+        }
+
+        async function addNote(workId) {
+            const work = allWorks.find(w => w.id === workId);
+            if (!work) return;
+            
+            const note = prompt('Agregar nota:');
+            if (!note) return;
+            
+            if (!work.notes) work.notes = [];
+            work.notes.push({
+                text: note,
+                date: new Date().toISOString(),
+                author: 'Usuario'
+            });
+            
+            work.timeline.push({
+                type: 'note_added',
+                description: 'Nota agregada',
+                timestamp: new Date().toISOString()
+            });
+            
+            await saveWorks();
+            await loadWorks();
+        }
+
+        async function saveWorks() {
+            try {
+                const data = { works: allWorks, notifications: [] };
+                const response = await fetch('/api/trabajos', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Error al guardar');
+                }
+                
+                console.log('[TRABAJOS] ✅ Guardado exitoso');
+            } catch (error) {
+                console.error('[TRABAJOS] ❌ Error guardando:', error);
+                alert('Error al guardar los cambios');
+            }
+        }
+
+        // ==================== FILTROS ====================
+        function applyFilters() {
+            currentFilters = {
+                search: document.getElementById('filterSearch').value.trim(),
+                status: document.getElementById('filterStatus').value,
+                payment: document.getElementById('filterPayment').value,
+                priority: document.getElementById('filterPriority').value
+            };
+            
+            renderWorks();
+        }
+
+        function clearFilters() {
+            document.getElementById('filterSearch').value = '';
+            document.getElementById('filterStatus').value = '';
+            document.getElementById('filterPayment').value = '';
+            document.getElementById('filterPriority').value = '';
+            currentFilters = {};
+            renderWorks();
+        }
+
+        // ==================== NOTIFICACIONES ====================
+        function setupEventListeners() {
+            document.getElementById('btnNotifications').addEventListener('click', toggleNotificationPanel);
+            document.getElementById('filterSearch').addEventListener('input', applyFilters);
+        }
+
+        function toggleNotificationPanel() {
+            const panel = document.getElementById('notificationPanel');
+            panel.classList.toggle('show');
+        }
+
+        // ==================== HELPERS ====================
+        function getStatusBadge(status) {
+            const badges = {
+                pending: '<span class="badge badge-status-pending">⏳ Pendiente</span>',
+                in_progress: '<span class="badge badge-status-in_progress">🔧 En Proceso</span>',
+                completed: '<span class="badge badge-status-completed">✅ Completado</span>'
+            };
+            return badges[status] || '';
+        }
+
+        function getPaymentBadge(status) {
+            const badges = {
+                paid: '<span class="badge badge-payment-paid">💳 Pagado</span>',
+                pending: '<span class="badge badge-payment-pending">💰 Pendiente</span>'
+            };
+            return badges[status] || '';
+        }
+
+        function getPriorityBadge(priority) {
+            const badges = {
+                normal: '<span class="badge badge-priority-normal">🟡 Normal</span>',
+                high: '<span class="badge badge-priority-high">🟠 Alta</span>',
+                urgent: '<span class="badge badge-priority-urgent">🔴 URGENTE</span>'
+            };
+            return badges[priority] || '';
+        }
+
+        function getStatusLabel(status) {
+            const labels = {
+                pending: 'Pendiente',
+                in_progress: 'En Proceso',
+                completed: 'Completado'
+            };
+            return labels[status] || status;
+        }
+
+        function formatCurrency(num) {
+            return new Intl.NumberFormat('es-AR', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }).format(num);
+        }
+
+        function formatDate(dateStr) {
+            const date = new Date(dateStr);
+            return new Intl.DateTimeFormat('es-AR', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            }).format(date);
+        }
+
+        function showError(message) {
+            const container = document.getElementById('worksList');
+            container.innerHTML = `
+                <div class="empty-state" style="grid-column: 1 / -1;">
+                    <div class="empty-state-icon">❌</div>
+                    <h3>Error</h3>
+                    <p>${message}</p>
+                    <button class="btn btn-primary" onclick="loadWorks()">Reintentar</button>
+                </div>
+            `;
+        }
+
+        console.log('[TRABAJOS] 📦 Script cargado');
+    </script>
 </body>
 </html>

@@ -108,5 +108,13 @@
     "monto": 8091.78,
     "fecha": "2026-02-05T01:38:03.464Z",
     "categoria": "costo_venta_gremio"
+  },
+  {
+    "id": "gasto_coti_1770257382221",
+    "tipo": "egreso",
+    "descripcion": "Costo Total - Coti Gremio #382221 (test)",
+    "monto": 12564.43,
+    "fecha": "2026-02-05T02:09:53.602Z",
+    "categoria": "costo_venta_gremio"
   }
 ]

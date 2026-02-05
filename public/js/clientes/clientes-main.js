@@ -1167,7 +1167,11 @@ window.aprobarCotizacion = async function(id) {
 
     await window.mrDataManager.saveGastos(gastos);
     
-    alert('✅ Cotización aprobada, Trabajo creado y movimientos registrados.');
+    if (window.notifyWorkCreated) {
+        window.notifyWorkCreated(newWork);
+    } else {
+        alert('✅ Cotización aprobada, Trabajo creado y movimientos registrados.');
+    }
     await loadQuotations();
     updateStatistics();
   } catch (error) {
@@ -1206,7 +1210,208 @@ window.updateStatistics = function() {
 };
 
 window.generatePDF = function() {
-  alert('📄 Función PDF próximamente');
+  if (!window.jspdf) {
+    alert('⚠️ Error: La librería PDF no se ha cargado correctamente.');
+    return;
+  }
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+
+  // Helper para cargar imagen
+  const loadImage = (url) => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.src = url;
+      img.crossOrigin = "Anonymous";
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0);
+        resolve(canvas.toDataURL('image/png'));
+      };
+      img.onerror = () => resolve(null);
+    });
+  };
+  
+  // Configuración básica
+  const margin = 20;
+  let y = 20;
+  const pageWidth = doc.internal.pageSize.getWidth();
+  
+  // --- ENCABEZADO CON LOGO ---
+  const fecha = new Date().toLocaleDateString();
+  const logoUrl = 'img/logo.png';
+  const logoData = await loadImage(logoUrl);
+
+  if (logoData) {
+      const imgProps = doc.getImageProperties(logoData);
+      const imgWidth = 50; // 50mm de ancho
+      const imgHeight = (imgProps.height * imgWidth) / imgProps.width;
+      doc.addImage(logoData, 'PNG', margin, y, imgWidth, imgHeight);
+      
+      // Info Empresa a la derecha
+      doc.setFontSize(24);
+      doc.setTextColor(0, 168, 204);
+      doc.text('MR Letreros', pageWidth - margin, y + 10, { align: 'right' });
+      
+      doc.setFontSize(10);
+      doc.setTextColor(100);
+      doc.text('Soluciones Gráficas Integrales', pageWidth - margin, y + 16, { align: 'right' });
+      doc.text(`Fecha: ${fecha}`, pageWidth - margin, y + 22, { align: 'right' });
+      
+      y += Math.max(imgHeight, 25) + 10;
+  } else {
+      // Fallback texto
+      doc.setFontSize(22);
+      doc.setTextColor(0, 168, 204);
+      doc.text('MR Letreros', margin, y);
+      
+      doc.setFontSize(10);
+      doc.setTextColor(100);
+      doc.text('Soluciones Gráficas Integrales', margin, y + 6);
+      
+      doc.setTextColor(0);
+      doc.text(`Fecha: ${fecha}`, pageWidth - margin - 40, y);
+      y += 20;
+  }
+
+  // Línea separadora decorativa
+  doc.setDrawColor(0, 168, 204);
+  doc.setLineWidth(1);
+  doc.line(margin, y - 5, pageWidth - margin, y - 5);
+  
+  doc.setFontSize(16);
+  doc.setFont(undefined, 'bold');
+  doc.setTextColor(0);
+  doc.text('PRESUPUESTO', margin, y);
+  doc.setFont(undefined, 'normal');
+  
+  y += 10;
+  
+  // --- DATOS DEL CLIENTE ---
+  const clientName = document.getElementById('clientName')?.value || 'Cliente General';
+  const clientPhone = document.getElementById('clientPhone')?.value || '';
+  const clientEmail = document.getElementById('clientEmail')?.value || '';
+  
+  doc.setFontSize(11);
+  doc.setFillColor(240, 240, 240);
+  doc.rect(margin, y, pageWidth - (margin * 2), 25, 'F');
+  
+  doc.text(`Cliente: ${clientName}`, margin + 5, y + 7);
+  if (clientPhone) doc.text(`Teléfono: ${clientPhone}`, margin + 5, y + 14);
+  if (clientEmail) doc.text(`Email: ${clientEmail}`, margin + 5, y + 21);
+  
+  y += 35;
+  
+  // --- DETALLE DE PRODUCTOS ---
+  doc.setFontSize(12);
+  doc.text('Detalle:', margin, y);
+  y += 8;
+  
+  doc.setFontSize(10);
+  
+  // Función auxiliar para agregar líneas
+  const addLine = (desc, price) => {
+    if (y > 270) { doc.addPage(); y = 20; }
+    doc.text(desc, margin, y);
+    doc.text(price, pageWidth - margin, y, { align: 'right' });
+    y += 7;
+  };
+  
+  // 1. Productos Tradicionales
+  if (currentQuoteProducts.length > 0) {
+    currentQuoteProducts.forEach(p => {
+      const desc = `• ${p.producto} (${p.ancho}x${p.alto}cm) x ${p.cantidad}u`;
+      const price = `$${formatCurrency(p.total)}`;
+      addLine(desc, price);
+    });
+  }
+  
+  // 2. Servicios de Terceros
+  if (currentQuoteTerceros.length > 0) {
+    currentQuoteTerceros.forEach(t => {
+      const desc = `• ${t.nombre} (${t.cantidad} ${t.unidad || 'u'})`;
+      const price = `$${formatCurrency(t.total)}`;
+      addLine(desc, price);
+    });
+  }
+  
+  // 3. Categorías Múltiples
+  if (window.multiCategoryManager) {
+    const cats = window.multiCategoryManager.getCategories();
+    if (cats.length > 0) {
+      // Mostrar dimensiones compartidas si existen
+      const dims = window.multiCategoryManager.getSharedDimensions();
+      if (dims.totalM2 > 0) {
+         doc.setFont(undefined, 'italic');
+         addLine(`Medidas Generales: ${dims.width}m x ${dims.height}m (${dims.totalM2.toFixed(2)} m²)`, '');
+         doc.setFont(undefined, 'normal');
+      }
+
+      cats.forEach(c => {
+        const desc = `• ${c.name}`;
+        const price = `$${formatCurrency(c.totalPrice)}`;
+        addLine(desc, price);
+      });
+      
+      const ink = window.multiCategoryManager.calculateInkTotals();
+      if (window.multiCategoryManager.inkPriceEnabled && ink.totalPrice > 0) {
+        addLine(`• Costo de Tinta`, `$${formatCurrency(ink.totalPrice)}`);
+      }
+    }
+  }
+  
+  y += 5;
+  doc.setDrawColor(200);
+  doc.line(margin, y, pageWidth - margin, y);
+  y += 10;
+  
+  // --- TOTALES ---
+  const xLabel = pageWidth - margin - 60;
+  const xValue = pageWidth - margin;
+  
+  if (currentTotals.subtotal > 0) {
+      doc.text('Subtotal:', xLabel, y);
+      doc.text(`$${formatCurrency(currentTotals.subtotal)}`, xValue, y, { align: 'right' });
+      y += 7;
+  }
+  
+  if (currentTotals.iva > 0) {
+      doc.text('IVA (21%):', xLabel, y);
+      doc.text(`$${formatCurrency(currentTotals.iva)}`, xValue, y, { align: 'right' });
+      y += 7;
+  }
+  
+  doc.setFontSize(14);
+  doc.setFont(undefined, 'bold');
+  doc.text('TOTAL:', xLabel, y);
+  doc.text(`$${formatCurrency(currentTotals.totalCliente)}`, xValue, y, { align: 'right' });
+  
+  // Anticipo
+  const anticipo = parseFloat(document.getElementById('montoAnticipo')?.value) || 0;
+  if (anticipo > 0) {
+      y += 10;
+      doc.setFontSize(10);
+      doc.setFont(undefined, 'normal');
+      doc.text('Anticipo:', xLabel, y);
+      doc.text(`$${formatCurrency(anticipo)}`, xValue, y, { align: 'right' });
+      
+      y += 7;
+      doc.setFont(undefined, 'bold');
+      doc.text('RESTANTE:', xLabel, y);
+      doc.text(`$${formatCurrency(currentTotals.totalCliente - anticipo)}`, xValue, y, { align: 'right' });
+  }
+  
+  // Pie de página
+  doc.setFontSize(8);
+  doc.setTextColor(150);
+  doc.text('Presupuesto válido por 15 días.', margin, 280);
+  
+  // Guardar PDF
+  doc.save(`Presupuesto_${clientName.replace(/[^a-z0-9]/gi, '_')}.pdf`);
 };
 
 window.startNotificationPolling = function() {
