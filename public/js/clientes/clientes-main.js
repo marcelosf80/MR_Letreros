@@ -1209,7 +1209,7 @@ window.updateStatistics = function() {
   document.getElementById('countPending').textContent = pendientes.length;
 };
 
-window.generatePDF = function() {
+window.generatePDF = async function() {
   if (!window.jspdf) {
     alert('⚠️ Error: La librería PDF no se ha cargado correctamente.');
     return;
@@ -1405,10 +1405,27 @@ window.generatePDF = function() {
       doc.text(`$${formatCurrency(currentTotals.totalCliente - anticipo)}`, xValue, y, { align: 'right' });
   }
   
-  // Pie de página
-  doc.setFontSize(8);
-  doc.setTextColor(150);
-  doc.text('Presupuesto válido por 15 días.', margin, 280);
+  // Pie de página en todas las páginas
+  const pageCount = doc.internal.getNumberOfPages();
+  for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      const pageHeight = doc.internal.pageSize.getHeight();
+      
+      doc.setFontSize(8);
+      doc.setTextColor(150);
+      
+      // Línea separadora
+      doc.setDrawColor(200);
+      doc.line(margin, pageHeight - 25, pageWidth - margin, pageHeight - 25);
+      
+      // Info izquierda
+      doc.text('Presupuesto válido por 15 días.', margin, pageHeight - 20);
+      doc.text('MR Letreros - Soluciones Gráficas Integrales', margin, pageHeight - 15);
+      doc.text('Contacto: +54 9 11 1234-5678 | info@mrletreros.com', margin, pageHeight - 10);
+      
+      // Info derecha (Paginación)
+      doc.text(`Página ${i} de ${pageCount}`, pageWidth - margin, pageHeight - 10, { align: 'right' });
+  }
   
   // Guardar PDF
   doc.save(`Presupuesto_${clientName.replace(/[^a-z0-9]/gi, '_')}.pdf`);
