@@ -59,20 +59,16 @@ async function initializeDataStructure() {
         await fs.access(filepath);
         console.log(`   ✅ ${name}: existe`);
       } catch {
-        const initialData = name === 'trabajos' ? { works: [], notifications: [] } : [];
+        let initialData = [];
+        if (name === 'trabajos') {
+            initialData = { works: [], notifications: [] };
+        } else if (name === 'business_rules') {
+            initialData = { idealMargin: 35, deliveryStandardDays: 4, vipThreshold: 500000, priceStagnationDays: 30 };
+        }
+        
         await fs.writeFile(filepath, JSON.stringify(initialData, null, 2));
         console.log(`   📝 ${name}: creado`);
       }
-    }
-
-    // Inicializar reglas de negocio con valores por defecto si no existe
-    try {
-      await fs.access(FILES.business_rules);
-      console.log('   ✅ business_rules: existe');
-    } catch {
-      const defaultRules = { idealMargin: 35, deliveryStandardDays: 4, vipThreshold: 500000, priceStagnationDays: 30 };
-      await fs.writeFile(FILES.business_rules, JSON.stringify(defaultRules, null, 2));
-      console.log('   📝 business_rules: creado con valores por defecto');
     }
     
     console.log('');
