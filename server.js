@@ -22,17 +22,19 @@ const PUBLIC_DIR = path.join(BASE_PATH, 'public');
 // Archivos de datos principales
 const FILES = {
   gremio_clientes: path.join(DATA_DIR, 'gremio', 'clientes.json'),
-  gremio_data: path.join(DATA_DIR, 'gremio', 'cotizaciones.json'),
-  clientes_clientes: path.join(DATA_DIR, 'clientes', 'clientes.json'),
+  gremio_data: path.join(DATA_DIR, 'gremio', 'cotizaciones.json'),  
   clientes_data: path.join(DATA_DIR, 'clientes', 'cotizaciones.json'),
+  clientes: path.join(DATA_DIR, 'clientes.json'), // Unificar aquí
   precios: path.join(DATA_DIR, 'gremio_precios_db.json'),
   costos: path.join(DATA_DIR, 'gremio_costos_db.json'),
   gastos: path.join(DATA_DIR, 'mr_letreros_gastos.json'),
   materiales: path.join(DATA_DIR, 'gremio_materiales.json'),
   categorias: path.join(DATA_DIR, 'gremio_categorias.json'),
   terceros: path.join(DATA_DIR, 'gremio_terceros.json'),
-  trabajos: path.join(DATA_DIR, 'trabajos.json')
+  trabajos: path.join(DATA_DIR, 'trabajos.json'),
+  business_rules: path.join(DATA_DIR, 'business-rules.json')
 };
+
 
 // Middleware
 app.use(cors());
@@ -61,6 +63,16 @@ async function initializeDataStructure() {
         await fs.writeFile(filepath, JSON.stringify(initialData, null, 2));
         console.log(`   📝 ${name}: creado`);
       }
+    }
+
+    // Inicializar reglas de negocio con valores por defecto si no existe
+    try {
+      await fs.access(FILES.business_rules);
+      console.log('   ✅ business_rules: existe');
+    } catch {
+      const defaultRules = { idealMargin: 35, deliveryStandardDays: 4, vipThreshold: 500000, priceStagnationDays: 30 };
+      await fs.writeFile(FILES.business_rules, JSON.stringify(defaultRules, null, 2));
+      console.log('   📝 business_rules: creado con valores por defecto');
     }
     
     console.log('');
@@ -198,39 +210,6 @@ app.get('/api/gremio/data', async (req, res) => {
 app.post('/api/gremio/data', async (req, res) => {
   const success = await writeJSON(FILES.gremio_data, req.body);
   res.json({ success });
-});
-
-// ==================== ENDPOINTS CLIENTES CLIENTES ====================
-
-app.get('/api/clientes/clientes', async (req, res) => {
-  const data = await readJSON(FILES.clientes_clientes);
-  res.json(data);
-});
-
-app.post('/api/clientes/clientes', async (req, res) => {
-  const clientes = await readJSON(FILES.clientes_clientes);
-  clientes.push(req.body);
-  const success = await writeJSON(FILES.clientes_clientes, clientes);
-  res.json({ success, data: req.body });
-});
-
-app.put('/api/clientes/clientes/:id', async (req, res) => {
-  const clientes = await readJSON(FILES.clientes_clientes);
-  const index = clientes.findIndex(c => c.id === req.params.id);
-  if (index !== -1) {
-    clientes[index] = { ...clientes[index], ...req.body };
-    await writeJSON(FILES.clientes_clientes, clientes);
-    res.json({ success: true, data: clientes[index] });
-  } else {
-    res.status(404).json({ success: false, error: 'Cliente no encontrado' });
-  }
-});
-
-app.delete('/api/clientes/clientes/:id', async (req, res) => {
-  const clientes = await readJSON(FILES.clientes_clientes);
-  const filtered = clientes.filter(c => c.id !== req.params.id);
-  await writeJSON(FILES.clientes_clientes, filtered);
-  res.json({ success: true });
 });
 
 // ==================== ENDPOINTS CLIENTES COTIZACIONES ====================
@@ -381,6 +360,13 @@ app.get('/api/terceros', async (req, res) => {
 app.post('/api/terceros', async (req, res) => {
   const success = await writeJSON(FILES.terceros, req.body);
   res.json({ success });
+});
+
+// ==================== ENDPOINT REGLAS DE NEGOCIO ====================
+
+app.get('/api/business-rules', async (req, res) => {
+  const data = await readJSON(FILES.business_rules);
+  res.json(data);
 });
 
 // ==================== ENDPOINT ESTADÍSTICAS ====================
@@ -643,6 +629,84 @@ app.post('/api/trabajos', async (req, res) => {
         res.json({ success: true });
     } else {
         res.status(500).json({ error: 'Error guardando trabajos' });
+    }
+});
+
+// ==================== GESTIÓN DE CLIENTES ====================
+
+// Endpoint unificado para la gestión de clientes
+app.get('/api/clientes', async (req, res) => {
+    const filePath = FILES.clientes;
+    
+    try {
+        // Crear archivo si no existe
+        try {
+            await fs.access(filePath);
+        } catch {
+            await writeJSON(filePath, []);
+            console.log('   📝 clientes.json creado');
+        }
+        
+        const data = await readJSON(filePath);
+        res.json(data);
+    } catch (error) {
+        console.error('❌ Error leyendo clientes:', error);
+        res.status(500).json({ error: 'Error leyendo clientes' });
+    }
+});
+
+// Este endpoint ahora maneja tanto la creación de un nuevo cliente como la actualización de toda la lista.
+app.post('/api/clientes', async (req, res) => {
+    const filePath = FILES.clientes;
+    
+    try {
+        const incomingData = req.body;
+        
+        // Si el body es un array, se asume que es la lista completa de clientes para guardar.
+        if (Array.isArray(incomingData)) {
+            await writeJSON(filePath, incomingData);
+            console.log(`✅ Lista de clientes guardada: ${incomingData.length} registros`);
+            return res.json({ success: true });
+        }
+        // Si es un objeto, se asume que es un nuevo cliente para agregar a la lista.
+        const clientes = await readJSON(filePath);
+        clientes.push(incomingData);
+        await writeJSON(filePath, clientes);
+        res.json({ success: true, data: incomingData });
+    } catch (error) {
+        console.error('❌ Error guardando clientes:', error);
+        res.status(500).json({ error: 'Error guardando clientes' });
+    }
+});
+
+app.put('/api/clientes/:id', async (req, res) => {
+    const filePath = FILES.clientes;
+    try {
+        const clientes = await readJSON(filePath);
+        const index = clientes.findIndex(c => c.id === req.params.id);
+        if (index !== -1) {
+            clientes[index] = { ...clientes[index], ...req.body };
+            await writeJSON(filePath, clientes);
+            res.json({ success: true, data: clientes[index] });
+        } else {
+            res.status(404).json({ success: false, error: 'Cliente no encontrado' });
+        }
+    } catch (error) {
+        console.error('❌ Error actualizando cliente:', error);
+        res.status(500).json({ error: 'Error actualizando cliente' });
+    }
+});
+
+app.delete('/api/clientes/:id', async (req, res) => {
+    const filePath = FILES.clientes;
+    try {
+        const clientes = await readJSON(filePath);
+        const filtered = clientes.filter(c => c.id !== req.params.id);
+        await writeJSON(filePath, filtered);
+        res.json({ success: true });
+    } catch (error) {
+        console.error('❌ Error eliminando cliente:', error);
+        res.status(500).json({ error: 'Error eliminando cliente' });
     }
 });
 

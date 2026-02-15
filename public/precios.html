@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Gestión de Precios - MR Letreros</title>
   <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/sidebar-universal.css">
   <style>
     .semaforo-card { padding: 1.5rem; border-radius: 12px; margin-top: 1rem; }
     .semaforo-verde { background: linear-gradient(135deg, #51CF66, #37B24D); }
@@ -14,13 +15,17 @@
   </style>
 </head>
 <body>
-  <header class="main-header">
-    <div class="header-left">
-      <img src="img/logo.png" alt="MR Letreros" class="logo-img">
-      <a href="index.html" class="btn-home">← Volver al Inicio</a>
+  <!-- Sidebar Universal (se inserta automáticamente) -->
+  
+  <div class="main-content">
+    <!-- Top Bar -->
+    <div class="top-bar">
+      <h1 class="top-bar-title">💰 Gestión de Precios</h1>
+      <div class="top-bar-actions">
+        <!-- Acciones específicas del módulo -->
+      </div>
     </div>
-    <div class="header-title">💰 GESTIÓN DE PRECIOS</div>
-  </header>
+
 
   <div class="content-container">
     <div class="section-header">
@@ -68,7 +73,7 @@
             <div style="display: flex; justify-content: space-between; align-items: center;">
               <div>
                 <p style="color: var(--text-secondary); margin-bottom: 0.5rem;">💳 Costo del Material</p>
-                <p style="font-size: 2rem; font-weight: bold; color: var(--primary-color); margin: 0;" id="costValue">$0</p>
+                <p style="font-size: 2rem; font-weight: bold; color: var(--primary-color); margin: 0;" id="costValue">$0,00</p>
               </div>
               <div style="text-align: right;">
                 <p style="color: var(--text-secondary); font-size: 0.9rem;">Este es tu costo base</p>
@@ -115,6 +120,17 @@
   <script src="js/shared/modal-system.js"></script>
   <script src="js/shared/data-manager-network.js"></script>
   <script>
+    // Función de formateo de moneda argentina
+    function formatCurrencyAR(num, decimals = 2) {
+      if (num === null || num === undefined || isNaN(num)) {
+        return '0,00';
+      }
+      return new Intl.NumberFormat('es-AR', {
+        minimumFractionDigits: decimals,
+        maximumFractionDigits: decimals
+      }).format(num);
+    }
+
     let materiales = [];
     let currentCost = 0; // costo total (ej. precio rollo) o valor bruto
     let currentArea = 0; // m2 del producto
@@ -210,8 +226,8 @@
         currentCostPerM2 = Number(costoPorM2) || (currentArea ? (currentCost / currentArea) : 0);
 
         // Mostrar información: área y costo por m2
-        const areaLabel = currentArea ? `${currentArea.toFixed(2)} m²` : 'N/D';
-        const costPerM2Label = '$' + currentCostPerM2.toFixed(2) + ' /m²';
+        const areaLabel = currentArea ? currentArea.toLocaleString('es-AR', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' m²' : 'N/D';
+        const costPerM2Label = '$' + currentCostPerM2.toLocaleString('es-AR', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' /m²';
 
         document.getElementById('costValue').textContent = `${costPerM2Label} (área: ${areaLabel})`;
         document.getElementById('costInfo').style.display = 'block';
@@ -246,11 +262,11 @@
             <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
               <div>
                 <div style="font-size: 0.9rem; opacity: 0.9; color: white;">Ganancia / m²</div>
-                <div style="font-size: 1.4rem; font-weight: bold; color: white;">$${gananciaPorM2G.toFixed(2)}</div>
+                <div style="font-size: 1.4rem; font-weight: bold; color: white;">$${formatCurrencyAR(gananciaPorM2G)}</div>
               </div>
               <div>
                 <div style="font-size: 0.9rem; opacity: 0.9; color: white;">Ganancia total</div>
-                <div style="font-size: 1.4rem; font-weight: bold; color: white;">$${gananciaTotalG.toFixed(2)}</div>
+                <div style="font-size: 1.4rem; font-weight: bold; color: white;">$${formatCurrencyAR(gananciaTotalG)}</div>
               </div>
               <div>
                 <div style="font-size: 0.9rem; opacity: 0.9; color: white;">Rentabilidad</div>
@@ -258,7 +274,7 @@
               </div>
             </div>
             <div style="font-size: 0.9rem; color: white; opacity: 0.9;">
-              Fórmula: (${precioGremio.toFixed(2)} /m²) - (${currentCostPerM2.toFixed(2)} /m²) = $${gananciaPorM2G.toFixed(2)} /m²
+              Fórmula: (${formatCurrencyAR(precioGremio)} /m²) - (${formatCurrencyAR(currentCostPerM2)} /m²) = $${formatCurrencyAR(gananciaPorM2G)} /m²
             </div>
             <div class="consejo-box">
               <strong>💡 Consejo:</strong> ${semaforoG.consejo}
@@ -281,11 +297,11 @@
             <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
               <div>
                 <div style="font-size: 0.9rem; opacity: 0.9; color: white;">Ganancia / m²</div>
-                <div style="font-size: 1.4rem; font-weight: bold; color: white;">$${gananciaPorM2C.toFixed(2)}</div>
+                <div style="font-size: 1.4rem; font-weight: bold; color: white;">$${formatCurrencyAR(gananciaPorM2C)}</div>
               </div>
               <div>
                 <div style="font-size: 0.9rem; opacity: 0.9; color: white;">Ganancia total</div>
-                <div style="font-size: 1.4rem; font-weight: bold; color: white;">$${gananciaTotalC.toFixed(2)}</div>
+                <div style="font-size: 1.4rem; font-weight: bold; color: white;">$${formatCurrencyAR(gananciaTotalC)}</div>
               </div>
               <div>
                 <div style="font-size: 0.9rem; opacity: 0.9; color: white;">Rentabilidad</div>
@@ -293,7 +309,7 @@
               </div>
             </div>
             <div style="font-size: 0.9rem; color: white; opacity: 0.9;">
-              Fórmula: (${precioCliente.toFixed(2)} /m²) - (${currentCostPerM2.toFixed(2)} /m²) = $${gananciaPorM2C.toFixed(2)} /m²
+              Fórmula: (${formatCurrencyAR(precioCliente)} /m²) - (${formatCurrencyAR(currentCostPerM2)} /m²) = $${formatCurrencyAR(gananciaPorM2C)} /m²
             </div>
             <div class="consejo-box">
               <strong>💡 Consejo:</strong> ${semaforoC.consejo}
@@ -466,10 +482,10 @@
           const semaforoG = getSemaforo(precio.rentabilidadGremio ?? ((costo>0)?(((precioGremio||0)-costo)/costo*100):0));
           const semaforoC = getSemaforo(precio.rentabilidadCliente ?? ((costo>0)?(((precioCliente||0)-costo)/costo*100):0));
 
-          const costoLabel = costo ? `$${costo.toFixed(2)} /m²` : 'N/D';
-          const precioGLabel = precioGremio ? `$${precioGremio.toFixed(2)}` : 'N/D';
-          const precioCLabel = precioCliente ? `$${precioCliente.toFixed(2)}` : 'N/D';
-          const areaLabel = area ? `${area.toFixed(2)} m²` : 'N/D';
+          const costoLabel = costo ? `$${costo.toLocaleString('es-AR', {minimumFractionDigits: 2, maximumFractionDigits: 2})} /m²` : 'N/D';
+          const precioGLabel = precioGremio ? `$${precioGremio.toLocaleString('es-AR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}` : 'N/D';
+          const precioCLabel = precioCliente ? `$${precioCliente.toLocaleString('es-AR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}` : 'N/D';
+          const areaLabel = area ? `${area.toLocaleString('es-AR', {minimumFractionDigits: 2, maximumFractionDigits: 2})} m²` : 'N/D';
 
           const rentG = (precio.rentabilidadGremio !== undefined) ? String(precio.rentabilidadGremio) : (costo>0 ? ((precioGremio - costo)/costo*100).toFixed(2) : '0.00');
           const rentC = (precio.rentabilidadCliente !== undefined) ? String(precio.rentabilidadCliente) : (costo>0 ? ((precioCliente - costo)/costo*100).toFixed(2) : '0.00');
@@ -541,5 +557,9 @@
       }
     };
   </script>
+  </div>
+  
+  <!-- Sidebar Universal Script -->
+  <script src="js/shared/sidebar-universal.js"></script>
 </body>
 </html>

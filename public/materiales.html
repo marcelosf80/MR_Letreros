@@ -5,20 +5,25 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Materiales - MR Letreros</title>
   <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/sidebar-universal.css">
 </head>
 <body>
+  <!-- Sidebar Universal (se inserta automáticamente) -->
+  
+  <div class="main-content">
+    <!-- Top Bar -->
+    <div class="top-bar">
+      <h1 class="top-bar-title">📦 Gestión de Materiales</h1>
+      <div class="top-bar-actions">
+        <!-- Acciones específicas del módulo -->
+      </div>
+    </div>
+
+
   <!-- Partículas de fondo -->
   <div class="particles" id="particles"></div>
 
   <!-- Header -->
-  <header class="main-header">
-    <div class="header-left">
-      <img src="img/logo.png" alt="MR Letreros" class="logo-img">
-      <a href="index.html" class="btn-home">← Volver al Inicio</a>
-    </div>
-    <div class="header-title">📦 MATERIALES</div>
-  </header>
-
   <!-- Content -->
   <div class="content-container">
     <div class="section-header">
@@ -138,5 +143,9 @@
   <script src="js/shared/data-manager-network.js?v=9"></script>
   <script src="js/materiales/categorias-manager.js?v=9"></script>
   <script src="js/materiales/materiales-main.js?v=9"></script>
+  </div>
+  
+  <!-- Sidebar Universal Script -->
+  <script src="js/shared/sidebar-universal.js"></script>
 </body>
 </html>

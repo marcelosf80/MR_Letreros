@@ -492,13 +492,45 @@ window.loadProductPrice = function() {
     return cNombre === nombreBuscado && cCat === categoriaBuscada;
   });
 
-  if (costoItem) {
-    currentCostoMaterial = parseFloat(costoItem.costs?.total || 0);
-  } else if (precioItem.costo) {
-    currentCostoMaterial = parseFloat(precioItem.costo);
-  } else {
-    currentCostoMaterial = 0;
+  // CORRECCIÓN: Buscar costo en múltiples fuentes
+  let costoEncontrado = 0;
+  
+  // 1. Buscar en costos.json
+  if (costoItem && costoItem.costs && costoItem.costs.total) {
+    costoEncontrado = parseFloat(costoItem.costs.total);
+    console.log('[CLIENTES] ✅ Costo desde costos.json:', costoEncontrado);
   }
+  // 2. Buscar en precios.json (campo costo)
+  else if (precioItem && precioItem.costo) {
+    costoEncontrado = parseFloat(precioItem.costo);
+    console.log('[CLIENTES] ✅ Costo desde precios.json (campo costo):', costoEncontrado);
+  }
+  // 3. Buscar campo costoGremio como fallback
+  else if (precioItem && precioItem.costoGremio) {
+    costoEncontrado = parseFloat(precioItem.costoGremio);
+    console.log('[CLIENTES] ✅ Costo desde precios.json (costoGremio):', costoEncontrado);
+  }
+  // 4. Calcular 60% del precio como estimación (40% de ganancia)
+  else if (currentPrecioCliente > 0) {
+    costoEncontrado = currentPrecioCliente * 0.6;
+    console.warn('[CLIENTES] ⚠️ Usando costo estimado (60% del precio):', costoEncontrado, 'para:', nombreProducto);
+  }
+  // 5. Si todo falla, costo = 0
+  else {
+    costoEncontrado = 0;
+    console.error('[CLIENTES] ❌ No se encontró costo para:', nombreProducto, categoriaBuscada);
+  }
+  
+  currentCostoMaterial = costoEncontrado;
+  
+  // Log detallado para debugging
+  console.log('[CLIENTES] 📊 Resumen:', {
+    producto: nombreProducto,
+    categoria: categoriaBuscada,
+    precioCliente: currentPrecioCliente,
+    costoMaterial: currentCostoMaterial,
+    margen: currentPrecioCliente > 0 ? ((currentPrecioCliente - currentCostoMaterial) / currentPrecioCliente * 100).toFixed(1) + '%' : '0%'
+  });
 
   if (currentPrecioCliente > 0) {
     const displayElement = document.getElementById('precioClienteDisplay');

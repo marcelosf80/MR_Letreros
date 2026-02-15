@@ -165,7 +165,77 @@
             }
         };
         
-        console.log('[DATA-MGR-EXT] ✅ Métodos de trabajos agregados');
+        /**
+         * Obtiene todos los clientes de la gestión
+         * @returns {Promise<Array>}
+         */
+        dm.getClientes = async function() {
+            try {
+                const response = await fetch('/api/clientes', {
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                
+                if (!response.ok) {
+                    if (response.status === 404) {
+                        return [];
+                    }
+                    throw new Error('Error obteniendo clientes');
+                }
+                
+                const data = await response.json();
+                return data || [];
+            } catch (error) {
+                console.error('[DATA-MGR] Error obteniendo clientes:', error);
+                return [];
+            }
+        };
+        
+        /**
+         * Guarda clientes
+         * @param {Array} clientes - Array de clientes
+         * @returns {Promise<boolean>}
+         */
+        dm.saveClientes = async function(clientes) {
+            try {
+                const response = await fetch('/api/clientes', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(clientes)
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Error guardando clientes');
+                }
+                
+                return true;
+            } catch (error) {
+                console.error('[DATA-MGR] Error guardando clientes:', error);
+                return false;
+            }
+        };
+        
+        /**
+         * Busca clientes por término
+         * @param {string} query - Término de búsqueda
+         * @returns {Promise<Array>}
+         */
+        dm.searchClientes = async function(query) {
+            try {
+                const clientes = await this.getClientes();
+                const q = query.toLowerCase();
+                return clientes.filter(c => 
+                    c.nombre.toLowerCase().includes(q) ||
+                    (c.telefono && c.telefono.includes(q)) ||
+                    (c.email && c.email.toLowerCase().includes(q))
+                );
+            } catch (error) {
+                console.error('[DATA-MGR] Error buscando clientes:', error);
+                return [];
+            }
+        };
+        
+        console.log('[DATA-MGR-EXT] ✅ Métodos de trabajos y clientes agregados');
     }
     
     // Iniciar cuando el DOM esté listo

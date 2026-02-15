@@ -5,21 +5,26 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Terceros - MR Letreros</title>
   <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/sidebar-universal.css">
   <link rel="stylesheet" href="css/terceros-styles.css">
 </head>
 <body>
+  <!-- Sidebar Universal (se inserta automáticamente) -->
+  
+  <div class="main-content">
+    <!-- Top Bar -->
+    <div class="top-bar">
+      <h1 class="top-bar-title">🔧 Servicios de Terceros</h1>
+      <div class="top-bar-actions">
+        <!-- Acciones específicas del módulo -->
+      </div>
+    </div>
+
+
   <!-- Partículas de fondo -->
   <div class="particles" id="particles"></div>
 
   <!-- Header -->
-  <header class="main-header">
-    <div class="header-left">
-      <img src="img/logo.png" alt="MR Letreros" class="logo-img">
-      <a href="index.html" class="btn-home">← Volver al Inicio</a>
-    </div>
-    <div class="header-title">🔧 TERCEROS</div>
-  </header>
-
   <!-- Content -->
   <div class="content-container">
     <div class="section-header">
@@ -174,5 +179,9 @@
   <script src="js/shared/modal-system.js?v=2"></script>
   <script src="js/shared/data-manager-network.js?v=2"></script>
   <script src="js/terceros/terceros-main.js?v=2"></script>
+  </div>
+  
+  <!-- Sidebar Universal Script -->
+  <script src="js/shared/sidebar-universal.js"></script>
 </body>
 </html>

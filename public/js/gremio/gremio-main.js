@@ -1522,10 +1522,15 @@ function renderQuotations() {
           ${cot.anticipo > 0 ? `<p>Saldo: $${formatCurrency(cot.saldo)}</p>` : ''}
         </div>
         
-        ${cot.estado === 'pendiente' ? `
-          <button class="btn btn-success btn-small" onclick="aprobarCotizacion('${cot.id}')">✅ Aprobar</button>
-          <button class="btn btn-danger btn-small" onclick="borrarCotizacion('${cot.id}')" style="margin-left: 5px;">🗑️ Borrar</button>
-        ` : ''}
+        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+          <button class="btn btn-primary btn-small" onclick="verDetalleCotizacion('${cot.id}')">👁️ Ver Detalle</button>
+          ${cot.estado === 'pendiente' ? `
+            <button class="btn btn-success btn-small" onclick="aprobarCotizacion('${cot.id}')">✅ Aprobar</button>
+            <button class="btn btn-danger btn-small" onclick="borrarCotizacion('${cot.id}')">🗑️ Borrar</button>
+          ` : `
+            <button class="btn btn-secondary btn-small" disabled>✅ Aprobada</button>
+          `}
+        </div>
       </div>
     `;
   }).join('');
@@ -1724,6 +1729,207 @@ async function checkNotifications() {
             }
         }
     } catch (e) { console.error('Error polling notifications:', e); }
+}
+
+// ==================== VER DETALLE DE COTIZACIÓN ====================
+
+window.verDetalleCotizacion = function(cotizacionId) {
+    const cotizacion = cotizacionesGremio.find(c => c.id === cotizacionId);
+    if (!cotizacion) {
+        alert('❌ Cotización no encontrada');
+        return;
+    }
+    
+    // Crear modal si no existe
+    let modal = document.getElementById('detalleCotizacionModal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'detalleCotizacionModal';
+        modal.className = 'modal';
+        modal.innerHTML = `
+            <div class="modal-content" style="max-width: 900px; max-height: 90vh; overflow-y: auto;">
+                <div class="modal-header">
+                    <h2 class="modal-title" id="detalleModalTitle">Detalle de Cotización</h2>
+                    <button class="btn-close" onclick="cerrarDetalleCotizacion()">×</button>
+                </div>
+                <div class="modal-body" id="detalleModalBody">
+                    <!-- Contenido dinámico -->
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" onclick="cerrarDetalleCotizacion()">Cerrar</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
+    
+    // Generar HTML del detalle
+    const html = generarHTMLDetalleCotizacion(cotizacion);
+    document.getElementById('detalleModalBody').innerHTML = html;
+    document.getElementById('detalleModalTitle').textContent = `Cotización: ${cotizacion.cliente.nombre}`;
+    
+    // Mostrar modal
+    modal.classList.add('active');
+};
+
+window.cerrarDetalleCotizacion = function() {
+    const modal = document.getElementById('detalleCotizacionModal');
+    if (modal) {
+        modal.classList.remove('active');
+    }
+};
+
+function generarHTMLDetalleCotizacion(cot) {
+    const estadoColor = cot.estado === 'aprobada' ? '#51CF66' : '#FFC107';
+    const estadoTexto = cot.estado === 'aprobada' ? '✅ APROBADA' : '⏳ PENDIENTE';
+    
+    return `
+        <div style="display: grid; gap: 1.5rem;">
+            <!-- Estado y Fecha -->
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: rgba(0,0,0,0.3); border-radius: 8px;">
+                <div>
+                    <div style="font-size: 0.9rem; opacity: 0.7;">Estado</div>
+                    <div style="font-size: 1.2rem; font-weight: bold; color: ${estadoColor};">${estadoTexto}</div>
+                </div>
+                <div style="text-align: right;">
+                    <div style="font-size: 0.9rem; opacity: 0.7;">Fecha</div>
+                    <div style="font-size: 1.1rem;">${new Date(cot.fecha).toLocaleDateString('es-AR')}</div>
+                </div>
+            </div>
+            
+            <!-- Cliente -->
+            <div>
+                <h3 style="margin-bottom: 0.5rem; color: var(--primary-color);">👤 Información del Cliente</h3>
+                <div style="background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 8px;">
+                    <p><strong>Nombre:</strong> ${cot.cliente.nombre}</p>
+                    ${cot.cliente.telefono ? `<p><strong>Teléfono:</strong> ${cot.cliente.telefono}</p>` : ''}
+                    ${cot.cliente.email ? `<p><strong>Email:</strong> ${cot.cliente.email}</p>` : ''}
+                    ${cot.cliente.direccion ? `<p><strong>Dirección:</strong> ${cot.cliente.direccion}</p>` : ''}
+                    ${cot.fechaEntrega ? `<p><strong>Fecha de Entrega:</strong> ${new Date(cot.fechaEntrega).toLocaleDateString('es-AR')}</p>` : ''}
+                </div>
+            </div>
+            
+            <!-- Productos -->
+            ${cot.productos && cot.productos.length > 0 ? `
+                <div>
+                    <h3 style="margin-bottom: 0.5rem; color: var(--primary-color);">📦 Productos</h3>
+                    <div style="background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 8px;">
+                        ${cot.productos.map((p, idx) => `
+                            <div style="padding: 0.75rem; background: rgba(0,0,0,0.2); border-radius: 6px; margin-bottom: ${idx < cot.productos.length - 1 ? '0.75rem' : '0'};">
+                                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.5rem;">
+                                    <div>
+                                        <strong style="color: #51CF66;">${p.producto || p.categoria || 'Producto'}</strong>
+                                        <div style="font-size: 0.85rem; opacity: 0.7; margin-top: 0.25rem;">
+                                            ${p.categoria ? `Categoría: ${p.categoria}` : ''}
+                                        </div>
+                                    </div>
+                                    <div style="text-align: right;">
+                                        <div style="font-size: 1.1rem; font-weight: bold; color: #51CF66;">
+                                            $${formatCurrency(p.total || 0)}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0.5rem; font-size: 0.9rem;">
+                                    ${p.cantidad ? `<div>Cantidad: <strong>${p.cantidad}</strong></div>` : ''}
+                                    ${p.ancho ? `<div>Ancho: <strong>${p.ancho.toFixed(2)}m</strong></div>` : ''}
+                                    ${p.alto ? `<div>Alto: <strong>${p.alto.toFixed(2)}m</strong></div>` : ''}
+                                    ${p.m2PorUnidad ? `<div>m²/unidad: <strong>${p.m2PorUnidad.toFixed(2)}m²</strong></div>` : ''}
+                                    ${p.m2Totales ? `<div>Total m²: <strong>${p.m2Totales.toFixed(2)}m²</strong></div>` : ''}
+                                    ${p.precioGremio ? `<div>Precio/m²: <strong>$${formatCurrency(p.precioGremio)}</strong></div>` : ''}
+                                </div>
+                                ${p.costoTotal ? `
+                                    <div style="margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px solid rgba(255,255,255,0.1); font-size: 0.85rem;">
+                                        <span style="color: #FF6B6B;">Costo: $${formatCurrency(p.costoTotal)}</span>
+                                        <span style="margin: 0 0.5rem;">•</span>
+                                        <span style="color: #4CAF50;">Ganancia: $${formatCurrency((p.total || 0) - (p.costoTotal || 0))}</span>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            ` : ''}
+            
+            <!-- Terceros -->
+            ${cot.terceros && cot.terceros.length > 0 ? `
+                <div>
+                    <h3 style="margin-bottom: 0.5rem; color: var(--primary-color);">🔧 Servicios de Terceros</h3>
+                    <div style="background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 8px;">
+                        ${cot.terceros.map((t, idx) => `
+                            <div style="padding: 0.75rem; background: rgba(0,0,0,0.2); border-radius: 6px; margin-bottom: ${idx < cot.terceros.length - 1 ? '0.75rem' : '0'};">
+                                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.5rem;">
+                                    <div>
+                                        <strong style="color: #51CF66;">${t.empresa || t.servicio || 'Servicio'}</strong>
+                                        ${t.servicio && t.empresa !== t.servicio ? `
+                                            <div style="font-size: 0.85rem; opacity: 0.7; margin-top: 0.25rem;">
+                                                ${t.servicio}
+                                            </div>
+                                        ` : ''}
+                                    </div>
+                                    <div style="text-align: right;">
+                                        <div style="font-size: 1.1rem; font-weight: bold; color: #51CF66;">
+                                            $${formatCurrency(t.total || 0)}
+                                        </div>
+                                    </div>
+                                </div>
+                                ${t.cantidad ? `<div style="font-size: 0.9rem;">Cantidad: <strong>${t.cantidad}</strong></div>` : ''}
+                                ${t.costoTotal ? `
+                                    <div style="margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px solid rgba(255,255,255,0.1); font-size: 0.85rem;">
+                                        <span style="color: #FF6B6B;">Costo: $${formatCurrency(t.costoTotal)}</span>
+                                        <span style="margin: 0 0.5rem;">•</span>
+                                        <span style="color: #4CAF50;">Ganancia: $${formatCurrency((t.total || 0) - (t.costoTotal || 0))}</span>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            ` : ''}
+            
+            <!-- Resumen Financiero -->
+            <div>
+                <h3 style="margin-bottom: 0.5rem; color: var(--primary-color);">💰 Resumen Financiero</h3>
+                <div style="background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 8px;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                        <span>Subtotal:</span>
+                        <strong>$${formatCurrency(cot.subtotal || 0)}</strong>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                        <span>IVA:</span>
+                        <strong>$${formatCurrency(cot.iva || 0)}</strong>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; padding-top: 0.5rem; border-top: 2px solid rgba(255,255,255,0.2); font-size: 1.2rem; margin-bottom: 1rem;">
+                        <span style="font-weight: bold;">TOTAL CLIENTE:</span>
+                        <strong style="color: #51CF66;">$${formatCurrency(cot.totalCliente || 0)}</strong>
+                    </div>
+                    
+                    <div style="border-top: 1px solid rgba(255,255,255,0.2); padding-top: 0.75rem; margin-top: 0.75rem;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                            <span>Costo Total:</span>
+                            <strong style="color: #FF6B6B;">$${formatCurrency(cot.costoTotal || 0)}</strong>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; font-size: 1.2rem;">
+                            <span style="font-weight: bold;">GANANCIA:</span>
+                            <strong style="color: #4CAF50;">$${formatCurrency(cot.ganancia || 0)}</strong>
+                        </div>
+                    </div>
+                    
+                    ${cot.anticipo > 0 ? `
+                        <div style="border-top: 1px solid rgba(255,255,255,0.2); padding-top: 0.75rem; margin-top: 0.75rem;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                                <span>Anticipo:</span>
+                                <strong style="color: #FFC107;">$${formatCurrency(cot.anticipo)}</strong>
+                            </div>
+                            <div style="display: flex; justify-content: space-between;">
+                                <span>Saldo:</span>
+                                <strong>$${formatCurrency(cot.saldo || 0)}</strong>
+                            </div>
+                        </div>
+                    ` : ''}
+                </div>
+            </div>
+        </div>
+    `;
 }
 
 console.log('[GREMIO] 🚀 Script de red cargado');

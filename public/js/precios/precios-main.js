@@ -3,6 +3,18 @@
  * Gestión centralizada de precios Gremio y Cliente
  */
 
+// Función de formateo de moneda argentina
+function formatCurrencyAR(num, decimals = 2) {
+    if (num === null || num === undefined || isNaN(num)) {
+        return '0,00';
+    }
+    
+    return new Intl.NumberFormat('es-AR', {
+        minimumFractionDigits: decimals,
+        maximumFractionDigits: decimals
+    }).format(num);
+}
+
 let preciosGremio = [];
 let preciosCliente = [];
 
@@ -64,7 +76,7 @@ function renderPreciosGremio() {
     <div class="product-card">
       <h3>${precio.nombre}</h3>
       <p><strong>Categoría:</strong> ${precio.categoria}</p>
-      <p><strong>Precio Gremio:</strong> $${precio.precio.toLocaleString()}</p>
+      <p><strong>Precio Gremio:</strong> $${formatCurrencyAR(precio.precio)}</p>
       <p><strong>Unidad:</strong> ${precio.unidad}</p>
       <div class="flex gap-2 mt-2">
         <button class="btn btn-secondary btn-small" onclick="editarPrecioGremio('${precio.id}')">✏️</button>
@@ -131,7 +143,7 @@ function renderPreciosCliente() {
     <div class="product-card">
       <h3>${precio.nombre}</h3>
       <p><strong>Categoría:</strong> ${precio.categoria}</p>
-      <p><strong>Precio Público:</strong> $${precio.precio.toLocaleString()}</p>
+      <p><strong>Precio Público:</strong> $${formatCurrencyAR(precio.precio)}</p>
       <p><strong>Unidad:</strong> ${precio.unidad}</p>
       <div class="flex gap-2 mt-2">
         <button class="btn btn-secondary btn-small" onclick="editarPrecioCliente('${precio.id}')">✏️</button>

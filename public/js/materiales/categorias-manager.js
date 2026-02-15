@@ -1,3 +1,15 @@
+// ==================== FUNCIÓN DE FORMATO ====================
+
+function formatCurrencyAR(num, decimals = 2) {
+    if (num === null || num === undefined || isNaN(num)) {
+        return '0,00';
+    }
+    return new Intl.NumberFormat('es-AR', {
+        minimumFractionDigits: decimals,
+        maximumFractionDigits: decimals
+    }).format(num);
+}
+
 // ==================== CATEGORÍAS MANAGER ====================
 
 let allCategorias = [];
@@ -273,10 +285,10 @@ window.toggleCategoryDetails = async function(categoria) {
           <div style="flex: 1;">
             <div style="font-weight: 600; color: var(--text-light); margin-bottom: 0.3rem;">${prod.producto || 'Sin nombre'}</div>
             <div style="font-size: 0.9rem; color: rgba(255,255,255,0.7);">
-              📏 ${(prod.ancho || 0).toFixed(2)}m × ${(prod.largo || 0).toFixed(2)}m = ${m2.toFixed(2)}m²
+              📏 ${formatCurrencyAR(prod.ancho || 0)}m × ${formatCurrencyAR(prod.largo || 0)}m = ${formatCurrencyAR(m2)}m²
             </div>
             <div style="font-size: 0.9rem; color: #FF8C42; font-weight: 600; margin-top: 0.3rem;">
-              💰 $${(prod.costoPorM2 || 0).toFixed(2)}/m² • $${(prod.precioRollo || 0).toLocaleString('es-AR')} (rollo)
+              💰 $${formatCurrencyAR(prod.costoPorM2 || 0)}/m² • $${formatCurrencyAR(prod.precioRollo || 0)} (rollo)
             </div>
           </div>
           <div style="display: flex; gap: 0.5rem; margin-left: 1rem;">

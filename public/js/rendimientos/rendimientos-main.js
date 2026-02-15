@@ -36,24 +36,26 @@ const rendimientosManager = {
       console.log('[RENDIMIENTOS] Cotizaciones Clientes:', cotizacionesClientes.length);
       console.log('[RENDIMIENTOS] Gastos:', gastos.length);
       
-      // Calcular totales
-      const totalGremio = cotizacionesGremio.reduce((sum, cot) => {
-        const productos = cot.productos || [];
-        const total = productos.reduce((s, p) => s + (parseFloat(p.total) || 0), 0);
-        return sum + total;
-      }, 0);
+      // Calcular totales solo de cotizaciones APROBADAS
+      const totalGremio = cotizacionesGremio
+        .filter(cot => cot.estado === 'aprobada')
+        .reduce((sum, cot) => sum + (parseFloat(cot.totalCliente) || 0), 0);
       
-      const totalClientes = cotizacionesClientes.reduce((sum, cot) => {
-        const productos = cot.productos || [];
-        const total = productos.reduce((s, p) => s + (parseFloat(p.total) || 0), 0);
-        return sum + total;
-      }, 0);
+      const totalClientes = cotizacionesClientes
+        .filter(cot => cot.estado === 'aprobada')
+        .reduce((sum, cot) => sum + (parseFloat(cot.totalCliente) || 0), 0);
       
       const totalGastos = gastos.reduce((sum, g) => sum + (parseFloat(g.monto) || 0), 0);
       
       const totalIngresos = totalGremio + totalClientes;
       const ganancia = totalIngresos - totalGastos;
       const margenGanancia = totalIngresos > 0 ? ((ganancia / totalIngresos) * 100) : 0;
+      
+      console.log('[RENDIMIENTOS] Total Gremio (aprobadas):', totalGremio);
+      console.log('[RENDIMIENTOS] Total Clientes (aprobadas):', totalClientes);
+      console.log('[RENDIMIENTOS] Total Ingresos:', totalIngresos);
+      console.log('[RENDIMIENTOS] Total Gastos:', totalGastos);
+      console.log('[RENDIMIENTOS] Ganancia:', ganancia);
       
       // Actualizar estadísticas en UI
       this.updateStats({

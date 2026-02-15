@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Clientes - MR Letreros</title>
   <link rel="stylesheet" href="css/base.css">
-  <link rel="stylesheet" href="css/sidebar-universal.css">
   <!-- Nuevos módulos de gestión -->
   <script src="js/shared/pricing-manager.js"></script>
   <script src="js/shared/order-status-manager.js"></script>
@@ -15,22 +14,25 @@
   <script src="js/shared/quote-editor.js"></script>
 </head>
 <body>
-  <!-- Sidebar Universal (se inserta automáticamente) -->
-  
-  <div class="main-content">
-    <!-- Top Bar -->
-    <div class="top-bar">
-      <h1 class="top-bar-title">🔵 Sistema Clientes</h1>
-      <div class="top-bar-actions">
-        <!-- Acciones específicas del módulo -->
-      </div>
-    </div>
-
-
   <!-- Partículas de fondo -->
   <div class="particles" id="particles"></div>
 
   <!-- Header -->
+  <header class="main-header">
+    <div class="header-left">
+      <img src="img/logo.png" alt="MR Letreros" class="logo-img">
+      <a href="index.html" class="btn-home">← Volver al Inicio</a>
+      <a href="trabajos.html" class="btn-home" id="btnTrabajosNav" style="margin-left: 10px;">🔨 Trabajos</a>
+    </div>
+    <div class="header-title" style="display: flex; align-items: center; gap: 20px;">
+        <span>🔵 SISTEMA CLIENTES</span>
+        <div class="notification-bell" id="notificationBell" style="position: relative; cursor: pointer; font-size: 1.2rem;" onclick="window.location.href='trabajos.html'">
+            🔔
+            <span id="notificationBadge" style="display: none; position: absolute; top: -5px; right: -10px; background: #FF4444; color: white; border-radius: 50%; font-size: 0.7rem; padding: 2px 6px; border: 1px solid white;">0</span>
+        </div>
+    </div>
+  </header>
+
   <div class="content-container">
     <!-- Estadísticas -->
     <div class="stats-grid">
@@ -358,9 +360,5 @@
       }
     }
   </script>
-  </div>
-  
-  <!-- Sidebar Universal Script -->
-  <script src="js/shared/sidebar-universal.js"></script>
 </body>
 </html>

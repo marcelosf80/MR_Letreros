@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Rendimientos - MR Letreros</title>
   <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/sidebar-universal.css">
   <style>
     .charts-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem; margin-bottom: 2rem; }
     @media (max-width: 768px) { .charts-grid { grid-template-columns: 1fr; } }
@@ -19,15 +20,19 @@
   </style>
 </head>
 <body>
-  <!-- Header -->
-  <header class="main-header">
-    <div class="header-left">
-      <img src="img/logo.png" alt="MR Letreros" class="logo-img">
-      <a href="index.html" class="btn-home">← Volver al Inicio</a>
+  <!-- Sidebar Universal (se inserta automáticamente) -->
+  
+  <div class="main-content">
+    <!-- Top Bar -->
+    <div class="top-bar">
+      <h1 class="top-bar-title">📊 Rendimientos</h1>
+      <div class="top-bar-actions">
+        <!-- Acciones específicas del módulo -->
+      </div>
     </div>
-    <div class="header-title">📊 RENDIMIENTOS</div>
-  </header>
 
+
+  <!-- Header -->
   <!-- Content -->
   <div class="content-container">
     <div class="stats-grid">
@@ -124,5 +129,9 @@
   <script src="js/shared/modal-system.js"></script>
   <script src="js/shared/data-manager-network.js"></script>
   <script src="js/rendimientos/rendimientos-main.js"></script>
+  </div>
+  
+  <!-- Sidebar Universal Script -->
+  <script src="js/shared/sidebar-universal.js"></script>
 </body>
 </html>

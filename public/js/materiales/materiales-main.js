@@ -5,8 +5,14 @@
 // ==================== GLOBAL FUNCTIONS ====================
 
 function formatCurrency(number) {
+  if (number === null || number === undefined || isNaN(number)) {
+    return '0,00';
+  }
   return new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(number);
 }
+
+// Alias
+window.formatCurrencyAR = formatCurrency;
 
 window.calcularCosto = function() {
   try {
@@ -283,14 +289,14 @@ document.addEventListener('DOMContentLoaded', function() {
             <div class="promedio-box">
               <div class="promedio-label">PROMEDIO PONDERADO (${rollosDelProducto.length} rollo${rollosDelProducto.length > 1 ? 's' : ''})</div>
               <div class="promedio-value">$${formatCurrency(promedioPonderado)}/m²</div>
-              <div class="promedio-info">${totalM2.toFixed(2)}m² por $${formatCurrency(totalCosto)}</div>
+              <div class="promedio-info">${formatCurrency(totalM2)}m² por $${formatCurrency(totalCosto)}</div>
             </div>
             
             <div class="rollos-list">
               ${rollosDelProducto.map((rollo, idx) => `
                 <div class="rollo-item">
                   <div class="rollo-info">
-                    <strong>Rollo ${idx + 1}:</strong> ${rollo.ancho}m × ${rollo.largo}m = ${rollo.m2.toFixed(2)}m²
+                    <strong>Rollo ${idx + 1}:</strong> ${formatCurrency(rollo.ancho)}m × ${formatCurrency(rollo.largo)}m = ${formatCurrency(rollo.m2)}m²
                     <br>
                     <span style="color: #FF8C42;">Costo m²: $${formatCurrency(rollo.costoPorM2)}</span>
                     <span style="color: #51CF66; margin-left: 10px; font-weight: bold;">Costo ml: $${formatCurrency(rollo.precioRollo / rollo.largo)}</span>
@@ -461,11 +467,8 @@ document.addEventListener('DOMContentLoaded', function() {
       // Convertir ancho de cm a metros
       const anchoM = anchoCm / 100;
       
-      // Convertir largo de cm a metros si no es unidad
+      // El largo ya está en metros (input del usuario), no convertir
       let largoM = largoInput;
-      if (unidad !== 'unidad') {
-          largoM = largoInput / 100;
-      }
       
       const m2 = anchoM * largoM;
       
@@ -498,7 +501,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (oldPrice > 0) { // Evitar división por cero y comparar solo si había precio
               const variation = ((newPrice - oldPrice) / oldPrice) * 100;
               if (Math.abs(variation) > 10) {
-                if (!confirm(`⚠️ ¡ATENCIÓN! El precio ha variado un ${variation.toFixed(1)}%.\n\nPrecio anterior: $${oldPrice.toFixed(2)}/m²\nPrecio nuevo: $${newPrice.toFixed(2)}/m²\n\n¿Deseas continuar y guardar el cambio?`)) {
+                if (!confirm(`⚠️ ¡ATENCIÓN! El precio ha variado un ${formatCurrency(variation, 1)}%.\n\nPrecio anterior: $${formatCurrency(oldPrice)}/m²\nPrecio nuevo: $${formatCurrency(newPrice)}/m²\n\n¿Deseas continuar y guardar el cambio?`)) {
                   console.log('[MATERIALES] ❌ Guardado cancelado por el usuario debido a la variación de precio.');
                   return; // Detener el proceso de guardado
                 }

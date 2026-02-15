@@ -1,514 +1,205 @@
-/**
- * Trabajos Main - Sistema Principal de Gestión de Trabajos
- * 
- * @version 1.0.0
- * @author MR Letreros Team
- */
-
 // ==================== VARIABLES GLOBALES ====================
 let workManager;
 let currentFilters = {};
-let selectedWork = null;
+let allWorks = [];
 
 // ==================== INICIALIZACIÓN ====================
-
 document.addEventListener('DOMContentLoaded', async function() {
-    console.log('[TRABAJOS] 🚀 Inicializando módulo de trabajos...');
+    console.log('[TRABAJOS] 🚀 Inicializando...');
     
-    // Verificar conexión al servidor
-    if (!window.mrDataManager || !(await window.mrDataManager.checkConnection())) {
-        console.error('[TRABAJOS] ❌ No se pudo conectar al servidor');
+    // Esperar a que mrDataManager esté disponible
+    let attempts = 0;
+    while (!window.mrDataManager && attempts < 20) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        attempts++;
+    }
+    
+    if (!window.mrDataManager) {
+        console.error('[TRABAJOS] ❌ mrDataManager no disponible');
+        showError('No se pudo conectar al sistema. Recarga la página.');
         return;
     }
     
-    // Inicializar work manager
+    // Inicializar WorkManager
     workManager = new WorkManager();
     
-    // Cargar datos guardados
-    await loadSavedWorks();
-    
-    // Configurar event listeners
+    // Setup listeners
     setupEventListeners();
     
-    // Renderizar trabajos
-    renderWorks();
-    
-    // Actualizar estadísticas
-    updateStatistics();
-    
-    // Escuchar por nuevas notificaciones
-    window.addEventListener('workNotification', handleNewNotification);
+    // Cargar trabajos
+    await loadWorks();
     
     console.log('[TRABAJOS] ✅ Sistema listo');
 });
 
 // ==================== CARGA DE DATOS ====================
-
-/**
- * Carga trabajos guardados
- */
-async function loadSavedWorks() {
+async function loadWorks() {
+    const loadingEl = document.getElementById('loadingState');
+    const worksListEl = document.getElementById('worksList');
+    
     try {
-        const data = await window.mrDataManager.getWorks();
-        if (data) {
-            workManager.importData(data);
-            console.log('[TRABAJOS] 📥 Trabajos cargados:', workManager.works.length);
+        loadingEl.style.display = 'block';
+        worksListEl.style.display = 'none';
+        
+        console.log('[TRABAJOS] Cargando trabajos desde servidor...');
+        
+        // Cargar directamente desde el endpoint
+        const response = await fetch('/api/trabajos');
+        if (!response.ok) {
+            throw new Error('Error al cargar trabajos: ' + response.status);
         }
+        
+        const data = await response.json();
+        console.log('[TRABAJOS] Datos recibidos:', data);
+        
+        // Guardar en WorkManager
+        if (data && data.works) {
+            workManager.importData(data);
+            allWorks = data.works;
+            console.log('[TRABAJOS] ✅ Trabajos cargados:', allWorks.length);
+        } else {
+            allWorks = [];
+            console.warn('[TRABAJOS] No hay trabajos disponibles');
+        }
+        
+        // Renderizar
+        renderWorks();
+        updateStatistics();
+        
     } catch (error) {
-        console.error('[TRABAJOS] Error cargando trabajos:', error);
-    }
-}
-
-/**
- * Guarda trabajos
- */
-async function saveWorks() {
-    try {
-        const data = workManager.exportData();
-        await window.mrDataManager.saveWorks(data);
-        console.log('[TRABAJOS] 💾 Trabajos guardados');
-    } catch (error) {
-        console.error('[TRABAJOS] Error guardando trabajos:', error);
-    }
-}
-
-// ==================== EVENT LISTENERS ====================
-
-function setupEventListeners() {
-    // Botón de notificaciones
-    const btnNotifications = document.getElementById('btnNotifications');
-    if (btnNotifications) {
-        btnNotifications.addEventListener('click', toggleNotificationPanel);
-    }
-    
-    // Actualizar contador de notificaciones cada 2 segundos
-    setInterval(updateNotificationBadge, 2000);
-}
-
-/**
- * Maneja nuevas notificaciones
- */
-function handleNewNotification(event) {
-    const notification = event.detail;
-    console.log('[TRABAJOS] 🔔 Nueva notificación:', notification.title);
-    
-    // Actualizar badge
-    updateNotificationBadge();
-    
-    // Actualizar panel si está abierto
-    const panel = document.getElementById('notificationPanel');
-    if (panel && panel.classList.contains('show')) {
-        renderNotifications();
+        console.error('[TRABAJOS] ❌ Error cargando:', error);
+        showError('Error al cargar los trabajos: ' + error.message);
+        allWorks = [];
+        renderWorks();
+    } finally {
+        loadingEl.style.display = 'none';
+        worksListEl.style.display = 'grid';
     }
 }
 
 // ==================== RENDERIZADO ====================
-
-/**
- * Renderiza lista de trabajos
- */
 function renderWorks() {
-    const works = workManager.getWorks(currentFilters);
     const container = document.getElementById('worksList');
     
-    if (!container) return;
+    // Aplicar filtros
+    let filteredWorks = [...allWorks];
     
-    if (works.length === 0) {
-        container.innerHTML = '<p class="empty-state">No hay trabajos que coincidan con los filtros</p>';
+    if (currentFilters.search) {
+        const search = currentFilters.search.toLowerCase();
+        filteredWorks = filteredWorks.filter(w =>
+            (w.clientName || '').toLowerCase().includes(search)
+        );
+    }
+    
+    if (currentFilters.status) {
+        filteredWorks = filteredWorks.filter(w => w.status === currentFilters.status);
+    }
+    
+    if (currentFilters.payment) {
+        filteredWorks = filteredWorks.filter(w => w.paymentStatus === currentFilters.payment);
+    }
+    
+    if (currentFilters.priority) {
+        filteredWorks = filteredWorks.filter(w => w.priority === currentFilters.priority);
+    }
+    
+    // Ordenar por fecha (más recientes primero)
+    filteredWorks.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    
+    // Renderizar
+    if (filteredWorks.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state" style="grid-column: 1 / -1;">
+                <div class="empty-state-icon">📋</div>
+                <h3>No hay trabajos para mostrar</h3>
+                <p>Los trabajos aparecerán aquí cuando apruebes cotizaciones.</p>
+            </div>
+        `;
         return;
     }
     
-    container.innerHTML = works.map(work => generateWorkCard(work)).join('');
+    container.innerHTML = filteredWorks.map(work => generateWorkCard(work)).join('');
 }
 
-/**
- * Genera HTML de una tarjeta de trabajo
- */
 function generateWorkCard(work) {
-    const statusBadge = getStatusBadgeHTML(work.status);
-    const priorityBadge = getPriorityBadgeHTML(work.priority);
-    const balance = parseFloat(work.balance || 0);
-    const paymentBadge = work.paymentStatus === 'paid' ? 
-        '<span class="badge" style="background: #4CAF50;">💳 Pagado</span>' : 
-        `<span class="badge" style="background: #FFC107;">⏳ Resta: $${formatCurrency(balance)}</span>`;
+    const statusBadge = getStatusBadge(work.status);
+    const paymentBadge = getPaymentBadge(work.paymentStatus);
+    const priorityBadge = getPriorityBadge(work.priority);
+    
+    const priorityClass = work.priority === 'urgent' ? 'priority-urgent' : 
+                         work.priority === 'high' ? 'priority-high' : '';
     
     return `
-        <div class="work-card priority-${work.priority} status-${work.status}" data-work-id="${work.id}">
+        <div class="work-card ${priorityClass}">
             <div class="work-header">
-                <div class="work-client">
-                    ${work.clientName}
-                    ${work.clientPhone ? `<small style="opacity: 0.7; font-size: 0.8rem; display: block;">📞 ${work.clientPhone}</small>` : ''}
+                <div>
+                    <div class="work-client">${work.clientName || 'Sin nombre'}</div>
+                    ${work.clientPhone ? `<div class="work-client-info">📞 ${work.clientPhone}</div>` : ''}
                 </div>
-                <div class="work-badges">
-                    ${priorityBadge}
+                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: flex-end;">
                     ${statusBadge}
                     ${paymentBadge}
+                    ${priorityBadge}
                 </div>
             </div>
             
             <div class="work-details">
                 <div class="work-detail-item">
-                    <div class="work-detail-label">ID Trabajo</div>
-                    <div class="work-detail-value">#${work.id.substr(-8)}</div>
+                    <div class="work-detail-label">ID</div>
+                    <div class="work-detail-value" style="font-size: 0.9rem;">#${work.id.substr(-8)}</div>
                 </div>
                 <div class="work-detail-item">
                     <div class="work-detail-label">Total</div>
                     <div class="work-detail-value" style="color: #51CF66;">$${formatCurrency(work.total)}</div>
                 </div>
                 <div class="work-detail-item">
+                    <div class="work-detail-label">Costo</div>
+                    <div class="work-detail-value" style="color: #FF6B6B;">$${formatCurrency(work.totalCost)}</div>
+                </div>
+                <div class="work-detail-item">
                     <div class="work-detail-label">Ganancia</div>
                     <div class="work-detail-value" style="color: #4CAF50;">$${formatCurrency(work.profit)}</div>
                 </div>
                 <div class="work-detail-item">
-                    <div class="work-detail-label">Creado</div>
-                    <div class="work-detail-value">${formatDate(work.createdAt)}</div>
+                    <div class="work-detail-label">Pagado</div>
+                    <div class="work-detail-value" style="color: #2196F3;">$${formatCurrency(work.paidAmount || 0)}</div>
+                </div>
+                <div class="work-detail-item">
+                    <div class="work-detail-label">Saldo</div>
+                    <div class="work-detail-value" style="color: #FFC107;">$${formatCurrency(work.balance)}</div>
                 </div>
             </div>
             
+            <div style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.5rem;">
+                📅 Creado: ${formatDate(work.createdAt)}
+            </div>
+            
             <div class="work-actions">
-                <button class="btn btn-small btn-primary" onclick="viewWorkDetail('${work.id}')">
-                    👁️ Ver Detalles
+                <button class="btn btn-small btn-primary" onclick="changeStatus('${work.id}')">
+                    🔄 Cambiar Estado
                 </button>
-                <button class="btn btn-small btn-secondary" onclick="editWork('${work.id}')">
-                    ✏️ Editar
+                <button class="btn btn-small btn-success" onclick="markPaid('${work.id}')" ${work.paymentStatus === 'paid' ? 'disabled' : ''}>
+                    💳 Marcar Pagado
                 </button>
-                <button class="btn btn-small btn-success" onclick="markAsDone('${work.id}')">
-                    ✅ Hecho
+                <button class="btn btn-small btn-warning" onclick="changePriority('${work.id}')">
+                    🎯 Prioridad
                 </button>
-                <button class="btn btn-small btn-info" onclick="markAsDelivered('${work.id}')">
-                    📦 Entregar
-                </button>
-                <button class="btn btn-small btn-warning" onclick="registerPayment('${work.id}')" ${work.paymentStatus === 'paid' ? 'disabled' : ''}>
-                    💳 Pago
-                </button>
-                <button class="btn btn-small btn-danger" onclick="deleteWork('${work.id}')">
-                    🗑️ Borrar
+                <button class="btn btn-small btn-info" onclick="addNote('${work.id}')">
+                    📝 Nota
                 </button>
             </div>
         </div>
     `;
 }
 
-/**
- * Renderiza notificaciones
- */
-function renderNotifications() {
-    const notifications = workManager.notifications;
-    const container = document.getElementById('notificationsList');
-    
-    if (!container) return;
-    
-    if (notifications.length === 0) {
-        container.innerHTML = '<div style="padding: 2rem; text-align: center; opacity: 0.5;">No hay notificaciones</div>';
-        return;
-    }
-    
-    container.innerHTML = notifications.map(notif => `
-        <div class="notification-item ${notif.read ? '' : 'unread'}" onclick="markNotificationRead('${notif.id}')">
-            <div style="display: flex; justify-content: between; margin-bottom: 0.5rem;">
-                <strong>${workManager.getNotificationIcon(notif.type)} ${notif.title}</strong>
-                <small style="opacity: 0.7;">${formatTimeAgo(notif.createdAt)}</small>
-            </div>
-            <div style="opacity: 0.8;">${notif.message}</div>
-        </div>
-    `).join('');
-}
-
-// ==================== FUNCIONES DE INTERACCIÓN ====================
-
-/**
- * Aplica filtros
- */
-function applyFilters() {
-    currentFilters = {
-        status: document.getElementById('filterStatus')?.value || '',
-        paymentStatus: document.getElementById('filterPayment')?.value || '',
-        priority: document.getElementById('filterPriority')?.value || '',
-        clientName: document.getElementById('filterSearch')?.value || ''
-    };
-    
-    renderWorks();
-    updateStatistics();
-}
-
-/**
- * Limpia filtros
- */
-function clearFilters() {
-    document.getElementById('filterStatus').value = '';
-    document.getElementById('filterPayment').value = '';
-    document.getElementById('filterPriority').value = '';
-    document.getElementById('filterSearch').value = '';
-    
-    currentFilters = {};
-    renderWorks();
-    updateStatistics();
-}
-
-/**
- * Refresca trabajos
- */
-async function refreshWorks() {
-    await loadSavedWorks();
-    renderWorks();
-    updateStatistics();
-    console.log('[TRABAJOS] 🔄 Datos actualizados');
-}
-
-/**
- * Ver detalles de trabajo
- */
-function viewWorkDetail(workId) {
-    const work = workManager.getWork(workId);
-    if (!work) return;
-    
-    selectedWork = work;
-    
-    const modal = document.getElementById('workDetailModal');
-    const title = document.getElementById('workDetailTitle');
-    const body = document.getElementById('workDetailBody');
-    
-    title.textContent = `Trabajo: ${work.clientName}`;
-    body.innerHTML = generateWorkDetailHTML(work);
-    
-    modal.style.display = 'flex';
-}
-
-/**
- * Cierra detalles de trabajo
- */
-function closeWorkDetail() {
-    const modal = document.getElementById('workDetailModal');
-    modal.style.display = 'none';
-    selectedWork = null;
-}
-
-/**
- * Editar Trabajo (Notas y Prioridad)
- */
-window.editWork = async function(workId) {
-    const work = workManager.getWork(workId);
-    if (!work) return;
-
-    const newNote = prompt('Editar/Agregar Nota:', '');
-    if (newNote) {
-        workManager.addNote(workId, newNote);
-    }
-    
-    await changePriority(workId); // Reutilizamos la lógica de prioridad
-};
-
-/**
- * Cambia estado de trabajo
- */
-async function changeWorkStatus(workId) {
-    const newStatus = prompt(
-        'Selecciona nuevo estado:\n' +
-        '1 = Pendiente\n' +
-        '2 = En Progreso\n' +
-        '3 = Completado\n' +
-        '4 = Cancelado'
-    );
-    
-    const statusMap = {
-        '1': 'pending',
-        '2': 'in_progress',
-        '3': 'completed',
-        '4': 'cancelled'
-    };
-    
-    if (statusMap[newStatus]) {
-        workManager.updateStatus(workId, statusMap[newStatus]);
-        await saveWorks();
-        renderWorks();
-        updateStatistics();
-    }
-}
-
-/**
- * Marcar como Hecho (Completed)
- */
-window.markAsDone = async function(workId) {
-    if(!confirm('¿Marcar trabajo como TERMINADO (Hecho)?')) return;
-    workManager.updateStatus(workId, 'completed');
-    await saveWorks();
-    renderWorks();
-    updateStatistics();
-};
-
-window.markAsDelivered = async function(workId) {
-    if(!confirm('¿Marcar trabajo como ENTREGADO?')) return;
-    // Podríamos tener un estado específico o usar notas
-    workManager.addNote(workId, '📦 Trabajo ENTREGADO al cliente');
-    await saveWorks();
-    alert('✅ Trabajo marcado como entregado (nota agregada)');
-};
-
-/**
- * Cambia prioridad
- */
-async function changePriority(workId) {
-    const newPriority = prompt(
-        'Selecciona prioridad:\n' +
-        '1 = Baja\n' +
-        '2 = Normal\n' +
-        '3 = Alta\n' +
-        '4 = URGENTE'
-    );
-    
-    const priorityMap = {
-        '1': 'low',
-        '2': 'normal',
-        '3': 'high',
-        '4': 'urgent'
-    };
-    
-    if (priorityMap[newPriority]) {
-        workManager.setPriority(workId, priorityMap[newPriority]);
-        await saveWorks();
-        renderWorks();
-    }
-}
-
-/**
- * Registrar Pago (Parcial o Total)
- */
-window.registerPayment = async function(workId) {
-    const work = workManager.getWork(workId);
-    if (!work) return;
-
-    const remaining = work.balance || (work.total - (work.paidAmount || 0));
-    if (remaining <= 0) {
-        alert('Este trabajo ya está pagado completamente.');
-        return;
-    }
-
-    const amountStr = prompt(`Monto a pagar (Restante: $${formatCurrency(remaining)}):`, remaining);
-    if (!amountStr) return;
-
-    const amount = parseFloat(amountStr);
-    if (isNaN(amount) || amount <= 0) {
-        alert('Monto inválido');
-        return;
-    }
-
-    const method = prompt('Método de pago (Efectivo, Transferencia, etc):', 'Efectivo') || 'Efectivo';
-    
-    // 1. Actualizar Trabajo
-    work.paidAmount = (work.paidAmount || 0) + amount;
-    work.balance = work.total - work.paidAmount;
-    
-    if (work.balance <= 1) { // Tolerancia de $1
-        work.paymentStatus = 'paid';
-        work.balance = 0;
-    }
-
-    workManager.addNote(workId, `💰 Pago recibido: $${formatCurrency(amount)} (${method})`);
-    
-    // 2. Registrar en Gastos (Ingreso)
-    const gastos = await window.mrDataManager.getGastos();
-    gastos.push({
-        id: `pago_trabajo_${Date.now()}`,
-        tipo: 'ingreso',
-        descripcion: `Pago Trabajo #${work.id.substr(-6)} - ${work.clientName}`,
-        monto: amount,
-        fecha: new Date().toISOString(),
-        categoria: 'cobro_trabajo'
-    });
-    await window.mrDataManager.saveGastos(gastos);
-
-    await saveWorks();
-    renderWorks();
-    updateStatistics();
-}
-
-/**
- * Agregar nota
- */
-async function addWorkNote(workId) {
-    const note = prompt('Escribe una nota:');
-    if (!note) return;
-    
-    workManager.addNote(workId, note);
-    await saveWorks();
-    
-    if (selectedWork && selectedWork.id === workId) {
-        viewWorkDetail(workId);
-    }
-}
-
-/**
- * Borrar Trabajo
- */
-window.deleteWork = async function(workId) {
-    if (!confirm('⚠️ ¿Estás seguro de BORRAR este trabajo?')) return;
-    workManager.deleteWork(workId); // Necesitamos implementar esto en WorkManager o hacerlo manual aquí
-    // Manual delete implementation since WorkManager might not have it exposed
-    workManager.works = workManager.works.filter(w => w.id !== workId);
-    await saveWorks();
-    renderWorks();
-    updateStatistics();
-};
-
-// ==================== NOTIFICACIONES ====================
-
-/**
- * Toggle panel de notificaciones
- */
-function toggleNotificationPanel() {
-    const panel = document.getElementById('notificationPanel');
-    panel.classList.toggle('show');
-    
-    if (panel.classList.contains('show')) {
-        renderNotifications();
-    }
-}
-
-/**
- * Actualiza badge de notificaciones
- */
-function updateNotificationBadge() {
-    const badge = document.getElementById('notificationBadge');
-    const count = workManager.getUnreadCount();
-    
-    if (count > 0) {
-        badge.textContent = count > 99 ? '99+' : count;
-        badge.style.display = 'flex';
-    } else {
-        badge.style.display = 'none';
-    }
-}
-
-/**
- * Marca notificación como leída
- */
-function markNotificationRead(notificationId) {
-    workManager.markAsRead(notificationId);
-    renderNotifications();
-    updateNotificationBadge();
-}
-
-/**
- * Marca todas como leídas
- */
-function markAllNotificationsRead() {
-    workManager.markAllAsRead();
-    renderNotifications();
-    updateNotificationBadge();
-}
-
 // ==================== ESTADÍSTICAS ====================
-
-/**
- * Actualiza estadísticas
- */
 function updateStatistics() {
-    const works = workManager.getWorks(currentFilters);
-    
-    const pending = works.filter(w => w.status === 'pending').length;
-    const inProgress = works.filter(w => w.status === 'in_progress').length;
-    const completed = works.filter(w => w.status === 'completed').length;
-    const revenue = works.filter(w => w.paymentStatus === 'paid').reduce((sum, w) => sum + w.total, 0);
+    const pending = allWorks.filter(w => w.status === 'pending').length;
+    const inProgress = allWorks.filter(w => w.status === 'in_progress').length;
+    const completed = allWorks.filter(w => w.status === 'completed').length;
+    const revenue = allWorks
+        .filter(w => w.paymentStatus === 'paid')
+        .reduce((sum, w) => sum + (w.paidAmount || 0), 0);
     
     document.getElementById('countPending').textContent = pending;
     document.getElementById('countInProgress').textContent = inProgress;
@@ -516,93 +207,204 @@ function updateStatistics() {
     document.getElementById('totalRevenue').textContent = '$' + formatCurrency(revenue);
 }
 
+// ==================== ACCIONES ====================
+async function changeStatus(workId) {
+    const work = allWorks.find(w => w.id === workId);
+    if (!work) return;
+    
+    const newStatus = prompt(
+        'Cambiar estado del trabajo:\n\n' +
+        '1 = Pendiente\n' +
+        '2 = En Proceso\n' +
+        '3 = Completado\n\n' +
+        'Estado actual: ' + getStatusLabel(work.status)
+    );
+    
+    const statusMap = {
+        '1': 'pending',
+        '2': 'in_progress',
+        '3': 'completed'
+    };
+    
+    if (statusMap[newStatus]) {
+        work.status = statusMap[newStatus];
+        work.timeline.push({
+            type: 'status_changed',
+            description: `Estado cambiado a: ${getStatusLabel(work.status)}`,
+            timestamp: new Date().toISOString()
+        });
+        
+        await saveWorks();
+        await loadWorks();
+    }
+}
+
+async function markPaid(workId) {
+    const work = allWorks.find(w => w.id === workId);
+    if (!work) return;
+    
+    const amount = parseFloat(prompt('Monto del pago:', work.balance));
+    if (!amount || amount <= 0) return;
+    
+    work.paidAmount = (work.paidAmount || 0) + amount;
+    work.balance = work.total - work.paidAmount;
+    
+    if (work.balance <= 1) {
+        work.paymentStatus = 'paid';
+    }
+    
+    work.timeline.push({
+        type: 'payment',
+        description: `Pago recibido: $${amount}`,
+        timestamp: new Date().toISOString()
+    });
+    
+    await saveWorks();
+    await loadWorks();
+    alert('✅ Pago registrado');
+}
+
+async function changePriority(workId) {
+    const work = allWorks.find(w => w.id === workId);
+    if (!work) return;
+    
+    const newPriority = prompt(
+        'Cambiar prioridad:\n\n' +
+        '1 = Normal\n' +
+        '2 = Alta\n' +
+        '3 = URGENTE'
+    );
+    
+    const priorityMap = {
+        '1': 'normal',
+        '2': 'high',
+        '3': 'urgent'
+    };
+    
+    if (priorityMap[newPriority]) {
+        work.priority = priorityMap[newPriority];
+        work.timeline.push({
+            type: 'priority_changed',
+            description: `Prioridad: ${work.priority}`,
+            timestamp: new Date().toISOString()
+        });
+        
+        await saveWorks();
+        await loadWorks();
+    }
+}
+
+async function addNote(workId) {
+    const work = allWorks.find(w => w.id === workId);
+    if (!work) return;
+    
+    const note = prompt('Agregar nota:');
+    if (!note) return;
+    
+    if (!work.notes) work.notes = [];
+    work.notes.push({
+        text: note,
+        date: new Date().toISOString(),
+        author: 'Usuario'
+    });
+    
+    work.timeline.push({
+        type: 'note_added',
+        description: 'Nota agregada',
+        timestamp: new Date().toISOString()
+    });
+    
+    await saveWorks();
+    await loadWorks();
+}
+
+async function saveWorks() {
+    try {
+        const data = { works: allWorks, notifications: [] };
+        const response = await fetch('/api/trabajos', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        
+        if (!response.ok) {
+            throw new Error('Error al guardar');
+        }
+        
+        console.log('[TRABAJOS] ✅ Guardado exitoso');
+    } catch (error) {
+        console.error('[TRABAJOS] ❌ Error guardando:', error);
+        alert('Error al guardar los cambios');
+    }
+}
+
+// ==================== FILTROS ====================
+function applyFilters() {
+    currentFilters = {
+        search: document.getElementById('filterSearch').value.trim(),
+        status: document.getElementById('filterStatus').value,
+        payment: document.getElementById('filterPayment').value,
+        priority: document.getElementById('filterPriority').value
+    };
+    
+    renderWorks();
+}
+
+function clearFilters() {
+    document.getElementById('filterSearch').value = '';
+    document.getElementById('filterStatus').value = '';
+    document.getElementById('filterPayment').value = '';
+    document.getElementById('filterPriority').value = '';
+    currentFilters = {};
+    renderWorks();
+}
+
+// ==================== NOTIFICACIONES ====================
+function setupEventListeners() {
+    document.getElementById('btnNotifications').addEventListener('click', toggleNotificationPanel);
+    document.getElementById('filterSearch').addEventListener('input', applyFilters);
+}
+
+function toggleNotificationPanel() {
+    const panel = document.getElementById('notificationPanel');
+    panel.classList.toggle('show');
+}
+
 // ==================== HELPERS ====================
-
-function generateWorkDetailHTML(work) {
-    return `
-        <div style="display: grid; gap: 1.5rem;">
-            <!-- Cliente -->
-            <div>
-                <h3 style="margin-bottom: 0.5rem;">👤 Cliente</h3>
-                <div style="background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 8px;">
-                    <p><strong>Nombre:</strong> ${work.clientName}</p>
-                    ${work.clientPhone ? `<p><strong>Teléfono:</strong> ${work.clientPhone}</p>` : ''}
-                    ${work.clientEmail ? `<p><strong>Email:</strong> ${work.clientEmail}</p>` : ''}
-                    ${work.clientAddress ? `<p><strong>Dirección:</strong> ${work.clientAddress}</p>` : ''}
-                </div>
-            </div>
-            
-            <!-- Financiero -->
-            <div>
-                <h3 style="margin-bottom: 0.5rem;">💰 Financiero</h3>
-                <div style="background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 8px;">
-                    <p><strong>Subtotal:</strong> $${formatCurrency(work.subtotal)}</p>
-                    <p><strong>IVA:</strong> $${formatCurrency(work.iva)}</p>
-                    <p><strong>Total:</strong> <span style="color: #51CF66;">$${formatCurrency(work.total)}</span></p>
-                    <p><strong>Costo:</strong> <span style="color: #FF6B6B;">$${formatCurrency(work.totalCost)}</span></p>
-                    <p><strong>Ganancia:</strong> <span style="color: #4CAF50;">$${formatCurrency(work.profit)}</span></p>
-                </div>
-            </div>
-            
-            <!-- Timeline -->
-            ${work.timeline && work.timeline.length > 0 ? `
-                <div>
-                    <h3 style="margin-bottom: 0.5rem;">📅 Historial</h3>
-                    <div style="background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 8px;">
-                        ${work.timeline.map(item => `
-                            <div class="timeline-item">
-                                <div style="font-size: 0.85rem; opacity: 0.7;">${formatDate(item.timestamp)}</div>
-                                <div>${item.description}</div>
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>
-            ` : ''}
-            
-            <!-- Notas -->
-            ${work.notes && work.notes.length > 0 ? `
-                <div>
-                    <h3 style="margin-bottom: 0.5rem;">📝 Notas</h3>
-                    <div style="background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 8px;">
-                        ${work.notes.map(note => `
-                            <div style="margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.1);">
-                                <div style="font-size: 0.85rem; opacity: 0.7; margin-bottom: 0.25rem;">
-                                    ${note.author} - ${formatDate(note.createdAt)}
-                                </div>
-                                <div>${note.text}</div>
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>
-            ` : ''}
-        </div>
-    `;
-}
-
-function getStatusBadgeHTML(status) {
-    const config = {
-        pending: { color: '#FFC107', icon: '⏳', text: 'Pendiente' },
-        in_progress: { color: '#2196F3', icon: '🔧', text: 'En Progreso' },
-        completed: { color: '#4CAF50', icon: '✅', text: 'Completado' },
-        cancelled: { color: '#F44336', icon: '❌', text: 'Cancelado' }
+function getStatusBadge(status) {
+    const badges = {
+        pending: '<span class="badge badge-status-pending">⏳ Pendiente</span>',
+        in_progress: '<span class="badge badge-status-in_progress">🔧 En Proceso</span>',
+        completed: '<span class="badge badge-status-completed">✅ Completado</span>'
     };
-    
-    const c = config[status] || config.pending;
-    return `<span class="badge" style="background: ${c.color};">${c.icon} ${c.text}</span>`;
+    return badges[status] || '';
 }
 
-function getPriorityBadgeHTML(priority) {
-    const config = {
-        low: { class: 'badge-priority-low', text: '🟢 Baja' },
-        normal: { class: 'badge-priority-normal', text: '🟡 Normal' },
-        high: { class: 'badge-priority-high', text: '🟠 Alta' },
-        urgent: { class: 'badge-priority-urgent', text: '🔴 URGENTE' }
+function getPaymentBadge(status) {
+    const badges = {
+        paid: '<span class="badge badge-payment-paid">💳 Pagado</span>',
+        pending: '<span class="badge badge-payment-pending">💰 Pendiente</span>'
     };
-    
-    const c = config[priority] || config.normal;
-    return `<span class="badge ${c.class}">${c.text}</span>`;
+    return badges[status] || '';
 }
 
+function getPriorityBadge(priority) {
+    const badges = {
+        normal: '<span class="badge badge-priority-normal">🟡 Normal</span>',
+        high: '<span class="badge badge-priority-high">🟠 Alta</span>',
+        urgent: '<span class="badge badge-priority-urgent">🔴 URGENTE</span>'
+    };
+    return badges[priority] || '';
+}
+
+function getStatusLabel(status) {
+    const labels = {
+        pending: 'Pendiente',
+        in_progress: 'En Proceso',
+        completed: 'Completado'
+    };
+    return labels[status] || status;
+}
 function formatCurrency(num) {
     return new Intl.NumberFormat('es-AR', {
         minimumFractionDigits: 2,
@@ -621,15 +423,16 @@ function formatDate(dateStr) {
     }).format(date);
 }
 
-function formatTimeAgo(dateStr) {
-    const now = new Date();
-    const date = new Date(dateStr);
-    const seconds = Math.floor((now - date) / 1000);
-    
-    if (seconds < 60) return 'Hace un momento';
-    if (seconds < 3600) return `Hace ${Math.floor(seconds / 60)} min`;
-    if (seconds < 86400) return `Hace ${Math.floor(seconds / 3600)} h`;
-    return `Hace ${Math.floor(seconds / 86400)} días`;
+function showError(message) {
+    const container = document.getElementById('worksList');
+    container.innerHTML = `
+        <div class="empty-state" style="grid-column: 1 / -1;">
+            <div class="empty-state-icon">❌</div>
+            <h3>Error</h3>
+            <p>${message}</p>
+            <button class="btn btn-primary" onclick="loadWorks()">Reintentar</button>
+        </div>
+    `;
 }
 
 console.log('[TRABAJOS] 📦 Módulo cargado');
