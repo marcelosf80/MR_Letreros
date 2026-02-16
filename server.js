@@ -503,7 +503,8 @@ app.get('/api/health', (req, res) => {
 // ==================== ENDPOINT PARA PROCESADO DE ARCHIVOS CON PYTHON ====================
 
 app.post('/api/process-file', (req, res) => {
-    const pythonProcess = spawn(pythonCmd, ['file_processor.py']);
+    const scriptPath = path.join(BASE_PATH, 'file_processor.py');
+    const pythonProcess = spawn(pythonCmd, [scriptPath]);
 
     let resultData = '';
     let errorData = '';
@@ -517,7 +518,8 @@ app.post('/api/process-file', (req, res) => {
     });
 
     pythonProcess.on('close', (code) => {
-        if (code !== 0 || errorData) {
+        // Solo fallar si el código de salida es error, ignorar warnings en stderr si code es 0
+        if (code !== 0) {
             // Intenta parsear el error por si Python envió un JSON
             try {
                 const errJson = JSON.parse(errorData);
@@ -547,7 +549,8 @@ app.post('/api/process-file', (req, res) => {
 
 app.post('/api/nesting/solve', (req, res) => {
     // 1. Ejecuta el script de Python como un proceso hijo
-    const pythonProcess = spawn(pythonCmd, ['nesting_solver.py']);
+    const scriptPath = path.join(BASE_PATH, 'nesting_solver.py');
+    const pythonProcess = spawn(pythonCmd, [scriptPath]);
 
     let resultData = '';
     let errorData = '';
@@ -564,7 +567,7 @@ app.post('/api/nesting/solve', (req, res) => {
 
     // 4. Cuando el script de Python termina, se ejecuta este bloque
     pythonProcess.on('close', (code) => {
-        if (code !== 0 || errorData) {
+        if (code !== 0) {
             console.error(`Error del script de Python: ${errorData}`);
             res.status(500).json({ error: 'Error durante el proceso de nesting en el servidor.', details: errorData });
         } else {

@@ -92,6 +92,33 @@ fileInput.addEventListener('change', (e) => {
     reader.onload = async (event) => {
         const fileContent = event.target.result;
 
+        // --- NUEVO: Manejo de imágenes Raster (JPG, PNG) ---
+        if (file.type.startsWith('image/') && !file.type.includes('svg')) {
+            // Es una imagen: Mostrarla y esperar a que el usuario vectorice
+            sourcePreviewImg.src = fileContent;
+            miniPreview.style.display = 'block';
+            
+            statusMsg.innerText = "📷 Imagen cargada. Usa 'Quitar Fondo' o 'Vectorizar' para continuar.";
+            statusMsg.style.color = "#339AF0";
+            
+            workflowActions.style.display = 'block';
+            btnNest.disabled = true; // No se puede hacer nesting de una imagen raster
+            
+            // Limpiar contenedor de resultados anteriores
+            sheetsContainer.innerHTML = '';
+
+            // --- NUEVO: Mostrar imagen original en el visor principal ---
+            const img = document.createElement('img');
+            img.src = fileContent;
+            img.style.maxWidth = '100%';
+            img.style.maxHeight = '500px';
+            img.style.objectFit = 'contain';
+            sheetsContainer.appendChild(img);
+            if (statsBar) statsBar.innerText = "📷 Imagen cargada.";
+            
+            return; // IMPORTANTE: No enviar a Python todavía
+        }
+
         // Reiniciar UI y mostrar progreso
         sheetsContainer.innerHTML = '';
         statusMsg.innerText = "⏳ Procesando archivo en el servidor...";
@@ -145,13 +172,17 @@ fileInput.addEventListener('change', (e) => {
         }
     };
 
-    // Lee el archivo como texto para enviarlo al backend.
-    reader.readAsText(file);
+    // Lee el archivo según su tipo
+    if (file.type.startsWith('image/') && !file.type.includes('svg')) {
+        reader.readAsDataURL(file); // Para JPG/PNG (Vista previa)
+    } else {
+        reader.readAsText(file); // Para SVG (Texto para el backend)
+    }
 });
 
 // --- ACCIONES DE BOTONES ---
 
-btnRemoveBg.addEventListener('click', removeBackground); // Función de vectorizer.js
+btnRemoveBg.addEventListener('click', handleRemoveBackground); // Función de vectorizer.js
 
 btnDownloadPng.addEventListener('click', () => {
     const a = document.createElement('a');
@@ -214,4 +245,79 @@ showToolpath.addEventListener('change', () => {
 // Inicializar persistencia
 if (typeof initSettings === 'function') {
     initSettings(); // Función de settings.js
+}
+
+// --- NUEVO: Event Listener para Ampliar Imagen ---
+const btnUpscale = document.getElementById('btnUpscale');
+const upscaleScale = document.getElementById('upscaleScale');
+
+if (btnUpscale) {
+    btnUpscale.addEventListener('click', async () => {
+        const sourceImg = document.getElementById('sourcePreviewImg');
+        
+        if (!sourceImg.src || sourceImg.src.startsWith('data:image/svg')) {
+            alert('⚠️ Primero carga una imagen JPG o PNG');
+            return;
+        }
+        
+        const scale = parseInt(upscaleScale.value);
+        const originalUrl = sourceImg.src;
+        
+        try {
+            // upscaleImage está en upscaler.js
+            const upscaledUrl = await upscaleImage(originalUrl, scale);
+            showUpscalePreview(originalUrl, upscaledUrl);
+        } catch (error) {
+            console.error('Error:', error);
+            alert('❌ Error al ampliar imagen: ' + error.message);
+        }
+    });
+}
+
+// Hot Wire CNC Logic
+const hwMaterial = document.getElementById('hwMaterial');
+const hwSpeed = document.getElementById('hwSpeed');
+const hwTemp = document.getElementById('hwTemp');
+const btnGenHotWire = document.getElementById('btnGenHotWire');
+const hwStats = document.getElementById('hwStats');
+
+if (hwMaterial) {
+    hwMaterial.addEventListener('change', () => {
+        const preset = window.hotWireCNC.presets[hwMaterial.value];
+        if (preset && hwMaterial.value !== 'custom') {
+            hwSpeed.value = preset.speed;
+            hwTemp.value = preset.temp;
+        }
+    });
+}
+
+if (btnGenHotWire) {
+    btnGenHotWire.addEventListener('click', () => {
+        if (!currentSvgString) {
+            alert("⚠️ Primero carga y vectoriza una imagen.");
+            return;
+        }
+        
+        const options = {
+            speed: parseFloat(hwSpeed.value) || 300,
+            temperature: parseFloat(hwTemp.value) || 0,
+            materialName: hwMaterial.options[hwMaterial.selectedIndex].text
+        };
+
+        const result = window.hotWireCNC.generateGCode(currentSvgString, options);
+        
+        if (result) {
+            // Show stats
+            document.getElementById('hwLen').innerText = result.stats.lengthMM;
+            document.getElementById('hwTime').innerText = result.stats.timeMinutes;
+            hwStats.style.display = 'block';
+            
+            // Download
+            window.hotWireCNC.downloadGCode(result.code, `hilo_caliente_${Date.now()}.nc`);
+            
+            if (typeof showStatus === 'function') showStatus('✅ G-Code Hilo Caliente generado y descargado.', 'success');
+        } else {
+            alert("❌ No se pudieron extraer trayectorias del SVG.");
+        }
+    });
 }

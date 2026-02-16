@@ -89,6 +89,16 @@
                         <button id="btnVectorize" class="btn-action" style="background:#1098ad;">📐 Vectorizar</button>
                         <button id="btnDownloadSvg" class="btn-icon" style="display:none;" title="Descargar SVG">💾</button>
                     </div>
+                    
+                    <!-- NUEVO: Botones de Ampliar -->
+                    <div class="flex-row" style="margin-top: 5px;">
+                        <button id="btnUpscale" class="btn-action" style="background:#7950f2;">🔍 Ampliar Imagen</button>
+                        <select id="upscaleScale" style="width: auto; padding: 5px; background: #333; color: white; border: 1px solid #555; border-radius: 4px;">
+                            <option value="2">2x</option>
+                            <option value="3">3x</option>
+                            <option value="4">4x</option>
+                        </select>
+                    </div>
                 </div>
 
                 <!-- Paso 2: Nesting -->
@@ -185,6 +195,38 @@
                 </div>
             </div>
 
+            <!-- Panel Hilo Caliente -->
+            <div style="margin-top:15px; border-top:1px solid #555; padding-top:10px; background:rgba(255,87,34,0.1); border-radius:4px; padding:10px;">
+                <h4 style="margin:0 0 10px 0; color:#FF5722; font-size:0.9em;">🔥 Corte Hilo Caliente (Ackon Eco3)</h4>
+                
+                <label style="margin:0; font-size:0.8em;">Material (Preset)</label>
+                <select id="hwMaterial" style="width:100%; padding:5px; background:#333; color:white; border:1px solid #555; border-radius:4px; margin-bottom:10px;">
+                    <option value="eps_20">Telgopor (EPS) 20mm</option>
+                    <option value="eps_50">Telgopor (EPS) 50mm</option>
+                    <option value="xps_20">Polyfan (XPS) 20mm</option>
+                    <option value="xps_50">Polyfan (XPS) 50mm</option>
+                    <option value="custom">Personalizado / Manual</option>
+                </select>
+
+                <div style="display:flex; gap:10px;">
+                    <div style="flex:1">
+                        <label style="margin:0; font-size:0.8em;">Velocidad (mm/min)</label>
+                        <input type="number" id="hwSpeed" value="300" style="width:100%;">
+                    </div>
+                    <div style="flex:1">
+                        <label style="margin:0; font-size:0.8em;">Temp (0-1000)</label>
+                        <input type="number" id="hwTemp" value="350" style="width:100%;">
+                    </div>
+                </div>
+
+                <button id="btnGenHotWire" class="btn-action" style="background:#FF5722; margin-top:10px;">🔥 Generar G-Code Hilo</button>
+                
+                <div id="hwStats" style="margin-top:10px; font-size:0.8em; color:#ccc; display:none;">
+                    <p style="margin:2px 0;">📏 Longitud: <span id="hwLen">0</span> mm</p>
+                    <p style="margin:2px 0;">⏱️ Tiempo est.: <span id="hwTime">0</span> min</p>
+                </div>
+            </div>
+
             <p id="statusMsg" style="margin-top:10px; font-weight:bold; min-height:20px;"></p>
         </div>
 
@@ -265,6 +307,11 @@
         // Configuración del "worker" para que PDF.js pueda procesar archivos en segundo plano.
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.107/pdf.worker.min.js';
     </script>
+    <!-- NUEVO: Librería de IA para quitar fondos (Carga como Módulo para evitar errores) -->
+    <script type="module">
+        import { removeBackground } from 'https://cdn.jsdelivr.net/npm/@imgly/background-removal/+esm';
+        window.removeBackgroundAI = removeBackground;
+    </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/imagetracerjs@1.2.6/imagetracer_v1.2.6.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -276,11 +323,13 @@
     <script src="js/utils.js"></script>
     <script src="js/settings.js"></script>
     <script src="js/packer.js"></script>
-    <script src="js/vectorizer.js"></script>
+    <script src="js/vectorizer.js"></script> <!-- Este es el archivo que acabamos de crear -->
+    <script src="js/upscaler.js"></script> <!-- NUEVO: Script de upscaling -->
     <script src="js/editor.js"></script>
     <script src="js/nester.js"></script>
     <script src="js/gcode.js"></script>
     <script src="js/simulation.js"></script>
+    <script src="js/hotWireCNC.js"></script>
     <script src="js/app.js"></script>
     <script>
         // Partículas

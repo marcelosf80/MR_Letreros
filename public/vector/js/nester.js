@@ -434,3 +434,62 @@ function drawToolpathOverlay(ctx, bin, scale) {
     
     ctx.restore();
 }
+
+/**
+ * Analiza el SVG string, lo inyecta en el DOM oculto y genera los objetos Part.
+ * Es crucial para que el Packer tenga dimensiones reales (getBBox).
+ * @param {string} svgString - Código SVG
+ * @param {function} onProgress - Callback de progreso (current, total)
+ */
+async function parseSvgParts(svgString, onProgress) {
+    console.log('[parseSvgParts] Iniciando análisis de piezas...');
+    
+    // 1. Limpiar array global de piezas
+    globalParts = []; 
+
+    // 2. Parsear string a DOM
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(svgString, "image/svg+xml");
+    const svg = doc.querySelector('svg');
+
+    if (!svg) {
+        console.error("No se encontró un elemento SVG válido.");
+        return;
+    }
+
+    // 3. Inyectar en contenedor oculto (Necesario para getBBox)
+    const hiddenContainer = document.getElementById('hiddenSvgContainer');
+    if (hiddenContainer) {
+        hiddenContainer.innerHTML = '';
+        hiddenContainer.appendChild(svg);
+    } else {
+        console.warn("No se encontró #hiddenSvgContainer. getBBox podría fallar.");
+    }
+
+    // 4. Seleccionar elementos
+    // Nota: file_processor.py devuelve principalmente 'path', pero soportamos otros por si acaso.
+    const elements = Array.from(svg.querySelectorAll('path, rect, circle, ellipse, polygon, polyline'));
+    const total = elements.length;
+
+    // 5. Crear objetos Part
+    for (let i = 0; i < total; i++) {
+        const el = elements[i];
+        
+        // Crear instancia de Part (definida en packer.js)
+        const part = new Part(el, i + 1);
+
+        // Filtrar piezas inválidas o vacías
+        if (part.w > 0.1 && part.h > 0.1) {
+            globalParts.push(part);
+        }
+
+        // Callback de progreso (para no congelar UI en SVGs grandes)
+        if (onProgress && i % 20 === 0) {
+            onProgress(i + 1, total);
+            await new Promise(r => setTimeout(r, 0));
+        }
+    }
+
+    if (onProgress) onProgress(total, total);
+    console.log(`[parseSvgParts] Análisis completado. ${globalParts.length} piezas válidas.`);
+}

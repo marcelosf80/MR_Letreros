@@ -1,0 +1,6 @@
+2026/02/16-19:02:06.479 19b4 Reusing MANIFEST C:\MR_Letreros\.wwebjs_auth\session\Default\Local Storage\leveldb/MANIFEST-000001
+2026/02/16-19:02:06.856 19b4 Recovering log #3
+2026/02/16-19:02:07.237 19b4 Reusing old log C:\MR_Letreros\.wwebjs_auth\session\Default\Local Storage\leveldb/000003.log 
+2026/02/16-19:05:29.765 19b4 Level-0 table #5: started
+2026/02/16-19:05:31.287 19b4 Level-0 table #5: 19779 bytes OK
+2026/02/16-19:05:31.521 19b4 Delete type=0 #3

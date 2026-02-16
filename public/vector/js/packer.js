@@ -13,8 +13,12 @@ class Part {
             this.y = bbox.y;
             this.w = bbox.width;
             this.h = bbox.height;
+            
+            // Validación extra para evitar dimensiones negativas o cero que rompan el packer
+            if (this.w <= 0) this.w = 1;
+            if (this.h <= 0) this.h = 1;
         } catch(e) {
-            this.w = 0; this.h = 0;
+            this.w = 10; this.h = 10; // Valores fallback seguros
         }
 
         // Estado del nesting
