@@ -307,6 +307,24 @@
       }
     });
     
+    // Highlight active item based on URL
+    const currentPath = window.location.pathname.split('/').pop() || 'index.html';
+    document.querySelectorAll('.nav-item').forEach(item => {
+        if (item.getAttribute('href') === currentPath) {
+            item.classList.add('active');
+        }
+    });
+
+    // Global ESC to close modals
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            const activeModal = document.querySelector('.modal.active');
+            if (activeModal) {
+                activeModal.classList.remove('active');
+            }
+        }
+    });
+
     console.log('[SIDEBAR] ✅ Sidebar inicializado');
   }
 

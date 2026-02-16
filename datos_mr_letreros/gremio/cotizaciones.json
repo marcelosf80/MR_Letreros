@@ -106,5 +106,113 @@
     "estado": "aprobada",
     "approved": true,
     "fechaAprobacion": "2026-02-05T02:09:53.441Z"
+  },
+  {
+    "id": "1771201243516",
+    "clientId": "gremio_1768872212236_gsmp4tmxp",
+    "cliente": {
+      "nombre": "test",
+      "telefono": "",
+      "email": "",
+      "direccion": ""
+    },
+    "productos": [],
+    "terceros": [],
+    "multiCategories": {
+      "categories": [
+        {
+          "id": "cat_1771201209931_navf0i6i4",
+          "name": "90",
+          "costPerM2": 1823.4683281412254,
+          "pricePerM2": 9000,
+          "totalCost": 4635.99,
+          "totalPrice": 22881.6,
+          "margin": 18245.61,
+          "m2": 2.5424
+        },
+        {
+          "id": "tercero_1771201217613",
+          "name": "🔧 tensado (test 1)",
+          "costPerM2": 7000,
+          "pricePerM2": 14000,
+          "totalCost": 17796.8,
+          "totalPrice": 35593.6,
+          "margin": 17796.8,
+          "m2": 2.5424
+        },
+        {
+          "id": "tercero_1771201230895",
+          "name": "🔧 tensado (test 1)",
+          "costPerM2": 7000,
+          "pricePerM2": 14000,
+          "totalCost": 17796.8,
+          "totalPrice": 35593.6,
+          "margin": 17796.8,
+          "m2": 2.5424
+        }
+      ],
+      "sharedDimensions": {
+        "width": 0.56,
+        "height": 4.54,
+        "totalM2": 2.5424
+      },
+      "inkPriceEnabled": true,
+      "inkPricePerM2": 1200
+    },
+    "costoTotal": 40229.59,
+    "subtotal": 97119.68,
+    "iva": 20395.13,
+    "totalCliente": 117514.81,
+    "ganancia": 77285.22,
+    "anticipo": 0,
+    "saldo": 117514.81,
+    "fecha": "2026-02-16T00:20:43.516Z",
+    "estado": "aprobada",
+    "approved": true,
+    "fechaAprobacion": "2026-02-16T00:21:32.029Z"
+  },
+  {
+    "id": "1771245330326",
+    "clientId": "gremio_1768872212236_gsmp4tmxp",
+    "cliente": {
+      "nombre": "test",
+      "telefono": "",
+      "email": "",
+      "direccion": ""
+    },
+    "productos": [],
+    "terceros": [],
+    "multiCategories": {
+      "categories": [
+        {
+          "id": "cat_1771245316198_ivk0603de",
+          "name": "90",
+          "costPerM2": 1823.4683281412254,
+          "pricePerM2": 9000,
+          "totalCost": 2115.22,
+          "totalPrice": 10440,
+          "margin": 8324.78,
+          "m2": 1.16
+        }
+      ],
+      "sharedDimensions": {
+        "width": 2.32,
+        "height": 0.5,
+        "totalM2": 1.16
+      },
+      "inkPriceEnabled": true,
+      "inkPricePerM2": 1200
+    },
+    "costoTotal": 2115.22,
+    "subtotal": 11832,
+    "iva": 2484.72,
+    "totalCliente": 14316.72,
+    "ganancia": 12201.5,
+    "anticipo": 0,
+    "saldo": 14316.72,
+    "fecha": "2026-02-16T12:35:30.326Z",
+    "estado": "aprobada",
+    "approved": true,
+    "fechaAprobacion": "2026-02-16T12:35:47.524Z"
   }
 ]

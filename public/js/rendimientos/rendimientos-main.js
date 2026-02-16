@@ -28,31 +28,24 @@ const rendimientosManager = {
       console.log('[RENDIMIENTOS] Cargando datos financieros...');
       
       // Obtener todas las cotizaciones y gastos
-      const cotizacionesGremio = (await window.mrDataManager?.getGremioCotizaciones?.()) || [];
-      const cotizacionesClientes = (await window.mrDataManager?.getClientesCotizaciones?.()) || [];
+      // FIX: Usar trabajos aprobados para cálculo real de ingresos
+      const trabajosRes = await fetch('/api/trabajos');
+      const trabajosData = await trabajosRes.json();
+      const trabajos = trabajosData.works || [];
+      
       const gastos = (await window.mrDataManager?.getGastos?.()) || [];
       
-      console.log('[RENDIMIENTOS] Cotizaciones Gremio:', cotizacionesGremio.length);
-      console.log('[RENDIMIENTOS] Cotizaciones Clientes:', cotizacionesClientes.length);
+      console.log('[RENDIMIENTOS] Trabajos Aprobados:', trabajos.length);
       console.log('[RENDIMIENTOS] Gastos:', gastos.length);
       
-      // Calcular totales solo de cotizaciones APROBADAS
-      const totalGremio = cotizacionesGremio
-        .filter(cot => cot.estado === 'aprobada')
-        .reduce((sum, cot) => sum + (parseFloat(cot.totalCliente) || 0), 0);
-      
-      const totalClientes = cotizacionesClientes
-        .filter(cot => cot.estado === 'aprobada')
-        .reduce((sum, cot) => sum + (parseFloat(cot.totalCliente) || 0), 0);
+      // Calcular totales desde trabajos (Ingresos reales)
+      const totalIngresos = trabajos.reduce((sum, w) => sum + (parseFloat(w.total) || 0), 0);
       
       const totalGastos = gastos.reduce((sum, g) => sum + (parseFloat(g.monto) || 0), 0);
       
-      const totalIngresos = totalGremio + totalClientes;
       const ganancia = totalIngresos - totalGastos;
       const margenGanancia = totalIngresos > 0 ? ((ganancia / totalIngresos) * 100) : 0;
       
-      console.log('[RENDIMIENTOS] Total Gremio (aprobadas):', totalGremio);
-      console.log('[RENDIMIENTOS] Total Clientes (aprobadas):', totalClientes);
       console.log('[RENDIMIENTOS] Total Ingresos:', totalIngresos);
       console.log('[RENDIMIENTOS] Total Gastos:', totalGastos);
       console.log('[RENDIMIENTOS] Ganancia:', ganancia);

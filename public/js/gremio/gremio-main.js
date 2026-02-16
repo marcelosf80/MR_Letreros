@@ -1592,15 +1592,14 @@ window.aprobarCotizacion = async function(id) {
     // 3. Crear TRABAJO automáticamente
     let worksData = { works: [], notifications: [] };
     try {
-        if (window.mrDataManager.getWorks) {
-            worksData = await window.mrDataManager.getWorks();
+        const response = await fetch('/api/trabajos');
+        if (response.ok) {
+            worksData = await response.json();
         }
-    } catch (e) { console.warn('Error obteniendo trabajos, iniciando nuevo:', e); }
+    } catch (e) { console.warn('Error obteniendo trabajos del servidor:', e); }
 
-    // Validación de estructura para evitar errores si devuelve array vacío
-    if (!worksData || typeof worksData !== 'object' || Array.isArray(worksData)) {
-        worksData = { works: [], notifications: [] };
-    }
+    // Asegurar estructura
+    if (!worksData || typeof worksData !== 'object') worksData = { works: [], notifications: [] };
     if (!Array.isArray(worksData.works)) worksData.works = [];
 
     // Valores seguros (Fallbacks)
@@ -1631,15 +1630,15 @@ window.aprobarCotizacion = async function(id) {
     };
     worksData.works.push(newWork);
     
-    // Intentar guardar usando el manager, o fallback directo a fetch
-    let saveSuccess = false;
-    if (window.mrDataManager && window.mrDataManager.saveWorks) {
-        saveSuccess = await window.mrDataManager.saveWorks(worksData);
-    } else {
-        const res = await fetch('/api/trabajos', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(worksData) });
-        const json = await res.json();
-        saveSuccess = json.success;
-    }
+    // Guardar directamente en el servidor
+    const res = await fetch('/api/trabajos', { 
+        method: 'POST', 
+        headers: {'Content-Type': 'application/json'}, 
+        body: JSON.stringify(worksData) 
+    });
+    const json = await res.json();
+    const saveSuccess = json.success;
+
     console.log('[GREMIO] Resultado guardado trabajo:', saveSuccess);
 
     const successGastos = await window.mrDataManager.saveGastos(gastos);

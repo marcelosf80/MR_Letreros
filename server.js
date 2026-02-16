@@ -456,7 +456,7 @@ app.get('/api/rendimientos', async (req, res) => {
     // 3. Gastos Operativos (Todo lo que sea egreso en gastos.json)
     const gastosTotales = gastos
       .filter(g => g.tipo !== 'ingreso')
-      .reduce((sum, g) => sum + (parseFloat(g.monto) || 0), 0);
+      .reduce((sum, g) => sum + Math.abs(parseFloat(g.monto) || 0), 0);
     
     // Desglose de gastos por categoría de gasto
     const gastosPorCategoria = {};
@@ -592,7 +592,7 @@ app.post('/api/nesting/solve', (req, res) => {
 // ==================== ENDPOINTS DE TRABAJOS ====================
 
 app.get('/api/trabajos', async (req, res) => {
-    const filePath = path.join(DATA_DIR, 'trabajos.json');
+    const filePath = FILES.trabajos;
     try {
         // Si no existe, devolver estructura vacía
         try {
@@ -619,7 +619,7 @@ app.get('/api/trabajos', async (req, res) => {
 });
 
 app.post('/api/trabajos', async (req, res) => {
-    const filePath = path.join(DATA_DIR, 'trabajos.json');
+    const filePath = FILES.trabajos;
     const success = await writeJSON(filePath, req.body);
     if (success) {
         res.json({ success: true });

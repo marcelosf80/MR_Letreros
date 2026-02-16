@@ -114,6 +114,66 @@
         }
       ],
       "notes": []
+    },
+    {
+      "id": "work_1771201292220",
+      "quoteId": "1771201243516",
+      "clientName": "test",
+      "clientPhone": "",
+      "clientEmail": "",
+      "clientAddress": "",
+      "total": 117514.81,
+      "totalCost": 40229.59,
+      "profit": 77285.22,
+      "paidAmount": 117514.81,
+      "balance": 0,
+      "status": "pending",
+      "paymentStatus": "paid",
+      "priority": "normal",
+      "createdAt": "2026-02-16T00:21:32.220Z",
+      "timeline": [
+        {
+          "type": "created",
+          "description": "Trabajo creado automáticamente desde Gremio",
+          "timestamp": "2026-02-16T00:21:32.220Z"
+        },
+        {
+          "type": "payment",
+          "description": "Pago recibido: $117514.81",
+          "timestamp": "2026-02-16T12:37:40.379Z"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "id": "work_1771245347779",
+      "quoteId": "1771245330326",
+      "clientName": "test",
+      "clientPhone": "",
+      "clientEmail": "",
+      "clientAddress": "",
+      "total": 14316.72,
+      "totalCost": 2115.22,
+      "profit": 12201.5,
+      "paidAmount": 14316.72,
+      "balance": 0,
+      "status": "pending",
+      "paymentStatus": "paid",
+      "priority": "normal",
+      "createdAt": "2026-02-16T12:35:47.779Z",
+      "timeline": [
+        {
+          "type": "created",
+          "description": "Trabajo creado automáticamente desde Gremio",
+          "timestamp": "2026-02-16T12:35:47.780Z"
+        },
+        {
+          "type": "payment",
+          "description": "Pago recibido: $14316.72",
+          "timestamp": "2026-02-16T12:37:23.447Z"
+        }
+      ],
+      "notes": []
     }
   ],
   "notifications": []

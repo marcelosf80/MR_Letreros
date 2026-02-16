@@ -93,7 +93,9 @@ async function loadClientes() {
 async function calcularFacturacion() {
     try {
         // Obtener trabajos para calcular facturación
-        const trabajos = await window.mrDataManager.getTrabajosAprobados();
+        const response = await fetch('/api/trabajos');
+        const data = await response.json();
+        const trabajos = data.works || [];
         
         todosLosClientes = todosLosClientes.map(cliente => {
             // Buscar trabajos de este cliente
@@ -577,4 +579,3 @@ function init() {
     
     console.log('[CLIENTES-GESTION] ✅ Inicializado correctamente');
 }
-

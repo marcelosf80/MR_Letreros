@@ -21,6 +21,12 @@ async function loadDashboardData() {
         const trabajosData = await trabajosRes.json();
         const clientesData = await clientesRes.json();
         const rendimientosData = await rendimientosRes.json();
+        
+        console.log('📊 [DASHBOARD] Datos Rendimientos Recibidos:', rendimientosData);
+        
+        if (!rendimientosData || !rendimientosData.resumen) {
+            console.error('❌ [DASHBOARD] Estructura de rendimientos incorrecta o vacía:', rendimientosData);
+        }
 
         const works = trabajosData.works || [];
         const clients = Array.isArray(clientesData) ? clientesData : [];
