@@ -13,5 +13,13 @@
     "notas": "",
     "fechaCreacion": "2026-02-16T00:18:55.179Z",
     "fechaModificacion": "2026-02-16T00:18:55.189Z"
+  },
+  {
+    "name": "cliente 1",
+    "telefono": "03424842417",
+    "email": "marcelojmaidana@gmail.com",
+    "direccion": "Ruperto Godoy 3362",
+    "id": "cliente_cli_1771254075009",
+    "fechaRegistro": "2026-02-16T15:01:15.009Z"
   }
 ]

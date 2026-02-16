@@ -1,1 +1,57 @@
-[]
+[
+  {
+    "id": "1771254155162",
+    "clientId": "cliente_cli_1771254075009",
+    "cliente": {
+      "nombre": "cliente 1",
+      "telefono": "03424842417",
+      "email": "marcelojmaidana@gmail.com",
+      "direccion": "Ruperto Godoy 3362"
+    },
+    "fechaEntrega": "",
+    "productos": [],
+    "terceros": [],
+    "multiCategories": {
+      "categories": [
+        {
+          "id": "cat_1771254121518_nqsa0pj9e",
+          "name": "107",
+          "costPerM2": 0,
+          "pricePerM2": 27997,
+          "totalCost": 0,
+          "totalPrice": 55994,
+          "margin": 55994,
+          "m2": 2
+        },
+        {
+          "id": "cat_1771254129881_v4cofj7zs",
+          "name": "Laca",
+          "costPerM2": 0,
+          "pricePerM2": 7000,
+          "totalCost": 0,
+          "totalPrice": 14000,
+          "margin": 14000,
+          "m2": 2
+        }
+      ],
+      "sharedDimensions": {
+        "width": 2,
+        "height": 1,
+        "totalM2": 2
+      },
+      "inkPriceEnabled": true,
+      "inkPricePerM2": 1500
+    },
+    "costoTotal": 0,
+    "subtotal": 72994,
+    "iva": 15328.74,
+    "totalCliente": 88322.74,
+    "ganancia": 88322.74,
+    "anticipo": 0,
+    "saldo": 88322.74,
+    "fecha": "2026-02-16T15:02:35.162Z",
+    "estado": "aprobada",
+    "approved": true,
+    "fechaAprobacion": "2026-02-16T15:02:46.385Z"
+  }
+]

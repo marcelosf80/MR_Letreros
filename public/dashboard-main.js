@@ -1,3 +1,9 @@
+let dashboardData = {
+    works: [],
+    clients: [],
+    rendimientos: {}
+};
+
 document.addEventListener('DOMContentLoaded', async () => {
     console.log('[DASHBOARD] 🚀 Inicializando...');
     
@@ -5,6 +11,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     const hour = new Date().getHours();
     const greeting = hour < 12 ? 'Buenos días' : hour < 18 ? 'Buenas tardes' : 'Buenas noches';
     document.getElementById('welcomeMessage').textContent = `${greeting}, bienvenido a MR Letreros v2.0`;
+
+    const btnStrategy = document.getElementById('btnStrategy');
+    if (btnStrategy) {
+        btnStrategy.addEventListener('click', generateStrategyReport);
+    }
 
     await loadDashboardData();
 });
@@ -26,13 +37,18 @@ async function loadDashboardData() {
         
         if (!rendimientosData || !rendimientosData.resumen) {
             console.error('❌ [DASHBOARD] Estructura de rendimientos incorrecta o vacía:', rendimientosData);
+            // Evitar crash si no hay datos
+            if (!rendimientosData) rendimientosData = { resumen: { margenTotal: 0 } };
         }
 
         const works = trabajosData.works || [];
         const clients = Array.isArray(clientesData) ? clientesData : [];
 
+        dashboardData.works = works;
+        dashboardData.clients = clients;
+        dashboardData.rendimientos = rendimientosData;
+
         updateStats(works, clients, rendimientosData);
-        renderChart(works);
         generateAITips(works, clients, rendimientosData);
         renderDeliveriesTable(works);
 
@@ -58,62 +74,6 @@ function updateStats(works, clients, rendimientos) {
     // Listos para Entrega (Completados pero no entregados)
     const readyCount = works.filter(w => w.status === 'completed' && w.deliveryStatus !== 'delivered').length;
     document.getElementById('statReadyDelivery').textContent = readyCount;
-}
-
-function renderChart(works) {
-    const ctx = document.getElementById('profitChart').getContext('2d');
-    
-    // Agrupar ganancias por mes (últimos 6 meses)
-    const months = {};
-    const today = new Date();
-    for(let i=5; i>=0; i--) {
-        const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
-        const key = `${d.getMonth()+1}/${d.getFullYear()}`;
-        months[key] = 0;
-    }
-
-    works.forEach(w => {
-        if (w.status === 'completed' || w.paymentStatus === 'paid') {
-            const date = new Date(w.createdAt);
-            const key = `${date.getMonth()+1}/${date.getFullYear()}`;
-            if (months[key] !== undefined) {
-                months[key] += (w.profit || 0);
-            }
-        }
-    });
-
-    new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: Object.keys(months),
-            datasets: [{
-                label: 'Ganancia Neta ($)',
-                data: Object.values(months),
-                borderColor: '#6366f1',
-                backgroundColor: 'rgba(99, 102, 241, 0.1)',
-                tension: 0.4,
-                fill: true
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { display: false }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    grid: { color: 'rgba(255, 255, 255, 0.05)' },
-                    ticks: { color: '#aaa' }
-                },
-                x: {
-                    grid: { display: false },
-                    ticks: { color: '#aaa' }
-                }
-            }
-        }
-    });
 }
 
 function generateAITips(works, clients, rendimientos) {
@@ -154,11 +114,15 @@ function renderDeliveriesTable(works) {
     const tbody = document.getElementById('deliveriesTableBody');
     tbody.innerHTML = '';
 
-    // Filtrar trabajos activos y ordenar por fecha
+    // Filtrar trabajos activos (incluyendo completados no entregados) y ordenar por fecha
     const upcoming = works
-        .filter(w => w.status !== 'completed' && w.status !== 'cancelled')
-        .sort((a, b) => new Date(a.deliveryDate || a.createdAt) - new Date(b.deliveryDate || b.createdAt))
-        .slice(0, 5);
+        .filter(w => w.status !== 'cancelled' && w.deliveryStatus !== 'delivered')
+        .sort((a, b) => {
+            const dateA = new Date(a.deliveryDate || a.createdAt);
+            const dateB = new Date(b.deliveryDate || b.createdAt);
+            return (isNaN(dateA) ? 0 : dateA) - (isNaN(dateB) ? 0 : dateB);
+        })
+        .slice(0, 10);
 
     if (upcoming.length === 0) {
         tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; opacity:0.5;">No hay entregas pendientes</td></tr>';
@@ -168,19 +132,25 @@ function renderDeliveriesTable(works) {
     upcoming.forEach(w => {
         const date = w.deliveryDate ? new Date(w.deliveryDate).toLocaleDateString() : 'Sin fecha';
         const tr = document.createElement('tr');
+        const isDelivered = w.deliveryStatus === 'delivered';
+        const actionBtn = isDelivered ? 
+            '<span style="color:#4CAF50">✅ Entregado</span>' : 
+            `<button class="btn btn-small btn-primary" onclick="markAsDelivered('${w.id}')">📦 Entregar</button>`;
+
         tr.innerHTML = `
             <td>${w.clientName || 'Cliente'}</td>
             <td>#${w.id.substr(-6)}</td>
             <td>${date}</td>
             <td><span class="status-badge" style="background:${getStatusColor(w.status)}">${getStatusLabel(w.status)}</span></td>
             <td>$${formatCurrency(w.total)}</td>
+            <td>${actionBtn}</td>
         `;
         tbody.appendChild(tr);
     });
 }
 
 function formatCurrency(num) {
-    return new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2 }).format(num);
+    return new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2 }).format(num || 0);
 }
 
 function getStatusColor(status) {
@@ -192,4 +162,117 @@ function getStatusColor(status) {
 function getStatusLabel(status) {
     const map = { 'pending': 'Pendiente', 'in_progress': 'En Proceso', 'completed': 'Listo' };
     return map[status] || status;
+}
+
+function generateStrategyReport() {
+    const modal = document.getElementById('strategyModal');
+    const content = document.getElementById('strategyContent');
+    
+    if (!modal || !content) return;
+    
+    content.innerHTML = `
+        <div style="text-align:center; padding: 2rem;">
+            <div class="spinner" style="margin: 0 auto 1rem;"></div>
+            <p>Analizando datos del negocio...</p>
+        </div>
+    `;
+    modal.classList.add('active');
+    
+    setTimeout(() => {
+        const { works, clients, rendimientos } = dashboardData;
+        
+        const margin = rendimientos.resumen ? rendimientos.resumen.margenTotal : 0;
+        const activeWorks = works.filter(w => w.status === 'in_progress').length;
+        const pendingWorks = works.filter(w => w.status === 'pending').length;
+        const completedWorks = works.filter(w => w.status === 'completed').length;
+        
+        let recommendations = [];
+        
+        if (margin < 30) {
+            recommendations.push({
+                icon: '⚠️',
+                title: 'Margen Bajo',
+                text: 'El margen global está por debajo del 30%. Revisa los costos de materiales en la sección de Costos y considera ajustar los precios de venta.'
+            });
+        } else {
+            recommendations.push({
+                icon: '✅',
+                title: 'Margen Saludable',
+                text: 'Tu margen de ganancia es saludable. Es un buen momento para invertir en marketing o nuevos equipos.'
+            });
+        }
+        
+        if (pendingWorks > 5) {
+            recommendations.push({
+                icon: '🔥',
+                title: 'Acumulación de Trabajos',
+                text: `Tienes ${pendingWorks} trabajos pendientes. Prioriza los que tienen fecha de entrega próxima o mayor rentabilidad.`
+            });
+        }
+        
+        const pendingPayment = works.reduce((sum, w) => sum + (parseFloat(w.balance) || 0), 0);
+        if (pendingPayment > 0) {
+            recommendations.push({
+                icon: '💰',
+                title: 'Cobranzas Pendientes',
+                text: `Hay un total de $${formatCurrency(pendingPayment)} pendiente de cobro. Revisa la lista de trabajos para gestionar los cobros.`
+            });
+        }
+
+        let html = `
+            <div class="strategy-report">
+                <div class="report-header" style="text-align: center; margin-bottom: 1.5rem;">
+                    <div style="font-size: 2.5rem; font-weight: bold; color: #6366f1;">${margin.toFixed(1)}%</div>
+                    <div style="color: var(--text-secondary);">Margen de Rentabilidad Actual</div>
+                </div>
+                
+                <h3 style="border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.5rem; margin-bottom: 1rem;">Recomendaciones IA</h3>
+                <div class="recommendations-list" style="display: flex; flex-direction: column; gap: 1rem;">
+                    ${recommendations.map(rec => `
+                        <div class="recommendation-item" style="display: flex; gap: 1rem; background: rgba(255,255,255,0.03); padding: 1rem; border-radius: 8px;">
+                            <div style="font-size: 1.5rem;">${rec.icon}</div>
+                            <div>
+                                <strong style="display: block; margin-bottom: 0.3rem;">${rec.title}</strong>
+                                <div style="font-size: 0.9rem; opacity: 0.8; line-height: 1.4;">${rec.text}</div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+        
+        content.innerHTML = html;
+    }, 1000);
+}
+
+async function markAsDelivered(workId) {
+    if (!confirm('¿Marcar este trabajo como entregado?')) return;
+
+    try {
+        const work = dashboardData.works.find(w => w.id === workId);
+        if (!work) return;
+
+        work.deliveryStatus = 'delivered';
+        work.actualDeliveryDate = new Date().toISOString();
+        
+        // Si ya estaba pagado, marcar como completado
+        if (work.paymentStatus === 'paid') {
+            work.status = 'completed';
+        }
+
+        await updateWorkStatus(dashboardData.works);
+        alert('✅ Trabajo marcado como entregado');
+        loadDashboardData(); // Recargar dashboard
+    } catch (error) {
+        console.error('Error al marcar entregado:', error);
+        alert('❌ Error al actualizar el estado');
+    }
+}
+
+async function updateWorkStatus(works) {
+    await fetch('/api/trabajos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ works: works, notifications: [] })
+    });
 }

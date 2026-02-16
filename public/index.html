@@ -6,7 +6,6 @@
   <title>Dashboard - MR Letreros</title>
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/sidebar-universal.css">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     /* Estilos específicos del Dashboard */
     .dashboard-grid {
@@ -46,11 +45,11 @@
     /* Sección IA */
     .ai-section {
         display: grid;
-        grid-template-columns: 2fr 1fr;
+        grid-template-columns: 1fr;
         gap: 1.5rem;
         margin-bottom: 2rem;
     }
-    @media (max-width: 900px) { .ai-section { grid-template-columns: 1fr; } }
+    /* @media (max-width: 900px) { .ai-section { grid-template-columns: 1fr; } } */
     
     .ai-card {
         background: rgba(20, 20, 30, 0.6);
@@ -211,10 +210,6 @@
         <!-- AI Analysis -->
         <div class="ai-section">
             <div class="ai-card">
-                <div class="ai-title"><span>📈</span> Tendencia de Ganancias</div>
-                <div style="height: 300px;"><canvas id="profitChart"></canvas></div>
-            </div>
-            <div class="ai-card">
                 <div class="ai-title"><span>🤖</span> Asistente Inteligente</div>
                 <div class="ai-tips-list" id="aiTipsList">
                     <div class="ai-tip">Analizando datos del sistema...</div>
@@ -275,8 +270,8 @@
   </div>
 
   <script src="js/shared/sidebar-universal.js"></script>
-  <script src="js/dashboard/dashboard-main.js"></script>
-  <script src="js/dashboard/ai-chat.js"></script>
+  <script src="dashboard-main.js"></script>
+  <script src="ai-chat.js"></script>
   <script>
     // Partículas
     const particlesContainer = document.getElementById('particles');

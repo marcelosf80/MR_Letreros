@@ -181,7 +181,7 @@ class MRLetrerosDataManager {
 
   async getClientesClientes() {
     try {
-      const clientes = await this.request('/api/clientes/clientes');
+      const clientes = await this.request('/api/clientes');
       console.log('[CLIENTES] Clientes obtenidos:', clientes.length);
       return clientes;
     } catch (error) {
@@ -192,7 +192,7 @@ class MRLetrerosDataManager {
 
   async saveClientesCliente(cliente) {
     try {
-      const result = await this.request('/api/clientes/clientes', 'POST', cliente);
+      const result = await this.request('/api/clientes', 'POST', cliente);
       console.log('[CLIENTES] Cliente guardado:', result.data);
       return result.data;
     } catch (error) {
@@ -203,7 +203,7 @@ class MRLetrerosDataManager {
 
   async updateClientesCliente(id, cliente) {
     try {
-      const result = await this.request(`/api/clientes/clientes/${id}`, 'PUT', cliente);
+      const result = await this.request(`/api/clientes/${id}`, 'PUT', cliente);
       console.log('[CLIENTES] Cliente actualizado:', result.data);
       return result.data;
     } catch (error) {
@@ -214,7 +214,7 @@ class MRLetrerosDataManager {
 
   async deleteClientesCliente(id) {
     try {
-      await this.request(`/api/clientes/clientes/${id}`, 'DELETE');
+      await this.request(`/api/clientes/${id}`, 'DELETE');
       console.log('[CLIENTES] Cliente eliminado:', id);
       return true;
     } catch (error) {

@@ -706,6 +706,51 @@ app.delete('/api/clientes/:id', async (req, res) => {
     }
 });
 
+// ==================== ENDPOINT RESETEO TOTAL Y PARCIAL ====================
+
+app.post('/api/system/reset/:section?', async (req, res) => {
+    const section = req.params.section;
+    
+    try {
+        // Si no hay sección o es 'all', reseteo total
+        if (!section || section === 'all') {
+            console.log('⚠️ [API] Solicitud de reseteo TOTAL recibida');
+            for (const [name, filepath] of Object.entries(FILES)) {
+                let initialData = [];
+                if (name === 'trabajos') {
+                    initialData = { works: [], notifications: [] };
+                } else if (name === 'business_rules') {
+                    initialData = { idealMargin: 35, deliveryStandardDays: 4, vipThreshold: 500000, priceStagnationDays: 30 };
+                }
+                await writeJSON(filepath, initialData);
+            }
+            console.log('✅ [API] Sistema reseteado correctamente');
+            return res.json({ success: true, message: 'Sistema reseteado completamente' });
+        }
+
+        // Reseteo parcial de una sección específica
+        if (FILES[section]) {
+            console.log(`⚠️ [API] Solicitud de reseteo PARCIAL: ${section}`);
+            const filepath = FILES[section];
+            let initialData = [];
+            
+            if (section === 'trabajos') {
+                initialData = { works: [], notifications: [] };
+            } else if (section === 'business_rules') {
+                initialData = { idealMargin: 35, deliveryStandardDays: 4, vipThreshold: 500000, priceStagnationDays: 30 };
+            }
+            
+            await writeJSON(filepath, initialData);
+            return res.json({ success: true, message: `Sección ${section} limpiada correctamente` });
+        } else {
+            return res.status(400).json({ error: 'Sección no válida' });
+        }
+    } catch (error) {
+        console.error('❌ [API] Error reseteando:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // ==================== INICIAR SERVIDOR ====================
 
 initializeDataStructure().then(() => {

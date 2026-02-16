@@ -3,7 +3,7 @@
  */
 class AIChat {
     constructor() {
-        this.brain = new window.BusinessAI();
+        this.brain = window.BusinessAI ? new window.BusinessAI() : null;
         this.isOpen = false;
         this.messagesContainer = document.getElementById('chatMessages');
         this.input = document.getElementById('chatInput');
@@ -16,7 +16,7 @@ class AIChat {
     }
 
     async init() {
-        await this.brain.init();
+        if (this.brain) await this.brain.init();
         this.input.disabled = false;
         this.input.placeholder = "Escribe aquí...";
         this.addMessage('bot', 'Hola 👋, soy tu asistente de negocios. Escribe "ayuda" para ver qué puedo hacer.');
@@ -154,9 +154,7 @@ let aiChatInstance;
 document.addEventListener('DOMContentLoaded', () => {
     // Esperar un poco para asegurar que BusinessAI esté cargado
     setTimeout(() => {
-        if (window.BusinessAI) {
-            aiChatInstance = new AIChat();
-        }
+        aiChatInstance = new AIChat();
     }, 500);
 });
 

@@ -100,6 +100,13 @@
             label: 'Terceros',
             desc: 'Servicios externos',
             url: 'terceros.html'
+          },
+          {
+            id: 'mantenimiento',
+            icon: '🧹',
+            label: 'Mantenimiento',
+            desc: 'Limpieza de datos',
+            url: 'mantenimiento.html'
           }
         ]
       },
@@ -109,7 +116,7 @@
           {
             id: 'rendimientos',
             icon: '📊',
-            label: 'Rendimientos',
+            label: 'Dashboard',
             desc: 'Análisis financiero',
             url: 'rendimientos.html'
           }

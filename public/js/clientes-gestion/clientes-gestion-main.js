@@ -238,6 +238,45 @@ function renderClientes() {
                 ` : ''}
             </div>
             
+            <!-- SECCIÓN DE HISTORIAL DE TRABAJOS (NUEVO) -->
+            <div class="client-works-section" style="margin-top: 15px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.1);">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                    <h5 style="margin:0; color:#aaa; font-size:0.9rem;">📜 Historial de Trabajos</h5>
+                    <span style="font-size:0.8rem; background:rgba(255,255,255,0.1); padding:2px 6px; border-radius:4px;">${cliente.trabajos ? cliente.trabajos.length : 0}</span>
+                </div>
+                
+                ${cliente.trabajos && cliente.trabajos.length > 0 ? `
+                    <div class="works-list-scroll" style="max-height: 150px; overflow-y: auto; padding-right: 5px;">
+                        ${cliente.trabajos.map(w => {
+                            const fecha = new Date(w.createdAt).toLocaleDateString('es-AR');
+                            const esEntregado = w.deliveryStatus === 'delivered';
+                            const estadoIcon = esEntregado ? '✅' : (w.status === 'completed' ? '🏁' : (w.status === 'in_progress' ? '🔨' : '⏳'));
+                            const estadoTexto = esEntregado ? 'Entregado' : (w.status === 'completed' ? 'Listo' : (w.status === 'in_progress' ? 'En Proceso' : 'Pendiente'));
+                            const color = esEntregado ? '#4CAF50' : (w.status === 'completed' ? '#2196F3' : '#FFC107');
+                            
+                            // Descripción de productos
+                            let desc = 'Varios productos';
+                            if (w.products && w.products.length > 0) {
+                                desc = w.products.map(p => p.name || p.productName || p.category).join(', ');
+                            } else if (w.description) {
+                                desc = w.description;
+                            }
+                            
+                            return `
+                                <div style="background:rgba(0,0,0,0.2); padding:8px; border-radius:6px; margin-bottom:6px; border-left: 3px solid ${color};">
+                                    <div style="display:flex; justify-content:space-between; font-size:0.85rem; margin-bottom:4px;">
+                                        <span style="color:#fff;">${fecha}</span>
+                                        <span style="color:${color}; font-weight:bold;">${estadoIcon} ${estadoTexto}</span>
+                                    </div>
+                                    <div style="font-size:0.9rem; color:#ddd; margin-bottom:4px; line-height:1.3;">${desc}</div>
+                                    <div style="text-align:right; font-weight:bold; color:#fff; font-size:0.9rem;">$${formatCurrencyAR(w.total)}</div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                ` : '<div style="color:#666; font-style:italic; font-size:0.9rem; padding:5px;">Sin historial registrado</div>'}
+            </div>
+
             ${(cliente.totalFacturado > 0 || cliente.cantidadTrabajos > 0) ? `
                 <div class="client-stats">
                     <div class="client-stat">
@@ -358,24 +397,46 @@ async function saveCliente() {
     };
     
     try {
-        let updatedClientes;
+        let response;
+        const isGremio = clienteData.tipo === 'gremio';
+        const endpoint = isGremio ? '/api/gremio/clientes' : '/api/clientes';
         
         if (editingClientId) {
-            // Actualizar existente
-            updatedClientes = todosLosClientes.map(c => 
-                c.id === editingClientId ? {...c, ...clienteData} : c
-            );
+            // UPDATE
+            // Verificar si cambió de tipo (de Gremio a Cliente o viceversa)
+            const originalClient = todosLosClientes.find(c => c.id === editingClientId);
+            const originalTipo = originalClient ? originalClient.tipo : clienteData.tipo;
+
+            if (originalTipo !== clienteData.tipo) {
+                // Si cambió el tipo, borramos del origen anterior y creamos en el nuevo
+                const deleteEndpoint = originalTipo === 'gremio' ? `/api/gremio/clientes/${editingClientId}` : `/api/clientes/${editingClientId}`;
+                await fetch(deleteEndpoint, { method: 'DELETE' });
+                
+                // Crear en el nuevo destino (POST)
+                response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(clienteData)
+                });
+            } else {
+                // Actualización normal (PUT)
+                response = await fetch(`${endpoint}/${editingClientId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(clienteData)
+                });
+            }
         } else {
-            // Agregar nuevo
-            updatedClientes = [...todosLosClientes, clienteData];
+            // CREATE (POST)
+            // Generar ID con prefijo para identificar origen fácilmente
+            clienteData.id = (isGremio ? 'gremio_cli_' : 'cliente_cli_') + Date.now();
+            
+            response = await fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(clienteData)
+            });
         }
-        
-        // Guardar en servidor
-        const response = await fetch('/api/clientes', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(updatedClientes)
-        });
         
         if (!response.ok) {
             throw new Error('Error al guardar cliente');
@@ -400,12 +461,13 @@ async function deleteCliente(clientId, clientName) {
     }
     
     try {
-        const updatedClientes = todosLosClientes.filter(c => c.id !== clientId);
-        
-        const response = await fetch('/api/clientes', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(updatedClientes)
+        // Identificar origen para borrar del lugar correcto
+        const client = todosLosClientes.find(c => c.id === clientId);
+        const isGremio = client && client.tipo === 'gremio';
+        const endpoint = isGremio ? `/api/gremio/clientes/${clientId}` : `/api/clientes/${clientId}`;
+
+        const response = await fetch(endpoint, {
+            method: 'DELETE'
         });
         
         if (!response.ok) {
@@ -435,7 +497,8 @@ async function viewClientDetails(clientId) {
     try {
         const todosTrabajosRes = await fetch('/api/trabajos');
         const todosTrabajosData = await todosTrabajosRes.json();
-        const todosTrabajosArray = Array.isArray(todosTrabajosData) ? todosTrabajosData : [];
+        // FIX: La API devuelve { works: [...] }, no un array directo
+        const todosTrabajosArray = todosTrabajosData.works || [];
         
         trabajosCliente = todosTrabajosArray.filter(t => {
             const nombreTrabajo = (t.clientName || t.cliente || '').toLowerCase();
@@ -451,7 +514,9 @@ async function viewClientDetails(clientId) {
             <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
                 <div>
                     <h3 style="margin: 0;">${cliente.nombre}</h3>
-                    <span class="client-type ${cliente.tipo}">${cliente.tipo === 'gremio' ? '🟢 GREMIO' : '🔵 CLIENTE'}</span>
+                    <div style="display:inline-block; padding:2px 8px; border-radius:4px; font-size:0.75rem; font-weight:bold; margin-top:4px; background:${cliente.tipo === 'gremio' ? 'rgba(76, 175, 80, 0.2)' : 'rgba(33, 150, 243, 0.2)'}; color:${cliente.tipo === 'gremio' ? '#4CAF50' : '#2196F3'}; border:1px solid ${cliente.tipo === 'gremio' ? '#4CAF50' : '#2196F3'};">
+                        ${cliente.tipo === 'gremio' ? 'GREMIO' : 'CLIENTE FINAL'}
+                    </div>
                 </div>
                 <div>
                     ${cliente.estado === 'activo' ? '<span style="color: #51CF66;">✅ Activo</span>' : '<span style="color: #FFC107;">⏸️ Inactivo</span>'}
