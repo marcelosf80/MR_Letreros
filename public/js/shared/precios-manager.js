@@ -6,6 +6,7 @@
 const preciosManager = {
   precios: [],
   STORAGE_KEY: 'gremio_precios_db',
+<<<<<<< HEAD
 
   async loadPrecios() {
     try {
@@ -29,6 +30,18 @@ const preciosManager = {
         this.precios = [];
       }
       console.log(`[preciosManager] ⚠️ ${this.precios.length} precios cargados desde LocalStorage`);
+=======
+  
+  async loadPrecios() {
+    try {
+      const data = localStorage.getItem(this.STORAGE_KEY);
+      this.precios = data ? JSON.parse(data) : [];
+      
+      if (!Array.isArray(this.precios)) {
+        this.precios = [];
+      }
+      console.log(`[preciosManager] ${this.precios.length} precios cargados`);
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
       return this.precios;
     } catch (error) {
       console.error('[preciosManager] Error cargando precios:', error);
@@ -76,14 +89,22 @@ const preciosManager = {
   async addPrecio(precio) {
     try {
       console.log('[preciosManager.addPrecio] Guardando:', precio);
+<<<<<<< HEAD
 
+=======
+      
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
       if (!precio.id) {
         precio.id = 'price_' + Date.now();
       }
 
       this.precios.push(precio);
       const resultado = await this.savePrecios(this.precios);
+<<<<<<< HEAD
 
+=======
+      
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
       console.log('[preciosManager.addPrecio] Resultado:', resultado);
       return resultado;
     } catch (error) {
@@ -95,7 +116,11 @@ const preciosManager = {
   async updatePrecio(id, updates) {
     try {
       const index = this.precios.findIndex(p => p.id === id);
+<<<<<<< HEAD
 
+=======
+      
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
       if (index === -1) {
         return false;
       }
@@ -118,7 +143,11 @@ const preciosManager = {
     try {
       const initialLength = this.precios.length;
       this.precios = this.precios.filter(p => p.id !== id);
+<<<<<<< HEAD
 
+=======
+      
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
       if (this.precios.length === initialLength) {
         return false;
       }

@@ -1,0 +1,54 @@
+[
+  {
+    "id": 1769769486636,
+    "categoria": "Polifan",
+    "productoNombre": "20mm",
+    "ancho": 0.6,
+    "largo": 125,
+    "m2": 75,
+    "precioRollo": 16000,
+    "costoPorM2": 213.33333333333334,
+    "fecha": "2026-01-30T10:38:06.636Z"
+  },
+  {
+    "id": 1769798191895,
+    "categoria": "Vinilo",
+    "productoId": "1769798191895",
+    "producto": "base gris",
+    "productoNombre": "base gris",
+    "ancho": 1,
+    "largo": 50,
+    "m2": 50,
+    "precioRollo": 158000,
+    "costoPorM2": 3160,
+    "fecha": "2026-01-30T18:36:31.895Z"
+  },
+  {
+    "id": 1770248791786,
+    "categoria": "Laqueado",
+    "productoId": "1770248791786",
+    "producto": "Laca",
+    "productoNombre": "Laca",
+    "unidad": "m²",
+    "ancho": 1,
+    "largo": 0.01,
+    "m2": 0.01,
+    "precioRollo": 10,
+    "costoPorM2": 1000,
+    "fecha": "2026-02-04T23:46:31.786Z"
+  },
+  {
+    "id": 1770249057719,
+    "categoria": "Tintas",
+    "productoId": "1770249057719",
+    "producto": "Tinta Marabu",
+    "productoNombre": "Tinta Marabu",
+    "unidad": "m²",
+    "ancho": 1,
+    "largo": 0.01,
+    "m2": 0.01,
+    "precioRollo": 9.8,
+    "costoPorM2": 980,
+    "fecha": "2026-02-04T23:50:57.719Z"
+  }
+]

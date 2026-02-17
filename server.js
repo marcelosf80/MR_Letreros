@@ -7,10 +7,13 @@ const fs = require('fs').promises;
 const path = require('path');
 const cors = require('cors');
 const { spawn } = require('child_process'); // Módulo para ejecutar otros programas
+<<<<<<< HEAD
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 
 const SECRET_KEY = 'MR_LETREROS_SECURE_KEY_2024'; // En producción, usar variable de entorno
+=======
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
 
 const app = express();
 const PORT = 3000;
@@ -26,7 +29,11 @@ const PUBLIC_DIR = path.join(BASE_PATH, 'public');
 // Archivos de datos principales
 const FILES = {
   gremio_clientes: path.join(DATA_DIR, 'gremio', 'clientes.json'),
+<<<<<<< HEAD
   gremio_data: path.join(DATA_DIR, 'gremio', 'cotizaciones.json'),
+=======
+  gremio_data: path.join(DATA_DIR, 'gremio', 'cotizaciones.json'),  
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
   clientes_data: path.join(DATA_DIR, 'clientes', 'cotizaciones.json'),
   clientes: path.join(DATA_DIR, 'clientes.json'), // Unificar aquí
   precios: path.join(DATA_DIR, 'gremio_precios_db.json'),
@@ -45,6 +52,7 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.static(PUBLIC_DIR));
 
+<<<<<<< HEAD
 // ==================== AUTH MIDDLEWARE ====================
 
 const verifyToken = (req, res, next) => {
@@ -254,18 +262,28 @@ app.delete('/api/users/:id', verifyToken, requireRole(['superadmin', 'admin']), 
   }
 });
 
+=======
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
 // ==================== INICIALIZACIÓN ====================
 
 async function initializeDataStructure() {
   try {
     console.log('🚀 Iniciando servidor MR Letreros...');
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
     // Crear directorios
     await fs.mkdir(DATA_DIR, { recursive: true });
     await fs.mkdir(PUBLIC_DIR, { recursive: true });
     await fs.mkdir(path.join(DATA_DIR, 'gremio'), { recursive: true });
     await fs.mkdir(path.join(DATA_DIR, 'clientes'), { recursive: true });
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
     // Crear archivos iniciales si no existen
     for (const [name, filepath] of Object.entries(FILES)) {
       try {
@@ -274,16 +292,28 @@ async function initializeDataStructure() {
       } catch {
         let initialData = [];
         if (name === 'trabajos') {
+<<<<<<< HEAD
           initialData = { works: [], notifications: [] };
         } else if (name === 'business_rules') {
           initialData = { idealMargin: 35, deliveryStandardDays: 4, vipThreshold: 500000, priceStagnationDays: 30 };
         }
 
+=======
+            initialData = { works: [], notifications: [] };
+        } else if (name === 'business_rules') {
+            initialData = { idealMargin: 35, deliveryStandardDays: 4, vipThreshold: 500000, priceStagnationDays: 30 };
+        }
+        
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
         await fs.writeFile(filepath, JSON.stringify(initialData, null, 2));
         console.log(`   📝 ${name}: creado`);
       }
     }
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
     console.log('');
     console.log('✅ Estructura de datos inicializada');
     console.log('📁 Datos: ' + DATA_DIR);
@@ -296,7 +326,11 @@ async function initializeDataStructure() {
     console.log('💡 Otras PCs pueden acceder usando:');
     console.log(`   http://${getLocalIP()}:${PORT}`);
     console.log('');
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
   } catch (error) {
     console.error('❌ Error al inicializar:', error);
   }
@@ -306,6 +340,7 @@ async function initializeDataStructure() {
 async function checkPython() {
   return new Promise((resolve) => {
     console.log('🔍 Verificando la instalación de Python...');
+<<<<<<< HEAD
 
     // Función auxiliar para probar un comando
     const tryCommand = (cmd) => {
@@ -335,6 +370,37 @@ async function checkPython() {
 
       console.error('   ❌ No se encontró una instalación de Python válida.');
       resolve(false);
+=======
+    
+    // Función auxiliar para probar un comando
+    const tryCommand = (cmd) => {
+        return new Promise(r => {
+            const p = spawn(cmd, ['--version']);
+            p.on('error', () => r(false));
+            p.on('close', code => r(code === 0));
+        });
+    };
+
+    (async () => {
+        // 1. Intentar con 'py' (Lanzador de Windows, evita conflictos con Inkscape)
+        if (await tryCommand('py')) {
+             console.log('   ✅ Python encontrado (Lanzador "py").');
+             pythonCmd = 'py';
+             resolve(true);
+             return;
+        }
+        
+        // 2. Intentar con 'python' estándar
+        if (await tryCommand('python')) {
+             console.log('   ✅ Python encontrado (Comando "python").');
+             pythonCmd = 'python';
+             resolve(true);
+             return;
+        }
+
+        console.error('   ❌ No se encontró una instalación de Python válida.');
+        resolve(false);
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
     })();
   });
 }
@@ -343,7 +409,11 @@ async function checkPython() {
 function getLocalIP() {
   const { networkInterfaces } = require('os');
   const nets = networkInterfaces();
+<<<<<<< HEAD
 
+=======
+  
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
   for (const name of Object.keys(nets)) {
     for (const net of nets[name]) {
       if (net.family === 'IPv4' && !net.internal) {
@@ -378,19 +448,31 @@ async function writeJSON(filepath, data) {
 
 // ==================== ENDPOINTS GREMIO CLIENTES ====================
 
+<<<<<<< HEAD
 app.get('/api/gremio/clientes', verifyToken, async (req, res) => {
+=======
+app.get('/api/gremio/clientes', async (req, res) => {
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
   const data = await readJSON(FILES.gremio_clientes);
   res.json(data);
 });
 
+<<<<<<< HEAD
 app.post('/api/gremio/clientes', verifyToken, async (req, res) => {
+=======
+app.post('/api/gremio/clientes', async (req, res) => {
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
   const clientes = await readJSON(FILES.gremio_clientes);
   clientes.push(req.body);
   const success = await writeJSON(FILES.gremio_clientes, clientes);
   res.json({ success, data: req.body });
 });
 
+<<<<<<< HEAD
 app.put('/api/gremio/clientes/:id', verifyToken, async (req, res) => {
+=======
+app.put('/api/gremio/clientes/:id', async (req, res) => {
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
   const clientes = await readJSON(FILES.gremio_clientes);
   const index = clientes.findIndex(c => c.id === req.params.id);
   if (index !== -1) {
@@ -402,7 +484,11 @@ app.put('/api/gremio/clientes/:id', verifyToken, async (req, res) => {
   }
 });
 
+<<<<<<< HEAD
 app.delete('/api/gremio/clientes/:id', verifyToken, requireRole(['admin']), async (req, res) => {
+=======
+app.delete('/api/gremio/clientes/:id', async (req, res) => {
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
   const clientes = await readJSON(FILES.gremio_clientes);
   const filtered = clientes.filter(c => c.id !== req.params.id);
   await writeJSON(FILES.gremio_clientes, filtered);
@@ -411,28 +497,45 @@ app.delete('/api/gremio/clientes/:id', verifyToken, requireRole(['admin']), asyn
 
 // ==================== ENDPOINTS GREMIO COTIZACIONES ====================
 
+<<<<<<< HEAD
 app.get('/api/gremio/data', verifyToken, async (req, res) => {
+=======
+app.get('/api/gremio/data', async (req, res) => {
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
   const data = await readJSON(FILES.gremio_data);
   res.json(data);
 });
 
+<<<<<<< HEAD
 app.post('/api/gremio/data', verifyToken, async (req, res) => {
+=======
+app.post('/api/gremio/data', async (req, res) => {
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
   const success = await writeJSON(FILES.gremio_data, req.body);
   res.json({ success });
 });
 
 // ==================== ENDPOINTS CLIENTES COTIZACIONES ====================
 
+<<<<<<< HEAD
 app.get('/api/clientes/data', verifyToken, async (req, res) => {
+=======
+app.get('/api/clientes/data', async (req, res) => {
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
   const data = await readJSON(FILES.clientes_data);
   res.json(data);
 });
 
+<<<<<<< HEAD
 app.post('/api/clientes/data', verifyToken, async (req, res) => {
+=======
+app.post('/api/clientes/data', async (req, res) => {
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
   const success = await writeJSON(FILES.clientes_data, req.body);
   res.json({ success });
 });
 
+<<<<<<< HEAD
 // ==================== ENDPOINTS CLIENTES (UNIFIED) ====================
 
 app.get('/api/clientes', verifyToken, async (req, res) => {
@@ -468,52 +571,89 @@ app.delete('/api/clientes/:id', verifyToken, requireRole(['admin']), async (req,
 // ==================== ENDPOINTS PRECIOS ====================
 
 app.get('/api/precios', verifyToken, async (req, res) => {
+=======
+// ==================== ENDPOINTS PRECIOS ====================
+
+app.get('/api/precios', async (req, res) => {
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
   const data = await readJSON(FILES.precios);
   res.json(data);
 });
 
+<<<<<<< HEAD
 app.post('/api/precios', verifyToken, requireRole(['admin']), async (req, res) => {
+=======
+app.post('/api/precios', async (req, res) => {
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
   const success = await writeJSON(FILES.precios, req.body);
   res.json({ success });
 });
 
 // ==================== ENDPOINTS COSTOS ====================
 
+<<<<<<< HEAD
 app.get('/api/costos', verifyToken, requireRole(['admin']), async (req, res) => {
+=======
+app.get('/api/costos', async (req, res) => {
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
   const data = await readJSON(FILES.costos);
   res.json(data);
 });
 
+<<<<<<< HEAD
 app.post('/api/costos', verifyToken, requireRole(['admin']), async (req, res) => {
+=======
+app.post('/api/costos', async (req, res) => {
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
   const success = await writeJSON(FILES.costos, req.body);
   res.json({ success });
 });
 
 // ==================== ENDPOINTS GASTOS ====================
 
+<<<<<<< HEAD
 app.get('/api/gastos', verifyToken, requireRole(['admin']), async (req, res) => {
+=======
+app.get('/api/gastos', async (req, res) => {
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
   const data = await readJSON(FILES.gastos);
   res.json(data);
 });
 
+<<<<<<< HEAD
 app.post('/api/gastos', verifyToken, requireRole(['admin']), async (req, res) => {
+=======
+app.post('/api/gastos', async (req, res) => {
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
   const success = await writeJSON(FILES.gastos, req.body);
   res.json({ success });
 });
 
 // ==================== ENDPOINTS MATERIALES ====================
 
+<<<<<<< HEAD
 app.get('/api/materiales', verifyToken, async (req, res) => {
+=======
+app.get('/api/materiales', async (req, res) => {
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
   const data = await readJSON(FILES.materiales);
   res.json(data);
 });
 
+<<<<<<< HEAD
 app.post('/api/materiales', verifyToken, requireRole(['admin']), async (req, res) => {
+=======
+app.post('/api/materiales', async (req, res) => {
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
   try {
     console.log('[MATERIALES-POST] Recibiendo POST');
     console.log('[MATERIALES-POST] Tipo de datos:', Array.isArray(req.body) ? 'Array' : 'Objeto');
     console.log('[MATERIALES-POST] Cantidad:', Array.isArray(req.body) ? req.body.length : 1);
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
     // Si es un array, guardar directamente
     if (Array.isArray(req.body)) {
       console.log('[MATERIALES-POST] Guardando array completo...');
@@ -552,7 +692,11 @@ app.post('/api/categorias', async (req, res) => {
     if (!Array.isArray(categorias)) {
       categorias = [];
     }
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
     if (Array.isArray(req.body)) {
       // Si es un array, guardar directamente
       const success = await writeJSON(FILES.categorias, req.body);
@@ -580,7 +724,11 @@ app.delete('/api/categorias/:categoria', async (req, res) => {
     if (!Array.isArray(categorias)) {
       categorias = [];
     }
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
     categorias = categorias.filter(c => c !== decodeURIComponent(req.params.categoria));
     const success = await writeJSON(FILES.categorias, categorias);
     res.json({ success });
@@ -616,22 +764,39 @@ app.get('/api/statistics/today', async (req, res) => {
   try {
     const gremioData = await readJSON(FILES.gremio_data);
     const clientesData = await readJSON(FILES.clientes_data);
+<<<<<<< HEAD
 
     const today = new Date().toISOString().split('T')[0];
 
+=======
+    
+    const today = new Date().toISOString().split('T')[0];
+    
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
     const gremioToday = gremioData.filter(item => {
       const date = item.date || item.fecha;
       return date && date.startsWith(today) && (item.approved === true || item.estado === 'aprobada');
     });
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
     const clientesToday = clientesData.filter(item => {
       const date = item.date || item.fecha;
       return date && date.startsWith(today) && (item.approved === true || item.estado === 'aprobada');
     });
+<<<<<<< HEAD
 
     const facturadoGremio = gremioToday.reduce((sum, item) => sum + (parseFloat(item.total || item.totalCliente) || 0), 0);
     const facturadoClientes = clientesToday.reduce((sum, item) => sum + (parseFloat(item.total || item.totalCliente) || 0), 0);
 
+=======
+    
+    const facturadoGremio = gremioToday.reduce((sum, item) => sum + (parseFloat(item.total || item.totalCliente) || 0), 0);
+    const facturadoClientes = clientesToday.reduce((sum, item) => sum + (parseFloat(item.total || item.totalCliente) || 0), 0);
+    
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
     res.json({
       total: gremioToday.length + clientesToday.length,
       gremio: gremioToday.length,
@@ -649,25 +814,42 @@ app.get('/api/rendimientos', async (req, res) => {
     const clientesData = await readJSON(FILES.clientes_data);
     const gastos = await readJSON(FILES.gastos);
     const trabajosData = await readJSON(FILES.trabajos);
+<<<<<<< HEAD
 
     // 1. Calcular desglose por categorías de productos (Ventas)
     const breakdown = {};
 
+=======
+    
+    // 1. Calcular desglose por categorías de productos (Ventas)
+    const breakdown = {};
+    
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
     const processQuotes = (quotes) => {
       quotes.forEach(q => {
         // Normalizar estado de aprobación (soporta formato nuevo y viejo)
         const isApproved = q.approved === true || q.estado === 'aprobada';
         if (!isApproved) return;
+<<<<<<< HEAD
 
         const items = q.items || q.productos || [];
 
+=======
+        
+        const items = q.items || q.productos || [];
+        
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
         if (items.length > 0) {
           items.forEach(item => {
             // Normalizar campos
             const cat = item.category || item.categoria || 'Sin Categoría';
             const venta = parseFloat(item.total || item.price || 0);
             const costo = parseFloat(item.costoTotal || item.totalCosto || 0);
+<<<<<<< HEAD
 
+=======
+            
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
             if (!breakdown[cat]) breakdown[cat] = { categoria: cat, ingresos: 0, costos: 0, cantidad: 0 };
             breakdown[cat].ingresos += venta;
             breakdown[cat].costos += costo;
@@ -678,30 +860,49 @@ app.get('/api/rendimientos', async (req, res) => {
           const cat = 'General';
           const venta = parseFloat(q.total || q.totalCliente || 0);
           const costo = parseFloat(q.costoTotal || 0);
+<<<<<<< HEAD
 
+=======
+          
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
           if (!breakdown[cat]) breakdown[cat] = { categoria: cat, ingresos: 0, costos: 0, cantidad: 1 };
           breakdown[cat].ingresos += venta;
           breakdown[cat].costos += costo;
         }
       });
     };
+<<<<<<< HEAD
 
     processQuotes(gremioData);
     processQuotes(clientesData);
 
+=======
+    
+    processQuotes(gremioData);
+    processQuotes(clientesData);
+    
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
     const categorias = Object.values(breakdown).map(c => ({
       ...c,
       ganancia: c.ingresos - c.costos,
       margen: c.ingresos > 0 ? ((c.ingresos - c.costos) / c.ingresos * 100) : 0
     })).sort((a, b) => b.ingresos - a.ingresos);
+<<<<<<< HEAD
 
     // 2. Calcular Totales Generales
     const totalIngresos = categorias.reduce((sum, c) => sum + c.ingresos, 0);
 
+=======
+    
+    // 2. Calcular Totales Generales
+    const totalIngresos = categorias.reduce((sum, c) => sum + c.ingresos, 0);
+    
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
     // 3. Gastos Operativos (Todo lo que sea egreso en gastos.json)
     const gastosTotales = gastos
       .filter(g => g.tipo !== 'ingreso')
       .reduce((sum, g) => sum + Math.abs(parseFloat(g.monto) || 0), 0);
+<<<<<<< HEAD
 
     // Desglose de gastos por categoría de gasto
     const gastosPorCategoria = {};
@@ -709,16 +910,33 @@ app.get('/api/rendimientos', async (req, res) => {
       const cat = g.categoria || 'General';
       if (!gastosPorCategoria[cat]) gastosPorCategoria[cat] = 0;
       gastosPorCategoria[cat] += (parseFloat(g.monto) || 0);
+=======
+    
+    // Desglose de gastos por categoría de gasto
+    const gastosPorCategoria = {};
+    gastos.filter(g => g.tipo !== 'ingreso').forEach(g => {
+        const cat = g.categoria || 'General';
+        if (!gastosPorCategoria[cat]) gastosPorCategoria[cat] = 0;
+        gastosPorCategoria[cat] += (parseFloat(g.monto) || 0);
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
     });
 
     // 4. Calcular Pendiente a Cobrar (Desde Trabajos)
     let pendienteCobrar = 0;
     if (trabajosData && trabajosData.works) {
+<<<<<<< HEAD
       pendienteCobrar = trabajosData.works.reduce((sum, w) => {
         return sum + (parseFloat(w.balance) || 0);
       }, 0);
     }
 
+=======
+        pendienteCobrar = trabajosData.works.reduce((sum, w) => {
+            return sum + (parseFloat(w.balance) || 0);
+        }, 0);
+    }
+    
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
     res.json({
       resumen: {
         ingresos: totalIngresos,
@@ -738,8 +956,13 @@ app.get('/api/rendimientos', async (req, res) => {
 // ==================== ENDPOINT DE HEALTH CHECK ====================
 
 app.get('/api/health', (req, res) => {
+<<<<<<< HEAD
   res.json({
     status: 'ok',
+=======
+  res.json({ 
+    status: 'ok', 
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
     timestamp: new Date().toISOString(),
     message: 'Servidor MR Letreros funcionando correctamente'
   });
@@ -748,6 +971,7 @@ app.get('/api/health', (req, res) => {
 // ==================== ENDPOINT PARA PROCESADO DE ARCHIVOS CON PYTHON ====================
 
 app.post('/api/process-file', (req, res) => {
+<<<<<<< HEAD
   const scriptPath = path.join(BASE_PATH, 'file_processor.py');
   const pythonProcess = spawn(pythonCmd, [scriptPath]);
 
@@ -788,11 +1012,54 @@ app.post('/api/process-file', (req, res) => {
 
   pythonProcess.stdin.write(JSON.stringify(req.body));
   pythonProcess.stdin.end();
+=======
+    const scriptPath = path.join(BASE_PATH, 'file_processor.py');
+    const pythonProcess = spawn(pythonCmd, [scriptPath]);
+
+    let resultData = '';
+    let errorData = '';
+
+    pythonProcess.stdout.on('data', (data) => {
+        resultData += data.toString();
+    });
+
+    pythonProcess.stderr.on('data', (data) => {
+        errorData += data.toString();
+    });
+
+    pythonProcess.on('close', (code) => {
+        // Solo fallar si el código de salida es error, ignorar warnings en stderr si code es 0
+        if (code !== 0) {
+            // Intenta parsear el error por si Python envió un JSON
+            try {
+                const errJson = JSON.parse(errorData);
+                console.error(`Error del script de Python (file_processor.py): ${errJson.error}`);
+                res.status(500).json({ error: 'Error durante el procesamiento del archivo.', details: errJson.error });
+                return;
+            } catch (e) {
+                // Si no es JSON, es un error del sistema
+                console.error(`Error del script de Python (file_processor.py): ${errorData}`);
+                res.status(500).json({ error: 'Error durante el procesamiento del archivo.', details: errorData });
+            }
+        } else {
+            try {
+                const result = JSON.parse(resultData);
+                res.json(result);
+            } catch (e) {
+                res.status(500).json({ error: 'Fallo al leer el resultado del script de Python.' });
+            }
+        }
+    });
+
+    pythonProcess.stdin.write(JSON.stringify(req.body));
+    pythonProcess.stdin.end();
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
 });
 
 // ==================== ENDPOINT PARA NESTING CON PYTHON ====================
 
 app.post('/api/nesting/solve', (req, res) => {
+<<<<<<< HEAD
   // 1. Ejecuta el script de Python como un proceso hijo
   const scriptPath = path.join(BASE_PATH, 'nesting_solver.py');
   const pythonProcess = spawn(pythonCmd, [scriptPath]);
@@ -835,10 +1102,55 @@ app.post('/api/nesting/solve', (req, res) => {
     console.error('Error al escribir en el stdin de Python:', error);
     res.status(500).json({ error: 'No se pudieron enviar los datos al proceso de Python.' });
   }
+=======
+    // 1. Ejecuta el script de Python como un proceso hijo
+    const scriptPath = path.join(BASE_PATH, 'nesting_solver.py');
+    const pythonProcess = spawn(pythonCmd, [scriptPath]);
+
+    let resultData = '';
+    let errorData = '';
+
+    // 2. Escucha la salida de datos del script (el resultado JSON)
+    pythonProcess.stdout.on('data', (data) => {
+        resultData += data.toString();
+    });
+
+    // 3. Escucha si hay errores durante la ejecución del script
+    pythonProcess.stderr.on('data', (data) => {
+        errorData += data.toString();
+    });
+
+    // 4. Cuando el script de Python termina, se ejecuta este bloque
+    pythonProcess.on('close', (code) => {
+        if (code !== 0) {
+            console.error(`Error del script de Python: ${errorData}`);
+            res.status(500).json({ error: 'Error durante el proceso de nesting en el servidor.', details: errorData });
+        } else {
+            try {
+                // 5. Si todo salió bien, parsea el resultado y lo envía de vuelta al navegador
+                const result = JSON.parse(resultData);
+                res.json(result);
+            } catch (e) {
+                console.error(`Error al parsear la salida de Python: ${e}`);
+                res.status(500).json({ error: 'Fallo al leer el resultado del script de Python.' });
+            }
+        }
+    });
+
+    // 6. Envía los datos que llegaron del navegador (las piezas) al script de Python
+    try {
+        pythonProcess.stdin.write(JSON.stringify(req.body));
+        pythonProcess.stdin.end();
+    } catch (error) {
+        console.error('Error al escribir en el stdin de Python:', error);
+        res.status(500).json({ error: 'No se pudieron enviar los datos al proceso de Python.' });
+    }
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
 });
 
 // ==================== ENDPOINTS DE TRABAJOS ====================
 
+<<<<<<< HEAD
 app.get('/api/trabajos', verifyToken, async (req, res) => {
   const filePath = FILES.trabajos;
   try {
@@ -874,11 +1186,49 @@ app.post('/api/trabajos', verifyToken, async (req, res) => {
   } else {
     res.status(500).json({ error: 'Error guardando trabajos' });
   }
+=======
+app.get('/api/trabajos', async (req, res) => {
+    const filePath = FILES.trabajos;
+    try {
+        // Si no existe, devolver estructura vacía
+        try {
+            await fs.access(filePath);
+        } catch {
+            return res.json({ works: [], notifications: [] });
+        }
+
+        let data = await readJSON(filePath);
+        
+        // Si es un array (por inicialización por defecto o error), convertir a objeto
+        if (Array.isArray(data)) {
+            data = { works: [], notifications: [] };
+        }
+        
+        // Asegurar estructura
+        if (!data.works) data.works = [];
+        if (!data.notifications) data.notifications = [];
+        res.json(data);
+    } catch (error) {
+        console.error('Error leyendo trabajos:', error);
+        res.status(500).json({ error: 'Error leyendo trabajos' });
+    }
+});
+
+app.post('/api/trabajos', async (req, res) => {
+    const filePath = FILES.trabajos;
+    const success = await writeJSON(filePath, req.body);
+    if (success) {
+        res.json({ success: true });
+    } else {
+        res.status(500).json({ error: 'Error guardando trabajos' });
+    }
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
 });
 
 // ==================== GESTIÓN DE CLIENTES ====================
 
 // Endpoint unificado para la gestión de clientes
+<<<<<<< HEAD
 app.get('/api/clientes', verifyToken, async (req, res) => {
   const filePath = FILES.clientes;
 
@@ -952,11 +1302,87 @@ app.delete('/api/clientes/:id', verifyToken, requireRole(['admin']), async (req,
     console.error('❌ Error eliminando cliente:', error);
     res.status(500).json({ error: 'Error eliminando cliente' });
   }
+=======
+app.get('/api/clientes', async (req, res) => {
+    const filePath = FILES.clientes;
+    
+    try {
+        // Crear archivo si no existe
+        try {
+            await fs.access(filePath);
+        } catch {
+            await writeJSON(filePath, []);
+            console.log('   📝 clientes.json creado');
+        }
+        
+        const data = await readJSON(filePath);
+        res.json(data);
+    } catch (error) {
+        console.error('❌ Error leyendo clientes:', error);
+        res.status(500).json({ error: 'Error leyendo clientes' });
+    }
+});
+
+// Este endpoint ahora maneja tanto la creación de un nuevo cliente como la actualización de toda la lista.
+app.post('/api/clientes', async (req, res) => {
+    const filePath = FILES.clientes;
+    
+    try {
+        const incomingData = req.body;
+        
+        // Si el body es un array, se asume que es la lista completa de clientes para guardar.
+        if (Array.isArray(incomingData)) {
+            await writeJSON(filePath, incomingData);
+            console.log(`✅ Lista de clientes guardada: ${incomingData.length} registros`);
+            return res.json({ success: true });
+        }
+        // Si es un objeto, se asume que es un nuevo cliente para agregar a la lista.
+        const clientes = await readJSON(filePath);
+        clientes.push(incomingData);
+        await writeJSON(filePath, clientes);
+        res.json({ success: true, data: incomingData });
+    } catch (error) {
+        console.error('❌ Error guardando clientes:', error);
+        res.status(500).json({ error: 'Error guardando clientes' });
+    }
+});
+
+app.put('/api/clientes/:id', async (req, res) => {
+    const filePath = FILES.clientes;
+    try {
+        const clientes = await readJSON(filePath);
+        const index = clientes.findIndex(c => c.id === req.params.id);
+        if (index !== -1) {
+            clientes[index] = { ...clientes[index], ...req.body };
+            await writeJSON(filePath, clientes);
+            res.json({ success: true, data: clientes[index] });
+        } else {
+            res.status(404).json({ success: false, error: 'Cliente no encontrado' });
+        }
+    } catch (error) {
+        console.error('❌ Error actualizando cliente:', error);
+        res.status(500).json({ error: 'Error actualizando cliente' });
+    }
+});
+
+app.delete('/api/clientes/:id', async (req, res) => {
+    const filePath = FILES.clientes;
+    try {
+        const clientes = await readJSON(filePath);
+        const filtered = clientes.filter(c => c.id !== req.params.id);
+        await writeJSON(filePath, filtered);
+        res.json({ success: true });
+    } catch (error) {
+        console.error('❌ Error eliminando cliente:', error);
+        res.status(500).json({ error: 'Error eliminando cliente' });
+    }
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
 });
 
 // ==================== ENDPOINT RESETEO TOTAL Y PARCIAL ====================
 
 app.post('/api/system/reset/:section?', async (req, res) => {
+<<<<<<< HEAD
   const section = req.params.section;
 
   try {
@@ -997,6 +1423,48 @@ app.post('/api/system/reset/:section?', async (req, res) => {
     console.error('❌ [API] Error reseteando:', error);
     res.status(500).json({ error: error.message });
   }
+=======
+    const section = req.params.section;
+    
+    try {
+        // Si no hay sección o es 'all', reseteo total
+        if (!section || section === 'all') {
+            console.log('⚠️ [API] Solicitud de reseteo TOTAL recibida');
+            for (const [name, filepath] of Object.entries(FILES)) {
+                let initialData = [];
+                if (name === 'trabajos') {
+                    initialData = { works: [], notifications: [] };
+                } else if (name === 'business_rules') {
+                    initialData = { idealMargin: 35, deliveryStandardDays: 4, vipThreshold: 500000, priceStagnationDays: 30 };
+                }
+                await writeJSON(filepath, initialData);
+            }
+            console.log('✅ [API] Sistema reseteado correctamente');
+            return res.json({ success: true, message: 'Sistema reseteado completamente' });
+        }
+
+        // Reseteo parcial de una sección específica
+        if (FILES[section]) {
+            console.log(`⚠️ [API] Solicitud de reseteo PARCIAL: ${section}`);
+            const filepath = FILES[section];
+            let initialData = [];
+            
+            if (section === 'trabajos') {
+                initialData = { works: [], notifications: [] };
+            } else if (section === 'business_rules') {
+                initialData = { idealMargin: 35, deliveryStandardDays: 4, vipThreshold: 500000, priceStagnationDays: 30 };
+            }
+            
+            await writeJSON(filepath, initialData);
+            return res.json({ success: true, message: `Sección ${section} limpiada correctamente` });
+        } else {
+            return res.status(400).json({ error: 'Sección no válida' });
+        }
+    } catch (error) {
+        console.error('❌ [API] Error reseteando:', error);
+        res.status(500).json({ error: error.message });
+    }
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
 });
 
 // ==================== INICIAR SERVIDOR ====================

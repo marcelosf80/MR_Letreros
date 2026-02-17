@@ -1,19 +1,31 @@
 <!DOCTYPE html>
 <html lang="es">
+<<<<<<< HEAD
 
+=======
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Terceros - MR Letreros</title>
+<<<<<<< HEAD
   <script src="js/auth.js"></script>
+=======
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/sidebar-universal.css">
   <link rel="stylesheet" href="css/terceros-styles.css">
 </head>
+<<<<<<< HEAD
 
 <body>
   <!-- Sidebar Universal (se inserta automáticamente) -->
 
+=======
+<body>
+  <!-- Sidebar Universal (se inserta automáticamente) -->
+  
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
   <div class="main-content">
     <!-- Top Bar -->
     <div class="top-bar">
@@ -24,6 +36,7 @@
     </div>
 
 
+<<<<<<< HEAD
     <!-- Partículas de fondo -->
     <div class="particles" id="particles"></div>
 
@@ -194,3 +207,169 @@
 </body>
 
 </html>
+=======
+  <!-- Partículas de fondo -->
+  <div class="particles" id="particles"></div>
+
+  <!-- Header -->
+  <!-- Content -->
+  <div class="content-container">
+    <div class="section-header">
+      <div class="section-info">
+        <h2>Servicios de Terceros</h2>
+        <p>Configurá servicios externos con cálculo de margen automático</p>
+      </div>
+      <button class="btn btn-primary" id="btnAddTercero">➕ Agregar Empresa</button>
+    </div>
+
+    <!-- NUEVA SECCIÓN: PAGOS PENDIENTES -->
+    <div class="card" style="margin-top: 2rem; border-top: 4px solid #FFC107;">
+      <div class="card-header">
+        <h2 class="card-title">💸 Cuentas por Pagar (Terceros)</h2>
+        <button class="btn btn-secondary btn-small" onclick="tercerosManager.loadPagosPendientes()">🔄 Actualizar</button>
+      </div>
+      <div id="pagosPendientesList" class="stats-grid">
+        <p class="empty-state">Cargando pagos pendientes...</p>
+      </div>
+    </div>
+
+    <!-- NUEVA SECCIÓN: HISTORIAL DE PAGOS -->
+    <div class="card" style="margin-top: 2rem; border-top: 4px solid #4CAF50;">
+      <div class="card-header">
+        <h2 class="card-title">📜 Historial de Pagos Realizados</h2>
+        <button class="btn btn-secondary btn-small" onclick="tercerosManager.loadHistorialPagos()">🔄 Actualizar</button>
+      </div>
+      <div id="historialPagosList" style="max-height: 300px; overflow-y: auto;">
+        <p class="empty-state">Cargando historial...</p>
+      </div>
+    </div>
+
+    <!-- TERCEROS COMPANIES -->
+    <div class="section-header" style="margin-top: 2rem;">
+      <div>
+        <h2 class="section-title">Empresas de Servicios Terceros</h2>
+        <p class="section-subtitle">Gestiona servicios externos y sus márgenes de ganancia</p>
+      </div>
+    </div>
+
+    <div id="tercerosList" class="products-grid">
+      <p class="empty-state">No hay empresas configuradas. Agregá la primera.</p>
+    </div>
+  </div>
+
+  <!-- Modal para Agregar/Editar Empresa -->
+  <div class="modal" id="empresaModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title">🏢 Agregar Empresa</h2>
+        <button class="btn-close" id="btnCloseEmpresa">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label" for="empresaNombre">Nombre de la Empresa *</label>
+          <input type="text" id="empresaNombre" placeholder="Ej: Manuel construcción" class="form-input">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="empresaContacto">Contacto (opcional)</label>
+          <input type="text" id="empresaContacto" placeholder="Teléfono, email, etc" class="form-input">
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" id="btnCancelEmpresa">Cancelar</button>
+          <button class="btn btn-primary" id="btnSaveEmpresa">💾 Guardar Empresa</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal para Agregar/Editar Servicio -->
+  <div class="modal" id="servicioModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title">🔧 Agregar Servicio</h2>
+        <button class="btn-close" id="btnCloseServicio">×</button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-subtitle" id="empresaSubtitle">Empresa: <strong>--</strong></p>
+        
+        <div class="form-group">
+          <label class="form-label" for="servicioNombre">Nombre del Servicio *</label>
+          <input type="text" id="servicioNombre" placeholder="Ej: Armado de estructura" class="form-input">
+        </div>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="servicioCategoria">Categoría</label>
+            <select id="servicioCategoria" class="form-select">
+              <option value="">Seleccionar...</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label" for="servicioUnidad">Unidad</label>
+            <select id="servicioUnidad" class="form-select">
+              <option value="m²">Metro Cuadrado (m²)</option>
+              <option value="m">Metro Lineal (m)</option>
+              <option value="unidad">Unidad</option>
+              <option value="servicio">Servicio</option>
+            </select>
+          </div>
+        </div>
+        
+        <div id="materialBaseGroup" style="display: none; background: rgba(255,255,255,0.05); padding: 10px; border-radius: 5px; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.1);">
+          <h5 style="margin: 0 0 10px 0; color: #FFC107; font-size: 0.9rem;">📦 Material Base (Adicional por Placa/Global)</h5>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="servicioCostoMaterial">Costo Material</label>
+              <input type="number" id="servicioCostoMaterial" placeholder="0.00" step="0.01" class="form-input">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="servicioPrecioMaterial">Precio Material</label>
+              <input type="number" id="servicioPrecioMaterial" placeholder="0.00" step="0.01" class="form-input">
+            </div>
+          </div>
+          <small style="color: #aaa; display: block; margin-top: 5px;">Este valor se suma aparte de la unidad (ej: costo de la placa entera).</small>
+        </div>
+
+        <div class="highlight-box">
+          <h4>💰 Precios</h4>
+          
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="servicioCosto">Mi Costo *</label>
+              <input type="number" id="servicioCosto" placeholder="500" step="0.01" class="form-input">
+              <small>Lo que te cuesta</small>
+            </div>
+            
+            <div class="form-group">
+              <label class="form-label" for="servicioPrecio">Precio Público *</label>
+              <input type="number" id="servicioPrecio" placeholder="800" step="0.01" class="form-input">
+              <small>Lo que cobras</small>
+            </div>
+          </div>
+        </div>
+        
+        <div class="calc-display">
+          <div class="calc-label">MARGEN DE GANANCIA</div>
+          <div class="calc-value" id="servicioMargen">--%</div>
+          <div class="calc-formula">Completa los precios</div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn btn-secondary" id="btnCancelServicio">Cancelar</button>
+          <button class="btn btn-primary" id="btnSaveServicio">💾 Guardar Servicio</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="js/shared/modal-system.js?v=2"></script>
+  <script src="js/shared/data-manager-network.js?v=2"></script>
+  <script src="js/terceros/terceros-main.js?v=2"></script>
+  </div>
+  
+  <!-- Sidebar Universal Script -->
+  <script src="js/shared/sidebar-universal.js"></script>
+</body>
+</html>
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c

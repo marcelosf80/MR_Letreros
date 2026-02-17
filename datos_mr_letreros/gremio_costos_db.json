@@ -1,0 +1,14 @@
+[
+  {
+    "id": "prod_1769254767425",
+    "name": "producto 1",
+    "category": "categoria 1",
+    "unit": "m2",
+    "costs": {
+      "material": 6565,
+      "labor": 5455,
+      "indirect": 0,
+      "total": 12020
+    }
+  }
+]

@@ -6,6 +6,7 @@
 const costosManager = {
   costos: { products: [] },
   STORAGE_KEY: 'gremio_costos_db',
+<<<<<<< HEAD
 
   // ========================================
   // CARGA Y GUARDADO
@@ -34,6 +35,22 @@ const costosManager = {
         this.costos.products = [];
       }
       console.log('⚠️ Costos cargados desde LocalStorage (Fallback):', this.costos.products.length);
+=======
+  
+  // ========================================
+  // CARGA Y GUARDADO
+  // ========================================
+  
+  async loadCostos() {
+    try {
+      const data = localStorage.getItem(this.STORAGE_KEY);
+      this.costos = data ? JSON.parse(data) : { products: [] };
+      
+      if (!this.costos.products) {
+        this.costos.products = [];
+      }
+      console.log('✅ Costos cargados:', this.costos.products.length, 'productos');
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
       return this.costos;
     } catch (error) {
       console.error('Error cargando costos:', error);
@@ -61,7 +78,11 @@ const costosManager = {
       if (!product.id) {
         product.id = 'prod_' + Date.now();
       }
+<<<<<<< HEAD
 
+=======
+      
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
       this.costos.products.push(product);
       await this.saveCostos();
       return true;
@@ -74,7 +95,11 @@ const costosManager = {
   async updateProduct(productId, updates) {
     try {
       const productIndex = this.costos.products.findIndex(p => p.id === productId || p.category === productId);
+<<<<<<< HEAD
 
+=======
+      
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
       if (productIndex === -1) {
         console.error('Producto no encontrado:', productId);
         return false;
@@ -149,13 +174,21 @@ const costosManager = {
   calculateProfitability(salePrice, productCost) {
     const price = parseFloat(salePrice) || 0;
     const cost = parseFloat(productCost) || 0;
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
     if (cost === 0) return { margin: 0, profit: 0, percentage: 0, status: 'sin-datos' };
     if (price === 0) return { margin: 0, profit: 0, percentage: 0, status: 'sin-precio' };
 
     const profit = price - cost;
     const percentage = (profit / price) * 100;
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
     // Determinar estado del semáforo
     let status = 'rojo';
     if (percentage > 30) status = 'verde';
@@ -208,7 +241,11 @@ const costosManager = {
       for (const quotation of quotations) {
         for (const item of quotation.items) {
           const product = this.getProduct(item.category);
+<<<<<<< HEAD
 
+=======
+          
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
           if (product) {
             const salePrice = parseFloat(item.unitPrice) || 0;
             const quantity = parseFloat(item.quantity) || 1;
@@ -259,7 +296,11 @@ const costosManager = {
       // Calcular rentabilidad estimada (usando precio base)
       const basePrice = product.basePrice || product.costs.total * 1.5;
       const profitability = this.calculateProfitability(basePrice, product.costs.total);
+<<<<<<< HEAD
 
+=======
+      
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
       return {
         ...product,
         profitability
@@ -275,7 +316,11 @@ const costosManager = {
     const products = this.getAllProducts().map(product => {
       const basePrice = product.basePrice || product.costs.total * 1.5;
       const profitability = this.calculateProfitability(basePrice, product.costs.total);
+<<<<<<< HEAD
 
+=======
+      
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
       return {
         ...product,
         profitability
@@ -303,7 +348,11 @@ const costosManager = {
 
       for (const item of quotation.items) {
         const product = this.getProduct(item.category);
+<<<<<<< HEAD
 
+=======
+        
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
         if (!product) {
           recommendations.warnings.push({
             type: 'producto-sin-costos',

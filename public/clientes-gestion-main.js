@@ -23,6 +23,7 @@ function formatCurrencyAR(num, decimals = 2) {
 
 // ==================== INICIALIZACIÓN ====================
 
+<<<<<<< HEAD
 document.addEventListener('DOMContentLoaded', async function () {
     console.log('[CLIENTES-GESTION] 🚀 Inicializando módulo...');
 
@@ -32,6 +33,17 @@ document.addEventListener('DOMContentLoaded', async function () {
     // Cargar clientes
     await loadClientes();
 
+=======
+document.addEventListener('DOMContentLoaded', async function() {
+    console.log('[CLIENTES-GESTION] 🚀 Inicializando módulo...');
+    
+    // Configurar eventos
+    setupEventListeners();
+    
+    // Cargar clientes
+    await loadClientes();
+    
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
     console.log('[CLIENTES-GESTION] ✅ Módulo listo');
 });
 
@@ -40,6 +52,7 @@ function setupEventListeners() {
     document.getElementById('btnCloseClient').addEventListener('click', closeClientModal);
     document.getElementById('btnCancelClient').addEventListener('click', closeClientModal);
     document.getElementById('btnSaveClient').addEventListener('click', saveCliente);
+<<<<<<< HEAD
 
     // Click fuera del modal para cerrar
     document.getElementById('clientModal').addEventListener('click', function (e) {
@@ -47,6 +60,15 @@ function setupEventListeners() {
     });
 
     document.getElementById('detailsModal').addEventListener('click', function (e) {
+=======
+    
+    // Click fuera del modal para cerrar
+    document.getElementById('clientModal').addEventListener('click', function(e) {
+        if (e.target === this) closeClientModal();
+    });
+    
+    document.getElementById('detailsModal').addEventListener('click', function(e) {
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
         if (e.target === this) closeDetailsModal();
     });
 }
@@ -56,6 +78,7 @@ function setupEventListeners() {
 async function loadClientes() {
     try {
         console.log('[CLIENTES-GESTION] Cargando clientes...');
+<<<<<<< HEAD
 
         // Cargar desde API con autenticación
         const response = await (window.AUTH ? window.AUTH.fetch('/api/clientes') : fetch('/api/clientes', {
@@ -79,6 +102,27 @@ async function loadClientes() {
         // Actualizar estadísticas
         updateStatistics();
 
+=======
+        
+        // Cargar desde API
+        const response = await fetch('/api/clientes');
+        if (!response.ok) {
+            throw new Error('Error al cargar clientes');
+        }
+        
+        todosLosClientes = await response.json();
+        console.log('[CLIENTES-GESTION] ✅ Clientes cargados:', todosLosClientes.length);
+        
+        // Calcular facturación desde trabajos
+        await calcularFacturacion();
+        
+        // Aplicar filtros
+        filterClientes();
+        
+        // Actualizar estadísticas
+        updateStatistics();
+        
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
     } catch (error) {
         console.error('[CLIENTES-GESTION] ❌ Error cargando clientes:', error);
         todosLosClientes = [];
@@ -90,7 +134,11 @@ async function calcularFacturacion() {
     try {
         // Obtener trabajos para calcular facturación
         const trabajos = await window.mrDataManager.getTrabajosAprobados();
+<<<<<<< HEAD
 
+=======
+        
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
         todosLosClientes = todosLosClientes.map(cliente => {
             // Buscar trabajos de este cliente
             const trabajosCliente = trabajos.filter(t => {
@@ -98,11 +146,19 @@ async function calcularFacturacion() {
                 const nombreCliente = (cliente.nombre || '').toLowerCase();
                 return nombreTrabajo.includes(nombreCliente) || nombreCliente.includes(nombreTrabajo);
             });
+<<<<<<< HEAD
 
             // Calcular totales
             const totalFacturado = trabajosCliente.reduce((sum, t) => sum + (parseFloat(t.totalFinal || t.total || 0)), 0);
             const cantidadTrabajos = trabajosCliente.length;
 
+=======
+            
+            // Calcular totales
+            const totalFacturado = trabajosCliente.reduce((sum, t) => sum + (parseFloat(t.totalFinal || t.total || 0)), 0);
+            const cantidadTrabajos = trabajosCliente.length;
+            
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
             return {
                 ...cliente,
                 totalFacturado,
@@ -121,14 +177,22 @@ function filterClientes() {
     const searchTerm = document.getElementById('searchInput').value.toLowerCase();
     const filterType = document.getElementById('filterType').value;
     const filterStatus = document.getElementById('filterStatus').value;
+<<<<<<< HEAD
 
     clientesFiltrados = todosLosClientes.filter(cliente => {
         // Filtro de búsqueda
         const matchSearch = !searchTerm ||
+=======
+    
+    clientesFiltrados = todosLosClientes.filter(cliente => {
+        // Filtro de búsqueda
+        const matchSearch = !searchTerm || 
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
             (cliente.nombre || '').toLowerCase().includes(searchTerm) ||
             (cliente.telefono || '').toLowerCase().includes(searchTerm) ||
             (cliente.email || '').toLowerCase().includes(searchTerm) ||
             (cliente.direccion || '').toLowerCase().includes(searchTerm);
+<<<<<<< HEAD
 
         // Filtro de tipo
         const matchType = filterType === 'todos' || cliente.tipo === filterType;
@@ -142,6 +206,21 @@ function filterClientes() {
     // Aplicar ordenamiento actual
     sortClientesArray(currentSort);
 
+=======
+        
+        // Filtro de tipo
+        const matchType = filterType === 'todos' || cliente.tipo === filterType;
+        
+        // Filtro de estado
+        const matchStatus = filterStatus === 'todos' || (cliente.estado || 'activo') === filterStatus;
+        
+        return matchSearch && matchType && matchStatus;
+    });
+    
+    // Aplicar ordenamiento actual
+    sortClientesArray(currentSort);
+    
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
     // Renderizar
     renderClientes();
 }
@@ -154,7 +233,11 @@ function sortClientes(tipo) {
 
 function sortClientesArray(tipo) {
     clientesFiltrados.sort((a, b) => {
+<<<<<<< HEAD
         switch (tipo) {
+=======
+        switch(tipo) {
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
             case 'nombre':
                 return (a.nombre || '').localeCompare(b.nombre || '');
             case 'fecha':
@@ -174,9 +257,15 @@ function sortClientesArray(tipo) {
 function renderClientes() {
     const container = document.getElementById('clientesList');
     const countElement = document.getElementById('clientesCount');
+<<<<<<< HEAD
 
     countElement.textContent = clientesFiltrados.length;
 
+=======
+    
+    countElement.textContent = clientesFiltrados.length;
+    
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
     if (clientesFiltrados.length === 0) {
         container.innerHTML = `
             <div class="empty-state">
@@ -187,7 +276,11 @@ function renderClientes() {
         `;
         return;
     }
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
     container.innerHTML = clientesFiltrados.map(cliente => `
         <div class="client-card">
             <div class="client-header">
@@ -265,7 +358,11 @@ function updateStatistics() {
     const gremio = todosLosClientes.filter(c => c.tipo === 'gremio').length;
     const clientes = todosLosClientes.filter(c => c.tipo === 'cliente').length;
     const totalFact = todosLosClientes.reduce((sum, c) => sum + (c.totalFacturado || 0), 0);
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
     document.getElementById('totalClientes').textContent = total;
     document.getElementById('totalGremio').textContent = gremio;
     document.getElementById('totalClientesFinales').textContent = clientes;
@@ -287,10 +384,17 @@ function editCliente(clientId) {
         alert('❌ Cliente no encontrado');
         return;
     }
+<<<<<<< HEAD
 
     editingClientId = clientId;
     document.getElementById('modalTitle').textContent = '✏️ Editar Cliente';
 
+=======
+    
+    editingClientId = clientId;
+    document.getElementById('modalTitle').textContent = '✏️ Editar Cliente';
+    
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
     // Llenar formulario
     document.getElementById('clientTipo').value = cliente.tipo || 'cliente';
     document.getElementById('clientNombre').value = cliente.nombre || '';
@@ -302,7 +406,11 @@ function editCliente(clientId) {
     document.getElementById('clientDescuento').value = cliente.descuento || 0;
     document.getElementById('clientEstado').value = cliente.estado || 'activo';
     document.getElementById('clientNotas').value = cliente.notas || '';
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
     document.getElementById('clientModal').classList.add('active');
 }
 
@@ -327,12 +435,20 @@ function clearClientForm() {
 
 async function saveCliente() {
     const nombre = document.getElementById('clientNombre').value.trim();
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
     if (!nombre) {
         alert('⚠️ El nombre es obligatorio');
         return;
     }
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
     const clienteData = {
         id: editingClientId || Date.now().toString(),
         tipo: document.getElementById('clientTipo').value,
@@ -345,6 +461,7 @@ async function saveCliente() {
         descuento: parseFloat(document.getElementById('clientDescuento').value) || 0,
         estado: document.getElementById('clientEstado').value,
         notas: document.getElementById('clientNotas').value.trim(),
+<<<<<<< HEAD
         fechaCreacion: editingClientId ?
             (todosLosClientes.find(c => c.id === editingClientId)?.fechaCreacion) :
             new Date().toISOString(),
@@ -358,18 +475,38 @@ async function saveCliente() {
             // Actualizar existente
             updatedClientes = todosLosClientes.map(c =>
                 c.id === editingClientId ? { ...c, ...clienteData } : c
+=======
+        fechaCreacion: editingClientId ? 
+            (todosLosClientes.find(c => c.id === editingClientId)?.fechaCreacion) : 
+            new Date().toISOString(),
+        fechaModificacion: new Date().toISOString()
+    };
+    
+    try {
+        let updatedClientes;
+        
+        if (editingClientId) {
+            // Actualizar existente
+            updatedClientes = todosLosClientes.map(c => 
+                c.id === editingClientId ? {...c, ...clienteData} : c
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
             );
         } else {
             // Agregar nuevo
             updatedClientes = [...todosLosClientes, clienteData];
         }
+<<<<<<< HEAD
 
+=======
+        
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
         // Guardar en servidor
         const response = await fetch('/api/clientes', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(updatedClientes)
         });
+<<<<<<< HEAD
 
         if (!response.ok) {
             throw new Error('Error al guardar cliente');
@@ -380,6 +517,18 @@ async function saveCliente() {
         closeClientModal();
         await loadClientes();
 
+=======
+        
+        if (!response.ok) {
+            throw new Error('Error al guardar cliente');
+        }
+        
+        alert(editingClientId ? '✅ Cliente actualizado correctamente' : '✅ Cliente creado correctamente');
+        
+        closeClientModal();
+        await loadClientes();
+        
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
     } catch (error) {
         console.error('[CLIENTES-GESTION] Error guardando cliente:', error);
         alert('❌ Error al guardar el cliente');
@@ -392,15 +541,23 @@ async function deleteCliente(clientId, clientName) {
     if (!confirm(`¿Estás seguro de que quieres eliminar a "${clientName}"?\n\n⚠️ Esta acción no se puede deshacer.`)) {
         return;
     }
+<<<<<<< HEAD
 
     try {
         const updatedClientes = todosLosClientes.filter(c => c.id !== clientId);
 
+=======
+    
+    try {
+        const updatedClientes = todosLosClientes.filter(c => c.id !== clientId);
+        
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
         const response = await fetch('/api/clientes', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(updatedClientes)
         });
+<<<<<<< HEAD
 
         if (!response.ok) {
             throw new Error('Error al eliminar cliente');
@@ -409,6 +566,16 @@ async function deleteCliente(clientId, clientName) {
         alert('✅ Cliente eliminado correctamente');
         await loadClientes();
 
+=======
+        
+        if (!response.ok) {
+            throw new Error('Error al eliminar cliente');
+        }
+        
+        alert('✅ Cliente eliminado correctamente');
+        await loadClientes();
+        
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
     } catch (error) {
         console.error('[CLIENTES-GESTION] Error eliminando cliente:', error);
         alert('❌ Error al eliminar el cliente');
@@ -423,14 +590,22 @@ async function viewClientDetails(clientId) {
         alert('❌ Cliente no encontrado');
         return;
     }
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
     // Obtener trabajos del cliente
     let trabajosCliente = [];
     try {
         const todosTrabajosRes = await fetch('/api/trabajos');
         const todosTrabajosData = await todosTrabajosRes.json();
         const todosTrabajosArray = Array.isArray(todosTrabajosData) ? todosTrabajosData : [];
+<<<<<<< HEAD
 
+=======
+        
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
         trabajosCliente = todosTrabajosArray.filter(t => {
             const nombreTrabajo = (t.clientName || t.cliente || '').toLowerCase();
             const nombreCliente = (cliente.nombre || '').toLowerCase();
@@ -439,7 +614,11 @@ async function viewClientDetails(clientId) {
     } catch (error) {
         console.error('Error cargando trabajos:', error);
     }
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
     const detailsContent = `
         <div class="highlight-box">
             <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
@@ -521,7 +700,11 @@ async function viewClientDetails(clientId) {
             </div>
         ` : ''}
     `;
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
     document.getElementById('detailsTitle').innerHTML = `👤 ${cliente.nombre}`;
     document.getElementById('detailsContent').innerHTML = detailsContent;
     document.getElementById('detailsModal').classList.add('active');

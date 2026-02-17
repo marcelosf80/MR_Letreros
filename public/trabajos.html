@@ -1,10 +1,14 @@
 <!DOCTYPE html>
 <html lang="es">
+<<<<<<< HEAD
 
+=======
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestión de Trabajos - MR Letreros</title>
+<<<<<<< HEAD
     <script src="js/auth.js"></script>
     <link rel="stylesheet" href="css/base.css">
     <link rel="stylesheet" href="css/sidebar-universal.css">
@@ -12,6 +16,14 @@
     <!-- IMPORTANTE: Cargar data-manager PRIMERO -->
     <script src="js/shared/data-manager-network.js"></script>
 
+=======
+    <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/sidebar-universal.css">
+    
+    <!-- IMPORTANTE: Cargar data-manager PRIMERO -->
+    <script src="js/shared/data-manager-network.js"></script>
+    
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
     <style>
         .dashboard-stats {
             display: grid;
@@ -19,26 +31,38 @@
             gap: 1.5rem;
             margin-bottom: 2rem;
         }
+<<<<<<< HEAD
 
+=======
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
         .stat-card {
             background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
             padding: 1.5rem;
             border-radius: 12px;
             border: 1px solid rgba(99, 102, 241, 0.3);
         }
+<<<<<<< HEAD
 
+=======
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
         .stat-label {
             font-size: 0.9rem;
             color: var(--text-secondary);
             margin-bottom: 0.5rem;
         }
+<<<<<<< HEAD
 
+=======
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
         .stat-value {
             font-size: 2rem;
             font-weight: bold;
             color: var(--primary-color);
         }
+<<<<<<< HEAD
 
+=======
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
         .filters-bar {
             background: var(--card-bg);
             padding: 1.5rem;
@@ -50,13 +74,19 @@
             align-items: center;
             border: 1px solid var(--border-color);
         }
+<<<<<<< HEAD
 
+=======
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
         .works-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
             gap: 1.5rem;
         }
+<<<<<<< HEAD
 
+=======
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
         .work-card {
             background: rgba(255, 255, 255, 0.05);
             border-radius: 12px;
@@ -65,17 +95,26 @@
             padding: 1.5rem;
             position: relative;
         }
+<<<<<<< HEAD
 
         .work-card:hover {
+=======
+        .work-card:hover { 
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
             transform: translateY(-5px);
             box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
             border-color: var(--primary-color);
         }
+<<<<<<< HEAD
 
+=======
+        
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
         .work-card.priority-urgent {
             border-left: 4px solid #F44336;
             animation: pulse 2s infinite;
         }
+<<<<<<< HEAD
 
         .work-card.priority-high {
             border-left: 4px solid #FF9800;
@@ -95,49 +134,81 @@
 
         .work-header {
             display: flex;
+=======
+        .work-card.priority-high {
+            border-left: 4px solid #FF9800;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(244, 67, 54, 0.4); }
+            50% { box-shadow: 0 0 0 10px rgba(244, 67, 54, 0); }
+        }
+        
+        .work-header { 
+            display: flex; 
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
             justify-content: space-between;
             align-items: flex-start;
             margin-bottom: 1rem;
             padding-bottom: 1rem;
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
+<<<<<<< HEAD
 
+=======
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
         .work-client {
             font-size: 1.2rem;
             font-weight: bold;
             color: var(--primary-color);
         }
+<<<<<<< HEAD
 
+=======
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
         .work-client-info {
             font-size: 0.85rem;
             color: var(--text-secondary);
             margin-top: 0.25rem;
         }
+<<<<<<< HEAD
 
+=======
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
         .work-details {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
             gap: 0.75rem;
             margin: 1rem 0;
         }
+<<<<<<< HEAD
 
+=======
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
         .work-detail-item {
             display: flex;
             flex-direction: column;
         }
+<<<<<<< HEAD
 
+=======
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
         .work-detail-label {
             font-size: 0.75rem;
             color: var(--text-secondary);
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
+<<<<<<< HEAD
 
+=======
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
         .work-detail-value {
             font-size: 1.1rem;
             font-weight: bold;
             margin-top: 0.25rem;
         }
+<<<<<<< HEAD
 
         .work-actions {
             display: flex;
@@ -147,6 +218,15 @@
         }
 
         .badge {
+=======
+        .work-actions { 
+            display: flex; 
+            gap: 0.5rem; 
+            margin-top: 1rem; 
+            flex-wrap: wrap;
+        }
+        .badge { 
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
             padding: 0.35rem 0.75rem;
             border-radius: 6px;
             font-size: 0.75rem;
@@ -154,6 +234,7 @@
             color: white;
             white-space: nowrap;
         }
+<<<<<<< HEAD
 
         .badge-status-pending {
             background: #FFC107;
@@ -187,19 +268,37 @@
             background: #2196F3;
         }
 
+=======
+        .badge-status-pending { background: #FFC107; }
+        .badge-status-in_progress { background: #2196F3; }
+        .badge-status-completed { background: #4CAF50; }
+        .badge-payment-paid { background: #4CAF50; }
+        .badge-payment-pending { background: #FF9800; }
+        .badge-priority-urgent { background: #F44336; }
+        .badge-priority-high { background: #FF9800; }
+        .badge-priority-normal { background: #2196F3; }
+        
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
         /* Empty State */
         .empty-state {
             text-align: center;
             padding: 4rem 2rem;
             color: var(--text-secondary);
         }
+<<<<<<< HEAD
 
+=======
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
         .empty-state-icon {
             font-size: 4rem;
             margin-bottom: 1rem;
             opacity: 0.5;
         }
+<<<<<<< HEAD
 
+=======
+        
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
         /* Notificaciones Panel */
         .notification-panel {
             position: fixed;
@@ -216,35 +315,52 @@
             backdrop-filter: blur(10px);
             box-shadow: -4px 0 20px rgba(0, 0, 0, 0.3);
         }
+<<<<<<< HEAD
 
         .notification-panel.show {
             right: 0;
         }
 
+=======
+        .notification-panel.show { right: 0; }
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
         .notification-panel h3 {
             margin-bottom: 1rem;
             padding-bottom: 1rem;
             border-bottom: 2px solid var(--border-color);
         }
+<<<<<<< HEAD
 
         .notification-item {
             padding: 1rem;
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+=======
+        .notification-item {
+            padding: 1rem;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
             cursor: pointer;
             border-radius: 8px;
             margin-bottom: 0.5rem;
             transition: background 0.2s;
         }
+<<<<<<< HEAD
 
         .notification-item:hover {
             background: rgba(255, 255, 255, 0.05);
         }
 
+=======
+        .notification-item:hover { background: rgba(255,255,255,0.05); }
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
         .notification-item.unread {
             background: rgba(99, 102, 241, 0.1);
             border-left: 3px solid var(--primary-color);
         }
+<<<<<<< HEAD
 
+=======
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
         .notification-badge {
             position: absolute;
             top: -8px;
@@ -260,14 +376,21 @@
             font-size: 0.7rem;
             font-weight: bold;
         }
+<<<<<<< HEAD
 
+=======
+        
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
         /* Loading */
         .loading {
             text-align: center;
             padding: 3rem;
             color: var(--text-secondary);
         }
+<<<<<<< HEAD
 
+=======
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
         .spinner {
             border: 3px solid rgba(255, 255, 255, 0.1);
             border-top: 3px solid var(--primary-color);
@@ -277,6 +400,7 @@
             animation: spin 1s linear infinite;
             margin: 0 auto 1rem;
         }
+<<<<<<< HEAD
 
         @keyframes spin {
             0% {
@@ -380,3 +504,99 @@
 </body>
 
 </html>
+=======
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+  <!-- Sidebar Universal (se inserta automáticamente) -->
+  
+  <div class="main-content">
+    <!-- Top Bar -->
+    <div class="top-bar">
+      <h1 class="top-bar-title">🔨 Gestión de Trabajos</h1>
+      <div class="top-bar-actions">
+        <!-- Acciones específicas del módulo -->
+      </div>
+    </div>
+
+
+    <div class="content-container">
+        <!-- Dashboard Stats -->
+        <div class="dashboard-stats">
+            <div class="stat-card">
+                <div class="stat-label">⏳ Trabajos Pendientes</div>
+                <div class="stat-value" id="countPending">-</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">🔧 En Proceso</div>
+                <div class="stat-value" id="countInProgress">-</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">✅ Completados</div>
+                <div class="stat-value" id="countCompleted">-</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">💰 Ingresos (Pagados)</div>
+                <div class="stat-value" id="totalRevenue">$-</div>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="filters-bar">
+            <input type="text" id="filterSearch" class="form-input" placeholder="🔍 Buscar por cliente..." style="flex: 1; min-width: 200px;">
+            <select id="filterStatus" class="form-select" style="width: auto;">
+                <option value="">📊 Todos los Estados</option>
+                <option value="pending">⏳ Pendiente</option>
+                <option value="in_progress">🔧 En Proceso</option>
+                <option value="completed">✅ Completado</option>
+            </select>
+            <select id="filterPayment" class="form-select" style="width: auto;">
+                <option value="">💳 Todos los Pagos</option>
+                <option value="paid">✅ Pagado</option>
+                <option value="pending">⏳ Pendiente</option>
+            </select>
+            <select id="filterPriority" class="form-select" style="width: auto;">
+                <option value="">🎯 Todas las Prioridades</option>
+                <option value="urgent">🔴 Urgente</option>
+                <option value="high">🟠 Alta</option>
+                <option value="normal">🟡 Normal</option>
+            </select>
+            <button class="btn btn-primary" onclick="applyFilters()">Filtrar</button>
+            <button class="btn btn-secondary" onclick="clearFilters()">Limpiar</button>
+            <button class="btn btn-success" onclick="loadWorks()">🔄 Actualizar</button>
+        </div>
+
+        <!-- Loading State -->
+        <div id="loadingState" class="loading" style="display: none;">
+            <div class="spinner"></div>
+            <p>Cargando trabajos...</p>
+        </div>
+
+        <!-- Works Grid -->
+        <div id="worksList" class="works-grid"></div>
+    </div>
+
+    <!-- Panel Notificaciones -->
+    <div id="notificationPanel" class="notification-panel">
+        <h3>🔔 Notificaciones</h3>
+        <div id="notificationsList">
+            <div class="empty-state">
+                <p>No hay notificaciones</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/shared/work-manager.js"></script>
+    <script src="js/trabajos/trabajos-main.js"></script>
+  </div>
+  
+  <!-- Sidebar Universal Script -->
+  <script src="js/shared/sidebar-universal.js"></script>
+</body>
+</html>
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c

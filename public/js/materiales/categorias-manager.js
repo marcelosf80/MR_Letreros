@@ -1,6 +1,7 @@
 // ==================== FUNCIÓN DE FORMATO ====================
 
 function formatCurrencyAR(num, decimals = 2) {
+<<<<<<< HEAD
   if (num === null || num === undefined || isNaN(num)) {
     return '0,00';
   }
@@ -8,6 +9,15 @@ function formatCurrencyAR(num, decimals = 2) {
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals
   }).format(num);
+=======
+    if (num === null || num === undefined || isNaN(num)) {
+        return '0,00';
+    }
+    return new Intl.NumberFormat('es-AR', {
+        minimumFractionDigits: decimals,
+        maximumFractionDigits: decimals
+    }).format(num);
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
 }
 
 // ==================== CATEGORÍAS MANAGER ====================
@@ -18,7 +28,11 @@ let allCategorias = [];
 
 async function actualizarSelectorCategorias() {
   console.log('[CATEGORIAS-SELECTOR] Actualizando selector de categorías...');
+<<<<<<< HEAD
 
+=======
+  
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
   const selectCat = document.getElementById('materialCategory');
   if (!selectCat) {
     console.warn('[CATEGORIAS-SELECTOR] Selector no encontrado');
@@ -29,7 +43,11 @@ async function actualizarSelectorCategorias() {
     // Cargar categorías desde el servidor
     const categorias = await window.mrDataManager.getCategorias();
     console.log('[CATEGORIAS-SELECTOR] Categorías obtenidas:', categorias);
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
     // También extraer de materiales para retrocompatibilidad
     const materiales = await window.mrDataManager.getMateriales();
     const categoriasEnMateriales = [...new Set(
@@ -37,6 +55,7 @@ async function actualizarSelectorCategorias() {
         .map(m => m.categoria || m.category || m.cat)
         .filter(Boolean)
     )];
+<<<<<<< HEAD
 
     // Combinar y eliminar duplicados
     const categoriasFinales = [...new Set([...categorias, ...categoriasEnMateriales])].sort();
@@ -45,13 +64,27 @@ async function actualizarSelectorCategorias() {
     // Actualizar el select
     selectCat.innerHTML = '<option value="">Seleccionar categoría...</option>';
 
+=======
+    
+    // Combinar y eliminar duplicados
+    const categoriasFinales = [...new Set([...categorias, ...categoriasEnMateriales])].sort();
+    console.log('[CATEGORIAS-SELECTOR] Categorías finales:', categoriasFinales);
+    
+    // Actualizar el select
+    selectCat.innerHTML = '<option value="">Seleccionar categoría...</option>';
+    
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
     categoriasFinales.forEach(cat => {
       const option = document.createElement('option');
       option.value = cat;
       option.textContent = cat;
       selectCat.appendChild(option);
     });
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
     console.log('[CATEGORIAS-SELECTOR] ✅ Selector actualizado con', categoriasFinales.length, 'categorías');
   } catch (error) {
     console.error('[CATEGORIAS-SELECTOR] Error:', error);
@@ -63,6 +96,7 @@ async function actualizarSelectorCategorias() {
 
 async function loadCategorias() {
   try {
+<<<<<<< HEAD
     // Definir función de fetch segura que maneja la espera de AUTH si es necesario o fallback
     const fetchWithAuth = async (url) => {
       if (window.AUTH) return window.AUTH.fetch(url);
@@ -111,6 +145,36 @@ async function loadCategorias() {
 
   } catch (error) {
     console.error('[CATEGORIAS] Critical Error:', error);
+=======
+    // Primero, cargar categorías del archivo dedicado
+    const response = await fetch('/api/categorias');
+    if (!response.ok) throw new Error('Error en la API de categorías');
+    
+    let categorias = await response.json();
+    console.log('[CATEGORIAS] Categorías cargadas del servidor:', categorias);
+    
+    // También extraer de materiales para retrocompatibilidad
+    const materialesResponse = await fetch('/api/materiales');
+    if (materialesResponse.ok) {
+      const materiales = await materialesResponse.json();
+      const categoriasEnMateriales = [...new Set(
+        materiales
+          .map(m => m.categoria || m.category || m.cat)
+          .filter(Boolean)
+      )];
+      
+      // Combinar y eliminar duplicados
+      categorias = [...new Set([...categorias, ...categoriasEnMateriales])].sort();
+    }
+    
+    allCategorias = categorias;
+    console.log('[CATEGORIAS] Categorías finales:', allCategorias);
+    await renderCategorias();
+    // Actualizar también el selector del modal
+    await actualizarSelectorCategorias();
+  } catch (error) {
+    console.error('[CATEGORIAS] Error cargando categorías:', error);
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
     allCategorias = [];
     await renderCategorias();
   }
@@ -118,7 +182,11 @@ async function loadCategorias() {
 
 async function renderCategorias() {
   const container = document.getElementById('categoriesList');
+<<<<<<< HEAD
 
+=======
+  
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
   if (!container) {
     console.warn('[CATEGORIAS] Container no encontrado');
     return;
@@ -141,6 +209,7 @@ async function renderCategorias() {
   container.innerHTML = allCategorias.map(cat => {
     const count = materiales.filter(m => m.categoria === cat).length;
     return `
+<<<<<<< HEAD
       <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.8rem; background: rgba(255,255,255,0.03); border-radius: 6px; border: 1px solid rgba(255,255,255,0.05); transition: background 0.2s;">
         <div onclick="toggleCategoryDetails('${cat}')" style="cursor: pointer; flex: 1; display: flex; align-items: center; gap: 0.5rem;">
             <span>📁</span>
@@ -148,6 +217,13 @@ async function renderCategorias() {
             <span style="font-size: 0.8rem; color: rgba(255,255,255,0.4);">(${count})</span>
         </div>
         <button onclick="event.stopPropagation(); deleteCategory('${cat}')" style="background: none; border: none; cursor: pointer; opacity: 0.4; padding: 4px; font-size: 0.9rem; transition: opacity 0.2s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.4" title="Eliminar Categoría">🗑️</button>
+=======
+      <div style="background: rgba(81, 207, 102, 0.1); padding: 1rem; border-radius: 8px; border: 1px solid rgba(81, 207, 102, 0.3); cursor: pointer; transition: all 0.3s;" onclick="toggleCategoryDetails('${cat}')" style="cursor: pointer;">
+        <div style="font-size: 1.2rem; margin-bottom: 0.5rem;">📁</div>
+        <div style="font-weight: 600; color: var(--text-light); margin-bottom: 0.5rem;">${cat}</div>
+        <small style="color: rgba(255,255,255,0.6);">${count} rollo${count !== 1 ? 's' : ''} • Click para ver</small>
+        <button class="btn btn-danger btn-small" onclick="event.stopPropagation(); deleteCategory('${cat}')" style="width: 100%; margin-top: 0.5rem;">🗑️ Eliminar</button>
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
       </div>
     `;
   }).join('');
@@ -155,7 +231,11 @@ async function renderCategorias() {
 
 async function createCategory() {
   const name = document.getElementById('newCategoryName').value.trim();
+<<<<<<< HEAD
 
+=======
+  
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
   if (!name) {
     alert('⚠️ Ingresa un nombre para la categoría');
     return;
@@ -289,12 +369,20 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // Función para expandir y ver productos de una categoría
+<<<<<<< HEAD
 window.toggleCategoryDetails = async function (categoria) {
+=======
+window.toggleCategoryDetails = async function(categoria) {
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
   // Crear modal temporal para ver productos
   const modal = document.createElement('div');
   modal.className = 'modal active';
   modal.id = 'categoryDetailsModal';
+<<<<<<< HEAD
 
+=======
+  
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
   try {
     const response = await fetch('/api/materiales');
     const materiales = await response.json();
@@ -347,36 +435,58 @@ window.toggleCategoryDetails = async function (categoria) {
 };
 
 // Función para editar un material
+<<<<<<< HEAD
 window.editarMaterial = function (producto) {
   console.log('[CATEGORIAS] Editando material:', producto);
 
+=======
+window.editarMaterial = function(producto) {
+  console.log('[CATEGORIAS] Editando material:', producto);
+  
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
   // Cerrar el modal de detalles
   const detailsModal = document.getElementById('categoryDetailsModal');
   if (detailsModal) {
     detailsModal.remove();
   }
+<<<<<<< HEAD
 
+=======
+  
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
   // Abrir el formulario de materiales con los datos del producto
   const materialModal = document.getElementById('materialModal');
   if (!materialModal) {
     alert('❌ No se pudo abrir el formulario de edición');
     return;
   }
+<<<<<<< HEAD
 
+=======
+  
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
   // Rellenar los campos con los datos del producto
   document.getElementById('materialCategory').value = producto.categoria || '';
   document.getElementById('materialProductName').value = producto.producto || producto.productoNombre || '';
   document.getElementById('materialAncho').value = (producto.ancho || 0).toFixed(2);
   document.getElementById('materialLargo').value = (producto.largo || 0).toFixed(2);
   document.getElementById('materialPrecioRollo').value = producto.precioRollo || '';
+<<<<<<< HEAD
 
+=======
+  
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
   // Marcar como edición
   const btnSaveMaterial = document.getElementById('btnSaveMaterial');
   if (btnSaveMaterial) {
     btnSaveMaterial.dataset.editingId = producto.id;
     btnSaveMaterial.textContent = '💾 Actualizar Rollo';
   }
+<<<<<<< HEAD
 
+=======
+  
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
   // Trigger calcularM2 para mostrar el costo
   // Esperar a que se renderice el DOM y luego llamar calcularM2
   setTimeout(() => {
@@ -394,12 +504,17 @@ window.editarMaterial = function (producto) {
       window.calcularM2();
     }
   }, 0);
+<<<<<<< HEAD
 
+=======
+  
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
   // Abrir el modal
   materialModal.classList.add('active');
 };
 
 // Función para borrar un material
+<<<<<<< HEAD
 window.borrarMaterial = async function (materialId) {
   if (!confirm('¿Estás seguro de que quieres borrar este rollo?')) {
     return;
@@ -409,31 +524,59 @@ window.borrarMaterial = async function (materialId) {
     const response = await fetch('/api/materiales');
     let materiales = await response.json();
 
+=======
+window.borrarMaterial = async function(materialId) {
+  if (!confirm('¿Estás seguro de que quieres borrar este rollo?')) {
+    return;
+  }
+  
+  try {
+    const response = await fetch('/api/materiales');
+    let materiales = await response.json();
+    
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
     // Filtrar el material a eliminar
     const materialOriginal = materiales.find(m => m.id === materialId);
     if (!materialOriginal) {
       alert('❌ Material no encontrado');
       return;
     }
+<<<<<<< HEAD
 
     materiales = materiales.filter(m => m.id !== materialId);
 
+=======
+    
+    materiales = materiales.filter(m => m.id !== materialId);
+    
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
     // Guardar los materiales actualizados
     const saveResponse = await fetch('/api/materiales', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(materiales)
     });
+<<<<<<< HEAD
 
     if (saveResponse.ok) {
       alert('✅ Rollo eliminado correctamente');
 
+=======
+    
+    if (saveResponse.ok) {
+      alert('✅ Rollo eliminado correctamente');
+      
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
       // Cerrar el modal de detalles
       const detailsModal = document.getElementById('categoryDetailsModal');
       if (detailsModal) {
         detailsModal.remove();
       }
+<<<<<<< HEAD
 
+=======
+      
+>>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
       // Recargar las categorías y materiales
       if (typeof loadCategorias === 'function') {
         await loadCategorias();

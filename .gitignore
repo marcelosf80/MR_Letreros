@@ -36,3 +36,9 @@ logs/
 # Build
 dist/
 build/
+
+# Executables
+*.exe
+*.dll
+*.so
+*.dylib

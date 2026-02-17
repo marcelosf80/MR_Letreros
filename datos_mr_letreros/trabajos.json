@@ -1,0 +1,42 @@
+{
+  "works": [
+    {
+      "id": "work_1771254166600",
+      "quoteId": "1771254155162",
+      "clientName": "cliente 1",
+      "clientPhone": "03424842417",
+      "clientEmail": "marcelojmaidana@gmail.com",
+      "clientAddress": "Ruperto Godoy 3362",
+      "total": 88322.74,
+      "totalCost": 0,
+      "profit": 88322.74,
+      "paidAmount": 88322.74,
+      "balance": 0,
+      "status": "completed",
+      "paymentStatus": "paid",
+      "priority": "normal",
+      "createdAt": "2026-02-16T15:02:46.600Z",
+      "timeline": [
+        {
+          "type": "created",
+          "description": "Trabajo creado automáticamente desde Clientes",
+          "timestamp": "2026-02-16T15:02:46.600Z"
+        },
+        {
+          "type": "status_changed",
+          "description": "Estado cambiado a: Completado",
+          "timestamp": "2026-02-16T15:03:10.892Z"
+        },
+        {
+          "type": "payment",
+          "description": "Pago recibido: $88322.74",
+          "timestamp": "2026-02-16T15:05:00.190Z"
+        }
+      ],
+      "notes": [],
+      "deliveryStatus": "delivered",
+      "actualDeliveryDate": "2026-02-16T15:17:20.555Z"
+    }
+  ],
+  "notifications": []
+}
