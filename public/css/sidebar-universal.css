@@ -1,0 +1,528 @@
+/**
+ * ========================================
+ * SIDEBAR UNIVERSAL - MR LETREROS
+ * ========================================
+ * Menú lateral consistente para todos los módulos
+ */
+
+/* ==================== VARIABLES ==================== */
+:root {
+  --sidebar-width: 280px;
+  --sidebar-collapsed: 70px;
+  --header-height: 65px;
+  --sidebar-bg: linear-gradient(180deg, rgba(15, 12, 41, 0.98), rgba(36, 36, 62, 0.98));
+  --sidebar-shadow: 4px 0 20px rgba(0, 0, 0, 0.5);
+}
+
+/* ==================== LAYOUT PRINCIPAL ==================== */
+body.has-sidebar {
+  margin-left: var(--sidebar-width);
+  transition: margin-left 0.3s ease;
+}
+
+body.has-sidebar.sidebar-collapsed {
+  margin-left: var(--sidebar-collapsed);
+}
+
+/* ==================== SIDEBAR ==================== */
+.app-sidebar {
+  position: fixed;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: var(--sidebar-width);
+  background: var(--sidebar-bg);
+  backdrop-filter: blur(10px);
+  box-shadow: var(--sidebar-shadow);
+  z-index: 1000;
+  transition: all 0.3s ease;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-sidebar.collapsed {
+  width: var(--sidebar-collapsed);
+}
+
+/* Scrollbar personalizado */
+.app-sidebar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.app-sidebar::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.app-sidebar::-webkit-scrollbar-thumb {
+  background: rgba(255, 140, 66, 0.3);
+  border-radius: 3px;
+}
+
+.app-sidebar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 140, 66, 0.5);
+}
+
+/* ==================== HEADER SIDEBAR ==================== */
+.sidebar-header {
+  padding: 1.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(139, 92, 246, 0.2));
+}
+
+.sidebar-logo-section {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.sidebar-logo {
+  width: 50px;
+  height: 50px;
+  border-radius: 10px;
+  object-fit: contain;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 5px;
+  filter: drop-shadow(0 2px 8px rgba(255, 255, 255, 0.3));
+  transition: all 0.3s;
+}
+
+.collapsed .sidebar-logo {
+  width: 40px;
+  height: 40px;
+}
+
+.sidebar-title {
+  flex: 1;
+  opacity: 1;
+  transition: opacity 0.3s;
+}
+
+.collapsed .sidebar-title {
+  opacity: 0;
+  width: 0;
+  overflow: hidden;
+}
+
+.sidebar-company-name {
+  font-size: 1.1rem;
+  font-weight: 900;
+  color: white;
+  line-height: 1.2;
+  letter-spacing: 0.5px;
+}
+
+.sidebar-tagline {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.6);
+  margin-top: 0.25rem;
+}
+
+/* Botón de toggle */
+.sidebar-toggle {
+  background: rgba(255, 140, 66, 0.2);
+  border: none;
+  color: white;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s;
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+.sidebar-toggle:hover {
+  background: rgba(255, 140, 66, 0.4);
+  transform: scale(1.1);
+}
+
+/* Botón en modo colapsado */
+.collapsed .sidebar-toggle {
+  margin: 0 auto;
+  background: rgba(255, 140, 66, 0.3);
+}
+
+.collapsed .sidebar-header {
+  padding: 1rem 0.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.collapsed .sidebar-logo-section {
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* Info de la empresa */
+.sidebar-company-info {
+  padding: 0.75rem;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  font-size: 0.75rem;
+  opacity: 1;
+  transition: opacity 0.3s;
+}
+
+.collapsed .sidebar-company-info {
+  opacity: 0;
+  height: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+.company-info-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 0.5rem;
+}
+
+.company-info-item:last-child {
+  margin-bottom: 0;
+}
+
+.company-info-icon {
+  font-size: 1rem;
+  width: 20px;
+  text-align: center;
+}
+
+/* ==================== NAVEGACIÓN ==================== */
+.sidebar-nav {
+  flex: 1;
+  padding: 1rem 0;
+}
+
+.nav-section {
+  margin-bottom: 1.5rem;
+}
+
+.nav-section-title {
+  padding: 0.5rem 1.5rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.5);
+  letter-spacing: 1px;
+  transition: opacity 0.3s;
+}
+
+.collapsed .nav-section-title {
+  opacity: 0;
+  height: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.875rem 1.5rem;
+  color: rgba(255, 255, 255, 0.8);
+  text-decoration: none;
+  transition: all 0.3s;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Indicador activo */
+.nav-item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: var(--primary-color);
+  transform: scaleY(0);
+  transition: transform 0.3s;
+}
+
+.nav-item.active::before,
+.nav-item:hover::before {
+  transform: scaleY(1);
+}
+
+.nav-item:hover {
+  background: rgba(255, 140, 66, 0.1);
+  color: white;
+}
+
+.nav-item.active {
+  background: rgba(255, 140, 66, 0.2);
+  color: white;
+  font-weight: 600;
+}
+
+.nav-item-icon {
+  font-size: 1.4rem;
+  width: 28px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.nav-item-content {
+  flex: 1;
+  opacity: 1;
+  transition: opacity 0.3s;
+}
+
+.collapsed .nav-item-content {
+  opacity: 0;
+  width: 0;
+  overflow: hidden;
+}
+
+.nav-item-label {
+  font-size: 0.9rem;
+  font-weight: 500;
+  display: block;
+  line-height: 1.2;
+}
+
+.nav-item-desc {
+  font-size: 0.7rem;
+  opacity: 0.7;
+  display: block;
+  margin-top: 0.2rem;
+}
+
+/* ==================== FOOTER SIDEBAR ==================== */
+.sidebar-footer {
+  padding: 1rem 1.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.sidebar-user {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  opacity: 1;
+  transition: opacity 0.3s;
+}
+
+.collapsed .sidebar-user {
+  opacity: 0;
+  height: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+.sidebar-user-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+.sidebar-user-info {
+  flex: 1;
+}
+
+.sidebar-user-name {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: white;
+  line-height: 1.2;
+}
+
+.sidebar-user-role {
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.6);
+  margin-top: 0.2rem;
+}
+
+/* ==================== MAIN CONTENT ==================== */
+.main-content {
+  min-height: 100vh;
+  padding: 2rem;
+  transition: margin-left 0.3s ease;
+}
+
+/* ==================== TOP BAR (opcional) ==================== */
+.top-bar {
+  position: sticky;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--header-height);
+  background: rgba(15, 12, 41, 0.95);
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 2rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  z-index: 999;
+  margin: -2rem -2rem 2rem -2rem;
+}
+
+.top-bar-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: white;
+}
+
+.top-bar-actions {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+/* ==================== RESPONSIVE ==================== */
+
+/* Tablet */
+@media (max-width: 1024px) {
+  :root {
+    --sidebar-width: 260px;
+  }
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  body.has-sidebar {
+    margin-left: 0;
+  }
+
+  .app-sidebar {
+    transform: translateX(-100%);
+  }
+
+  .app-sidebar.mobile-open {
+    transform: translateX(0);
+  }
+
+  /* Overlay para móvil */
+  .sidebar-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 999;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+  }
+
+  .sidebar-overlay.active {
+    opacity: 1;
+    pointer-events: all;
+  }
+
+  /* Botón hamburguesa para móvil */
+  .mobile-menu-btn {
+    position: fixed;
+    top: 1rem;
+    left: 1rem;
+    z-index: 1001;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    border: none;
+    color: white;
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    cursor: pointer;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    transition: all 0.3s;
+  }
+
+  .mobile-menu-btn:active {
+    transform: scale(0.95);
+  }
+
+  @media (max-width: 768px) {
+    .mobile-menu-btn {
+      display: flex;
+    }
+  }
+
+  .hamburger {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .hamburger span {
+    width: 20px;
+    height: 2px;
+    background: white;
+    border-radius: 2px;
+    transition: all 0.3s;
+  }
+
+  .mobile-menu-btn.active .hamburger span:nth-child(1) {
+    transform: rotate(45deg) translate(5px, 5px);
+  }
+
+  .mobile-menu-btn.active .hamburger span:nth-child(2) {
+    opacity: 0;
+  }
+
+  .mobile-menu-btn.active .hamburger span:nth-child(3) {
+    transform: rotate(-45deg) translate(5px, -5px);
+  }
+}
+
+/* ==================== ANIMACIONES ==================== */
+@keyframes slideInLeft {
+  from {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.app-sidebar {
+  animation: slideInLeft 0.4s ease-out;
+}
+
+/* ==================== UTILIDADES ==================== */
+.tooltip {
+  position: relative;
+}
+
+.tooltip::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  left: 100%;
+  top: 50%;
+  transform: translateY(-50%);
+  margin-left: 1rem;
+  padding: 0.5rem 0.75rem;
+  background: rgba(0, 0, 0, 0.9);
+  color: white;
+  font-size: 0.75rem;
+  border-radius: 6px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s;
+  z-index: 1001;
+}
+
+.collapsed .nav-item:hover::after {
+  opacity: 1;
+}

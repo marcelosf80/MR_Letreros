@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sistema GREMIO - MR Letreros</title>
+  <script src="js/auth.js"></script>
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/sidebar-universal.css">
+  <!-- Nuevos módulos de gestión -->
+  <script src="js/shared/pricing-manager.js"></script>
+  <script src="js/shared/order-status-manager.js"></script>
+  <script src="js/shared/discount-config.js"></script>
+  <script src="js/shared/multi-category-manager.js"></script>
+  <script src="js/shared/work-manager.js"></script>
+  <script src="js/shared/quote-editor.js"></script>
+</head>
+
+<body>
+  <!-- Sidebar Universal (se inserta automáticamente) -->
+
+  <div class="main-content">
+    <!-- Partículas de fondo -->
+    <div class="particles" id="particles"></div>
+
+    <!-- Top Bar -->
+    <div class="top-bar">
+      <h1 class="top-bar-title">🟢 Sistema Gremio</h1>
+      <div class="top-bar-actions">
+        <button class="btn btn-secondary btn-small" onclick="updateStatistics()">🔄 Actualizar</button>
+        <div class="notification-bell" id="notificationBell"
+          style="position: relative; cursor: pointer; font-size: 1.2rem;"
+          onclick="window.location.href='trabajos.html'">
+          🔔
+          <span id="notificationBadge"
+            style="display: none; position: absolute; top: -5px; right: -10px; background: #FF4444; color: white; border-radius: 50%; font-size: 0.7rem; padding: 2px 6px; border: 1px solid white;">0</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="content-container">
+
+      <!-- 1. SECCIÓN SUPERIOR: CLIENTE -->
+      <div class="card mb-4">
+        <div class="section-header">
+          <h2 class="card-title">👤 Datos del Cliente</h2>
+          <div class="actions">
+            <button class="btn btn-secondary btn-small" onclick="clearQuote()">Limpiar Formulario</button>
+          </div>
+        </div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">Nombre del Cliente *</label>
+            <input type="text" id="clientName" class="form-input" placeholder="Nombre del Cliente"
+              oninput="filterHistoryByClient(this.value)">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Teléfono</label>
+            <input type="tel" id="clientPhone" class="form-input" placeholder="Teléfono">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Email</label>
+            <input type="email" id="clientEmail" class="form-input" placeholder="Email">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Dirección</label>
+            <input type="text" id="clientAddress" class="form-input" placeholder="Dirección">
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. SECCIÓN CENTRAL: PRODUCTOS (IZQ) vs HISTORIAL (DER) -->
+      <div class="main-grid">
+
+        <!-- COLUMNA IZQUIERDA: CALCULADORA -->
+        <div class="left-panel">
+          <!-- Productos -->
+          <div class="card mb-4">
+            <div class="section-header">
+              <h2 class="card-title">📦 Productos</h2>
+              <button class="btn btn-primary btn-small" onclick="window.MRModals.open('productModal')">+
+                Agregar</button>
+            </div>
+            <div id="productsList" class="items-list">
+              <p class="empty-state">No hay productos agregados</p>
+            </div>
+          </div>
+
+          <!-- Servicios -->
+          <div class="card">
+            <div class="section-header">
+              <h2 class="card-title">🔧 Servicios Terceros</h2>
+              <button class="btn btn-secondary btn-small" onclick="window.MRModals.open('terceroServiceModal')">+
+                Agregar</button>
+            </div>
+            <div id="terceroServicesList" class="items-list">
+              <p class="empty-state">No hay servicios agregados</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- COLUMNA DERECHA: HISTORIAL DEL CLIENTE -->
+        <div class="right-panel">
+          <div class="card" style="height: 100%;">
+            <div class="card-header">
+              <h2 class="card-title">📜 Historial del Cliente</h2>
+              <div class="flex gap-1">
+                <button class="btn btn-secondary btn-small" onclick="loadQuotations()">Ver Todos</button>
+              </div>
+            </div>
+            <div id="historyFilterMsg"
+              style="padding: 0.5rem; color: var(--primary-color); font-size: 0.9rem; display: none;">
+              Filtrando por: <b id="filterClientName"></b>
+            </div>
+            <div id="quotesList" class="quotes-list" style="max-height: 600px; overflow-y: auto;">
+              <p class="empty-state">Ingresa un cliente para ver su historial</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 3. SECCIÓN INFERIOR: TOTALES Y ACCIONES -->
+      <div class="card mt-4"
+        style="background: linear-gradient(to right, rgba(15, 12, 41, 0.9), rgba(48, 43, 99, 0.9)); border: 1px solid var(--primary-color);">
+        <div class="flex" style="justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 2rem;">
+
+          <!-- Totales -->
+          <div class="flex gap-4" style="flex: 1; min-width: 300px;">
+            <!-- Costos (Pequeño) -->
+            <div style="font-size: 0.85rem; opacity: 0.8;">
+              <div>Mat: <span id="costoMateriales">$0</span></div>
+              <div>Terc: <span id="costoTerceros">$0</span></div>
+              <div style="color: #FF6B6B;">Total Costo: <span id="totalCostos">$0</span></div>
+            </div>
+
+            <!-- Totales Grandes -->
+            <div style="border-left: 1px solid rgba(255,255,255,0.2); padding-left: 1rem;">
+              <div class="flex gap-3 align-items-center">
+                <div>
+                  <small>Subtotal</small>
+                  <div id="subtotal" style="font-size: 1.2rem; font-weight: bold;">$0</div>
+                </div>
+                <div>
+                  <small>IVA (21%)</small>
+                  <div id="iva" style="font-size: 1.2rem; font-weight: bold;">$0</div>
+                </div>
+                <div>
+                  <small style="color: #51CF66;">TOTAL FINAL</small>
+                  <div id="total" style="font-size: 1.8rem; font-weight: bold; color: #51CF66;">$0</div>
+                </div>
+              </div>
+              <div>Ganancia: <span id="gananciaNetaDisplay">$0</span></div>
+            </div>
+          </div>
+
+          <!-- Anticipo y Acciones -->
+          <div class="flex gap-2 align-items-center">
+            <div style="background: rgba(255,255,255,0.1); padding: 0.5rem; border-radius: 8px;">
+              <label style="font-size: 0.8rem;">Anticipo</label>
+              <input type="number" id="montoAnticipo" class="form-input" style="width: 120px; padding: 0.25rem;"
+                placeholder="$0.00" oninput="calcularSaldo()">
+              <div style="font-size: 0.8rem; margin-top: 2px;">Saldo: <span id="saldoPendiente">$0</span></div>
+            </div>
+
+            <button class="btn btn-primary" onclick="saveQuote()"
+              style="height: 50px; font-size: 1.1rem; padding: 0 2rem;">💾 Guardar</button>
+            <button class="btn btn-success" onclick="generatePDF()" style="height: 50px; padding: 0 1rem;">📄
+              PDF</button>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Modal Agregar Producto -->
+    <div class="modal" id="productModal">
+      <div class="modal-content" style="max-width: 700px;">
+        <div class="modal-header">
+          <h2 class="modal-title">📦 Agregar Material a Cotización</h2>
+          <button class="btn-close" id="btnCloseProduct">×</button>
+        </div>
+        <div class="modal-body">
+          <div class="highlight-box" style="margin-bottom: 1.5rem;">
+            <h4>🎯 Seleccionar Material</h4>
+            <div class="form-group">
+              <label class="form-label">Categoría *</label>
+              <select id="productCategory" class="form-select" onchange="loadProductsByCategory()">
+                <option value="">Seleccionar categoría...</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Producto *</label>
+              <select id="productName" class="form-select" onchange="loadProductPrice()" disabled>
+                <option value="">Primero selecciona categoría...</option>
+              </select>
+            </div>
+            <div id="priceInfo"
+              style="display: none; margin-top: 1rem; padding: 1rem; background: rgba(81, 207, 102, 0.1); border-radius: 8px; border: 1px solid rgba(81, 207, 102, 0.3);">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="color: var(--text-secondary);">💚 Precio Gremio por m²:</span>
+                <span id="precioGremioDisplay" style="color: #51CF66; font-size: 1.3rem; font-weight: bold;">$0</span>
+              </div>
+            </div>
+          </div>
+          <div class="highlight-box">
+            <h4>📏 Medidas y Cantidad</h4>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Ancho (cm) *</label>
+                <input type="number" id="productAncho" class="form-input" placeholder="100" min="0.01" step="0.01"
+                  oninput="calcularTotalMaterial()">
+                <small style="color: var(--text-secondary);">Ingresa en centímetros</small>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Alto (cm) *</label>
+                <input type="number" id="productAlto" class="form-input" placeholder="100" min="0.01" step="0.01"
+                  oninput="calcularTotalMaterial()">
+                <small style="color: var(--text-secondary);">Ingresa en centímetros</small>
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Cantidad *</label>
+              <input type="number" id="productCantidad" class="form-input" placeholder="1" min="1" step="1"
+                oninput="calcularTotalMaterial()">
+              <small style="color: var(--text-secondary);">Número de unidades</small>
+            </div>
+          </div>
+          <div class="calc-display" style="margin-top: 1.5rem;">
+            <div class="calc-label">TOTAL DEL MATERIAL</div>
+            <div class="calc-value" id="productTotal">$0.00</div>
+            <div class="calc-formula" id="productFormula">Completa los datos para ver el cálculo</div>
+          </div>
+          <div id="calculoDetalle"
+            style="display: none; margin-top: 1rem; padding: 1rem; background: rgba(255, 255, 255, 0.05); border-radius: 8px;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+              <span style="color: var(--text-secondary);">Metros cuadrados por unidad:</span>
+              <span id="m2PorUnidad" style="color: white; font-weight: bold;">0 m²</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+              <span style="color: var(--text-secondary);">Metros cuadrados totales:</span>
+              <span id="m2Totales" style="color: white; font-weight: bold;">0 m²</span>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+              <span style="color: var(--text-secondary);">Precio unitario (por pieza):</span>
+              <span id="precioUnitario" style="color: var(--primary-color); font-weight: bold;">$0</span>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" id="btnCancelProduct">Cancelar</button>
+          <button class="btn btn-primary" id="btnSaveProduct">➕ Agregar a Cotización</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Agregar Servicio de Tercero -->
+    <div class="modal" id="terceroServiceModal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 class="modal-title">🔧 Agregar Servicio de Tercero</h2>
+          <button class="btn-close" id="btnCloseTerceroService">×</button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label">Servicio *</label>
+            <select id="terceroService" class="form-select" onchange="loadTerceroPrice()">
+              <option value="">Seleccionar servicio...</option>
+            </select>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Cantidad *</label>
+              <input type="number" id="terceroQuantity" class="form-input" placeholder="1" min="0.01" step="0.01"
+                oninput="calcularTotalTercero()">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Tu Costo Unitario *</label>
+              <input type="number" id="terceroCosto" class="form-input" placeholder="0.00" step="0.01" readonly>
+              <small style="color: #FF6B6B;">Lo que te cuesta</small>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Precio para Cliente *</label>
+            <input type="number" id="terceroPrecioCliente" class="form-input" placeholder="0.00" step="0.01" readonly>
+            <small style="color: #51CF66;">Lo que cobras</small>
+          </div>
+
+          <div class="calc-display">
+            <div class="calc-label">COSTO TOTAL (PARA TI)</div>
+            <div class="calc-value" id="terceroTotalCosto" style="color: #FF6B6B;">$0.00</div>
+          </div>
+
+          <div class="calc-display" style="margin-top: 1rem;">
+            <div class="calc-label">TOTAL PARA CLIENTE</div>
+            <div class="calc-value" id="terceroTotal">$0.00</div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" id="btnCancelTerceroService">Cancelar</button>
+          <button class="btn btn-primary" id="btnSaveTerceroService">➕ Agregar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="js/shared/modal-system.js"></script>
+    <script src="js/shared/data-manager-network.js"></script>
+    <script src="js/shared/data-manager-extension.js"></script>
+    <script src="js/shared/sidebar-universal.js"></script>
+    <script src="js/gremio/gremio-main.js"></script>
+    <script src="js/gremio/gremio-extensions.js"></script>
+    <script src="js/gremio/gremio-extensions-v2.js"></script>
+    <!-- ⚠️ NO CARGAR terceros-integration.js - Ya está integrado en gremio-main.js -->
+    <script>
+      // Partículas
+      const particlesContainer = document.getElementById('particles');
+      if (particlesContainer) {
+        for (let i = 0; i < 30; i++) {
+          const particle = document.createElement('div');
+          particle.className = 'particle';
+          particle.style.left = Math.random() * 100 + '%';
+          particle.style.animationDelay = Math.random() * 5 + 's';
+          particlesContainer.appendChild(particle);
+        }
+      }
+    </script>
+  </div>
+</body>
+
+</html>

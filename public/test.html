@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nesting CNC - Visor & Organizador</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    body {
+      font-family: Arial, sans-serif;
+      background: #1a1a1a;
+      color: white;
+      padding: 20px;
+    }
+    
+    h1 { color: #51CF66; margin-bottom: 20px; }
+    
+    .panel {
+      background: rgba(255, 255, 255, 0.05);
+      padding: 20px;
+      border-radius: 12px;
+      margin-bottom: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    button {
+      background: #51CF66;
+      color: black;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 6px;
+      font-weight: bold;
+      font-size: 1rem;
+      cursor: pointer;
+      margin-top: 10px;
+      transition: background 0.2s;
+    }
+    
+    button:hover { background: #45b85a; }
+    
+    input[type="file"] {
+      margin: 10px 0;
+      padding: 10px;
+      background: white;
+      border-radius: 4px;
+      color: black;
+      width: 100%;
+    }
+    
+    label { display: inline-block; margin-right: 10px; font-weight: bold; }
+    
+    input[type="number"] {
+      padding: 8px;
+      width: 90px;
+      margin-right: 20px;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+    }
+    
+    /* Visor Principal */
+    .canvas-container {
+      background-image: 
+        linear-gradient(45deg, #eee 25%, transparent 25%), 
+        linear-gradient(-45deg, #eee 25%, transparent 25%), 
+        linear-gradient(45deg, transparent 75%, #eee 75%), 
+        linear-gradient(-45deg, transparent 75%, #eee 75%);
+      background-size: 20px 20px;
+      background-color: white;
+      border-radius: 8px;
+      height: 400px;
+      width: 100%;
+      margin: 20px 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+      border: 2px solid #555;
+    }
+    
+    /* Estilo para las placas generadas */
+    #sheetsContainer {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      margin-top: 20px;
+    }
+
+    .sheet-card {
+      background: #222;
+      border: 1px solid #51CF66;
+      padding: 10px;
+      border-radius: 8px;
+    }
+
+    .sheet-canvas {
+      background: #fff;
+      border: 1px solid #ccc;
+      display: block;
+      margin-top: 5px;
+    }
+
+    .info-text { color: #aaa; margin-bottom: 5px; font-size: 0.9rem; }
+    
+    #result {
+      font-size: 1.1rem;
+      color: #51CF66;
+      padding: 10px;
+      background: rgba(81, 207, 102, 0.1);
+      border-radius: 5px;
+      margin-bottom: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>🛠️ Visor & Nesting Básico (Corel Fix)</h1>
+  
+  <div class="panel">
+    <label><strong>1. Cargar Diseño (SVG):</strong></label><br>
+    <input type="file" id="fileInput" accept=".svg">
+    <div id="result">Esperando archivo...</div>
+  </div>
+
+  <!-- Visor del archivo individual -->
+  <div class="canvas-container">
+    <canvas id="previewCanvas"></canvas>
+  </div>
+
+  <div class="panel">
+    <label><strong>2. Configuración de Placa (Material):</strong></label><br><br>
+    
+    <label>Ancho (cm):</label>
+    <input type="number" id="sheetWidth" value="120">
+    
+    <label>Alto (cm):</label>
+    <input type="number" id="sheetHeight" value="60">
+
+    <label>Separación (mm):</label>
+    <input type="number" id="gap" value="5">
+    
+    <br><br>
+    <button id="nestBtn">🧩 ORGANIZAR PIEZAS</button>
+  </div>
+
+  <h3 style="border-top: 1px solid #444; padding-top: 20px;">📦 Resultado del Nesting:</h3>
+  <div id="sheetsContainer"></div>
+
+  <script>
+    // Variables Globales para guardar el estado del SVG cargado
+    let loadedSvgImage = null; // La imagen en memoria
+    let svgRealWidth = 0;      // Ancho real en cm (o unidades del svg)
+    let svgRealHeight = 0;     // Alto real en cm (o unidades del svg)
+
+    // Elementos del DOM
+    const fileInput = document.getElementById('fileInput');
+    const previewCanvas = document.getElementById('previewCanvas');
+    const ctxPreview = previewCanvas.getContext('2d');
+    const resultDiv = document.getElementById('result');
+    const nestBtn = document.getElementById('nestBtn');
+    const sheetsContainer = document.getElementById('sheetsContainer');
+
+    // Función para ajustar el tamaño del canvas preview
+    function resizePreview() {
+        const container = document.querySelector('.canvas-container');
+        previewCanvas.width = container.clientWidth;
+        previewCanvas.height = container.clientHeight;
+        if(loadedSvgImage) drawPreview(); // Redibujar si hay imagen
+    }
+    window.addEventListener('resize', resizePreview);
+    resizePreview();
+
+    // --- 1. CARGA DEL ARCHIVO (Lógica corregida) ---
+    fileInput.addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(event) {
+        const svgContent = event.target.result;
+        
+        // A. Parsear Dimensiones (Fix NaN)
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(svgContent, "image/svg+xml");
+        const svgElement = doc.documentElement;
+        
+        let width = 0, height = 0;
+        
+        // Intento 1: ViewBox
+        const viewBox = svgElement.getAttribute('viewBox');
+        if (viewBox) {
+            const values = viewBox.split(/[\s,]+/).filter(v => v !== '').map(parseFloat);
+            if (values.length === 4) { width = values[2]; height = values[3]; }
+        }
+
+        // Intento 2: Atributos width/height limpios
+        if (!width || !height) {
+            const wAttr = svgElement.getAttribute('width');
+            const hAttr = svgElement.getAttribute('height');
+            if(wAttr) width = parseFloat(wAttr);
+            if(hAttr) height = parseFloat(hAttr);
+        }
+
+        // Fallback
+        if (!width || isNaN(width)) width = 100;
+        if (!height || isNaN(height)) height = 100;
+
+        // GUARDAR EN VARIABLES GLOBALES PARA EL NESTING
+        svgRealWidth = width;
+        svgRealHeight = height;
+
+        resultDiv.innerHTML = `✅ Diseño detectado: <strong>${width.toFixed(2)} x ${height.toFixed(2)}</strong> unidades`;
+
+        // B. Preparar Imagen
+        loadedSvgImage = new Image();
+        const blob = new Blob([svgContent], {type: 'image/svg+xml'});
+        const url = URL.createObjectURL(blob);
+
+        loadedSvgImage.onload = function() {
+            drawPreview();
+            URL.revokeObjectURL(url);
+        };
+        loadedSvgImage.src = url;
+      };
+      reader.readAsText(file);
+    });
+
+    // Función para dibujar en el visor superior (Solo preview)
+    function drawPreview() {
+        if (!loadedSvgImage) return;
+        
+        ctxPreview.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+
+        // Escalar para ajustar "Zoom to Fit"
+        const scaleX = (previewCanvas.width - 40) / svgRealWidth;
+        const scaleY = (previewCanvas.height - 40) / svgRealHeight;
+        const scale = Math.min(scaleX, scaleY);
+
+        const drawW = svgRealWidth * scale;
+        const drawH = svgRealHeight * scale;
+        const startX = (previewCanvas.width - drawW) / 2;
+        const startY = (previewCanvas.height - drawH) / 2;
+
+        // Borde referencia
+        ctxPreview.strokeStyle = '#51CF66';
+        ctxPreview.setLineDash([5, 5]);
+        ctxPreview.strokeRect(startX, startY, drawW, drawH);
+        ctxPreview.setLineDash([]);
+
+        // Dibujo
+        ctxPreview.drawImage(loadedSvgImage, startX, startY, drawW, drawH);
+    }
+
+    // --- 2. LÓGICA DE ORGANIZAR (NESTING RECTANGULAR) ---
+    nestBtn.addEventListener('click', () => {
+        if (!loadedSvgImage) {
+            alert("⚠️ Por favor carga un archivo SVG primero.");
+            return;
+        }
+
+        // Obtener datos del formulario
+        const sheetW_cm = parseFloat(document.getElementById('sheetWidth').value);
+        const sheetH_cm = parseFloat(document.getElementById('sheetHeight').value);
+        const gap_mm = parseFloat(document.getElementById('gap').value);
+        
+        // Convertir todo a la misma unidad (asumimos que el SVG viene en CM o MM)
+        // IMPORTANTE: Aquí asumimos que las unidades del SVG coinciden con el input CM.
+        // Si el SVG está en mm y el input en cm, habría que convertir.
+        // Para este ejemplo simple, tratamos los inputs como "Unidades del sistema".
+        
+        // Conversión simple: Asumimos que el input es igual a la unidad del SVG
+        // (Si tu Corel exporta en mm, pon las medidas de placa en mm: 1220 x 2440)
+        // (Si tu Corel exporta en cm, pon las medidas de placa en cm: 122 x 244)
+        
+        const gap = gap_mm / 10; // Convertir mm a cm (asumiendo base cm)
+        
+        const sheetW = sheetW_cm; 
+        const sheetH = sheetH_cm;
+
+        // Cálculo de cuántos caben (Matriz simple)
+        const effectiveItemW = svgRealWidth + gap;
+        const effectiveItemH = svgRealHeight + gap;
+
+        // Filas y Columnas
+        const cols = Math.floor(sheetW / effectiveItemW);
+        const rows = Math.floor(sheetH / effectiveItemH);
+        const totalPieces = cols * rows;
+
+        // Limpiar resultados anteriores
+        sheetsContainer.innerHTML = '';
+
+        if (totalPieces <= 0) {
+            sheetsContainer.innerHTML = '<div class="alert" style="color:orange">⚠️ El diseño es más grande que la placa.</div>';
+            return;
+        }
+
+        // --- CREAR CANVAS DE RESULTADO ---
+        
+        // Crear contenedor visual de la tarjeta
+        const card = document.createElement('div');
+        card.className = 'sheet-card';
+        
+        const info = document.createElement('div');
+        info.className = 'info-text';
+        info.innerHTML = `<strong>Placa 1:</strong> Caben ${totalPieces} piezas (${cols} x ${rows})`;
+        card.appendChild(info);
+
+        const resCanvas = document.createElement('canvas');
+        // Tamaño visual en pantalla (fijo max ancho 300px para no ocupar todo)
+        const displayScale = 300 / sheetW; 
+        resCanvas.width = 300;
+        resCanvas.height = sheetH * displayScale;
+        resCanvas.className = 'sheet-canvas';
+        
+        const ctxRes = resCanvas.getContext('2d');
+
+        // 1. Dibujar Fondo Placa
+        ctxRes.fillStyle = '#eee';
+        ctxRes.fillRect(0, 0, resCanvas.width, resCanvas.height);
+
+        // 2. Dibujar Piezas
+        // Necesitamos calcular la escala para dibujar dentro de este canvas pequeño
+        // Factor de escala = (Ancho Canvas / Ancho Real Placa)
+        const scaleFactor = resCanvas.width / sheetW;
+
+        for (let r = 0; r < rows; r++) {
+            for (let c = 0; c < cols; c++) {
+                // Posición X, Y
+                const posX = (c * effectiveItemW);
+                const posY = (r * effectiveItemH);
+
+                // Dibujar en canvas escalado
+                ctxRes.drawImage(
+                    loadedSvgImage, 
+                    posX * scaleFactor,     // x
+                    posY * scaleFactor,     // y
+                    svgRealWidth * scaleFactor, // width
+                    svgRealHeight * scaleFactor // height
+                );
+                
+                // Dibujar un borde rojo fino alrededor de cada pieza (corte)
+                ctxRes.strokeStyle = 'rgba(255,0,0,0.5)';
+                ctxRes.lineWidth = 1;
+                ctxRes.strokeRect(
+                    posX * scaleFactor, 
+                    posY * scaleFactor, 
+                    svgRealWidth * scaleFactor, 
+                    svgRealHeight * scaleFactor
+                );
+            }
+        }
+
+        card.appendChild(resCanvas);
+        sheetsContainer.appendChild(card);
+    });
+  </script>
+</body>
+</html>

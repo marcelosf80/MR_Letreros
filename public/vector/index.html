@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CNC Nesting Pro</title>
+    <link rel="stylesheet" href="../css/base.css">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        body { padding: 0; }
+        .container { padding: 20px; margin-top: 20px; }
+        .particles { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
+        .particle { position: absolute; width: 4px; height: 4px; background: rgba(255, 255, 255, 0.3); border-radius: 50%; animation: float 15s infinite; }
+        @keyframes float { 0%, 100% { transform: translateY(0) translateX(0); opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { transform: translateY(-100vh) translateX(100px); opacity: 0; } }
+        
+        /* Estilos para botones de flujo */
+        .btn-action { flex: 1; border: none; color: white; padding: 10px; border-radius: 4px; cursor: pointer; font-weight: bold; transition: opacity 0.2s; font-size: 0.9em; }
+        .btn-action:hover { opacity: 0.9; }
+        .btn-action:disabled { opacity: 0.5; cursor: not-allowed; background: #555 !important; }
+        .btn-icon { width: 40px; border: 1px solid #555; background: #333; color: white; border-radius: 4px; cursor: pointer; font-size: 1.2em; display: flex; align-items: center; justify-content: center; }
+        .btn-icon:hover { background: #444; }
+        
+        .step-section { margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px dashed #444; }
+        .step-title { margin: 0 0 8px 0; font-size: 0.85em; text-transform: uppercase; letter-spacing: 1px; opacity: 0.8; }
+        .flex-row { display: flex; gap: 5px; margin-bottom: 5px; }
+    </style>
+</head>
+<body>
+
+    <!-- Partículas de fondo -->
+    <div class="particles" id="particles"></div>
+
+    <header class="main-header">
+        <div class="header-left">
+            <img src="../img/logo.png" alt="MR Letreros" class="logo-img">
+            <a href="../index.html" class="btn-home">← Volver al Inicio</a>
+        </div>
+        <div class="header-title">🚀 OPTIMIZADOR CNC</div>
+    </header>
+
+    <div class="container">
+        <!-- Panel de Control -->
+        <div class="controls">
+            <h3>⚙️ Configuración</h3>
+            
+            <label>1. Cargar Archivo (SVG, PDF, JPG, PNG)</label>
+            <input type="file" id="fileInput" accept=".svg,.pdf,.jpg,.jpeg,.png,.bmp">
+            
+            <!-- NUEVO: Pequeña vista previa inmediata -->
+            <div id="miniPreview" style="margin-top:10px; border:1px dashed #555; padding:5px; display:none;">
+                <label style="margin:0; font-size:0.8em;">Archivo detectado:</label>
+                <img id="sourcePreviewImg" style="width:100%; max-height:150px; object-fit:contain;">
+            </div>
+
+            <!-- NUEVO: Panel de Ajustes de Vectorización (Oculto por defecto) -->
+            <div id="vectorOptions" style="display:none; background:rgba(255,255,255,0.05); padding:10px; border-radius:5px; margin-top:10px; border:1px solid #555;">
+                <h4 style="margin:0 0 10px 0; color:#51CF66; font-size:0.9em;">🎛️ Ajustes de Vectorización</h4>
+                
+                <label style="margin-top:0; font-size:0.8em;">Suavizado (Detalle)</label>
+                <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+                    <input type="range" id="smoothing" min="0.1" max="4" step="0.1" value="0.5" style="flex:1;">
+                    <span id="smoothingVal" style="font-size:0.8em; width:30px; text-align:right;">0.5</span>
+                </div>
+
+                <label style="margin-top:0; font-size:0.8em;">Ignorar Manchas (Ruido)</label>
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <input type="range" id="noise" min="0" max="100" step="1" value="8" style="flex:1;">
+                    <span id="noiseVal" style="font-size:0.8em; width:30px; text-align:right;">8</span>
+                </div>
+
+                <label style="margin-top:0; font-size:0.8em;">Colores (Detalle)</label>
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <input type="range" id="colors" min="2" max="16" step="1" value="2" style="flex:1;">
+                    <span id="colorsVal" style="font-size:0.8em; width:30px; text-align:right;">2</span>
+                </div>
+            </div>
+
+            <!-- NUEVO: Panel de Flujo de Trabajo (Movido aquí) -->
+            <div id="workflowActions" style="display:none; margin-top:20px; background:rgba(0,0,0,0.2); padding:15px; border-radius:8px; border:1px solid #444;">
+                
+                <!-- Paso 1: Imagen (Solo visible si es imagen) -->
+                <div id="imageOps" class="step-section">
+                    <h4 class="step-title" style="color:#FFD43B;">1. Procesar Imagen</h4>
+                    <div class="flex-row">
+                        <button id="btnRemoveBg" class="btn-action" style="background:#e03131;">🪄 Quitar Fondo</button>
+                        <button id="btnDownloadPng" class="btn-icon" style="display:none;" title="Descargar PNG">💾</button>
+                    </div>
+                    <div class="flex-row">
+                        <button id="btnVectorize" class="btn-action" style="background:#1098ad;">📐 Vectorizar</button>
+                        <button id="btnDownloadSvg" class="btn-icon" style="display:none;" title="Descargar SVG">💾</button>
+                    </div>
+                    
+                    <!-- NUEVO: Botones de Ampliar -->
+                    <div class="flex-row" style="margin-top: 5px;">
+                        <button id="btnUpscale" class="btn-action" style="background:#7950f2;">🔍 Ampliar Imagen</button>
+                        <select id="upscaleScale" style="width: auto; padding: 5px; background: #333; color: white; border: 1px solid #555; border-radius: 4px;">
+                            <option value="2">2x</option>
+                            <option value="3">3x</option>
+                            <option value="4">4x</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Paso 2: Nesting -->
+                <h4 class="step-title" style="color:#51CF66;">2. Optimización</h4>
+                <button id="btnNest" class="btn-action" style="background:#51CF66; width:100%; margin-bottom:15px;">🧩 Acomodar en Placa</button>
+
+                <!-- Paso 3: CNC -->
+                <h4 class="step-title" style="color:#339AF0;">3. Corte CNC</h4>
+                <button id="btnCalcToolpath" class="btn-action" style="background:#339AF0; width:100%;">🚜 Crear Trayectoria</button>
+            </div>
+
+            <!-- NUEVO: Escala Real -->
+            <div style="margin-top:15px; padding:10px; background:rgba(255,255,255,0.05); border-radius:5px; border:1px solid #555;">
+                <label style="margin:0; color:#FFD43B;">📏 Ancho Real del Diseño (cm)</label>
+                <input type="number" id="realWidthCm" placeholder="Ej: 30" style="width:100%; margin-top:5px;">
+                <small style="color:#aaa;">Define esto antes de vectorizar para tener medidas reales.</small>
+            </div>
+
+            <label>2. Ancho de Placa</label>
+            <input type="number" id="sheetWidth" value="1200">
+
+            <label>3. Alto de Placa</label>
+            <input type="number" id="sheetHeight" value="600">
+
+            <label>4. Separación (Gap)</label>
+            <input type="number" id="gap" value="5">
+
+            <label>5. Dirección de Organización</label>
+            <select id="nestDirection" style="width: 100%; padding: 10px; margin-top: 5px; background: #404040; border: 1px solid #555; color: white; border-radius: 5px;">
+                <option value="horizontal">Horizontal (Filas)</option>
+                <option value="vertical">Vertical (Columnas)</option>
+            </select>
+
+            <div class="checkbox-container">
+                <input type="checkbox" id="allowRotation" checked>
+                <label for="allowRotation">🔄 Permitir Rotación (90°)</label>
+            </div>
+
+            <!-- NUEVO: Configuración CNC -->
+            <div style="margin-top:15px; border-top:1px solid #555; padding-top:10px;">
+                <h4 style="margin:0 0 10px 0; color:#339AF0; font-size:0.9em;">🚜 Configuración CNC</h4>
+                
+                <div style="display:flex; gap:10px;">
+                    <div style="flex:1">
+                        <label style="margin:0; font-size:0.8em;">Profundidad (Z)</label>
+                        <input type="number" id="cncCutDepth" value="-1.0" step="0.1" style="width:100%;">
+                    </div>
+                    <div style="flex:1">
+                        <label style="margin:0; font-size:0.8em;">Velocidad (F)</label>
+                        <input type="number" id="cncFeedRate" value="1200" step="100" style="width:100%;">
+                    </div>
+                </div>
+                
+                <div style="margin-top:5px;">
+                     <input type="checkbox" id="showToolpath">
+                     <label for="showToolpath" style="display:inline; font-size:0.9em;">👁️ Ver Recorrido</label>
+                </div>
+                <div style="margin-top:5px;">
+                     <input type="checkbox" id="reversePath">
+                     <label for="reversePath" style="display:inline; font-size:0.9em;">🔄 Invertir Orden</label>
+                </div>
+                <div style="margin-top:5px;">
+                     <input type="checkbox" id="safeTravel">
+                     <label for="safeTravel" style="display:inline; font-size:0.9em;">🛡️ Viajar por Bordes (Evitar Cruces)</label>
+                </div>
+                <div style="margin-top:5px;">
+                     <input type="checkbox" id="ecoCutMode">
+                     <label for="ecoCutMode" style="display:inline; font-size:0.9em;">🔥 Modo Corte Continuo (EcoCut)</label>
+                </div>
+
+                <div style="display:flex; gap:10px; margin-top:10px;">
+                    <div style="flex:1">
+                        <label style="margin:0; font-size:0.8em;">Parking X</label>
+                        <input type="number" id="parkX" value="0" style="width:100%;">
+                    </div>
+                    <div style="flex:1">
+                        <label style="margin:0; font-size:0.8em;">Parking Y</label>
+                        <input type="number" id="parkY" value="0" style="width:100%;">
+                    </div>
+                </div>
+
+                <!-- NUEVO: Controles de Simulación -->
+                <div id="simControls" style="margin-top:15px; border-top:1px dashed #555; padding-top:10px; display:none;">
+                    <h4 style="margin:0 0 10px 0; color:#e03131; font-size:0.9em;">🎮 Control Simulación</h4>
+                    
+                    <label style="margin:0; font-size:0.8em;">Velocidad de Reproducción</label>
+                    <input type="range" id="simSpeed" min="0.1" max="5" step="0.1" value="1" style="width:100%;">
+                    
+                    <div style="display:flex; gap:5px; margin-top:10px;">
+                        <button id="btnPauseSim" style="flex:1; background:#f59f00; border:none; color:white; padding:5px; border-radius:4px; cursor:pointer;">⏸️ Pausa</button>
+                        <button id="btnResumeSim" style="flex:1; background:#51CF66; border:none; color:white; padding:5px; border-radius:4px; cursor:pointer; display:none;">▶️ Seguir</button>
+                        <button id="btnStopSim" style="flex:1; background:#e03131; border:none; color:white; padding:5px; border-radius:4px; cursor:pointer;">⏹️ Stop</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Panel Hilo Caliente -->
+            <div style="margin-top:15px; border-top:1px solid #555; padding-top:10px; background:rgba(255,87,34,0.1); border-radius:4px; padding:10px;">
+                <h4 style="margin:0 0 10px 0; color:#FF5722; font-size:0.9em;">🔥 Corte Hilo Caliente (Ackon Eco3)</h4>
+                
+                <label style="margin:0; font-size:0.8em;">Material (Preset)</label>
+                <select id="hwMaterial" style="width:100%; padding:5px; background:#333; color:white; border:1px solid #555; border-radius:4px; margin-bottom:10px;">
+                    <option value="eps_20">Telgopor (EPS) 20mm</option>
+                    <option value="eps_50">Telgopor (EPS) 50mm</option>
+                    <option value="xps_20">Polyfan (XPS) 20mm</option>
+                    <option value="xps_50">Polyfan (XPS) 50mm</option>
+                    <option value="custom">Personalizado / Manual</option>
+                </select>
+
+                <div style="display:flex; gap:10px;">
+                    <div style="flex:1">
+                        <label style="margin:0; font-size:0.8em;">Velocidad (mm/min)</label>
+                        <input type="number" id="hwSpeed" value="300" style="width:100%;">
+                    </div>
+                    <div style="flex:1">
+                        <label style="margin:0; font-size:0.8em;">Temp (0-1000)</label>
+                        <input type="number" id="hwTemp" value="350" style="width:100%;">
+                    </div>
+                </div>
+
+                <button id="btnGenHotWire" class="btn-action" style="background:#FF5722; margin-top:10px;">🔥 Generar G-Code Hilo</button>
+                
+                <div id="hwStats" style="margin-top:10px; font-size:0.8em; color:#ccc; display:none;">
+                    <p style="margin:2px 0;">📏 Longitud: <span id="hwLen">0</span> mm</p>
+                    <p style="margin:2px 0;">⏱️ Tiempo est.: <span id="hwTime">0</span> min</p>
+                </div>
+            </div>
+
+            <p id="statusMsg" style="margin-top:10px; font-weight:bold; min-height:20px;"></p>
+        </div>
+
+        <!-- Barra de Progreso (Oculta por defecto) -->
+        <div id="nestingProgressContainer" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); width:300px; background:#222; padding:20px; border-radius:8px; border:1px solid #555; z-index:3000; text-align:center; box-shadow: 0 0 20px rgba(0,0,0,0.8);">
+            <h4 style="margin:0 0 10px 0; color:#fff;">⏳ Optimizando...</h4>
+            <div style="width:100%; height:10px; background:#444; border-radius:5px; overflow:hidden;">
+                <div id="nestingProgressBar" style="width:0%; height:100%; background:#51CF66; transition:width 0.1s;"></div>
+            </div>
+            <p id="nestingProgressText" style="margin:5px 0 0 0; color:#ccc; font-size:0.9em;">0%</p>
+        </div>
+
+        <!-- Área de Resultados -->
+        <div class="preview">
+            <div class="stats-bar" id="statsBar">Esperando archivo...</div>
+            <div id="sheetsContainer"></div>
+        </div>
+    </div>
+
+    <!-- Contenedores ocultos -->
+    <div id="hiddenSvgContainer"></div>
+
+    <!-- MODAL SIMULADOR 3D -->
+    <div id="sim3dModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:1000;">
+        <div style="position:absolute; top:20px; right:20px; z-index:1001;">
+            <button id="closeSim3d" style="background:#e03131; color:white; border:none; padding:10px 20px; font-size:16px; cursor:pointer; border-radius:4px;">❌ Cerrar</button>
+        </div>
+        
+        <!-- Controles Flotantes -->
+        <div style="position:absolute; bottom:20px; left:50%; transform:translateX(-50%); z-index:1001; background:rgba(0,0,0,0.7); padding:15px; border-radius:8px; display:flex; gap:15px; align-items:center;">
+            <button id="sim3dPlay" style="background:#51CF66; border:none; color:white; padding:8px 15px; border-radius:4px; cursor:pointer;">▶️ Play</button>
+            <button id="sim3dPause" style="background:#f59f00; border:none; color:white; padding:8px 15px; border-radius:4px; cursor:pointer; display:none;">⏸️ Pausa</button>
+            <button id="sim3dReset" style="background:#339AF0; border:none; color:white; padding:8px 15px; border-radius:4px; cursor:pointer;">⏮️ Reiniciar</button>
+            
+            <div style="display:flex; flex-direction:column; width:150px;">
+                <label style="color:white; font-size:12px;">Velocidad</label>
+                <input type="range" id="sim3dSpeed" min="1" max="20" value="5" style="width:100%;">
+            </div>
+            
+            <div style="color:white; font-family:monospace; font-size:14px;" id="sim3dStatus">Listo</div>
+        </div>
+
+        <div id="sim3dContainer" style="width:100%; height:100%;"></div>
+    </div>
+
+    <!-- MODAL EDICIÓN FABRIC.JS -->
+    <div id="fabricModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:2000; align-items:center; justify-content:center;">
+        <div style="background:#222; padding:20px; border-radius:8px; width:90%; height:90%; display:flex; flex-direction:column;">
+            <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                <h3 style="margin:0; color:#51CF66;">✏️ Editor de Pieza</h3>
+                <div>
+                    <button id="btnZoomIn" style="background:#339AF0; border:none; padding:5px 10px; cursor:pointer; border-radius:4px; color:white; margin-right:5px; font-weight:bold;" title="Acercar">+</button>
+                    <button id="btnZoomOut" style="background:#339AF0; border:none; padding:5px 10px; cursor:pointer; border-radius:4px; color:white; margin-right:5px; font-weight:bold;" title="Alejar">-</button>
+                    <button id="btnRotateCCW" style="background:#444; border:none; padding:5px 10px; cursor:pointer; border-radius:4px; color:white; margin-right:5px;" title="Rotar Anti-Horario">↺</button>
+                    <button id="btnRotateCW" style="background:#444; border:none; padding:5px 10px; cursor:pointer; border-radius:4px; color:white; margin-right:5px;" title="Rotar Horario">↻</button>
+                    <button id="btnFlipX" style="background:#444; border:none; padding:5px 10px; cursor:pointer; border-radius:4px; color:white; margin-right:5px;" title="Espejo Horizontal">↔</button>
+                    <button id="btnFlipY" style="background:#444; border:none; padding:5px 10px; cursor:pointer; border-radius:4px; color:white; margin-right:15px;" title="Espejo Vertical">↕</button>
+                    <button id="btnDeletePart" style="background:#e03131; border:none; padding:5px 15px; cursor:pointer; border-radius:4px; color:white; margin-right:5px; font-weight:bold;" title="Eliminar Pieza">🗑️</button>
+                    <button id="btnSaveFabric" style="background:#51CF66; border:none; padding:5px 15px; cursor:pointer; border-radius:4px; font-weight:bold;">💾 Guardar Cambios</button>
+                    <button onclick="document.getElementById('fabricModal').style.display='none'" style="background:#e03131; border:none; padding:5px 15px; cursor:pointer; border-radius:4px; color:white;">❌ Cancelar</button>
+                </div>
+            </div>
+            <div id="fabricContainer" style="flex:1; background:#fff; overflow:hidden; border-radius:4px; position:relative;">
+                <canvas id="fabricCanvas"></canvas>
+            </div>
+            <p style="color:#aaa; font-size:0.8em; margin-top:5px;">Usa los controles azules para escalar y rotar. Arrastra para mover.</p>
+        </div>
+    </div>
+
+    <footer style="text-align: center; padding: 20px; margin-top: 40px; color: #888; font-size: 0.8rem; border-top: 1px solid #333; position: relative; z-index: 1;">
+        <p>&copy; 2026 MR Letreros - Sistema de Gestión</p>
+    </footer>
+
+    <!-- Scripts -->
+    <!-- PDF.js para importación de PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.107/pdf.min.js"></script>
+    <script>
+        // Configuración del "worker" para que PDF.js pueda procesar archivos en segundo plano.
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.107/pdf.worker.min.js';
+    </script>
+    <!-- NUEVO: Librería de IA para quitar fondos (Carga como Módulo para evitar errores) -->
+    <script type="module">
+        import { removeBackground } from 'https://cdn.jsdelivr.net/npm/@imgly/background-removal/+esm';
+        window.removeBackgroundAI = removeBackground;
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/imagetracerjs@1.2.6/imagetracer_v1.2.6.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/javascript-clipper/6.4.2.2/clipper.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="js/pdf-importer.js"></script>
+    <script src="js/globals.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/settings.js"></script>
+    <script src="js/packer.js"></script>
+    <script src="js/vectorizer.js"></script> <!-- Este es el archivo que acabamos de crear -->
+    <script src="js/upscaler.js"></script> <!-- NUEVO: Script de upscaling -->
+    <script src="js/editor.js"></script>
+    <script src="js/nester.js"></script>
+    <script src="js/gcode.js"></script>
+    <script src="js/simulation.js"></script>
+    <script src="js/hotWireCNC.js"></script>
+    <script src="js/app.js"></script>
+    <script>
+        // Partículas
+        const particlesContainer = document.getElementById('particles');
+        if(particlesContainer) {
+            for (let i = 0; i < 30; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.animationDelay = Math.random() * 5 + 's';
+                particlesContainer.appendChild(particle);
+            }
+        }
+    </script>
+
+</body>
+</html>

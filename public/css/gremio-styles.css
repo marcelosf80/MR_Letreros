@@ -1,0 +1,427 @@
+/* ==================== GREMIO MODULE - STYLES ==================== */
+
+:root {
+  --gremio-color: #22C55E;
+  --gremio-dark: #16A34A;
+}
+
+/* Modal de Productos */
+.modal-product {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(10px);
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.modal-product.active {
+  display: flex;
+}
+
+.modal-product-content {
+  background: rgba(15, 12, 41, 0.95);
+  backdrop-filter: blur(30px);
+  border-radius: 20px;
+  max-width: 700px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  animation: modalSlideIn 0.4s ease-out;
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-50px) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.modal-header {
+  background: linear-gradient(135deg, var(--gremio-color), var(--gremio-dark));
+  padding: 1.5rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-radius: 20px 20px 0 0;
+  box-shadow: 0 4px 15px rgba(34, 197, 94, 0.3);
+}
+
+.modal-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.modal-close {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 1.5rem;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-close:hover {
+  transform: rotate(90deg);
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.modal-body {
+  padding: 2rem;
+}
+
+/* Productos List */
+.products-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.product-item {
+  background: rgba(34, 197, 94, 0.1);
+  border: 2px solid rgba(34, 197, 94, 0.3);
+  border-radius: 12px;
+  padding: 1.5rem;
+  transition: all 0.3s;
+}
+
+.product-item:hover {
+  border-color: var(--gremio-color);
+  box-shadow: 0 8px 25px rgba(34, 197, 94, 0.2);
+  transform: translateY(-2px);
+}
+
+.product-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  margin-bottom: 1rem;
+}
+
+.product-title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--gremio-color);
+  margin: 0;
+}
+
+.product-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.product-details {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.detail-item {
+  background: rgba(255, 255, 255, 0.05);
+  padding: 0.75rem;
+  border-radius: 8px;
+  border-left: 3px solid var(--gremio-color);
+}
+
+.detail-label {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.6);
+  margin-bottom: 0.25rem;
+}
+
+.detail-value {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.product-price {
+  text-align: right;
+  font-size: 1.3rem;
+  font-weight: bold;
+  color: var(--gremio-color);
+}
+
+/* Modal de Terceros */
+.modal-tercero {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(10px);
+  z-index: 1001;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.modal-tercero.active {
+  display: flex;
+}
+
+.modal-tercero-content {
+  background: rgba(15, 12, 41, 0.95);
+  backdrop-filter: blur(30px);
+  border-radius: 20px;
+  max-width: 600px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+/* Stat Cards */
+.stat-card {
+  background: rgba(34, 197, 94, 0.1);
+  border: 2px solid rgba(34, 197, 94, 0.3);
+  border-radius: 12px;
+  padding: 1.5rem;
+  text-align: center;
+  transition: all 0.3s;
+}
+
+.stat-card:hover {
+  border-color: var(--gremio-color);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(34, 197, 94, 0.2);
+}
+
+.stat-label {
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.6);
+  margin-bottom: 0.5rem;
+}
+
+.stat-value {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--gremio-color);
+}
+
+/* Select para clientes */
+.select-input {
+  width: 100%;
+  padding: 0.75rem;
+  background: rgba(0, 0, 0, 0.4);
+  border: 2px solid rgba(34, 197, 94, 0.3);
+  border-radius: 10px;
+  color: white;
+  font-size: 1rem;
+  backdrop-filter: blur(10px);
+  transition: all 0.3s;
+  font-family: inherit;
+}
+
+.select-input:focus {
+  outline: none;
+  border-color: var(--gremio-color);
+  background: rgba(0, 0, 0, 0.6);
+  box-shadow: 0 0 20px rgba(34, 197, 94, 0.2);
+}
+
+.select-input option {
+  background: #1a1a2e;
+  color: white;
+}
+
+/* Respnsive */
+@media (max-width: 768px) {
+  .product-details {
+    grid-template-columns: 1fr;
+  }
+
+  .product-header {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .product-actions {
+    width: 100%;
+  }
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, var(--gremio-color), var(--gremio-dark));
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--gremio-color);
+}
+
+/* Header styles */
+.main-header .header-title h1 {
+  color: white !important;
+  background: none !important;
+  -webkit-text-fill-color: white !important;
+  font-weight: 700;
+  font-size: 2rem;
+}
+
+/* ==================== TERCEROS INTEGRATION STYLES ==================== */
+
+.servicio-card-gremio {
+  background: linear-gradient(135deg, rgba(255, 140, 66, 0.08) 0%, rgba(255, 107, 53, 0.04) 100%);
+  border: 1px solid rgba(255, 140, 66, 0.3);
+  border-radius: 12px;
+  padding: 1.2rem;
+  margin-bottom: 1rem;
+  transition: all 0.3s ease;
+}
+
+.servicio-card-gremio:hover {
+  background: linear-gradient(135deg, rgba(255, 140, 66, 0.12) 0%, rgba(255, 107, 53, 0.08) 100%);
+  border-color: #FF8C42;
+  box-shadow: 0 8px 20px rgba(255, 140, 66, 0.2);
+}
+
+.servicio-header-gremio {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+  padding-bottom: 0.8rem;
+  border-bottom: 1px solid rgba(255, 140, 66, 0.2);
+}
+
+.servicio-info-gremio h4 {
+  margin: 0 0 0.5rem 0;
+  color: #FF8C42;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.servicio-meta-gremio {
+  display: flex;
+  gap: 0.5rem;
+  margin: 0;
+  flex-wrap: wrap;
+}
+
+.tag-empresa {
+  display: inline-block;
+  background: rgba(34, 197, 94, 0.3);
+  color: #4ade80;
+  padding: 0.3rem 0.8rem;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.tag-categoria {
+  display: inline-block;
+  background: rgba(100, 200, 255, 0.2);
+  color: #64c8ff;
+  padding: 0.3rem 0.8rem;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.tag-unidad {
+  display: inline-block;
+  background: rgba(168, 85, 247, 0.2);
+  color: #d8b4fe;
+  padding: 0.3rem 0.8rem;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.btn-delete-service {
+  background: linear-gradient(135deg, #FF6B6B, #EE5A52);
+  border: none;
+  color: white;
+  padding: 0.5rem 0.8rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
+}
+
+.btn-delete-service:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(255, 107, 107, 0.5);
+}
+
+.servicio-details-gremio {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1rem;
+}
+
+.detail-box {
+  background: rgba(0, 0, 0, 0.2);
+  padding: 0.8rem;
+  border-radius: 8px;
+  border-left: 3px solid #FF8C42;
+}
+
+.detail-label {
+  display: block;
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.6);
+  margin-bottom: 0.3rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.detail-value {
+  display: block;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.detail-value.ganancia {
+  color: #4ade80;
+}
+
+/* Modal Terceros en Gremio */
+#terceroServiceModal .form-label {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+#terceroServiceModal .calc-display {
+  background: linear-gradient(135deg, #FF8C42, #FF6B35);
+  box-shadow: 0 8px 25px rgba(255, 140, 66, 0.4);
+}
+
+@media (max-width: 768px) {
+  .servicio-details-gremio {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+

@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi Perfil - MR Letreros</title>
+    <script src="js/auth.js"></script>
+    <link rel="stylesheet" href="css/base.css">
+    <link rel="stylesheet" href="css/sidebar-universal.css">
+</head>
+
+<body>
+    <div class="main-content">
+        <div class="top-bar">
+            <h1 class="top-bar-title">👤 Mi Perfil</h1>
+        </div>
+
+        <div class="content-container">
+            <div class="card" style="max-width: 600px; margin: 0 auto;">
+                <div class="card-header">
+                    <h2 class="card-title">Mis Datos</h2>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Nombre</label>
+                    <input type="text" id="nombre" class="form-input" disabled>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Usuario</label>
+                    <input type="text" id="usuario" class="form-input" disabled>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Rol Actual</label>
+                    <input type="text" id="rol" class="form-input" disabled style="text-transform: capitalize;">
+                </div>
+
+                <hr class="divider">
+
+                <h3>Cambiar Contraseña</h3>
+                <br>
+                <form id="pwdForm">
+                    <div class="form-group">
+                        <label class="form-label">Nueva Contraseña</label>
+                        <input type="password" id="newPassword" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Confirmar Contraseña</label>
+                        <input type="password" id="confirmPassword" class="form-input" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Actualizar Contraseña</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/shared/sidebar-universal.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const user = AUTH.getUser();
+            if (user) {
+                document.getElementById('nombre').value = user.nombre;
+                document.getElementById('usuario').value = user.usuario;
+                document.getElementById('rol').value = user.rol;
+            }
+
+            document.getElementById('pwdForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const p1 = document.getElementById('newPassword').value;
+                const p2 = document.getElementById('confirmPassword').value;
+
+                if (p1 !== p2) return alert('Las contraseñas no coinciden');
+                if (p1.length < 4) return alert('La contraseña es muy corta');
+
+                try {
+                    const res = await AUTH.fetch(`/api/users/${user.id}/password`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ password: p1 })
+                    });
+
+                    if (res.ok) {
+                        alert('Contraseña actualizada correctamente');
+                        document.getElementById('pwdForm').reset();
+                    } else {
+                        const err = await res.json();
+                        alert('Error: ' + err.error);
+                    }
+                } catch (error) {
+                    alert('Error de conexión');
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>

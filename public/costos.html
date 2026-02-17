@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gestión de Costos - MR Letreros</title>
+  <script src="js/auth.js"></script>
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/sidebar-universal.css">
+</head>
+
+<body>
+  <!-- Sidebar Universal (se inserta automáticamente) -->
+
+  <div class="main-content">
+    <!-- Top Bar -->
+    <div class="top-bar">
+      <h1 class="top-bar-title">💳 Gestión de Costos</h1>
+      <div class="top-bar-actions">
+        <!-- Acciones específicas del módulo -->
+      </div>
+    </div>
+
+
+    <div class="content-container">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">Lista de Productos y Costos</h2>
+          <p class="section-subtitle">Consulta rápida de todos los costos de materiales</p>
+        </div>
+        <button class="btn btn-secondary btn-small" onclick="loadCostos()">🔄 Actualizar</button>
+      </div>
+
+      <!-- Buscador -->
+      <div class="card">
+        <div class="form-group">
+          <label class="form-label">🔍 Buscar Producto</label>
+          <input type="text" id="searchInput" class="form-input" placeholder="Buscar por nombre, categoría o tipo..."
+            oninput="filterCostos()">
+        </div>
+      </div>
+
+      <!-- Lista de Costos -->
+      <div id="costosContainer"></div>
+    </div>
+
+    <script src="js/shared/modal-system.js"></script>
+    <script src="js/shared/data-manager-network.js"></script>
+    <script>
+      let allCostos = [];
+      let filteredCostos = [];
+
+      document.addEventListener('DOMContentLoaded', () => {
+        console.log('[COSTOS] Módulo de consulta iniciado');
+        loadCostos();
+      });
+
+      async function loadCostos() {
+        try {
+          if (window.mrDataManager) {
+            allCostos = await window.mrDataManager.getMateriales();
+          } else {
+            const response = await AUTH.fetch('/api/materiales');
+            if (response.ok) {
+              allCostos = await response.json();
+            }
+          }
+
+          if (Array.isArray(allCostos)) {
+            filteredCostos = allCostos;
+            renderCostos();
+          }
+        } catch (error) {
+          console.error('[COSTOS] Error:', error);
+          allCostos = [];
+          filteredCostos = [];
+          renderCostos();
+        }
+      }
+
+      function filterCostos() {
+        const search = document.getElementById('searchInput').value.toLowerCase();
+        filteredCostos = allCostos.filter(item =>
+          item.categoria?.toLowerCase().includes(search) ||
+          item.productoNombre?.toLowerCase().includes(search) ||
+          item.producto?.toLowerCase().includes(search)
+        );
+        renderCostos();
+      }
+
+      function renderCostos() {
+        const container = document.getElementById('costosContainer');
+
+        if (!filteredCostos || filteredCostos.length === 0) {
+          container.innerHTML = '<p class="empty-state">No hay productos. Agregá productos en el módulo de Materiales.</p>';
+          return;
+        }
+
+        // Agrupar por categoría
+        const grouped = {};
+        filteredCostos.forEach(item => {
+          const cat = item.categoria || 'Sin categoría';
+          if (!grouped[cat]) grouped[cat] = [];
+          grouped[cat].push(item);
+        });
+
+        container.innerHTML = Object.keys(grouped).sort().map(categoria => {
+          const productos = grouped[categoria];
+
+          // Calcular promedio de costo por m²
+          const costosM2 = productos
+            .map(p => {
+              const m2 = p.m2 || ((p.ancho || 0) * (p.largo || 0)) || 1;
+              const costoPorM2 = p.costoPorM2 || (p.precioRollo ? p.precioRollo / m2 : 0) || p.costo || 0;
+              return Number(costoPorM2) || 0;
+            })
+            .filter(c => c > 0);
+
+          const promedioCostoM2 = costosM2.length > 0 ? costosM2.reduce((a, b) => a + b, 0) / costosM2.length : 0;
+
+          return `
+          <div class="card" style="margin-bottom: 2rem;">
+            <div class="card-header" style="background: linear-gradient(135deg, rgba(255, 140, 66, 0.2), rgba(255, 140, 66, 0.05)); border-bottom: 2px solid rgba(255, 140, 66, 0.3); padding: 1.5rem;">
+              <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                <div>
+                  <h3 style="color: var(--primary-color); margin: 0 0 0.5rem 0; font-size: 1.3rem;">📁 ${categoria}</h3>
+                  <span style="color: var(--text-secondary); font-size: 0.9rem;">${productos.length} producto(s)</span>
+                </div>
+                <div style="text-align: right; background: rgba(81, 207, 102, 0.15); padding: 0.75rem 1rem; border-radius: 8px; border: 1px solid rgba(81, 207, 102, 0.3);">
+                  <div style="color: var(--text-secondary); font-size: 0.85rem;">Promedio /m²</div>
+                  <div style="font-size: 1.5rem; font-weight: bold; color: #51CF66;">$${promedioCostoM2.toFixed(2)}</div>
+                </div>
+              </div>
+            </div>
+            
+            <div style="overflow-x: auto;">
+              <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                  <tr style="border-bottom: 2px solid rgba(255, 255, 255, 0.1);">
+                    <th style="padding: 1rem; text-align: left; color: var(--text-secondary); font-weight: 600;">Producto</th>
+                    <th style="padding: 1rem; text-align: center; color: var(--text-secondary); font-weight: 600;">Dimensiones</th>
+                    <th style="padding: 1rem; text-align: center; color: var(--text-secondary); font-weight: 600;">m²</th>
+                    <th style="padding: 1rem; text-align: right; color: var(--text-secondary); font-weight: 600;">Costo /m²</th>
+                    <th style="padding: 1rem; text-align: right; color: var(--text-secondary); font-weight: 600;">Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${productos.map(prod => {
+            const m2 = prod.m2 || ((prod.ancho || 0) * (prod.largo || 0)) || 0;
+            const costoPorM2 = prod.costoPorM2 || (prod.precioRollo && m2 ? prod.precioRollo / m2 : 0) || prod.costo || 0;
+            const total = costoPorM2 * m2;
+            return `
+                      <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);">
+                        <td style="padding: 1rem;">
+                          <strong style="color: var(--text-light);">${prod.productoNombre || prod.producto || 'Sin nombre'}</strong>
+                        </td>
+                        <td style="padding: 1rem; text-align: center; color: var(--text-secondary);">
+                          ${prod.ancho ? prod.ancho.toFixed(2) : '?'}m × ${prod.largo ? prod.largo.toFixed(2) : '?'}m
+                        </td>
+                        <td style="padding: 1rem; text-align: center; color: var(--text-secondary);">
+                          ${m2 ? m2.toFixed(2) : '0.00'}
+                        </td>
+                        <td style="padding: 1rem; text-align: right;">
+                          <span style="color: var(--primary-color); font-size: 1.1rem; font-weight: bold;">
+                            $${costoPorM2.toFixed(2)}
+                          </span>
+                        </td>
+                        <td style="padding: 1rem; text-align: right; color: var(--text-secondary);">
+                          $${total.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </td>
+                      </tr>
+                    `;
+          }).join('')}
+                </tbody>
+              </table>
+            </div>
+
+            <div style="padding: 1.5rem; background: rgba(0, 0, 0, 0.2); border-top: 1px solid rgba(255, 255, 255, 0.1); text-align: right;">
+              <button class="btn btn-primary btn-small" onclick="applyAverageCostToPrice('${categoria}', ${promedioCostoM2})" style="margin-top: 0.5rem;">
+                📊 Usar Promedio en Precios
+              </button>
+            </div>
+          </div>
+        `;
+        }).join('');
+      }
+
+      async function applyAverageCostToPrice(categoria, promedioCosto) {
+        try {
+          // Obtener precios existentes
+          const preciosResp = await fetch('/api/precios');
+          let precios = [];
+          if (preciosResp.ok) {
+            const data = await preciosResp.json();
+            precios = Array.isArray(data) ? data : [];
+          }
+
+          // Encontrar si ya existe un precio para esta categoría
+          const existingPrice = precios.find(p => p.categoria === categoria);
+
+          if (existingPrice) {
+            // Actualizar el costo del precio existente
+            existingPrice.costo = promedioCosto;
+            existingPrice.updatedAt = new Date().toISOString();
+
+            const response = await fetch('/api/precios', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(precios)
+            });
+
+            if (response.ok) {
+              alert(`✅ Costo promedio de "${categoria}" actualizado a $${promedioCosto.toFixed(2)} /m²`);
+              // Redirigir a precios para mostrar el cambio
+              window.location.href = 'precios.html';
+            }
+          } else {
+            alert(`⚠️ No hay precio configurado para la categoría "${categoria}".\n\nPrimero crea un precio en la sección "Gestión de Precios" y luego podrás actualizar el costo desde aquí.`);
+          }
+        } catch (error) {
+          console.error('[COSTOS] Error:', error);
+          alert('❌ Error al aplicar el costo promedio');
+        }
+      }
+    </script>
+  </div>
+
+  <!-- Sidebar Universal Script -->
+  <script src="js/shared/sidebar-universal.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mantenimiento - MR Letreros</title>
+  <script src="js/auth.js"></script>
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/sidebar-universal.css">
+  <style>
+    .maintenance-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 1.5rem;
+      margin-top: 2rem;
+    }
+
+    .maintenance-card {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 1.5rem;
+      transition: all 0.3s ease;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .maintenance-card:hover {
+      transform: translateY(-5px);
+      border-color: rgba(255, 255, 255, 0.2);
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+    }
+
+    .card-icon {
+      font-size: 2rem;
+      margin-bottom: 1rem;
+    }
+
+    .card-title {
+      font-size: 1.2rem;
+      font-weight: bold;
+      margin-bottom: 0.5rem;
+      color: var(--text-primary);
+    }
+
+    .card-desc {
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+      margin-bottom: 1.5rem;
+      line-height: 1.4;
+    }
+
+    .btn-clean {
+      background: rgba(244, 67, 54, 0.1);
+      color: #F44336;
+      border: 1px solid rgba(244, 67, 54, 0.3);
+      padding: 0.8rem;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: all 0.2s;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+
+    .btn-clean:hover {
+      background: #F44336;
+      color: white;
+    }
+
+    .danger-zone {
+      margin-top: 3rem;
+      padding: 2rem;
+      border: 1px solid #F44336;
+      border-radius: 12px;
+      background: rgba(244, 67, 54, 0.05);
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Sidebar Universal -->
+
+  <div class="main-content">
+    <div class="top-bar">
+      <h1 class="top-bar-title">🧹 Mantenimiento del Sistema</h1>
+    </div>
+
+    <div class="content-container">
+      <!-- Backup Section -->
+      <div class="card" style="border-left: 4px solid #4CAF50; margin-bottom: 2rem;">
+        <div class="card-header">
+          <h2 class="card-title">💾 Respaldo de Seguridad</h2>
+          <p style="color: var(--text-secondary);">Descarga una copia de seguridad de todo el sistema antes de realizar
+            limpiezas.</p>
+        </div>
+        <div style="padding: 1rem;">
+          <button class="btn btn-success" onclick="backupSystem()"
+            style="width: 100%; padding: 1rem; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; gap: 10px;">
+            📥 DESCARGAR BACKUP COMPLETO
+          </button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">Limpieza por Secciones</h2>
+          <p style="color: var(--text-secondary);">Elimina datos específicos sin afectar al resto del sistema.</p>
+        </div>
+
+        <div class="maintenance-grid" id="maintenanceGrid">
+          <!-- Las tarjetas se generan dinámicamente -->
+        </div>
+      </div>
+
+      <div class="danger-zone">
+        <h2 style="color: #F44336; margin-bottom: 1rem;">🚨 Zona de Peligro</h2>
+        <p style="margin-bottom: 1.5rem;">Estas acciones son destructivas y afectarán a todo el sistema.</p>
+
+        <button class="btn btn-danger" onclick="resetAllSystem()" style="padding: 1rem 2rem; font-size: 1.1rem;">
+          ⚠️ RESTABLECIMIENTO DE FÁBRICA (BORRAR TODO)
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/shared/sidebar-universal.js"></script>
+  <script src="js/shared/data-manager-network.js"></script>
+  <script src="js/shared/modal-system.js"></script>
+  <script src="mantenimiento-main.js"></script>
+</body>
+
+</html>

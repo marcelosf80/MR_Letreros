@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Usuarios - MR Letreros</title>
+    <script src="js/auth.js"></script>
+    <link rel="stylesheet" href="css/base.css">
+    <link rel="stylesheet" href="css/sidebar-universal.css">
+    <style>
+        .users-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .users-table th {
+            text-align: left;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-secondary);
+        }
+
+        .users-table td {
+            padding: 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .users-table tr:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .users-table .actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .role-badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .role-superadmin {
+            background: rgba(167, 139, 250, 0.2);
+            color: #a78bfa;
+        }
+
+        .role-admin {
+            background: rgba(99, 102, 241, 0.2);
+            color: #818cf8;
+        }
+
+        .role-vendedor {
+            background: rgba(74, 222, 128, 0.2);
+            color: #4ade80;
+        }
+
+        .role-produccion {
+            background: rgba(251, 191, 36, 0.2);
+            color: #fbbf24;
+        }
+
+        .role-visor {
+            background: rgba(107, 114, 128, 0.2);
+            color: #9ca3af;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="main-content">
+        <div class="top-bar">
+            <h1 class="top-bar-title">👥 Gestión de Usuarios</h1>
+            <button class="btn btn-primary" onclick="openNewUserModal()">➕ Nuevo Usuario</button>
+        </div>
+
+        <div class="content-container">
+            <div id="usersListContainer">
+                <table class="users-table">
+                    <thead>
+                        <tr>
+                            <th>Nombre</th>
+                            <th>Usuario</th>
+                            <th>Rol</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usersTableBody">
+                        <!-- Dynamic Content -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Nuevo/Editar Usuario -->
+    <div class="modal" id="userModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="modalTitle">Nuevo Usuario</h2>
+                <button class="btn-close" onclick="closeUserModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <form id="userForm">
+                    <input type="hidden" id="userId">
+                    <div class="form-group">
+                        <label class="form-label">Nombre Completo *</label>
+                        <input type="text" id="nombre" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Usuario (Login) *</label>
+                        <input type="text" id="usuario" class="form-input" required>
+                    </div>
+                    <div class="form-group" id="passwordGroup">
+                        <label class="form-label">Contraseña *</label>
+                        <input type="password" id="password" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Rol *</label>
+                        <select id="rol" class="form-select" required>
+                            <option value="vendedor">Vendedor</option>
+                            <option value="produccion">Producción</option>
+                            <option value="admin">Administrador</option>
+                            <option value="visor">Visor / Auditor</option>
+                            <option value="superadmin">SuperAdmin</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Estado</label>
+                        <select id="activo" class="form-select">
+                            <option value="true">Activo</option>
+                            <option value="false">Inactivo</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeUserModal()">Cancelar</button>
+                <button class="btn btn-primary" onclick="saveUser()">Guardar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Cambio Password (Admin Override) -->
+    <div class="modal" id="pwdModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Cambiar Contraseña</h2>
+                <button class="btn-close"
+                    onclick="document.getElementById('pwdModal').classList.remove('active')">×</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="pwdUserId">
+                <div class="form-group">
+                    <label class="form-label">Nueva Contraseña</label>
+                    <input type="password" id="newPassword" class="form-input">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary"
+                    onclick="document.getElementById('pwdModal').classList.remove('active')">Cancelar</button>
+                <button class="btn btn-primary" onclick="adminChangePassword()">Actualizar</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/shared/sidebar-universal.js"></script>
+    <script src="js/usuarios-manager.js"></script>
+</body>
+
+</html>

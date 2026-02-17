@@ -1,0 +1,84 @@
+{
+  "versions": [
+    {
+      "version": "3.0",
+      "date": "2026-01-18",
+      "title": "Reorganización Completa - Sistemas Separados",
+      "changes": [
+        "🎯 Sistemas completamente separados: Gremio y Clientes ahora son independientes",
+        "📂 Estructura de datos separada: /gremio/, /clientes/, /costos/",
+        "🏠 Nueva página principal con selector de sistemas",
+        "📊 Estadísticas del día en tiempo real en el inicio",
+        "✅ Botón 'Agregar Producto' en costos ahora funciona correctamente",
+        "🔍 Buscador por cliente y fecha implementado",
+        "📈 Historial visible y funcional en cada sistema",
+        "🏠 Botón 'Volver al Inicio' en Gremio y Clientes",
+        "🖼️ Logo del footer ahora cambia según el tema correctamente",
+        "💰 Gestión de Costos accesible desde configuración",
+        "🎨 Nuevo diseño mejorado para ambos sistemas",
+        "🚫 Sin conflictos: cada sistema guarda en su propia base de datos",
+        "⚡ Mejor rendimiento y organización del código"
+      ]
+    },
+    {
+      "version": "2.2.1",
+      "date": "2026-01-17",
+      "title": "Correcciones de Logos y Colores",
+      "changes": [
+        "🖼️ Logo del header cambia según tema (blanco/negro)",
+        "🖼️ Logo del footer cambia según tema",
+        "🎨 Tema claro con color azul #00A8CC mejorado",
+        "🟢 Colores Gremio (verde) funcionan correctamente",
+        "🟠 Colores Cliente (naranja) funcionan correctamente",
+        "✅ Botón 'Agregar Producto' visible en Costos",
+        "📊 Historial global de cotizaciones",
+        "🗑️ Auto-borrado de cotizaciones +30 días (no aprobadas)"
+      ]
+    },
+    {
+      "version": "2.2",
+      "date": "2026-01-16",
+      "title": "Sistema de Costos Completo",
+      "changes": [
+        "💰 Sistema de costos implementado",
+        "📊 Cálculo de márgenes automático",
+        "💵 Precios Gremio y Cliente con costos",
+        "🔧 Configuración de costos por producto"
+      ]
+    },
+    {
+      "version": "2.1",
+      "date": "2026-01-15",
+      "title": "Historial Editable",
+      "changes": [
+        "✏️ Editar cotizaciones guardadas",
+        "🗑️ Eliminar cotizaciones",
+        "✓ Marcar cotizaciones como APROBADAS",
+        "📄 Logo en PDFs"
+      ]
+    },
+    {
+      "version": "2.0",
+      "date": "2026-01-15",
+      "title": "Sistema Dual de Precios",
+      "changes": [
+        "🟢 Precios GREMIO implementados",
+        "🟠 Precios CLIENTE implementados",
+        "💾 Almacenamiento en red",
+        "🎨 Tema claro/oscuro",
+        "📱 Diseño responsive"
+      ]
+    },
+    {
+      "version": "1.0",
+      "date": "2026-01-10",
+      "title": "Versión Inicial",
+      "changes": [
+        "🎯 Sistema de cotizaciones básico",
+        "📄 Exportación a PDF",
+        "💾 Guardado de clientes",
+        "📊 Historial de cotizaciones"
+      ]
+    }
+  ]
+}

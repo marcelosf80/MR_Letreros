@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Visor de Vectores - MR Letreros</title>
+  <link rel="stylesheet" href="css/base.css">
+  <style>
+    .canvas-container {
+      background: white; /* Fondo blanco para ver bien los vectores */
+      border-radius: 8px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+      height: 60vh;
+      width: 100%;
+      overflow: hidden;
+      position: relative;
+    }
+    canvas {
+      width: 100%;
+      height: 100%;
+    }
+    .controls-panel {
+      background: rgba(255, 255, 255, 0.05);
+      padding: 1.5rem;
+      border-radius: 12px;
+      margin-bottom: 1.5rem;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      display: flex;
+      gap: 1.5rem;
+      align-items: flex-end;
+      flex-wrap: wrap;
+    }
+  </style>
+</head>
+<body>
+  <header class="main-header">
+    <div class="header-left">
+      <img src="img/logo.png" alt="MR Letreros" class="logo-img">
+      <a href="index.html" class="btn-home">← Volver al Inicio</a>
+    </div>
+    <div class="header-title">✏️ VISOR DE VECTORES</div>
+  </header>
+
+  <div class="content-container">
+    <div class="controls-panel">
+      <div class="form-group">
+        <label class="form-label">📂 Cargar Archivo SVG</label>
+        <input type="file" id="fileInput" accept=".svg" class="form-input">
+      </div>
+      
+      <div class="form-group">
+        <label class="form-label">👁️ Opciones de Vista</label>
+        <div style="display: flex; gap: 10px; align-items: center; height: 42px;">
+          <label style="cursor: pointer; display: flex; align-items: center; gap: 5px; color: white;">
+            <input type="checkbox" id="showNodesBtn"> Ver Nodos / Puntos
+          </label>
+        </div>
+      </div>
+
+      <!-- Panel de Nesting (Organización) -->
+      <div class="highlight-box" style="padding: 10px; border: 1px solid rgba(81, 207, 102, 0.3); background: rgba(81, 207, 102, 0.05);">
+        <h4 style="margin: 0 0 10px 0; color: #51CF66; font-size: 0.9rem;">🧩 Optimizar Material (Nesting)</h4>
+        <div style="display: flex; gap: 10px; align-items: flex-end;">
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label" style="font-size: 0.8rem;">Ancho Placa (cm)</label>
+            <input type="number" id="sheetWidth" value="125" class="form-input" style="width: 80px; padding: 5px;">
+          </div>
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label" style="font-size: 0.8rem;">Alto Placa (cm)</label>
+            <input type="number" id="sheetHeight" value="60" class="form-input" style="width: 80px; padding: 5px;">
+          </div>
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label" style="font-size: 0.8rem;">Margen (mm)</label>
+            <input type="number" id="nestingMargin" value="5" class="form-input" style="width: 60px; padding: 5px;">
+          </div>
+          <div class="form-group" style="margin-bottom: 0; margin-left: 5px;">
+            <label class="form-label" style="font-size: 0.8rem; opacity: 0;">.</label>
+            <label style="cursor: pointer; display: flex; align-items: center; gap: 5px; color: white; height: 38px; font-size: 0.9rem;">
+              <input type="checkbox" id="autoRotateBtn" checked> 🔄 Rotar
+            </label>
+          </div>
+          <button id="nestBtn" class="btn btn-success btn-small" style="height: 38px;">Organizar</button>
+        </div>
+      </div>
+
+      <div class="form-group" style="display: none;"> <!-- Oculto por ahora si solo es visor -->
+        <label class="form-label">Pasadas (Simulación)</label>
+        <input type="number" id="passes" value="1" class="form-input" style="width: 80px;">
+      </div>
+      <div class="form-group" style="display: none;">
+        <label class="form-label">Espaciado</label>
+        <input type="number" id="spacing" value="0" class="form-input" style="width: 80px;">
+      </div>
+
+      <button id="processBtn" class="btn btn-primary" style="display: none;">Procesar</button>
+      
+      <div style="margin-left: auto; font-size: 1.2rem; font-weight: bold; color: #51CF66;" id="result"></div>
+    </div>
+
+    <div class="canvas-container">
+      <canvas id="canvas" resize></canvas>
+    </div>
+
+    <!-- Contenedor para los visores individuales de placas -->
+    <div style="margin-top: 2rem;">
+      <h3 style="color: #51CF66; margin-bottom: 1rem; display: none;" id="resultsTitle">🧩 Placas Generadas (Listas para corte)</h3>
+      <div id="sheetsContainer" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 1.5rem;"></div>
+    </div>
+  </div>
+
+  <!-- Paper.js desde CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/paper.js/0.12.17/paper-full.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

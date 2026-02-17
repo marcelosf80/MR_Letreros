@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sistema CLIENTES - MR Letreros</title>
+  <script src="js/auth.js"></script>
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/sidebar-universal.css">
+  <!-- Nuevos módulos de gestión -->
+  <script src="js/shared/pricing-manager.js"></script>
+  <script src="js/shared/order-status-manager.js"></script>
+  <script src="js/shared/discount-config.js"></script>
+  <script src="js/shared/multi-category-manager.js"></script>
+  <script src="js/shared/work-manager.js"></script>
+  <script src="js/shared/quote-editor.js"></script>
+</head>
+
+<body>
+  <!-- Sidebar Universal (se inserta automáticamente) -->
+
+  <div class="main-content">
+    <!-- Top Bar -->
+    <div class="top-bar">
+      <h1 class="top-bar-title">🔵 Sistema Clientes</h1>
+      <div class="top-bar-actions">
+        <!-- Acciones específicas del módulo -->
+      </div>
+    </div>
+
+
+    <!-- Partículas de fondo -->
+    <div class="particles" id="particles"></div>
+
+    <div class="content-container">
+
+      <!-- 1. HEADER CLIENTE -->
+      <div class="card mb-4">
+        <div class="section-header">
+          <h2 class="card-title">👤 Datos del Cliente</h2>
+          <div class="actions">
+            <button class="btn btn-secondary btn-small" onclick="clearQuote()">Limpiar</button>
+          </div>
+        </div>
+
+        <div class="form-grid">
+          <!-- Nombre y Buscador -->
+          <div class="form-group">
+            <label class="form-label">Nombre del Cliente *</label>
+            <div style="display: flex; align-items: center;">
+              <input type="text" id="clientName" class="form-input" placeholder="Buscar o ingresar nombre..."
+                style="flex: 1;" oninput="filterHistoryByClient(this.value)">
+              <!-- Botones inyectados por JS aquí (Buscar/Guardar) -->
+            </div>
+          </div>
+
+          <!-- Detalles -->
+          <div class="form-group">
+            <label class="form-label">Teléfono</label>
+            <input type="text" id="clientPhone" class="form-input" placeholder="Ej: 11 1234-5678">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Email</label>
+            <input type="email" id="clientEmail" class="form-input" placeholder="cliente@email.com">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Dirección</label>
+            <input type="text" id="clientAddress" class="form-input" placeholder="Dirección de entrega">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Fecha Entrega</label>
+            <input type="date" id="deliveryDate" class="form-input">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Prioridad</label>
+            <select id="quotePriority" class="form-select">
+              <option value="normal">🟡 Normal</option>
+              <option value="low">🟢 Baja</option>
+              <option value="high">🟠 Alta</option>
+              <option value="urgent">🔴 Urgente</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. MAIN GRID (Productos vs Historial) -->
+      <div class="main-grid">
+
+        <!-- COLUMNA IZQUIERDA -->
+        <div class="left-panel">
+          <!-- Productos -->
+          <div class="card mb-4">
+            <div class="section-header">
+              <h2 class="card-title">📦 Productos</h2>
+              <button class="btn btn-primary btn-small" onclick="window.MRModals.open('productModal')">+
+                Agregar</button>
+            </div>
+            <div id="productsList" class="items-list">
+              <p class="empty-state">No hay productos agregados</p>
+            </div>
+          </div>
+
+          <!-- Servicios -->
+          <div class="card">
+            <div class="section-header">
+              <h2 class="card-title">🔧 Servicios Terceros</h2>
+              <button class="btn btn-secondary btn-small" onclick="window.MRModals.open('terceroServiceModal')">+
+                Agregar</button>
+            </div>
+            <div id="terceroServicesList" class="items-list">
+              <p class="empty-state">No hay servicios agregados</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- COLUMNA DERECHA: HISTORIAL FILTRADO -->
+        <div class="right-panel">
+          <div class="card" style="height: 100%;">
+            <div class="card-header">
+              <h2 class="card-title">📜 Historial del Cliente</h2>
+              <button class="btn btn-secondary btn-small" onclick="loadQuotations()">Ver Todos</button>
+            </div>
+            <div id="historyFilterMsg"
+              style="padding: 0.5rem; color: var(--primary-color); font-size: 0.9rem; display: none;">
+              Filtrando por: <b id="filterClientName"></b>
+            </div>
+            <div id="quotesList" class="quotes-list" style="max-height: 600px; overflow-y: auto;">
+              <p class="empty-state">Selecciona un cliente para ver su historial</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 3. FOOTER: TOTALES Y ACCIONES -->
+      <div class="card mt-4"
+        style="background: linear-gradient(to right, rgba(15, 12, 41, 0.9), rgba(48, 43, 99, 0.9)); border: 1px solid var(--primary-color);">
+        <div class="flex" style="justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 2rem;">
+
+          <!-- Costos y Totales -->
+          <div class="flex gap-4" style="flex: 1; min-width: 300px;">
+            <!-- Costos (Pequeño) -->
+            <div style="font-size: 0.85rem; opacity: 0.8;">
+              <div>Mat: <span id="costoMateriales">$0</span></div>
+              <div>Terc: <span id="costoTerceros">$0</span></div>
+              <div style="color: #FF6B6B;">Total Costo: <span id="totalCostos">$0</span></div>
+            </div>
+
+            <!-- Totales Grandes -->
+            <div style="border-left: 1px solid rgba(255,255,255,0.2); padding-left: 1rem;">
+              <div class="flex gap-3 align-items-center">
+                <div>
+                  <small>Subtotal</small>
+                  <div id="subtotal" style="font-size: 1.2rem; font-weight: bold;">$0</div>
+                </div>
+                <div>
+                  <small>
+                    <input type="checkbox" id="ivaCheckbox" checked onchange="toggleIVA()"
+                      style="width: 14px; height: 14px;"> IVA
+                  </small>
+                  <div id="iva" style="font-size: 1.2rem; font-weight: bold;">$0</div>
+                </div>
+                <div>
+                  <small style="color: #51CF66;">TOTAL FINAL</small>
+                  <div id="total" style="font-size: 1.8rem; font-weight: bold; color: #51CF66;">$0</div>
+                </div>
+              </div>
+              <div>Ganancia: <span id="gananciaNetaDisplay">$0</span></div>
+            </div>
+          </div>
+
+          <!-- Anticipo y Botones -->
+          <div class="flex gap-2 align-items-center">
+            <div style="background: rgba(255,255,255,0.1); padding: 0.5rem; border-radius: 8px;">
+              <label style="font-size: 0.8rem;">Anticipo</label>
+              <input type="number" id="montoAnticipo" class="form-input" style="width: 120px; padding: 0.25rem;"
+                placeholder="$0.00" oninput="calcularSaldo()">
+              <div style="font-size: 0.8rem; margin-top: 2px;">Saldo: <span id="saldoPendiente">$0</span></div>
+            </div>
+
+            <button class="btn btn-primary" onclick="saveQuote()"
+              style="height: 50px; font-size: 1.1rem; padding: 0 2rem;">💾 Guardar</button>
+            <button class="btn btn-success" onclick="generatePDF()" style="height: 50px; padding: 0 1rem;">📄
+              PDF</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Modal Producto -->
+    <div class="modal" id="productModal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 class="modal-title">📦 Agregar Producto</h2>
+          <button class="btn-close" id="btnCloseProduct">×</button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label">Categoría</label>
+            <select id="productCategory" class="form-select">
+              <option value="">Cargando...</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Producto</label>
+            <select id="productName" class="form-select" disabled>
+              <option value="">Selecciona una categoría primero</option>
+            </select>
+          </div>
+
+          <div id="priceInfo"
+            style="display: none; background: rgba(81, 207, 102, 0.1); padding: 10px; border-radius: 5px; margin-bottom: 15px; border: 1px solid rgba(81, 207, 102, 0.3);">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span>Precio Público:</span>
+              <strong id="precioClienteDisplay" style="font-size: 1.2rem; color: #51CF66;">$0.00</strong>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Ancho (cm)</label>
+              <input type="number" id="productAncho" class="form-input" placeholder="Ej: 100">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Alto (cm)</label>
+              <input type="number" id="productAlto" class="form-input" placeholder="Ej: 100">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Cantidad</label>
+            <input type="number" id="productCantidad" class="form-input" value="1">
+          </div>
+
+          <!-- Resultado Cálculo -->
+          <div class="calc-result"
+            style="background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 8px; text-align: center; margin-top: 1rem;">
+            <div style="font-size: 0.9rem; color: #aaa; margin-bottom: 0.5rem;">Precio Total del Item</div>
+            <div id="productTotal" style="font-size: 2rem; font-weight: bold; color: #51CF66;">$0.00</div>
+            <div id="productFormula" style="font-size: 0.8rem; color: #666; margin-top: 0.5rem;">Completa los datos
+            </div>
+
+            <div id="calculoDetalle"
+              style="display: none; margin-top: 10px; font-size: 0.85rem; text-align: left; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px;">
+              <div>m² por unidad: <strong id="m2PorUnidad">0</strong></div>
+              <div>m² totales: <strong id="m2Totales">0</strong></div>
+              <div>Precio unitario: <strong id="precioUnitario">0</strong></div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" id="btnCancelProduct">Cancelar</button>
+          <button class="btn btn-primary" id="btnSaveProduct">Agregar a Cotización</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Terceros -->
+    <div class="modal" id="terceroServiceModal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 class="modal-title">� Agregar Servicio de Tercero</h2>
+          <button class="btn-close" id="btnCloseTerceroService">×</button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label">Servicio / Proveedor</label>
+            <select id="terceroService" class="form-select">
+              <option value="">Cargando...</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Cantidad</label>
+            <input type="number" id="terceroQuantity" class="form-input" placeholder="1">
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Costo ($)</label>
+              <input type="number" id="terceroCosto" class="form-input" readonly
+                style="background: rgba(255,255,255,0.05);">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Precio Cliente ($)</label>
+              <input type="number" id="terceroPrecioCliente" class="form-input" readonly
+                style="background: rgba(255,255,255,0.05);">
+            </div>
+          </div>
+
+          <div class="calc-result"
+            style="background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 8px; margin-top: 1rem;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+              <span>Costo Total:</span>
+              <strong id="terceroTotalCosto" style="color: #FF6B6B;">$0.00</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 1.2rem;">
+              <span>Total Cliente:</span>
+              <strong id="terceroTotal" style="color: #51CF66;">$0.00</strong>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" id="btnCancelTerceroService">Cancelar</button>
+          <button class="btn btn-primary" id="btnSaveTerceroService">Agregar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="js/shared/modal-system.js?v=10"></script>
+    <script src="js/shared/data-manager-network.js?v=10"></script>
+    <script src="js/shared/data-manager-extension.js"></script>
+    <script src="js/clientes/clientes-main.js?v=12"></script>
+    <script src="js/clientes/clientes-extensions.js"></script>
+    <script src="js/clientes/clientes-extensions-v2.js"></script>
+
+    <script>
+      // Partículas
+      const particlesContainer = document.getElementById('particles');
+      if (particlesContainer) {
+        for (let i = 0; i < 30; i++) {
+          const particle = document.createElement('div');
+          particle.className = 'particle';
+          particle.style.left = Math.random() * 100 + '%';
+          particle.style.animationDelay = Math.random() * 5 + 's';
+          particlesContainer.appendChild(particle);
+        }
+      }
+    </script>
+  </div>
+
+  <!-- Sidebar Universal Script -->
+  <script src="js/shared/sidebar-universal.js"></script>
+</body>
+
+</html>
