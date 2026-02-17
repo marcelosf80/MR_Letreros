@@ -1,0 +1,84 @@
+🎯 MR LETREROS - PROYECTO REFACTORIZADO v6.0
+============================================
+
+✅ QUÉ INCLUYE ESTE PROYECTO:
+
+1. ✅ TODO el CSS inline extraído a archivos externos
+2. ✅ TODO el JavaScript inline movido a carpetas organizadas
+3. ✅ NUEVO módulo de Precios para gestionar precios de Gremio y Cliente
+4. ✅ Sistema unificado de modales que funciona automáticamente
+5. ✅ Estilos unificados basados en el index.html original
+6. ✅ TODOS los IDs y clases originales PRESERVADOS
+7. ✅ Estructura modular para fácil mantenimiento
+
+📁 ESTRUCTURA:
+
+public/
+├── index.html (con módulo Precios agregado)
+├── precios.html (NUEVO)
+├── gremio.html, clientes.html, materiales.html, etc. (refactorizados)
+├── css/
+│   └── base.css (estilos unificados)
+└── js/
+    ├── shared/ (scripts compartidos)
+    │   ├── modal-system.js (sistema de modales)
+    │   └── [archivos originales]
+    ├── gremio/ (scripts de gremio)
+    ├── clientes/ (scripts de clientes)
+    ├── materiales/ (scripts de materiales)
+    ├── terceros/ (scripts de terceros)
+    ├── costos/ (scripts de costos)
+    ├── rendimientos/ (scripts de rendimientos)
+    └── precios/ (scripts del módulo nuevo)
+
+🚀 CÓMO USAR:
+
+1. Lee GUIA_COMPLETA.md - Contiene TODOS los archivos HTML completos
+2. Copia cada archivo HTML desde la guía a su ubicación
+3. Los archivos CSS y JS YA ESTÁN organizados
+4. Ejecuta INICIAR_SERVIDOR.bat
+5. Abre http://localhost:3000
+
+⚠️ IMPORTANTE:
+
+- TODOS los IDs originales están intactos
+- TODA la funcionalidad se mantiene
+- Los datos NO se pierden
+- El servidor funciona igual que antes
+
+📋 ARCHIVOS A COPIAR DESDE LA GUÍA:
+
+□ public/index.html
+□ public/precios.html (NUEVO)
+□ public/materiales.html
+□ public/terceros.html
+□ public/costos.html
+□ public/rendimientos.html
+□ public/gremio.html
+□ public/clientes.html
+
+✅ ARCHIVOS QUE YA ESTÁN LISTOS:
+
+✓ css/base.css
+✓ js/shared/modal-system.js
+✓ js/shared/* (todos los scripts originales)
+✓ img/* (todas las imágenes)
+✓ data/* (todos los datos)
+✓ server.js
+✓ package.json
+
+🎯 PRÓXIMOS PASOS:
+
+1. Abre GUIA_COMPLETA.md
+2. Copia el contenido de index.html
+3. Pégalo en public/index.html
+4. Repite para cada archivo HTML
+5. ¡Listo! Todo funcionando
+
+💡 VENTAJAS:
+
+✅ Mantenimiento más fácil
+✅ Bugs aislados por módulo
+✅ CSS cacheado por el navegador
+✅ Código más limpio y organizado
+✅ Escalable para nuevos módulos
