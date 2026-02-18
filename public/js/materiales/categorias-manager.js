@@ -132,7 +132,7 @@ async function renderCategorias() {
   // Cargar materiales para contar
   let materiales = [];
   try {
-    const response = await fetch('/api/materiales');
+    const response = await window.AUTH.fetch('/api/materiales');
     materiales = await response.json();
   } catch (error) {
     console.error('[CATEGORIAS] Error cargando materiales:', error);
@@ -168,7 +168,7 @@ async function createCategory() {
 
   try {
     // Guardar la categoría en el servidor
-    const response = await fetch('/api/categorias', {
+    const response = await window.AUTH.fetch('/api/categorias', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ categoria: name })
@@ -197,7 +197,7 @@ async function createCategory() {
 async function deleteCategory(categoria) {
   // Verificar si hay materiales en esta categoría
   try {
-    const response = await fetch('/api/materiales');
+    const response = await window.AUTH.fetch('/api/materiales');
     const materiales = await response.json();
     const count = materiales.filter(m => m.categoria === categoria).length;
 
@@ -209,7 +209,7 @@ async function deleteCategory(categoria) {
     if (!confirm(`¿Eliminar la categoría "${categoria}"?`)) return;
 
     // Eliminar del servidor
-    const deleteResponse = await fetch(`/api/categorias/${encodeURIComponent(categoria)}`, {
+    const deleteResponse = await window.AUTH.fetch(`/api/categorias/${encodeURIComponent(categoria)}`, {
       method: 'DELETE'
     });
 
@@ -296,7 +296,7 @@ window.toggleCategoryDetails = async function (categoria) {
   modal.id = 'categoryDetailsModal';
 
   try {
-    const response = await fetch('/api/materiales');
+    const response = await window.AUTH.fetch('/api/materiales');
     const materiales = await response.json();
     const productosEnCategoria = materiales.filter(m => m.categoria === categoria);
 
@@ -406,7 +406,7 @@ window.borrarMaterial = async function (materialId) {
   }
 
   try {
-    const response = await fetch('/api/materiales');
+    const response = await window.AUTH.fetch('/api/materiales');
     let materiales = await response.json();
 
     // Filtrar el material a eliminar
@@ -419,7 +419,7 @@ window.borrarMaterial = async function (materialId) {
     materiales = materiales.filter(m => m.id !== materialId);
 
     // Guardar los materiales actualizados
-    const saveResponse = await fetch('/api/materiales', {
+    const saveResponse = await window.AUTH.fetch('/api/materiales', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(materiales)

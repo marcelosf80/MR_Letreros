@@ -97,6 +97,12 @@ class MRLetrerosDataManager {
       }
 
       const response = await fetch(`${this.serverUrl}${endpoint}`, options);
+
+      // Si el token es inválido o el rol no tiene permiso, cerrar sesión
+      if (response.status === 401 || response.status === 403) {
+        window.AUTH.logout(); // Asumiendo que AUTH está disponible globalmente
+        throw new Error(`Authentication error: ${response.statusText}`); // Lanzar error para que el catch lo maneje
+      }
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }

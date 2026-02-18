@@ -484,7 +484,9 @@ app.post('/api/clientes/data', verifyToken, async (req, res) => {
 
 // ==================== ENDPOINTS PRECIOS ====================
 
-app.get('/api/precios', verifyToken, requireRole(['admin']), async (req, res) => {
+// Se hace público para que el bot de WhatsApp pueda consultarlo sin token.
+// La edición (POST) sigue protegida.
+app.get('/api/precios', async (req, res) => {
   const data = await readJSON(FILES.precios);
   res.json(data);
 });
@@ -557,13 +559,13 @@ app.post('/api/materiales', verifyToken, requireRole(['admin']), async (req, res
 
 // ==================== ENDPOINTS CATEGORÍAS ====================
 
-app.get('/api/categorias', async (req, res) => {
+app.get('/api/categorias', verifyToken, async (req, res) => {
   const data = await readJSON(FILES.categorias);
   console.log('[CATEGORÍAS API] GET /api/categorias. Datos:', data);
   res.json(Array.isArray(data) ? data : []);
 });
 
-app.post('/api/categorias', async (req, res) => {
+app.post('/api/categorias', verifyToken, async (req, res) => {
   try {
     let categorias = await readJSON(FILES.categorias);
     if (!Array.isArray(categorias)) {
@@ -591,7 +593,7 @@ app.post('/api/categorias', async (req, res) => {
   }
 });
 
-app.delete('/api/categorias/:categoria', async (req, res) => {
+app.delete('/api/categorias/:categoria', verifyToken, async (req, res) => {
   try {
     let categorias = await readJSON(FILES.categorias);
     if (!Array.isArray(categorias)) {
