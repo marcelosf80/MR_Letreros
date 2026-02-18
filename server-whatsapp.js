@@ -10,6 +10,7 @@ const axios = require('axios');
 console.log('🤖 Iniciando el bot de WhatsApp de MR Letreros...');
 
 // --- CONFIGURACIÓN DE CONEXIÓN ---
+// RECOMENDACIÓN: Mover esta URL a una variable de entorno (process.env.API_URL) para mayor flexibilidad.
 const SERVER_API_URL = 'http://localhost:3000/api/precios';
 
 // --- INICIALIZACIÓN DEL CLIENTE DE WHATSAPP ---
@@ -33,6 +34,17 @@ client.on('ready', () => {
     console.log('✅ ¡Bot de WhatsApp conectado y listo para recibir consultas!');
 });
 
+// --- Helper para obtener propiedades de forma segura ---
+const getProductProperty = (product, properties, defaultValue = '') => {
+    for (const prop of properties) {
+        if (product && typeof product[prop] !== 'undefined' && product[prop] !== null) {
+            return product[prop];
+        }
+    }
+    return defaultValue;
+};
+
+
 // 3. Lógica principal: Escuchar mensajes entrantes
 client.on('message', async (message) => {
     const messageBody = message.body.toLowerCase();
@@ -44,20 +56,16 @@ client.on('message', async (message) => {
     if (keywords.some(keyword => messageBody.includes(keyword))) {
         console.log(`💬 Mensaje de [${message.from}]: "${message.body}" -> Activó respuesta de precios.`);
 
-        // 1. Extraer el término de búsqueda del producto
+        // 1. Extraer el término de búsqueda del producto de forma más robusta
         let searchTerm = messageBody;
         const wordsToRemove = [
-            'precio', 'cotizar', 'valor', 'costo', 'cuanto', 'cuánto', 'cuesta',
-            'de', 'del', 'el', 'la', 'los', 'las', 'un', 'una', 'es', 'me', 'podrias', 'podrías', 'dar'
+            'precio', 'precios', 'cotizar', 'valor', 'costo', 'cuanto', 'cuánto', 'cuesta',
+            'de', 'del', 'el', 'la', 'los', 'las', 'un', 'una', 'uno', 'unas', 'unos',
+            'es', 'me', 'podrias', 'podrías', 'dar', 'quisiera', 'saber', 'por', 'favor'
         ];
 
-        wordsToRemove.forEach(word => {
-            // Usamos una expresión regular para reemplazar solo la palabra completa
-            const regex = new RegExp(`\\b${word}\\b`, 'g');
-            searchTerm = searchTerm.replace(regex, '');
-        });
-
-        searchTerm = searchTerm.replace(/\s+/g, ' ').trim(); // Limpia espacios extra
+        const regex = new RegExp(`\\b(${wordsToRemove.join('|')})\\b`, 'gi');
+        searchTerm = searchTerm.replace(regex, '').replace(/\s+/g, ' ').trim();
 
         try {
             // Consultar precios al servidor principal (API)
@@ -68,17 +76,17 @@ client.on('message', async (message) => {
                 let foundProduct = null;
                 // 2. Si hay un término de búsqueda, buscar el producto
                 if (searchTerm) {
-                    // Usamos find para encontrar la primera coincidencia que incluya el término
+                    // Búsqueda más flexible en nombre o material
                     foundProduct = precios.find(p =>
-                        (p.name || p.material || '').toLowerCase().includes(searchTerm)
+                        getProductProperty(p, ['name', 'material'], '').toLowerCase().includes(searchTerm)
                     );
                 }
 
                 // 3. Construir la respuesta
                 if (foundProduct) {
                     // Respuesta para producto específico encontrado
-                    const nombreProducto = foundProduct.name || foundProduct.material;
-                    const precioProducto = foundProduct.price || foundProduct.precio_gremio || 0;
+                    const nombreProducto = getProductProperty(foundProduct, ['name', 'material'], 'Producto');
+                    const precioProducto = getProductProperty(foundProduct, ['price', 'precio_gremio'], 0);
                     const imageUrl = foundProduct.image; // Asumimos que hay un campo 'image' con una URL
 
                     const caption = `¡Hola! El precio de *${nombreProducto}* es de *$${precioProducto}*.`;
@@ -99,9 +107,9 @@ client.on('message', async (message) => {
                 } else {
                     // Respuesta genérica si no se busca nada o no se encuentra el producto
                     const primerProducto = precios[0];
-                    const nombreProducto = primerProducto.name || primerProducto.material || 'Producto de ejemplo';
-                    const precioProducto = primerProducto.price || primerProducto.precio_gremio || 0;
-                    
+                    const nombreProducto = getProductProperty(primerProducto, ['name', 'material'], 'Producto de ejemplo');
+                    const precioProducto = getProductProperty(primerProducto, ['price', 'precio_gremio'], 0);
+
                     const respuesta = searchTerm
                         ? `No encontré un producto que coincida con "${searchTerm}".\n\nA modo de ejemplo, el precio de *${nombreProducto}* es de *$${precioProducto}*.`
                         : `¡Hola! Gracias por tu consulta. A modo de ejemplo, el precio de *${nombreProducto}* es de *$${precioProducto}*. Para una cotización detallada, por favor danos más información.`;

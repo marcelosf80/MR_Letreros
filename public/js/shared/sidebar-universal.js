@@ -5,11 +5,7 @@
  * Sistema de navegación lateral para todos los módulos
  */
 
-<<<<<<< HEAD
 (function () {
-=======
-(function() {
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
   'use strict';
 
   console.log('[SIDEBAR] 🚀 Inicializando sidebar universal...');
@@ -19,7 +15,6 @@
     companyName: 'MR Letreros',
     tagline: 'Sistema de Gestión Integral',
     logo: 'img/logo.png',
-<<<<<<< HEAD
 
     // Información de la empresa
     companyInfo: {
@@ -42,23 +37,6 @@
       }
     })(),
 
-=======
-    
-    // Información de la empresa
-    companyInfo: {
-      phone: '📞 +54 9 11 1234-5678',
-      email: '✉️ info@mrletreros.com',
-      location: '📍 Buenos Aires, Argentina'
-    },
-    
-    // Usuario actual (puedes cambiar dinámicamente)
-    user: {
-      name: 'Usuario',
-      role: 'Administrador',
-      avatar: '👤'
-    },
-    
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
     // Módulos del sistema
     modules: [
       {
@@ -162,7 +140,6 @@
             url: 'vector/index.html'
           }
         ]
-<<<<<<< HEAD
       },
       {
         section: 'Usuario',
@@ -183,8 +160,6 @@
             url: 'perfil.html'
           }
         ]
-=======
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
       }
     ]
   };
@@ -194,11 +169,6 @@
    */
   function generateSidebarHTML() {
     const currentPage = window.location.pathname.split('/').pop() || 'index.html';
-<<<<<<< HEAD
-
-=======
-    
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
     return `
       <!-- Sidebar Universal -->
       <aside class="app-sidebar" id="appSidebar">
@@ -237,7 +207,6 @@
             <div class="nav-section">
               <div class="nav-section-title">${section.section}</div>
               ${section.items.map(item => {
-<<<<<<< HEAD
       // Verificar permisos de rol para mostrar el item
       if (item.roles) {
         const userRole = SIDEBAR_CONFIG.user.role || 'invitado'; // Default
@@ -247,11 +216,6 @@
       const isActive = currentPage === item.url ||
         (item.url.includes('/') && currentPage.includes(item.id));
       return `
-=======
-                const isActive = currentPage === item.url || 
-                               (item.url.includes('/') && currentPage.includes(item.id));
-                return `
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
                   <a href="${item.url}" 
                      class="nav-item ${isActive ? 'active' : ''}" 
                      data-tooltip="${item.label}">
@@ -262,11 +226,7 @@
                     </div>
                   </a>
                 `;
-<<<<<<< HEAD
     }).join('')}
-=======
-              }).join('')}
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
             </div>
           `).join('')}
           
@@ -290,7 +250,6 @@
               <div class="sidebar-user-name">${SIDEBAR_CONFIG.user.name}</div>
               <div class="sidebar-user-role">${SIDEBAR_CONFIG.user.role}</div>
             </div>
-<<<<<<< HEAD
             <button onclick="AUTH.logout()" title="Cerrar Sesión" style="
                 background: transparent;
                 border: none;
@@ -303,8 +262,6 @@
             " onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='#94a3b8'">
               🚪
             </button>
-=======
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
           </div>
         </div>
       </aside>
@@ -329,27 +286,15 @@
   function initSidebar() {
     // Agregar clase al body
     document.body.classList.add('has-sidebar');
-<<<<<<< HEAD
 
     // Insertar HTML del sidebar al inicio del body
     document.body.insertAdjacentHTML('afterbegin', generateSidebarHTML());
 
-=======
-    
-    // Insertar HTML del sidebar al inicio del body
-    document.body.insertAdjacentHTML('afterbegin', generateSidebarHTML());
-    
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
     // Elementos
     const sidebar = document.getElementById('appSidebar');
     const toggleBtn = document.getElementById('sidebarToggle');
     const mobileBtn = document.getElementById('mobileMenuBtn');
     const overlay = document.getElementById('sidebarOverlay');
-<<<<<<< HEAD
-
-=======
-    
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
     // Estado colapsado (guardar en localStorage)
     const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
     if (isCollapsed) {
@@ -357,20 +302,10 @@
       document.body.classList.add('sidebar-collapsed');
       toggleBtn.querySelector('span').textContent = '▶';
     }
-<<<<<<< HEAD
-
-=======
-    
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
     // Toggle desktop
     toggleBtn.addEventListener('click', () => {
       const collapsed = sidebar.classList.toggle('collapsed');
       document.body.classList.toggle('sidebar-collapsed');
-<<<<<<< HEAD
-
-=======
-      
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
       // Cambiar el ícono del botón
       const iconSpan = toggleBtn.querySelector('span');
       if (collapsed) {
@@ -380,17 +315,10 @@
         iconSpan.textContent = '◀';
         toggleBtn.title = 'Contraer menú';
       }
-<<<<<<< HEAD
 
       localStorage.setItem('sidebarCollapsed', collapsed);
     });
 
-=======
-      
-      localStorage.setItem('sidebarCollapsed', collapsed);
-    });
-    
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
     // Toggle móvil
     if (mobileBtn) {
       mobileBtn.addEventListener('click', () => {
@@ -398,22 +326,12 @@
         overlay.classList.toggle('active');
         mobileBtn.classList.toggle('active');
       });
-<<<<<<< HEAD
-
-=======
-      
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
       // Cerrar al hacer click en overlay
       overlay.addEventListener('click', () => {
         sidebar.classList.remove('mobile-open');
         overlay.classList.remove('active');
         mobileBtn.classList.remove('active');
       });
-<<<<<<< HEAD
-
-=======
-      
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
       // Cerrar al navegar
       document.querySelectorAll('.nav-item').forEach(item => {
         item.addEventListener('click', () => {
@@ -425,11 +343,6 @@
         });
       });
     }
-<<<<<<< HEAD
-
-=======
-    
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
     // Cerrar con ESC
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape' && sidebar.classList.contains('mobile-open')) {
@@ -438,7 +351,6 @@
         if (mobileBtn) mobileBtn.classList.remove('active');
       }
     });
-<<<<<<< HEAD
 
     // Highlight active item based on URL
     const currentPath = window.location.pathname.split('/').pop() || 'index.html';
@@ -446,34 +358,16 @@
       if (item.getAttribute('href') === currentPath) {
         item.classList.add('active');
       }
-=======
-    
-    // Highlight active item based on URL
-    const currentPath = window.location.pathname.split('/').pop() || 'index.html';
-    document.querySelectorAll('.nav-item').forEach(item => {
-        if (item.getAttribute('href') === currentPath) {
-            item.classList.add('active');
-        }
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
     });
 
     // Global ESC to close modals
     document.addEventListener('keydown', (e) => {
-<<<<<<< HEAD
       if (e.key === 'Escape') {
         const activeModal = document.querySelector('.modal.active');
         if (activeModal) {
           activeModal.classList.remove('active');
         }
       }
-=======
-        if (e.key === 'Escape') {
-            const activeModal = document.querySelector('.modal.active');
-            if (activeModal) {
-                activeModal.classList.remove('active');
-            }
-        }
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
     });
 
     console.log('[SIDEBAR] ✅ Sidebar inicializado');

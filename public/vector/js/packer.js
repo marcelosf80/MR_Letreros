@@ -1,5 +1,5 @@
 /* 
-   packer.js - LÃ³gica Multi-Placa (Bin Packing)
+   packer.js - Lógica Multi-Placa (Bin Packing)
 */
 
 // Clase que representa una sola pieza
@@ -23,11 +23,11 @@ class Part {
 
         // Estado del nesting
         this.placed = false;
-        this.binId = -1; // En quÃ© placa quedÃ³ (-1 = ninguna)
+        this.binId = -1; // En qué placa quedó (-1 = ninguna)
         this.fit = null; // Coordenadas {x, y} en esa placa
         this.rotated = false;
         
-        // Guardamos posiciÃ³n original para poder "recortar" la imagen luego
+        // Guardamos posición original para poder "recortar" la imagen luego
         this.originalX = 0;
         this.originalY = 0;
         this.originalW = 0;
@@ -54,7 +54,7 @@ class Bin {
         this.useVertical = useVertical;
         this.root = { x: 0, y: 0, w: width, h: height };
         this.spaces = [this.root]; // Espacios libres
-        this.parts = []; // Piezas colocadas aquÃ­
+        this.parts = []; // Piezas colocadas aquí
     }
 
     // Intenta meter una pieza en esta placa
@@ -184,20 +184,20 @@ class Bin {
                 });
             }
 
-            // RE-ORDENAR ESPACIOS (AquÃ­ estÃ¡ la magia Vertical vs Horizontal)
+            // RE-ORDENAR ESPACIOS (Aquí está la magia Vertical vs Horizontal)
             this.spaces.sort((a, b) => {
                 if (this.useVertical) {
-                    // Vertical: Llenar columnas (X importa mÃ¡s)
+                    // Vertical: Llenar columnas (X importa más)
                     if (a.x === b.x) return a.y - b.y;
                     return a.x - b.x;
                 } else {
-                    // Horizontal: Llenar filas (Y importa mÃ¡s)
+                    // Horizontal: Llenar filas (Y importa más)
                     if (a.y === b.y) return a.x - b.x;
                     return a.y - b.y;
                 }
             });
 
-            return true; // Ã‰xito
+            return true; // Éxito
         }
 
         return false; // No cupo
@@ -205,7 +205,7 @@ class Bin {
 }
 
 // Clase Principal que administra MÃšLTIPLES PLACAS
-class Packer {
+class Packer { // eslint-disable-line no-unused-vars
     constructor(sheetW, sheetH, gap, useVertical) {
         this.sheetW = sheetW;
         this.sheetH = sheetH;
@@ -233,7 +233,7 @@ class Packer {
 
             // 2. Si no cupo, crear NUEVA PLACA
             if (!placed) {
-                // Verificar si la pieza es fÃ­sicamente mÃ¡s grande que la placa vacÃ­a
+                // Verificar si la pieza es físicamente más grande que la placa vacía
                 const minSide = Math.min(part.w, part.h);
                 const maxSheetSide = Math.max(this.sheetW, this.sheetH);
                 

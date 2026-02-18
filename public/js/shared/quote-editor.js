@@ -20,7 +20,7 @@ class QuoteEditor {
      * @param {string} quoteType - 'gremio' o 'clientes'
      * @returns {Promise<Object>} - Cotización cargada
      */
-    async loadQuote ForEdit(quoteId, quoteType = 'gremio') {
+    async loadQuoteForEdit(quoteId, quoteType = 'gremio') {
         try {
             let quotes;
             if (quoteType === 'gremio') {

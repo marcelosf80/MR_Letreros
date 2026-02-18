@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="es">
-<<<<<<< HEAD
 
 <head>
   <meta charset="UTF-8">
@@ -14,18 +13,6 @@
 <body>
   <!-- Sidebar Universal (se inserta automáticamente) -->
 
-=======
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Consulta de Costos - MR Letreros</title>
-  <link rel="stylesheet" href="css/base.css">
-  <link rel="stylesheet" href="css/sidebar-universal.css">
-</head>
-<body>
-  <!-- Sidebar Universal (se inserta automáticamente) -->
-  
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
   <div class="main-content">
     <!-- Top Bar -->
     <div class="top-bar">
@@ -36,7 +23,6 @@
     </div>
 
 
-<<<<<<< HEAD
     <div class="content-container">
       <div class="section-header">
         <div>
@@ -134,97 +120,6 @@
           const promedioCostoM2 = costosM2.length > 0 ? costosM2.reduce((a, b) => a + b, 0) / costosM2.length : 0;
 
           return `
-=======
-  <div class="content-container">
-    <div class="section-header">
-      <div>
-        <h2 class="section-title">Lista de Productos y Costos</h2>
-        <p class="section-subtitle">Consulta rápida de todos los costos de materiales</p>
-      </div>
-      <button class="btn btn-secondary btn-small" onclick="loadCostos()">🔄 Actualizar</button>
-    </div>
-
-    <!-- Buscador -->
-    <div class="card">
-      <div class="form-group">
-        <label class="form-label">🔍 Buscar Producto</label>
-        <input type="text" id="searchInput" class="form-input" placeholder="Buscar por nombre, categoría o tipo..." oninput="filterCostos()">
-      </div>
-    </div>
-
-    <!-- Lista de Costos -->
-    <div id="costosContainer"></div>
-  </div>
-
-  <script src="js/shared/modal-system.js"></script>
-  <script src="js/shared/data-manager-network.js"></script>
-  <script>
-    let allCostos = [];
-    let filteredCostos = [];
-
-    document.addEventListener('DOMContentLoaded', () => {
-      console.log('[COSTOS] Módulo de consulta iniciado');
-      loadCostos();
-    });
-
-    async function loadCostos() {
-      try {
-        const response = await fetch('/api/materiales');
-        if (response.ok) {
-          allCostos = await response.json();
-          filteredCostos = allCostos;
-          renderCostos();
-        }
-      } catch (error) {
-        console.error('[COSTOS] Error:', error);
-        allCostos = [];
-        filteredCostos = [];
-        renderCostos();
-      }
-    }
-
-    function filterCostos() {
-      const search = document.getElementById('searchInput').value.toLowerCase();
-      filteredCostos = allCostos.filter(item => 
-        item.categoria?.toLowerCase().includes(search) ||
-        item.productoNombre?.toLowerCase().includes(search) ||
-        item.producto?.toLowerCase().includes(search)
-      );
-      renderCostos();
-    }
-
-    function renderCostos() {
-      const container = document.getElementById('costosContainer');
-      
-      if (!filteredCostos || filteredCostos.length === 0) {
-        container.innerHTML = '<p class="empty-state">No hay productos. Agregá productos en el módulo de Materiales.</p>';
-        return;
-      }
-
-      // Agrupar por categoría
-      const grouped = {};
-      filteredCostos.forEach(item => {
-        const cat = item.categoria || 'Sin categoría';
-        if (!grouped[cat]) grouped[cat] = [];
-        grouped[cat].push(item);
-      });
-
-      container.innerHTML = Object.keys(grouped).sort().map(categoria => {
-        const productos = grouped[categoria];
-        
-        // Calcular promedio de costo por m²
-        const costosM2 = productos
-          .map(p => {
-            const m2 = p.m2 || ((p.ancho || 0) * (p.largo || 0)) || 1;
-            const costoPorM2 = p.costoPorM2 || (p.precioRollo ? p.precioRollo / m2 : 0) || p.costo || 0;
-            return Number(costoPorM2) || 0;
-          })
-          .filter(c => c > 0);
-        
-        const promedioCostoM2 = costosM2.length > 0 ? costosM2.reduce((a, b) => a + b, 0) / costosM2.length : 0;
-        
-        return `
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
           <div class="card" style="margin-bottom: 2rem;">
             <div class="card-header" style="background: linear-gradient(135deg, rgba(255, 140, 66, 0.2), rgba(255, 140, 66, 0.05)); border-bottom: 2px solid rgba(255, 140, 66, 0.3); padding: 1.5rem;">
               <div style="display: flex; justify-content: space-between; align-items: flex-start;">
@@ -252,17 +147,10 @@
                 </thead>
                 <tbody>
                   ${productos.map(prod => {
-<<<<<<< HEAD
             const m2 = prod.m2 || ((prod.ancho || 0) * (prod.largo || 0)) || 0;
             const costoPorM2 = prod.costoPorM2 || (prod.precioRollo && m2 ? prod.precioRollo / m2 : 0) || prod.costo || 0;
             const total = costoPorM2 * m2;
             return `
-=======
-                    const m2 = prod.m2 || ((prod.ancho || 0) * (prod.largo || 0)) || 0;
-                    const costoPorM2 = prod.costoPorM2 || (prod.precioRollo && m2 ? prod.precioRollo / m2 : 0) || prod.costo || 0;
-                    const total = costoPorM2 * m2;
-                    return `
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
                       <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);">
                         <td style="padding: 1rem;">
                           <strong style="color: var(--text-light);">${prod.productoNombre || prod.producto || 'Sin nombre'}</strong>
@@ -279,19 +167,11 @@
                           </span>
                         </td>
                         <td style="padding: 1rem; text-align: right; color: var(--text-secondary);">
-<<<<<<< HEAD
                           $${total.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </td>
                       </tr>
                     `;
           }).join('')}
-=======
-                          $${total.toLocaleString('es-AR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
-                        </td>
-                      </tr>
-                    `;
-                  }).join('')}
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
                 </tbody>
               </table>
             </div>
@@ -303,7 +183,6 @@
             </div>
           </div>
         `;
-<<<<<<< HEAD
         }).join('');
       }
 
@@ -352,52 +231,3 @@
 </body>
 
 </html>
-=======
-      }).join('');
-    }
-
-    async function applyAverageCostToPrice(categoria, promedioCosto) {
-      try {
-        // Obtener precios existentes
-        const preciosResp = await fetch('/api/precios');
-        let precios = [];
-        if (preciosResp.ok) {
-          const data = await preciosResp.json();
-          precios = Array.isArray(data) ? data : [];
-        }
-
-        // Encontrar si ya existe un precio para esta categoría
-        const existingPrice = precios.find(p => p.categoria === categoria);
-
-        if (existingPrice) {
-          // Actualizar el costo del precio existente
-          existingPrice.costo = promedioCosto;
-          existingPrice.updatedAt = new Date().toISOString();
-          
-          const response = await fetch('/api/precios', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(precios)
-          });
-
-          if (response.ok) {
-            alert(`✅ Costo promedio de "${categoria}" actualizado a $${promedioCosto.toFixed(2)} /m²`);
-            // Redirigir a precios para mostrar el cambio
-            window.location.href = 'precios.html';
-          }
-        } else {
-          alert(`⚠️ No hay precio configurado para la categoría "${categoria}".\n\nPrimero crea un precio en la sección "Gestión de Precios" y luego podrás actualizar el costo desde aquí.`);
-        }
-      } catch (error) {
-        console.error('[COSTOS] Error:', error);
-        alert('❌ Error al aplicar el costo promedio');
-      }
-    }
-  </script>
-  </div>
-  
-  <!-- Sidebar Universal Script -->
-  <script src="js/shared/sidebar-universal.js"></script>
-</body>
-</html>
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c

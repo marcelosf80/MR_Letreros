@@ -10,19 +10,11 @@ class MRLetrerosDataManager {
   }
 
   // ==================== DETECCIÓN DE SERVIDOR ====================
-<<<<<<< HEAD
 
   detectServerUrl() {
     const hostname = window.location.hostname;
     const port = 3000;
 
-=======
-  
-  detectServerUrl() {
-    const hostname = window.location.hostname;
-    const port = 3000;
-    
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
     // Si estamos en localhost
     if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '') {
       return `http://localhost:${port}`;
@@ -36,11 +28,6 @@ class MRLetrerosDataManager {
     try {
       const response = await fetch(`${this.serverUrl}/api/health`);
       const result = await response.json();
-<<<<<<< HEAD
-
-=======
-      
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
       if (result.status === 'ok') {
         this.connected = true;
         console.log('✅ Conectado al servidor:', this.serverUrl);
@@ -69,11 +56,6 @@ class MRLetrerosDataManager {
       justify-content: center;
       z-index: 10000;
     `;
-<<<<<<< HEAD
-
-=======
-    
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
     modal.innerHTML = `
       <div style="background: white; padding: 2rem; border-radius: 8px; max-width: 500px; text-align: center;">
         <h2 style="color: #e74c3c; margin-bottom: 1rem;">⚠️ No se puede conectar al servidor</h2>
@@ -89,11 +71,7 @@ class MRLetrerosDataManager {
         </button>
       </div>
     `;
-<<<<<<< HEAD
 
-=======
-    
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
     document.body.appendChild(modal);
   }
 
@@ -108,35 +86,22 @@ class MRLetrerosDataManager {
         }
       };
 
-<<<<<<< HEAD
       // ADD AUTH TOKEN
       const token = localStorage.getItem('mr_token');
       if (token) {
         options.headers['Authorization'] = `Bearer ${token}`;
       }
 
-=======
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
       if (data && method !== 'GET') {
         options.body = JSON.stringify(data);
       }
 
       const response = await fetch(`${this.serverUrl}${endpoint}`, options);
-<<<<<<< HEAD
-
-=======
-      
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
       return await response.json();
-<<<<<<< HEAD
-
-=======
-      
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
     } catch (error) {
       console.error(`Error en ${method} ${endpoint}:`, error);
       throw error;
@@ -477,11 +442,6 @@ class MRLetrerosDataManager {
       console.log('✅ Backup creado exitosamente');
       alert('✅ Backup descargado correctamente');
       return true;
-<<<<<<< HEAD
-
-=======
-      
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
     } catch (error) {
       console.error('Error al crear backup:', error);
       alert('❌ Error al crear backup: ' + error.message);
@@ -640,11 +600,6 @@ window.costosManager = new CostosManagerNetwork(window.mrDataManager);
 // COMPATIBILIDAD: Alias para window.dataManager (usado en gremio.html y clientes.html)
 window.dataManager = {
   // ==================== MÉTODOS PARA GREMIO ====================
-<<<<<<< HEAD
-
-=======
-  
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
   async getClients() {
     // Para gremio.html - usa clientes del gremio
     if (window.location.pathname.includes('gremio')) {
@@ -653,17 +608,9 @@ window.dataManager = {
     // Para clientes.html - usa clientes públicos
     return await window.mrDataManager.getClientesClientes();
   },
-<<<<<<< HEAD
 
   async saveClient(client) {
     const isGremio = window.location.pathname.includes('gremio');
-
-=======
-  
-  async saveClient(client) {
-    const isGremio = window.location.pathname.includes('gremio');
-    
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
     if (client.id) {
       // Actualizar
       if (isGremio) {
@@ -680,21 +627,9 @@ window.dataManager = {
       }
     }
   },
-<<<<<<< HEAD
-
-  // ==================== MÉTODOS DE HISTORIAL/COTIZACIONES ====================
 
   async getClientHistory(clientId) {
     const isGremio = window.location.pathname.includes('gremio');
-
-=======
-  
-  // ==================== MÉTODOS DE HISTORIAL/COTIZACIONES ====================
-  
-  async getClientHistory(clientId) {
-    const isGremio = window.location.pathname.includes('gremio');
-    
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
     if (isGremio) {
       const cotizaciones = await window.mrDataManager.getGremioCotizaciones();
       return cotizaciones.filter(c => c.clientId === clientId);
@@ -703,24 +638,16 @@ window.dataManager = {
       return cotizaciones.filter(c => c.clientId === clientId);
     }
   },
-<<<<<<< HEAD
 
   async saveQuotation(clientId, quotation) {
     const isGremio = window.location.pathname.includes('gremio');
-
-=======
-  
-  async saveQuotation(clientId, quotation) {
-    const isGremio = window.location.pathname.includes('gremio');
-    
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
     if (isGremio) {
       const cotizaciones = await window.mrDataManager.getGremioCotizaciones();
       cotizaciones.push({
         ...quotation,
         clientId: clientId,
-        id: Date.now(),
-        date: new Date().toISOString()
+        id: quotation.id || Date.now(),
+        date: quotation.date || new Date().toISOString()
       });
       return await window.mrDataManager.saveGremioCotizaciones(cotizaciones);
     } else {
@@ -728,75 +655,44 @@ window.dataManager = {
       cotizaciones.push({
         ...quotation,
         clientId: clientId,
-        id: Date.now(),
-        date: new Date().toISOString()
+        id: quotation.id || Date.now(),
+        date: quotation.date || new Date().toISOString()
       });
       return await window.mrDataManager.saveClientesCotizaciones(cotizaciones);
     }
   },
-<<<<<<< HEAD
 
   async updateHistoryEntry(clientId, index, quotation) {
     const isGremio = window.location.pathname.includes('gremio');
-
     if (isGremio) {
       const cotizaciones = await window.mrDataManager.getGremioCotizaciones();
       const clientQuotations = cotizaciones.filter(c => c.clientId === clientId);
-
-=======
-  
-  async updateHistoryEntry(clientId, index, quotation) {
-    const isGremio = window.location.pathname.includes('gremio');
-    
-    if (isGremio) {
-      const cotizaciones = await window.mrDataManager.getGremioCotizaciones();
-      const clientQuotations = cotizaciones.filter(c => c.clientId === clientId);
-      
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
       if (clientQuotations[index]) {
         const globalIndex = cotizaciones.indexOf(clientQuotations[index]);
-        cotizaciones[globalIndex] = {
-          ...quotation,
-          clientId: clientId
-        };
-        return await window.mrDataManager.saveGremioCotizaciones(cotizaciones);
+        if (globalIndex !== -1) {
+          cotizaciones[globalIndex] = { ...quotation, clientId: clientId };
+          return await window.mrDataManager.saveGremioCotizaciones(cotizaciones);
+        }
       }
     } else {
       const cotizaciones = await window.mrDataManager.getClientesCotizaciones();
       const clientQuotations = cotizaciones.filter(c => c.clientId === clientId);
-<<<<<<< HEAD
-
-=======
-      
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
       if (clientQuotations[index]) {
         const globalIndex = cotizaciones.indexOf(clientQuotations[index]);
-        cotizaciones[globalIndex] = {
-          ...quotation,
-          clientId: clientId
-        };
-        return await window.mrDataManager.saveClientesCotizaciones(cotizaciones);
+        if (globalIndex !== -1) {
+          cotizaciones[globalIndex] = { ...quotation, clientId: clientId };
+          return await window.mrDataManager.saveClientesCotizaciones(cotizaciones);
+        }
       }
     }
     return false;
   },
-<<<<<<< HEAD
 
-  // ==================== MÉTODOS DE EXPORTACIÓN ====================
-
-  async exportClients() {
-    return await window.mrDataManager.createBackup();
-  },
-
-=======
-  
   // ==================== MÉTODOS DE EXPORTACIÓN ====================
   
   async exportClients() {
     return await window.mrDataManager.createBackup();
   },
-  
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
   async exportAllData() {
     return await window.mrDataManager.createBackup();
   }

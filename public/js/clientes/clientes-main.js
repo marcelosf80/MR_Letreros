@@ -5,11 +5,7 @@
  */
 
 // ==================== VARIABLES GLOBALES ====================
-<<<<<<< HEAD
 window.listaCostos = [];
-=======
-window.listaCostos = []; 
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
 window.preciosClientes = [];
 window.terceros = [];
 let currentQuoteProducts = [];
@@ -39,48 +35,29 @@ function formatM2(number) {
 
 // ==================== INICIALIZACIÓN ====================
 
-<<<<<<< HEAD
 document.addEventListener('DOMContentLoaded', async function () {
-=======
-document.addEventListener('DOMContentLoaded', async function() {
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
   console.log('[CLIENTES] 🚀 Inicializando...');
 
   // 1. Inyectar controles UI inmediatamente (Botones Buscar/Guardar)
   ensureClientControlsExist();
   ensureTerceroInputs();
   ensureProductModalTercerosUI();
-<<<<<<< HEAD
 
-=======
-  
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
   // 2. Verificar conexión
   if (!window.mrDataManager || !(await window.mrDataManager.checkConnection())) {
     console.error('[CLIENTES] ❌ No se pudo conectar al servidor.');
     return;
   }
-<<<<<<< HEAD
 
-=======
-  
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
   // 3. Cargar datos y configurar eventos
   await loadAllData();
   setupEventListeners();
   await loadQuotations();
   updateStatistics();
-<<<<<<< HEAD
 
   // Iniciar monitoreo
   startNotificationPolling();
 
-=======
-  
-  // Iniciar monitoreo
-  startNotificationPolling();
-  
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
   console.log('[CLIENTES] ✅ Sistema listo y conectado.');
 });
 
@@ -98,7 +75,6 @@ async function loadCostosData() {
   try {
     const costos = await window.mrDataManager.getCostos();
     const inventario = await window.mrDataManager.getMateriales();
-<<<<<<< HEAD
 
     let listaCombinada = [...costos];
     const existentes = new Set(costos.map(c => (c.name || c.producto || '').toLowerCase().trim()));
@@ -115,24 +91,6 @@ async function loadCostosData() {
         });
         existentes.add(nombre);
       }
-=======
-    
-    let listaCombinada = [...costos];
-    const existentes = new Set(costos.map(c => (c.name || c.producto || '').toLowerCase().trim()));
-    
-    inventario.forEach(m => {
-        const nombre = (m.producto || m.name || m.productoNombre || '').toLowerCase().trim();
-        if (nombre && !existentes.has(nombre)) {
-            listaCombinada.push({
-                id: m.id,
-                name: m.producto || m.name || m.productoNombre,
-                category: m.categoria || m.category,
-                costs: { total: m.costoPorM2 || 0 },
-                unit: m.unit || 'm²'
-            });
-            existentes.add(nombre);
-        }
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
     });
 
     window.listaCostos = listaCombinada;
@@ -197,17 +155,10 @@ function setupEventListeners() {
 
   const productCategory = document.getElementById('productCategory');
   const productName = document.getElementById('productName');
-<<<<<<< HEAD
 
   if (productCategory) productCategory.addEventListener('change', window.loadProductsByCategory);
   if (productName) productName.addEventListener('change', window.loadProductPrice);
 
-=======
-  
-  if (productCategory) productCategory.addEventListener('change', window.loadProductsByCategory);
-  if (productName) productName.addEventListener('change', window.loadProductPrice);
-  
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
   ['productAncho', 'productAlto', 'productCantidad'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.addEventListener('input', window.calcularTotalMaterial);
@@ -229,11 +180,7 @@ function setupEventListeners() {
   if (terceroServiceSelect) {
     terceroServiceSelect.addEventListener('change', window.loadTerceroPrice);
   }
-<<<<<<< HEAD
 
-=======
-  
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
   const terceroQuantityInput = document.getElementById('terceroQuantity');
   if (terceroQuantityInput) {
     terceroQuantityInput.addEventListener('input', window.calcularTotalTercero);
@@ -252,7 +199,6 @@ function setupEventListeners() {
       allClients = await window.mrDataManager.getClientesClientes() || [];
       renderClientSearchList(allClients);
       window.MRModals.open(searchClientModal);
-<<<<<<< HEAD
       setTimeout(() => { if (searchClientInput) searchClientInput.focus(); }, 100);
     });
   }
@@ -262,33 +208,15 @@ function setupEventListeners() {
       const term = e.target.value.toLowerCase();
       const filtered = allClients.filter(c =>
         c.name.toLowerCase().includes(term) ||
-=======
-      setTimeout(() => { if(searchClientInput) searchClientInput.focus(); }, 100);
-    });
-  }
-  
-  if (searchClientInput) {
-    searchClientInput.addEventListener('input', (e) => {
-      const term = e.target.value.toLowerCase();
-      const filtered = allClients.filter(c => 
-        c.name.toLowerCase().includes(term) || 
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
         (c.contact && c.contact.toLowerCase().includes(term))
       );
       renderClientSearchList(filtered);
     });
   }
-<<<<<<< HEAD
 
   if (btnCloseSearch) btnCloseSearch.addEventListener('click', () => window.MRModals.close(searchClientModal));
   if (btnCancelSearch) btnCancelSearch.addEventListener('click', () => window.MRModals.close(searchClientModal));
 
-=======
-  
-  if (btnCloseSearch) btnCloseSearch.addEventListener('click', () => window.MRModals.close(searchClientModal));
-  if (btnCancelSearch) btnCancelSearch.addEventListener('click', () => window.MRModals.close(searchClientModal));
-  
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
   if (btnSaveClient) btnSaveClient.addEventListener('click', window.saveNewClient);
 }
 
@@ -357,30 +285,17 @@ function ensureTerceroInputs() {
   container.style.gridTemplateColumns = '1fr 1fr';
   container.style.gap = '10px';
   container.style.marginBottom = '1rem';
-<<<<<<< HEAD
 
-=======
-  
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
   container.innerHTML = `
     <div><label style="display:block; margin-bottom:5px; font-size:0.9rem;">Ancho (cm)</label><input type="number" id="terceroAncho" class="form-control" placeholder="0" style="width:100%; padding:8px;"></div>
     <div><label style="display:block; margin-bottom:5px; font-size:0.9rem;">Alto (cm)</label><input type="number" id="terceroAlto" class="form-control" placeholder="0" style="width:100%; padding:8px;"></div>
   `;
-<<<<<<< HEAD
 
   quantityInput.parentNode.insertBefore(container, quantityInput);
 
   document.getElementById('terceroAncho').addEventListener('input', window.calcularTotalTercero);
   document.getElementById('terceroAlto').addEventListener('input', window.calcularTotalTercero);
 
-=======
-  
-  quantityInput.parentNode.insertBefore(container, quantityInput);
-  
-  document.getElementById('terceroAncho').addEventListener('input', window.calcularTotalTercero);
-  document.getElementById('terceroAlto').addEventListener('input', window.calcularTotalTercero);
-  
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
   const matContainer = document.createElement('div');
   matContainer.id = 'terceroMaterialGroup';
   matContainer.style.display = 'none';
@@ -392,11 +307,7 @@ function ensureTerceroInputs() {
     <label style="display:block; margin-bottom:5px; font-size:0.9rem; color:#FFC107;">📦 Cantidad de Material (Placas)</label>
     <input type="number" id="terceroCantMaterial" class="form-control" placeholder="1" value="1" style="width:100%; padding:8px;">
   `;
-<<<<<<< HEAD
 
-=======
-  
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
   container.parentNode.insertBefore(matContainer, container);
   document.getElementById('terceroCantMaterial').addEventListener('input', window.calcularTotalTercero);
 }
@@ -432,20 +343,12 @@ function ensureProductModalTercerosUI() {
 function renderClientSearchList(clients) {
   const container = document.getElementById('clientSearchResults');
   if (!container) return;
-<<<<<<< HEAD
 
-=======
-  
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
   if (clients.length === 0) {
     container.innerHTML = '<p style="text-align: center; padding: 1rem;">No se encontraron clientes</p>';
     return;
   }
-<<<<<<< HEAD
 
-=======
-  
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
   container.innerHTML = clients.map(c => `
     <div class="client-item" style="padding: 0.8rem; border-bottom: 1px solid #eee; cursor: pointer;" onclick="window.selectClient('${c.id}')">
       <strong>${c.name}</strong><br>
@@ -454,36 +357,21 @@ function renderClientSearchList(clients) {
   `).join('');
 }
 
-<<<<<<< HEAD
 window.selectClient = function (id) {
-=======
-window.selectClient = function(id) {
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
   const client = allClients.find(c => c.id === id);
   if (client) {
     currentClientId = client.id;
     document.getElementById('clientName').value = client.name;
-<<<<<<< HEAD
     if (document.getElementById('clientPhone')) document.getElementById('clientPhone').value = client.telefono || '';
     if (document.getElementById('clientEmail')) document.getElementById('clientEmail').value = client.email || '';
     if (document.getElementById('clientAddress')) document.getElementById('clientAddress').value = client.direccion || '';
 
-=======
-    if(document.getElementById('clientPhone')) document.getElementById('clientPhone').value = client.telefono || '';
-    if(document.getElementById('clientEmail')) document.getElementById('clientEmail').value = client.email || '';
-    if(document.getElementById('clientAddress')) document.getElementById('clientAddress').value = client.direccion || '';
-    
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
     window.MRModals.close(document.getElementById('searchClientModal'));
     alert(`✅ Cliente cargado: ${client.name}`);
   }
 };
 
-<<<<<<< HEAD
 window.saveNewClient = async function () {
-=======
-window.saveNewClient = async function() {
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
   const name = document.getElementById('clientName').value.trim();
   if (!name) {
     alert('⚠️ Ingresa el nombre del cliente.');
@@ -520,7 +408,6 @@ window.saveNewClient = async function() {
 async function populateProductSelect() {
   const selectCategoria = document.getElementById('productCategory');
   if (!selectCategoria) return;
-<<<<<<< HEAD
 
   // 1. Categorías de productos
   const categoriasProductos = [...new Set(window.preciosClientes.map(p => p.category || p.categoria))].filter(Boolean);
@@ -543,30 +430,6 @@ window.loadProductsByCategory = function () {
   const productSelect = document.getElementById('productName');
   const priceInfo = document.getElementById('priceInfo');
 
-=======
-  
-  // 1. Categorías de productos
-  const categoriasProductos = [...new Set(window.preciosClientes.map(p => p.category || p.categoria))].filter(Boolean);
-  
-  // 2. Categorías guardadas (archivo gremio_categorias.json)
-  let categoriasGuardadas = [];
-  if (window.mrDataManager) {
-      categoriasGuardadas = await window.mrDataManager.getCategorias();
-  }
-  
-  // 3. Combinar
-  const categorias = [...new Set([...categoriasProductos, ...categoriasGuardadas])].sort();
-  
-  selectCategoria.innerHTML = '<option value="">Seleccionar categoría...</option>' + 
-    categorias.map(cat => `<option value="${cat}">${cat}</option>`).join('');
-}
-
-window.loadProductsByCategory = function() {
-  const categoria = document.getElementById('productCategory').value;
-  const productSelect = document.getElementById('productName');
-  const priceInfo = document.getElementById('priceInfo');
-  
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
   if (!categoria) {
     productSelect.innerHTML = '<option value="">Primero selecciona categoría...</option>';
     productSelect.disabled = true;
@@ -575,55 +438,31 @@ window.loadProductsByCategory = function() {
     return;
   }
 
-<<<<<<< HEAD
   const productos = preciosClientes.filter(p =>
     (p.category === categoria || p.categoria === categoria)
   );
 
-=======
-  const productos = preciosClientes.filter(p => 
-    (p.category === categoria || p.categoria === categoria)
-  );
-  
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
   if (productos.length === 0) {
     productSelect.innerHTML = '<option value="">No hay productos</option>';
     productSelect.disabled = true;
     return;
   }
-<<<<<<< HEAD
 
   productSelect.innerHTML = '<option value="">Seleccionar producto...</option>' +
-=======
-  
-  productSelect.innerHTML = '<option value="">Seleccionar producto...</option>' + 
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
     productos.map((p, index) => {
       const nombreProducto = p.name || p.nombre || p.producto || 'Sin nombre';
       return `<option value="${index}">${nombreProducto}</option>`;
     }).join('');
-<<<<<<< HEAD
 
-=======
-  
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
   productSelect.disabled = false;
   window.productosFiltrados = productos;
 };
 
-<<<<<<< HEAD
 window.loadProductPrice = function () {
   const productSelect = document.getElementById('productName');
   const productIndex = parseInt(productSelect.value);
   const priceInfo = document.getElementById('priceInfo');
 
-=======
-window.loadProductPrice = function() {
-  const productSelect = document.getElementById('productName');
-  const productIndex = parseInt(productSelect.value);
-  const priceInfo = document.getElementById('priceInfo');
-  
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
   if (isNaN(productIndex) || !window.productosFiltrados) {
     if (priceInfo) priceInfo.style.display = 'none';
     resetCalculos();
@@ -635,19 +474,11 @@ window.loadProductPrice = function() {
 
   // USAR PRECIO PÚBLICO
   currentPrecioCliente = parseFloat(
-<<<<<<< HEAD
     precioItem.priceCliente ||
     precioItem.precioCliente ||
     precioItem.cliente ||
     precioItem.publico ||
     precioItem.pricePublico ||
-=======
-    precioItem.priceCliente || 
-    precioItem.precioCliente || 
-    precioItem.cliente || 
-    precioItem.publico || 
-    precioItem.pricePublico || 
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
     precioItem.pricePublic ||
     0
   );
@@ -663,11 +494,7 @@ window.loadProductPrice = function() {
 
   // CORRECCIÓN: Buscar costo en múltiples fuentes
   let costoEncontrado = 0;
-<<<<<<< HEAD
 
-=======
-  
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
   // 1. Buscar en costos.json
   if (costoItem && costoItem.costs && costoItem.costs.total) {
     costoEncontrado = parseFloat(costoItem.costs.total);
@@ -693,15 +520,9 @@ window.loadProductPrice = function() {
     costoEncontrado = 0;
     console.error('[CLIENTES] ❌ No se encontró costo para:', nombreProducto, categoriaBuscada);
   }
-<<<<<<< HEAD
 
   currentCostoMaterial = costoEncontrado;
 
-=======
-  
-  currentCostoMaterial = costoEncontrado;
-  
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
   // Log detallado para debugging
   console.log('[CLIENTES] 📊 Resumen:', {
     producto: nombreProducto,
@@ -725,11 +546,7 @@ window.loadProductPrice = function() {
   }
 };
 
-<<<<<<< HEAD
 window.calcularTotalMaterial = function () {
-=======
-window.calcularTotalMaterial = function() {
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
   const ancho = parseFloat(document.getElementById('productAncho')?.value) || 0;
   const alto = parseFloat(document.getElementById('productAlto')?.value) || 0;
   const cantidad = parseInt(document.getElementById('productCantidad')?.value) || 0;
@@ -748,11 +565,7 @@ window.calcularTotalMaterial = function() {
   const totalMaterial = m2Totales * currentPrecioCliente;
 
   document.getElementById('productTotal').textContent = '$' + formatCurrency(totalMaterial);
-<<<<<<< HEAD
   document.getElementById('productFormula').textContent =
-=======
-  document.getElementById('productFormula').textContent = 
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
     `((${ancho} × ${alto}) ÷ 10000) × ${cantidad} × $${formatCurrency(currentPrecioCliente)}/m²`;
 
   const detalle = document.getElementById('calculoDetalle');
@@ -812,21 +625,12 @@ function addProductToQuote() {
       let detalleMedidas = '';
       const unidadT = t.unidad || 'unidad';
       if ((unidadT === 'm²' || unidadT === 'm2') && ancho > 0 && alto > 0) {
-<<<<<<< HEAD
         factor = m2Totales;
         detalleMedidas = ` (${ancho}x${alto}cm)`;
       }
       const costoT = parseFloat(t.costo || 0);
       const precioT = parseFloat(t.precio || 0);
 
-=======
-         factor = m2Totales;
-         detalleMedidas = ` (${ancho}x${alto}cm)`;
-      }
-      const costoT = parseFloat(t.costo || 0);
-      const precioT = parseFloat(t.precio || 0);
-      
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
       currentQuoteTerceros.push({
         id: Date.now().toString() + '_t',
         tipo: 'tercero',
@@ -862,11 +666,7 @@ function addProductToQuote() {
     precioUnitario,
     total: totalPrecio
   });
-<<<<<<< HEAD
 
-=======
-  
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
   window.MRModals.close(document.getElementById('productModal'));
   resetCalculos();
   document.getElementById('productCategory').value = '';
@@ -876,11 +676,7 @@ function addProductToQuote() {
     document.getElementById('productModalTercero').value = '';
     document.getElementById('productModalTerceroInfo').style.display = 'none';
   }
-<<<<<<< HEAD
 
-=======
-  
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
   renderQuoteProducts();
   calculateTotals();
   renderTerceros();
@@ -892,17 +688,12 @@ function addProductToQuote() {
 function populateTerceros() {
   const select = document.getElementById('terceroService');
   if (!select) return;
-<<<<<<< HEAD
 
-=======
-  
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
   if (terceros.length === 0) {
     select.innerHTML = '<option value="">No hay terceros configurados</option>';
     select.disabled = true;
     return;
   }
-<<<<<<< HEAD
 
   const options = '<option value="">Seleccionar servicio...</option>' +
     terceros.map((t, index) => {
@@ -918,23 +709,6 @@ function populateTerceros() {
       terceros.map((t, index) => `<option value="${index}">${t.nombre} (${t.empresaNombre})</option>`).join('');
 
     selectEmbedded.onchange = function () {
-=======
-  
-  const options = '<option value="">Seleccionar servicio...</option>' + 
-    terceros.map((t, index) => {
-      return `<option value="${index}">${t.nombre || 'Sin nombre'} (${t.empresaNombre || 'Sin empresa'})</option>`;
-    }).join('');
-    
-  select.innerHTML = options;
-  select.disabled = false;
-  
-  const selectEmbedded = document.getElementById('productModalTercero');
-  if (selectEmbedded) {
-    selectEmbedded.innerHTML = '<option value="">-- Ninguno --</option>' + 
-      terceros.map((t, index) => `<option value="${index}">${t.nombre} (${t.empresaNombre})</option>`).join('');
-      
-    selectEmbedded.onchange = function() {
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
       const info = document.getElementById('productModalTerceroInfo');
       if (this.value && terceros[this.value]) {
         const t = terceros[this.value];
@@ -947,17 +721,10 @@ function populateTerceros() {
   }
 }
 
-<<<<<<< HEAD
 window.loadTerceroPrice = function () {
   const select = document.getElementById('terceroService');
   const terceroIndex = parseInt(select.value);
 
-=======
-window.loadTerceroPrice = function() {
-  const select = document.getElementById('terceroService');
-  const terceroIndex = parseInt(select.value);
-  
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
   if (isNaN(terceroIndex)) {
     document.getElementById('terceroCosto').value = '';
     document.getElementById('terceroPrecioCliente').value = '';
@@ -967,17 +734,10 @@ window.loadTerceroPrice = function() {
   const tercero = terceros[terceroIndex];
   document.getElementById('terceroCosto').value = parseFloat(tercero.costo || 0).toFixed(2);
   document.getElementById('terceroPrecioCliente').value = parseFloat(tercero.precio || 0).toFixed(2);
-<<<<<<< HEAD
 
   const dimsContainer = document.getElementById('terceroDimensiones');
   const unidad = tercero.unidad || 'unidad';
 
-=======
-  
-  const dimsContainer = document.getElementById('terceroDimensiones');
-  const unidad = tercero.unidad || 'unidad';
-  
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
   if (dimsContainer) {
     if (unidad === 'm²' || unidad === 'm2') {
       dimsContainer.style.display = 'grid';
@@ -989,11 +749,7 @@ window.loadTerceroPrice = function() {
       document.getElementById('terceroAlto').value = '';
     }
   }
-<<<<<<< HEAD
 
-=======
-  
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
   const matGroup = document.getElementById('terceroMaterialGroup');
   if (matGroup) {
     if ((tercero.costoMaterial || 0) > 0 || (tercero.precioMaterial || 0) > 0) {
@@ -1003,7 +759,6 @@ window.loadTerceroPrice = function() {
       matGroup.style.display = 'none';
     }
   }
-<<<<<<< HEAD
 
   calcularTotalTercero();
 }
@@ -1013,27 +768,12 @@ window.calcularTotalTercero = function () {
   const costo = parseFloat(document.getElementById('terceroCosto').value) || 0;
   const precioCliente = parseFloat(document.getElementById('terceroPrecioCliente').value) || 0;
 
-=======
-  
-  calcularTotalTercero();
-}
-
-window.calcularTotalTercero = function() {
-  let cantidad = parseFloat(document.getElementById('terceroQuantity').value) || 0;
-  const costo = parseFloat(document.getElementById('terceroCosto').value) || 0;
-  const precioCliente = parseFloat(document.getElementById('terceroPrecioCliente').value) || 0;
-  
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
   const select = document.getElementById('terceroService');
   const tercero = terceros[select.value] || {};
   const costoMaterial = parseFloat(tercero.costoMaterial || 0);
   const precioMaterial = parseFloat(tercero.precioMaterial || 0);
   const cantMaterial = parseFloat(document.getElementById('terceroCantMaterial')?.value) || 0;
-<<<<<<< HEAD
 
-=======
-  
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
   const ancho = parseFloat(document.getElementById('terceroAncho')?.value) || 0;
   const alto = parseFloat(document.getElementById('terceroAlto')?.value) || 0;
   const dimsVisible = document.getElementById('terceroDimensiones')?.style.display !== 'none';
@@ -1047,20 +787,12 @@ window.calcularTotalTercero = function() {
 
   let totalCosto = factor * costo;
   let totalPrecio = factor * precioCliente;
-<<<<<<< HEAD
 
-=======
-  
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
   if (costoMaterial > 0 || precioMaterial > 0) {
     totalCosto += (costoMaterial * cantMaterial);
     totalPrecio += (precioMaterial * cantMaterial);
   }
-<<<<<<< HEAD
 
-=======
-  
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
   document.getElementById('terceroTotalCosto').textContent = '$' + formatCurrency(totalCosto);
   document.getElementById('terceroTotal').textContent = '$' + formatCurrency(totalPrecio);
 };
@@ -1069,11 +801,7 @@ function addTerceroToQuote() {
   const select = document.getElementById('terceroService');
   const terceroIndex = parseInt(select.value);
   const cantidad = parseFloat(document.getElementById('terceroQuantity').value);
-<<<<<<< HEAD
 
-=======
-  
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
   if (isNaN(terceroIndex) || !cantidad) {
     alert('⚠️ Completa todos los campos');
     return;
@@ -1086,19 +814,11 @@ function addTerceroToQuote() {
   const costoMaterial = parseFloat(tercero.costoMaterial || 0);
   const precioMaterial = parseFloat(tercero.precioMaterial || 0);
   const cantMaterial = parseFloat(document.getElementById('terceroCantMaterial')?.value) || 0;
-<<<<<<< HEAD
 
   const ancho = parseFloat(document.getElementById('terceroAncho')?.value) || 0;
   const alto = parseFloat(document.getElementById('terceroAlto')?.value) || 0;
   const dimsVisible = document.getElementById('terceroDimensiones')?.style.display !== 'none';
 
-=======
-  
-  const ancho = parseFloat(document.getElementById('terceroAncho')?.value) || 0;
-  const alto = parseFloat(document.getElementById('terceroAlto')?.value) || 0;
-  const dimsVisible = document.getElementById('terceroDimensiones')?.style.display !== 'none';
-  
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
   let factor = cantidad;
   let detalleMedidas = '';
 
@@ -1111,11 +831,7 @@ function addTerceroToQuote() {
   let totalCosto = factor * costo;
   let totalPrecio = factor * precioVenta;
   let detalleMaterial = '';
-<<<<<<< HEAD
 
-=======
-  
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
   if (costoMaterial > 0 || precioMaterial > 0) {
     totalCosto += (costoMaterial * cantMaterial);
     totalPrecio += (precioMaterial * cantMaterial);
@@ -1137,11 +853,7 @@ function addTerceroToQuote() {
     totalCosto,
     total: totalPrecio
   });
-<<<<<<< HEAD
 
-=======
-  
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
   window.MRModals.close(document.getElementById('terceroServiceModal'));
   document.getElementById('terceroService').value = '';
   document.getElementById('terceroQuantity').value = '';
@@ -1155,11 +867,7 @@ function addTerceroToQuote() {
 function renderQuoteProducts() {
   const container = document.getElementById('productsList');
   if (!container) return;
-<<<<<<< HEAD
 
-=======
-  
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
   if (currentQuoteProducts.length === 0) {
     container.innerHTML = '<p class="empty-state">No hay productos agregados</p>';
     return;
@@ -1190,11 +898,7 @@ function renderQuoteProducts() {
   `).join('');
 }
 
-<<<<<<< HEAD
 window.removeProduct = function (id) {
-=======
-window.removeProduct = function(id) {
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
   if (!confirm('¿Eliminar?')) return;
   currentQuoteProducts = currentQuoteProducts.filter(p => p.id !== id);
   renderQuoteProducts();
@@ -1204,11 +908,7 @@ window.removeProduct = function(id) {
 function renderTerceros() {
   const container = document.getElementById('terceroServicesList');
   if (!container) return;
-<<<<<<< HEAD
 
-=======
-  
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
   if (currentQuoteTerceros.length === 0) {
     container.innerHTML = '<p class="empty-state">No hay servicios agregados</p>';
     return;
@@ -1229,11 +929,7 @@ function renderTerceros() {
   `).join('');
 }
 
-<<<<<<< HEAD
 window.removeTercero = function (id) {
-=======
-window.removeTercero = function(id) {
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
   if (!confirm('¿Eliminar?')) return;
   currentQuoteTerceros = currentQuoteTerceros.filter(t => t.id !== id);
   renderTerceros();
@@ -1267,11 +963,7 @@ function calculateTotals() {
   calcularSaldo();
 }
 
-<<<<<<< HEAD
 window.calcularSaldo = function () {
-=======
-window.calcularSaldo = function() {
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
   const total = currentTotals.totalCliente || 0;
   const anticipo = parseFloat(document.getElementById('montoAnticipo')?.value) || 0;
   const saldo = total - anticipo;
@@ -1280,15 +972,9 @@ window.calcularSaldo = function() {
 
 // ==================== GUARDAR ====================
 
-<<<<<<< HEAD
 window.saveQuote = async function () {
   const clientName = document.getElementById('clientName')?.value.trim();
 
-=======
-window.saveQuote = async function() {
-  const clientName = document.getElementById('clientName')?.value.trim();
-  
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
   if (!currentClientId) {
     alert('⚠️ Error: No hay un cliente cargado.');
     return;
@@ -1302,11 +988,7 @@ window.saveQuote = async function() {
   }
 
   const anticipo = parseFloat(document.getElementById('montoAnticipo')?.value) || 0;
-<<<<<<< HEAD
 
-=======
-  
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
   const quote = {
     id: Date.now().toString(),
     clientId: currentClientId,
@@ -1335,11 +1017,7 @@ window.saveQuote = async function() {
     const cotizaciones = await window.mrDataManager.getClientesCotizaciones();
     cotizaciones.push(quote);
     const success = await window.mrDataManager.saveClientesCotizaciones(cotizaciones);
-<<<<<<< HEAD
 
-=======
-    
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
     if (success) {
       alert('✅ Cotización guardada');
       clearQuote();
@@ -1353,7 +1031,6 @@ window.saveQuote = async function() {
   }
 };
 
-<<<<<<< HEAD
 window.clearQuote = function () {
   currentQuoteProducts = [];
   currentQuoteTerceros = [];
@@ -1372,179 +1049,16 @@ window.clearQuote = function () {
   const deliveryDateElem = document.getElementById('deliveryDate');
   if (deliveryDateElem) deliveryDateElem.value = '';
 
-=======
-window.clearQuote = function() {
-  currentQuoteProducts = [];
-  currentQuoteTerceros = [];
-  currentClientId = null;
-  
-  if (window.multiCategoryManager) {
-      window.multiCategoryManager.clearCategories();
-  }
-  
-  ['clientName', 'clientPhone', 'clientEmail', 'clientAddress', 'montoAnticipo', 'deliveryDate'].forEach(id => {
-    const elem = document.getElementById(id);
-    if (elem) elem.value = '';
-  });
-  
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
   renderQuoteProducts();
   renderTerceros();
   calculateTotals();
 };
 
-<<<<<<< HEAD
-// ==================== LISTADO Y DETALLE ====================
-
-async function loadQuotations() {
-  const container = document.getElementById('quotesList');
-  if (!container) return;
-
-  container.innerHTML = '<p class="empty-state">Cargando cotizaciones...</p>';
-
-  try {
-    cotizacionesClientes = await window.mrDataManager.getClientesCotizaciones();
-    renderQuotations();
-    updateStatistics(); // Call updateStatistics here after loading and rendering
-  } catch (error) {
-    console.error('[CLIENTES] ❌ Error cargando cotizaciones:', error);
-    container.innerHTML = '<p class="empty-state">Error al cargar historial</p>';
-  }
-}
-
-window.filterHistoryByClient = function (name) {
-  renderQuotations(name);
-};
-
-function renderQuotations(filterName = '') {
-  const container = document.getElementById('quotesList');
-  if (!container) return;
-
-  // Ordenar por fecha descendente (aplicar a la lista completa antes de filtrar/slice)
-  cotizacionesClientes.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
-
-  // Filtrar
-  let filtered = cotizacionesClientes;
-
-  if (filterName && filterName.trim() !== '') {
-    const term = filterName.toLowerCase();
-    filtered = cotizacionesClientes.filter(c => c.cliente.nombre.toLowerCase().includes(term));
-
-    // Mostrar mensaje de filtro activo
-    const msg = document.getElementById('historyFilterMsg');
-    if (msg) {
-      msg.style.display = 'block';
-      document.getElementById('filterClientName').textContent = filterName;
-    }
-  } else {
-    const msg = document.getElementById('historyFilterMsg');
-    if (msg) msg.style.display = 'none';
-
-    // Mostrar solo 5 recientes si no hay filtro activo
-    filtered = cotizacionesClientes.slice(0, 5);
-  }
-
-  if (filtered.length === 0) {
-    container.innerHTML = '<p class="empty-state">No se encontraron cotizaciones para este cliente</p>';
-    return;
-  }
-
-  container.innerHTML = filtered.map(cot => {
-    const estadoColor = cot.estado === 'aprobada' ? '#51CF66' : '#FFC107';
-    const estadoTexto = cot.estado === 'aprobada' ? '✅ APROBADA' : '⏳ PENDIENTE';
-
-    // Generar resumen de items
-    let resumenItems = [];
-    if (cot.productos) {
-      cot.productos.forEach(p => {
-        resumenItems.push(`${p.cantidad}x ${p.producto || 'Producto'}`);
-      });
-    }
-    if (cot.terceros) {
-      cot.terceros.forEach(t => {
-        resumenItems.push(`${t.cantidad}x ${t.nombre || 'Servicio'}`);
-      });
-    }
-
-    // Cortar resumen si es muy largo
-    let resumenTexto = resumenItems.join(', ');
-    if (resumenTexto.length > 80) resumenTexto = resumenTexto.substring(0, 80) + '...';
-    if (!resumenTexto) resumenTexto = 'Sin items';
-
-    return `
-      <div class="product-card" style="padding: 1rem; border-left: 4px solid ${estadoColor};">
-        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-          <div>
-            <h3 style="margin: 0; font-size: 1.1rem;">${cot.cliente.nombre}</h3>
-            <p style="color: var(--text-secondary); font-size: 0.85rem; margin: 0;">${new Date(cot.fecha).toLocaleDateString()}</p>
-          </div>
-          <div style="text-align: right;">
-             <span style="color: ${estadoColor}; font-weight: bold; font-size: 0.8rem;">${estadoTexto}</span>
-             <div style="font-weight: bold; font-size: 1.1rem;">$${formatCurrency(cot.totalCliente || 0)}</div>
-          </div>
-        </div>
-        
-        <div style="background: rgba(0, 0, 0, 0.2); padding: 0.5rem; border-radius: 4px; margin-bottom: 0.8rem; font-size: 0.85rem; color: #ccc;">
-          ${resumenTexto}
-        </div>
-        
-        <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
-          <button class="btn btn-primary btn-small" onclick="verDetalleCotizacion('${cot.id}')" style="padding: 0.25rem 0.5rem; font-size: 0.8rem;">👁️ Ver</button>
-          ${cot.estado === 'pendiente' ? `
-            <button class="btn btn-success btn-small" onclick="aprobarCotizacion('${cot.id}')" style="padding: 0.25rem 0.5rem; font-size: 0.8rem;">✅</button>
-            <button class="btn btn-danger btn-small" onclick="borrarCotizacion('${cot.id}')" style="padding: 0.25rem 0.5rem; font-size: 0.8rem;">🗑️</button>
-          ` : ''}
-        </div>
-=======
-window.loadQuotations = async function() {
-  try {
-    cotizacionesClientes = await window.mrDataManager.getClientesCotizaciones() || [];
-    cotizacionesClientes.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
-    renderQuotations();
-    updateStatistics();
-  } catch (error) {
-    console.error('[CLIENTES] Error cargando cotizaciones:', error);
-    cotizacionesClientes = [];
-  }
-};
-
-function renderQuotations() {
-  const container = document.getElementById('quotesList');
-  if (!container) return;
-  
-  if (cotizacionesClientes.length === 0) {
-    container.innerHTML = '<p class="empty-state">No hay cotizaciones</p>';
-    return;
-  }
-
-  container.innerHTML = cotizacionesClientes.map(cot => {
-    const estadoColor = cot.estado === 'aprobada' ? '#51CF66' : '#FFC107';
-    const estadoTexto = cot.estado === 'aprobada' ? '✅ APROBADA' : '⏳ PENDIENTE';
-    
-    return `
-      <div class="product-card">
-        <div style="display: flex; justify-content: space-between; margin-bottom: 1rem;">
-          <div>
-            <h3>${cot.cliente.nombre}</h3>
-            <p style="color: var(--text-secondary);">${new Date(cot.fecha).toLocaleDateString()}</p>
-          </div>
-          <span style="color: ${estadoColor}; font-weight: bold;">${estadoTexto}</span>
-        </div>
-        <div style="background: rgba(0, 0, 0, 0.3); padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
-          <p>Total Cliente: <strong>$${formatCurrency(cot.totalCliente || 0)}</strong></p>
-          <p>Ganancia: <strong style="color: #51CF66;">$${formatCurrency(cot.ganancia || 0)}</strong></p>
-        </div>
-        ${cot.estado === 'pendiente' ? `
-          <button class="btn btn-success btn-small" onclick="aprobarCotizacion('${cot.id}')">✅ Aprobar</button>
-          <button class="btn btn-danger btn-small" onclick="borrarCotizacion('${cot.id}')" style="margin-left: 5px;">🗑️ Borrar</button>
-        ` : ''}
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
       </div>
     `;
   }).join('');
 }
 
-<<<<<<< HEAD
 window.verDetalleCotizacion = function (cotizacionId) {
   const cotizacion = cotizacionesClientes.find(c => c.id === cotizacionId);
   if (!cotizacion) {
@@ -1728,36 +1242,21 @@ function generarHTMLDetalleCotizacion(cot) {
 }
 
 window.aprobarCotizacion = async function (id) {
-=======
-window.aprobarCotizacion = async function(id) {
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
   if (!confirm('¿Aprobar cotización? Esto registrará los movimientos de ingresos y egresos.')) return;
 
   try {
     const cotizaciones = await window.mrDataManager.getClientesCotizaciones();
     const cotizacion = cotizaciones.find(c => c.id === id);
-<<<<<<< HEAD
 
-=======
-    
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
     if (!cotizacion) {
       alert('❌ Cotización no encontrada.');
       return;
     }
-<<<<<<< HEAD
 
     cotizacion.estado = 'aprobada';
     cotizacion.approved = true;
     cotizacion.fechaAprobacion = new Date().toISOString();
 
-=======
-    
-    cotizacion.estado = 'aprobada';
-    cotizacion.approved = true;
-    cotizacion.fechaAprobacion = new Date().toISOString();
-    
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
     const successCot = await window.mrDataManager.saveClientesCotizaciones(cotizaciones);
     if (!successCot) return;
 
@@ -1779,7 +1278,6 @@ window.aprobarCotizacion = async function(id) {
     // Ingreso por el ANTICIPO (si existe)
     const montoIngreso = parseFloat(cotizacion.anticipo) || 0;
     if (montoIngreso > 0) {
-<<<<<<< HEAD
       gastos.push({
         id: `ingreso_coti_cli_${cotizacion.id}`,
         tipo: 'ingreso',
@@ -1788,32 +1286,15 @@ window.aprobarCotizacion = async function(id) {
         fecha: fechaAprobacion,
         categoria: 'venta_cliente'
       });
-=======
-        gastos.push({
-          id: `ingreso_coti_cli_${cotizacion.id}`,
-          tipo: 'ingreso',
-          descripcion: `Anticipo Cliente - Coti #${cotiIdShort} (${cotizacion.cliente.nombre})`,
-          monto: montoIngreso,
-          fecha: fechaAprobacion,
-          categoria: 'venta_cliente'
-        });
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
     }
 
     // 3. Crear TRABAJO automáticamente
     let worksData = { works: [], notifications: [] };
     try {
-<<<<<<< HEAD
       const response = await fetch('/api/trabajos');
       if (response.ok) {
         worksData = await response.json();
       }
-=======
-        const response = await fetch('/api/trabajos');
-        if (response.ok) {
-            worksData = await response.json();
-        }
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
     } catch (e) { console.warn('Error obteniendo trabajos del servidor:', e); }
 
     // Asegurar estructura
@@ -1828,7 +1309,6 @@ window.aprobarCotizacion = async function(id) {
     const balance = total - montoIngreso;
 
     const newWork = {
-<<<<<<< HEAD
       id: `work_${Date.now()}`,
       quoteId: cotizacion.id,
       clientName: clientName,
@@ -1854,33 +1334,6 @@ window.aprobarCotizacion = async function(id) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(worksData)
-=======
-        id: `work_${Date.now()}`,
-        quoteId: cotizacion.id,
-        clientName: clientName,
-        clientPhone: cotizacion.cliente?.telefono || '',
-        clientEmail: cotizacion.cliente?.email || '',
-        clientAddress: cotizacion.cliente?.direccion || '',
-        total: total,
-        totalCost: cost,
-        profit: profit,
-        paidAmount: montoIngreso,
-        balance: balance,
-        status: 'pending',
-        paymentStatus: (montoIngreso >= total - 1) ? 'paid' : 'pending',
-        priority: 'normal',
-        createdAt: new Date().toISOString(),
-        timeline: [{ type: 'created', description: 'Trabajo creado automáticamente desde Clientes', timestamp: new Date().toISOString() }],
-        notes: []
-    };
-    worksData.works.push(newWork);
-    
-    // Guardado directo
-    const res = await fetch('/api/trabajos', { 
-        method: 'POST', 
-        headers: {'Content-Type': 'application/json'}, 
-        body: JSON.stringify(worksData) 
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
     });
     const json = await res.json();
     const saveSuccess = json.success;
@@ -1888,19 +1341,11 @@ window.aprobarCotizacion = async function(id) {
     console.log('[CLIENTES] Resultado guardado trabajo:', saveSuccess);
 
     await window.mrDataManager.saveGastos(gastos);
-<<<<<<< HEAD
 
     if (window.notifyWorkCreated) {
       window.notifyWorkCreated(newWork);
     } else {
       alert('✅ Cotización aprobada, Trabajo creado y movimientos registrados.');
-=======
-    
-    if (window.notifyWorkCreated) {
-        window.notifyWorkCreated(newWork);
-    } else {
-        alert('✅ Cotización aprobada, Trabajo creado y movimientos registrados.');
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
     }
     await loadQuotations();
     updateStatistics();
@@ -1910,15 +1355,9 @@ window.aprobarCotizacion = async function(id) {
   }
 };
 
-<<<<<<< HEAD
 window.borrarCotizacion = async function (id) {
   if (!confirm('⚠️ ¿Estás seguro de eliminar esta cotización?')) return;
 
-=======
-window.borrarCotizacion = async function(id) {
-  if (!confirm('⚠️ ¿Estás seguro de eliminar esta cotización?')) return;
-  
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
   try {
     const cotizaciones = await window.mrDataManager.getClientesCotizaciones();
     const filtered = cotizaciones.filter(c => c.id !== id);
@@ -1932,7 +1371,6 @@ window.borrarCotizacion = async function(id) {
   }
 };
 
-<<<<<<< HEAD
 window.updateStatistics = function () {
   const aprobadas = cotizacionesClientes.filter(c => c.estado === 'aprobada');
   const pendientes = cotizacionesClientes.filter(c => c.estado === 'pendiente');
@@ -1940,26 +1378,13 @@ window.updateStatistics = function () {
   const totalAprobado = aprobadas.reduce((sum, c) => sum + (c.totalCliente || 0), 0);
   const totalGanancia = aprobadas.reduce((sum, c) => sum + (c.ganancia || 0), 0);
 
-=======
-window.updateStatistics = function() {
-  const aprobadas = cotizacionesClientes.filter(c => c.estado === 'aprobada');
-  const pendientes = cotizacionesClientes.filter(c => c.estado === 'pendiente');
-  
-  const totalAprobado = aprobadas.reduce((sum, c) => sum + (c.totalCliente || 0), 0);
-  const totalGanancia = aprobadas.reduce((sum, c) => sum + (c.ganancia || 0), 0);
-  
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
   document.getElementById('totalApproved').textContent = '$' + totalAprobado.toLocaleString('es-AR', { minimumFractionDigits: 2 });
   document.getElementById('totalGanancia').textContent = '$' + totalGanancia.toLocaleString('es-AR', { minimumFractionDigits: 2 });
   document.getElementById('countApproved').textContent = aprobadas.length;
   document.getElementById('countPending').textContent = pendientes.length;
 };
 
-<<<<<<< HEAD
 window.generatePDF = async function () {
-=======
-window.generatePDF = async function() {
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
   if (!window.jspdf) {
     alert('⚠️ Error: La librería PDF no se ha cargado correctamente.');
     return;
@@ -1985,27 +1410,18 @@ window.generatePDF = async function() {
       img.onerror = () => resolve(null);
     });
   };
-<<<<<<< HEAD
 
-=======
-  
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
   // Configuración básica
   const margin = 20;
   let y = 20;
   const pageWidth = doc.internal.pageSize.getWidth();
-<<<<<<< HEAD
 
-=======
-  
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
   // --- ENCABEZADO CON LOGO ---
   const fecha = new Date().toLocaleDateString();
   const logoUrl = 'img/logo.png';
   const logoData = await loadImage(logoUrl);
 
   if (logoData) {
-<<<<<<< HEAD
     const imgProps = doc.getImageProperties(logoData);
     const imgWidth = 50; // 50mm de ancho
     const imgHeight = (imgProps.height * imgWidth) / imgProps.width;
@@ -2035,67 +1451,25 @@ window.generatePDF = async function() {
     doc.setTextColor(0);
     doc.text(`Fecha: ${fecha}`, pageWidth - margin - 40, y);
     y += 20;
-=======
-      const imgProps = doc.getImageProperties(logoData);
-      const imgWidth = 50; // 50mm de ancho
-      const imgHeight = (imgProps.height * imgWidth) / imgProps.width;
-      doc.addImage(logoData, 'PNG', margin, y, imgWidth, imgHeight);
-      
-      // Info Empresa a la derecha
-      doc.setFontSize(24);
-      doc.setTextColor(0, 168, 204);
-      doc.text('MR Letreros', pageWidth - margin, y + 10, { align: 'right' });
-      
-      doc.setFontSize(10);
-      doc.setTextColor(100);
-      doc.text('Soluciones Gráficas Integrales', pageWidth - margin, y + 16, { align: 'right' });
-      doc.text(`Fecha: ${fecha}`, pageWidth - margin, y + 22, { align: 'right' });
-      
-      y += Math.max(imgHeight, 25) + 10;
-  } else {
-      // Fallback texto
-      doc.setFontSize(22);
-      doc.setTextColor(0, 168, 204);
-      doc.text('MR Letreros', margin, y);
-      
-      doc.setFontSize(10);
-      doc.setTextColor(100);
-      doc.text('Soluciones Gráficas Integrales', margin, y + 6);
-      
-      doc.setTextColor(0);
-      doc.text(`Fecha: ${fecha}`, pageWidth - margin - 40, y);
-      y += 20;
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
   }
 
   // Línea separadora decorativa
   doc.setDrawColor(0, 168, 204);
   doc.setLineWidth(1);
   doc.line(margin, y - 5, pageWidth - margin, y - 5);
-<<<<<<< HEAD
 
-=======
-  
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
   doc.setFontSize(16);
   doc.setFont(undefined, 'bold');
   doc.setTextColor(0);
   doc.text('PRESUPUESTO', margin, y);
   doc.setFont(undefined, 'normal');
-<<<<<<< HEAD
 
   y += 10;
 
-=======
-  
-  y += 10;
-  
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
   // --- DATOS DEL CLIENTE ---
   const clientName = document.getElementById('clientName')?.value || 'Cliente General';
   const clientPhone = document.getElementById('clientPhone')?.value || '';
   const clientEmail = document.getElementById('clientEmail')?.value || '';
-<<<<<<< HEAD
 
   doc.setFontSize(11);
   doc.setFillColor(240, 240, 240);
@@ -2107,32 +1481,13 @@ window.generatePDF = async function() {
 
   y += 35;
 
-=======
-  
-  doc.setFontSize(11);
-  doc.setFillColor(240, 240, 240);
-  doc.rect(margin, y, pageWidth - (margin * 2), 25, 'F');
-  
-  doc.text(`Cliente: ${clientName}`, margin + 5, y + 7);
-  if (clientPhone) doc.text(`Teléfono: ${clientPhone}`, margin + 5, y + 14);
-  if (clientEmail) doc.text(`Email: ${clientEmail}`, margin + 5, y + 21);
-  
-  y += 35;
-  
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
   // --- DETALLE DE PRODUCTOS ---
   doc.setFontSize(12);
   doc.text('Detalle:', margin, y);
   y += 8;
-<<<<<<< HEAD
 
   doc.setFontSize(10);
 
-=======
-  
-  doc.setFontSize(10);
-  
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
   // Función auxiliar para agregar líneas
   const addLine = (desc, price) => {
     if (y > 270) { doc.addPage(); y = 20; }
@@ -2140,11 +1495,7 @@ window.generatePDF = async function() {
     doc.text(price, pageWidth - margin, y, { align: 'right' });
     y += 7;
   };
-<<<<<<< HEAD
 
-=======
-  
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
   // 1. Productos Tradicionales
   if (currentQuoteProducts.length > 0) {
     currentQuoteProducts.forEach(p => {
@@ -2153,11 +1504,7 @@ window.generatePDF = async function() {
       addLine(desc, price);
     });
   }
-<<<<<<< HEAD
 
-=======
-  
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
   // 2. Servicios de Terceros
   if (currentQuoteTerceros.length > 0) {
     currentQuoteTerceros.forEach(t => {
@@ -2166,11 +1513,7 @@ window.generatePDF = async function() {
       addLine(desc, price);
     });
   }
-<<<<<<< HEAD
 
-=======
-  
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
   // 3. Categorías Múltiples
   if (window.multiCategoryManager) {
     const cats = window.multiCategoryManager.getCategories();
@@ -2178,15 +1521,9 @@ window.generatePDF = async function() {
       // Mostrar dimensiones compartidas si existen
       const dims = window.multiCategoryManager.getSharedDimensions();
       if (dims.totalM2 > 0) {
-<<<<<<< HEAD
         doc.setFont(undefined, 'italic');
         addLine(`Medidas Generales: ${dims.width}m x ${dims.height}m (${dims.totalM2.toFixed(2)} m²)`, '');
         doc.setFont(undefined, 'normal');
-=======
-         doc.setFont(undefined, 'italic');
-         addLine(`Medidas Generales: ${dims.width}m x ${dims.height}m (${dims.totalM2.toFixed(2)} m²)`, '');
-         doc.setFont(undefined, 'normal');
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
       }
 
       cats.forEach(c => {
@@ -2194,27 +1531,18 @@ window.generatePDF = async function() {
         const price = `$${formatCurrency(c.totalPrice)}`;
         addLine(desc, price);
       });
-<<<<<<< HEAD
 
-=======
-      
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
       const ink = window.multiCategoryManager.calculateInkTotals();
       if (window.multiCategoryManager.inkPriceEnabled && ink.totalPrice > 0) {
         addLine(`• Costo de Tinta`, `$${formatCurrency(ink.totalPrice)}`);
       }
     }
   }
-<<<<<<< HEAD
 
-=======
-  
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
   y += 5;
   doc.setDrawColor(200);
   doc.line(margin, y, pageWidth - margin, y);
   y += 10;
-<<<<<<< HEAD
 
   // --- TOTALES ---
   const xLabel = pageWidth - margin - 60;
@@ -2232,30 +1560,10 @@ window.generatePDF = async function() {
     y += 7;
   }
 
-=======
-  
-  // --- TOTALES ---
-  const xLabel = pageWidth - margin - 60;
-  const xValue = pageWidth - margin;
-  
-  if (currentTotals.subtotal > 0) {
-      doc.text('Subtotal:', xLabel, y);
-      doc.text(`$${formatCurrency(currentTotals.subtotal)}`, xValue, y, { align: 'right' });
-      y += 7;
-  }
-  
-  if (currentTotals.iva > 0) {
-      doc.text('IVA (21%):', xLabel, y);
-      doc.text(`$${formatCurrency(currentTotals.iva)}`, xValue, y, { align: 'right' });
-      y += 7;
-  }
-  
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
   doc.setFontSize(14);
   doc.setFont(undefined, 'bold');
   doc.text('TOTAL:', xLabel, y);
   doc.text(`$${formatCurrency(currentTotals.totalCliente)}`, xValue, y, { align: 'right' });
-<<<<<<< HEAD
 
   // Anticipo
   const anticipo = parseFloat(document.getElementById('montoAnticipo')?.value) || 0;
@@ -2294,51 +1602,10 @@ window.generatePDF = async function() {
     doc.text(`Página ${i} de ${pageCount}`, pageWidth - margin, pageHeight - 10, { align: 'right' });
   }
 
-=======
-  
-  // Anticipo
-  const anticipo = parseFloat(document.getElementById('montoAnticipo')?.value) || 0;
-  if (anticipo > 0) {
-      y += 10;
-      doc.setFontSize(10);
-      doc.setFont(undefined, 'normal');
-      doc.text('Anticipo:', xLabel, y);
-      doc.text(`$${formatCurrency(anticipo)}`, xValue, y, { align: 'right' });
-      
-      y += 7;
-      doc.setFont(undefined, 'bold');
-      doc.text('RESTANTE:', xLabel, y);
-      doc.text(`$${formatCurrency(currentTotals.totalCliente - anticipo)}`, xValue, y, { align: 'right' });
-  }
-  
-  // Pie de página en todas las páginas
-  const pageCount = doc.internal.getNumberOfPages();
-  for (let i = 1; i <= pageCount; i++) {
-      doc.setPage(i);
-      const pageHeight = doc.internal.pageSize.getHeight();
-      
-      doc.setFontSize(8);
-      doc.setTextColor(150);
-      
-      // Línea separadora
-      doc.setDrawColor(200);
-      doc.line(margin, pageHeight - 25, pageWidth - margin, pageHeight - 25);
-      
-      // Info izquierda
-      doc.text('Presupuesto válido por 15 días.', margin, pageHeight - 20);
-      doc.text('MR Letreros - Soluciones Gráficas Integrales', margin, pageHeight - 15);
-      doc.text('Contacto: +54 9 11 1234-5678 | info@mrletreros.com', margin, pageHeight - 10);
-      
-      // Info derecha (Paginación)
-      doc.text(`Página ${i} de ${pageCount}`, pageWidth - margin, pageHeight - 10, { align: 'right' });
-  }
-  
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
   // Guardar PDF
   doc.save(`Presupuesto_${clientName.replace(/[^a-z0-9]/gi, '_')}.pdf`);
 };
 
-<<<<<<< HEAD
 window.startNotificationPolling = function () {
   checkNotifications();
   setInterval(checkNotifications, 10000);
@@ -2373,40 +1640,4 @@ async function checkNotifications() {
       }
     }
   } catch (e) { console.error('Error polling notifications:', e); }
-=======
-window.startNotificationPolling = function() {
-    checkNotifications();
-    setInterval(checkNotifications, 10000);
-};
-
-async function checkNotifications() {
-    try {
-        const response = await fetch('/api/trabajos');
-        if (!response.ok) return;
-        const data = await response.json();
-        
-        const unreadCount = (data.notifications || []).filter(n => !n.read).length;
-        const badge = document.getElementById('notificationBadge');
-        const btnTrabajos = document.getElementById('btnTrabajosNav');
-        
-        if (unreadCount > 0) {
-            if (badge) {
-                badge.textContent = unreadCount;
-                badge.style.display = 'block';
-            }
-            if (btnTrabajos) {
-                btnTrabajos.style.backgroundColor = '#FFC107';
-                btnTrabajos.style.color = '#000';
-                btnTrabajos.innerHTML = `🔨 Trabajos <span style="background:red; color:white; border-radius:50%; padding:2px 6px; font-size:0.8em; margin-left:5px;">${unreadCount}</span>`;
-            }
-        } else {
-            if (badge) badge.style.display = 'none';
-            if (btnTrabajos) {
-                btnTrabajos.style.backgroundColor = '';
-                btnTrabajos.style.color = '';
-                btnTrabajos.innerHTML = '🔨 Trabajos';
-            }
-        }
-    } catch (e) { console.error('Error polling notifications:', e); }
->>>>>>> 81fff1edcc86c304a6630f1fa260b32ac76d354c
 }

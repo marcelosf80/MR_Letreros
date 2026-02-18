@@ -4,9 +4,7 @@ const USERS_API = '/api/users';
 
 async function loadUsers() {
     try {
-        const res = await AUTH.fetch(USERS_API);
-        if (!res.ok) throw new Error('Error cargando usuarios');
-        const users = await res.json();
+        const users = await window.mrDataManager.request(USERS_API);
         renderUsers(users);
     } catch (error) {
         console.error(error);
@@ -38,7 +36,7 @@ function renderUsers(users) {
 // Modal Logic
 let isEditing = false;
 
-function openNewUserModal() {
+window.openNewUserModal = function() {
     isEditing = false;
     document.getElementById('modalTitle').innerText = 'Nuevo Usuario';
     document.getElementById('userForm').reset();
@@ -50,11 +48,11 @@ function openNewUserModal() {
     document.getElementById('userModal').classList.add('active');
 }
 
-function closeUserModal() {
+window.closeUserModal = function() {
     document.getElementById('userModal').classList.remove('active');
 }
 
-async function saveUser() {
+window.saveUser = async function() {
     const id = document.getElementById('userId').value;
     const nombre = document.getElementById('nombre').value;
     const usuario = document.getElementById('usuario').value;
@@ -69,22 +67,12 @@ async function saveUser() {
     if (!isEditing) body.password = password;
 
     try {
-        const res = await AUTH.fetch(url, {
-            method,
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(body)
-        });
-
-        if (res.ok) {
-            closeUserModal();
-            loadUsers();
-        } else {
-            const err = await res.json();
-            alert('Error: ' + err.error);
-        }
+        await window.mrDataManager.request(url, method, body);
+        window.closeUserModal();
+        loadUsers();
     } catch (error) {
         console.error(error);
-        alert('Error de conexión');
+        alert('Error: ' + (error.message || 'Error de conexión'));
     }
 }
 
@@ -92,30 +80,27 @@ async function saveUser() {
 window.editUser = async (id) => {
     isEditing = true;
     document.getElementById('modalTitle').innerText = 'Editar Usuario';
-    // Load user data first if needed, but we can ideally pass object or fetch single.
-    // For simplicity, fetching list or finding in DOM/Cache is common.
-    // Let's re-fetch list to be safe or find in current memory if we stored it globally.
-    // Simplified: Fetch invalid approach without state? No, we need state.
-    // Let's clear form and alert for this MVP step.
+    
+    try {
+        // Fetch single user for efficiency
+        const u = await window.mrDataManager.request(`${USERS_API}/${id}`);
 
-    // Better: Fetch single user or filter from current list.
-    // Since we don't store list globally in this snippet, let's fetch list again and find.
-    const res = await AUTH.fetch(USERS_API);
-    const users = await res.json();
-    const u = users.find(user => user.id === id);
+        if (u) {
+            document.getElementById('userId').value = u.id;
+            document.getElementById('nombre').value = u.nombre;
+            document.getElementById('usuario').value = u.usuario;
+            document.getElementById('usuario').disabled = true; // Don't change username
+            document.getElementById('rol').value = u.rol;
+            document.getElementById('activo').value = u.activo.toString();
 
-    if (u) {
-        document.getElementById('userId').value = u.id;
-        document.getElementById('nombre').value = u.nombre;
-        document.getElementById('usuario').value = u.usuario;
-        document.getElementById('usuario').disabled = true; // Don't change username
-        document.getElementById('rol').value = u.rol;
-        document.getElementById('activo').value = u.activo.toString();
+            document.getElementById('passwordGroup').style.display = 'none';
+            document.getElementById('password').required = false;
 
-        document.getElementById('passwordGroup').style.display = 'none';
-        document.getElementById('password').required = false;
-
-        document.getElementById('userModal').classList.add('active');
+            document.getElementById('userModal').classList.add('active');
+        }
+    } catch (error) {
+        console.error('Error al cargar usuario para editar:', error);
+        alert('No se pudo cargar la información del usuario.');
     }
 };
 
@@ -133,20 +118,12 @@ window.adminChangePassword = async () => {
     if (!password) return alert('Ingresa una contraseña');
 
     try {
-        const res = await AUTH.fetch(`${USERS_API}/${id}/password`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ password })
-        });
-
-        if (res.ok) {
-            document.getElementById('pwdModal').classList.remove('active');
-            alert('Contraseña actualizada');
-        } else {
-            alert('Error al actualizar contraseña');
-        }
+        await window.mrDataManager.request(`${USERS_API}/${id}/password`, 'PUT', { password });
+        document.getElementById('pwdModal').classList.remove('active');
+        alert('Contraseña actualizada');
     } catch (error) {
-        alert('Error de conexión');
+        console.error(error);
+        alert('Error al actualizar contraseña: ' + (error.message || 'Error de conexión'));
     }
 };
 
@@ -154,15 +131,11 @@ window.deleteUser = async (id) => {
     if (!confirm('¿Estás seguro de eliminar este usuario?')) return;
 
     try {
-        const res = await AUTH.fetch(`${USERS_API}/${id}`, { method: 'DELETE' });
-        if (res.ok) {
-            loadUsers();
-        } else {
-            const err = await res.json();
-            alert('Error: ' + err.error);
-        }
+        await window.mrDataManager.request(`${USERS_API}/${id}`, 'DELETE');
+        loadUsers();
     } catch (error) {
-        alert('Error al eliminar');
+        console.error(error);
+        alert('Error al eliminar: ' + (error.message || 'Error de conexión'));
     }
 };
 
