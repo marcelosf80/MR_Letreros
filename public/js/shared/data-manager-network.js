@@ -377,6 +377,19 @@ class MRLetrerosDataManager {
     }
   }
 
+  // ==================== GOOGLE SYNC ====================
+
+  async syncGoogleSheets() {
+    try {
+      const result = await this.request('/api/sync/google', 'POST');
+      console.log('[GOOGLE] Sincronización completada:', result);
+      return result;
+    } catch (error) {
+      console.error('[GOOGLE] Error en sincronización:', error);
+      throw error;
+    }
+  }
+
   // ==================== ESTADÍSTICAS ====================
 
   async getStatsToday() {

@@ -15,6 +15,7 @@ const rendimientosManager = {
     const modal = document.getElementById('gastoModal');
     const btnCloseGasto = document.getElementById('btnCloseGasto');
     const btnStrategy = document.getElementById('btnStrategy');
+    const btnSyncGoogle = document.getElementById('btnSyncGoogle');
     
     if (btnCloseGasto) btnCloseGasto.addEventListener('click', () => this.closeGastoModal());
     if (modal) modal.addEventListener('click', (e) => {
@@ -23,6 +24,45 @@ const rendimientosManager = {
 
     if (btnStrategy) {
         btnStrategy.addEventListener('click', () => this.generateStrategyReport());
+    }
+    
+    if (btnSyncGoogle) {
+        btnSyncGoogle.addEventListener('click', () => this.handleGoogleSync());
+    }
+  },
+
+  async handleGoogleSync() {
+    const statusDiv = document.getElementById('googleSyncStatus');
+    const dot = document.getElementById('googleSyncDot');
+    const text = document.getElementById('googleSyncText');
+    const btn = document.getElementById('btnSyncGoogle');
+
+    if (statusDiv) statusDiv.style.display = 'flex';
+    if (dot) dot.className = 'status-dot syncing';
+    if (text) text.textContent = 'Sincronizando...';
+    if (btn) btn.disabled = true;
+
+    try {
+        const result = await window.mrDataManager.syncGoogleSheets();
+        
+        if (result.success) {
+            if (dot) dot.className = 'status-dot connected';
+            if (text) text.textContent = 'Sincronizado';
+            if (window.showNotification) {
+                window.showNotification({ title: '✅ Google Sheets', message: 'Sincronización completada', type: 'success' });
+            }
+        } else {
+            throw new Error(result.error || 'Error desconocido');
+        }
+    } catch (error) {
+        console.error(error);
+        if (dot) dot.className = 'status-dot error';
+        if (text) text.textContent = 'Error de conexión';
+        if (window.showNotification) {
+            window.showNotification({ title: '❌ Error Google Sheets', message: 'No se pudo sincronizar', type: 'error' });
+        }
+    } finally {
+        if (btn) btn.disabled = false;
     }
   },
 

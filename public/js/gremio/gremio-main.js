@@ -213,21 +213,9 @@ function setupEventListeners() {
 
   if (btnSearchClient) {
     btnSearchClient.addEventListener('click', async () => {
-      // FIX: cargar de ambos endpoints para ver clientes del gestor
-      const [gremioClients, allRegistered] = await Promise.all([
-        window.mrDataManager.getGremioClientes().catch(() => []),
-        fetch('/api/clientes').then(r => r.ok ? r.json() : []).catch(() => [])
-      ]);
-
-      // Combinar y deduplicar por ID
-      const combined = [...gremioClients];
-      allRegistered.forEach(c => {
-        if (c.tipo === 'gremio' && !combined.find(x => x.id === c.id)) {
-          combined.push(c);
-        }
-      });
-
-      allClients = combined;
+      // Cargar clientes (ahora unificados en el backend)
+      const clients = await window.mrDataManager.getGremioClientes().catch(() => []);
+      allClients = clients;
       renderClientSearchList(allClients);
       window.MRModals.open(searchClientModal);
       setTimeout(() => { if (searchClientInput) searchClientInput.focus(); }, 100);
@@ -1714,6 +1702,14 @@ window.aprobarCotizacion = async function (id) {
     const successGastos = await window.mrDataManager.saveGastos(gastos);
     if (!successGastos) {
       alert('⚠️ El estado de la cotización se actualizó, pero hubo un error al registrar los movimientos financieros.');
+    }
+
+    // Sincronización automática con Google Sheets
+    if (window.mrDataManager && typeof window.mrDataManager.syncGoogleSheets === 'function') {
+      console.log('[AUTO-SYNC] Iniciando sincronización con Google Sheets...');
+      window.mrDataManager.syncGoogleSheets()
+        .then(res => console.log('[AUTO-SYNC] Resultado:', res))
+        .catch(err => console.warn('[AUTO-SYNC] Error:', err));
     }
 
     if (window.notifyWorkCreated) {

@@ -287,6 +287,34 @@
       background: #FF5252;
       box-shadow: 0 0 20px #FF5252;
     }
+
+    /* SYNC STATUS */
+    .sync-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 20px;
+      font-size: 0.85rem;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      margin-right: 10px;
+    }
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background-color: #666;
+      transition: all 0.3s ease;
+    }
+    .status-dot.connected { background-color: #4CAF50; box-shadow: 0 0 8px #4CAF50; }
+    .status-dot.error { background-color: #FF5252; box-shadow: 0 0 8px #FF5252; }
+    .status-dot.syncing { background-color: #2196F3; box-shadow: 0 0 8px #2196F3; animation: pulse 1s infinite; }
+    @keyframes pulse {
+      0% { opacity: 1; }
+      50% { opacity: 0.5; }
+      100% { opacity: 1; }
+    }
   </style>
 </head>
 
@@ -298,6 +326,11 @@
     <div class="top-bar">
       <h1 class="top-bar-title">📊 Dashboard & Rendimientos</h1>
       <div class="top-bar-actions">
+        <div id="googleSyncStatus" class="sync-status" style="display:none;">
+            <span id="googleSyncDot" class="status-dot"></span>
+            <span id="googleSyncText">Desconectado</span>
+        </div>
+        <button class="btn btn-secondary btn-small" id="btnSyncGoogle" style="margin-right: 10px;">🔄 Sync Sheets</button>
         <button class="btn btn-primary btn-small" id="btnStrategy">✨ Informe de Estrategia</button>
       </div>
     </div>

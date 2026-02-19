@@ -21,5 +21,44 @@
     "direccion": "Ruperto Godoy 3362",
     "id": "cliente_cli_1771254075009",
     "fechaRegistro": "2026-02-16T15:01:15.009Z"
+  },
+  {
+    "id": "gremio_1768760042986_pqjn58u2s",
+    "tipo": "gremio",
+    "name": "Gremio Galvez",
+    "nombre": "Gremio Galvez",
+    "contact": "",
+    "telefono": "",
+    "email": "",
+    "direccion": "",
+    "notes": "",
+    "fechaRegistro": "2026-02-19T18:42:25.699Z",
+    "origen": "migracion_gremio"
+  },
+  {
+    "id": "gremio_1768760176397_hh09mrq7e",
+    "tipo": "gremio",
+    "name": "galvez gremio",
+    "nombre": "galvez gremio",
+    "contact": "4545",
+    "telefono": "",
+    "email": "",
+    "direccion": "",
+    "notes": "",
+    "fechaRegistro": "2026-02-19T18:42:25.701Z",
+    "origen": "migracion_gremio"
+  },
+  {
+    "id": "gremio_1768872212236_gsmp4tmxp",
+    "tipo": "gremio",
+    "name": "test",
+    "nombre": "test",
+    "contact": "hjgj",
+    "telefono": "",
+    "email": "",
+    "direccion": "",
+    "notes": "",
+    "fechaRegistro": "2026-02-19T18:42:25.701Z",
+    "origen": "migracion_gremio"
   }
 ]

@@ -10,6 +10,7 @@ const { spawn } = require('child_process'); // Módulo para ejecutar otros progr
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const logger = require('./logger'); // Importar nuestro nuevo logger
+const googleSync = require('./google_sync'); // Importar módulo de Google
 
 // Usar variable de entorno o fallback seguro solo para desarrollo
 const SECRET_KEY = process.env.JWT_SECRET || 'MR_LETREROS_SECURE_KEY_2024';
@@ -27,7 +28,7 @@ const PUBLIC_DIR = path.join(BASE_PATH, 'public');
 
 // Archivos de datos principales
 const FILES = {
-  gremio_clientes: path.join(DATA_DIR, 'gremio', 'clientes.json'),
+  gremio_clientes: path.join(DATA_DIR, 'clientes.json'), // Unificado con clientes.json
   gremio_data: path.join(DATA_DIR, 'gremio', 'cotizaciones.json'),
   clientes_data: path.join(DATA_DIR, 'clientes', 'cotizaciones.json'),
   clientes: path.join(DATA_DIR, 'clientes.json'), // Unificar aquí
@@ -1146,6 +1147,19 @@ app.post('/api/system/reset/:section?', verifyToken, requireRole(['superadmin'])
     }
   } catch (error) {
     logger.error('❌ [API] Error reseteando el sistema', { section, user: req.user.usuario, error: error.stack });
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ==================== ENDPOINT GOOGLE SYNC ====================
+
+app.post('/api/sync/google', verifyToken, requireRole(['admin', 'superadmin']), async (req, res) => {
+  try {
+    logger.info('🔄 Iniciando sincronización con Google Sheets...', { user: req.user.usuario });
+    const result = await googleSync.syncData();
+    res.json({ success: true, details: result });
+  } catch (error) {
+    logger.error('❌ Error en sincronización con Google', { error: error.message });
     res.status(500).json({ error: error.message });
   }
 });
