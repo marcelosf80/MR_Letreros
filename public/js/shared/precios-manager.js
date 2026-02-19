@@ -13,7 +13,7 @@ const preciosManager = {
       if (window.mrDataManager) {
         console.log('[preciosManager] 📡 Cargando desde servidor...');
         const serverData = await window.mrDataManager.getPrecios();
-        if (Array.isArray(serverData) && serverData.length > 0) {
+        if (Array.isArray(serverData)) {
           this.precios = serverData;
           console.log(`[preciosManager] ✅ ${this.precios.length} precios cargados desde servidor`);
           localStorage.setItem(this.STORAGE_KEY, JSON.stringify(this.precios));

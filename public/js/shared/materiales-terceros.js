@@ -1,14 +1,14 @@
 // materiales-terceros.js - VERSIÓN CON PROMEDIO PONDERADO POR ANCHO
 console.log('🎨 Cargando módulo Materiales y Terceros...');
 
-(function() {
+(function initMaterialesTerceros() {
   
   const btnAddMaterial = document.getElementById('btnAddMaterial');
   const btnAddTercero = document.getElementById('btnAddTercero');
   
   if (!btnAddMaterial || !btnAddTercero) {
     console.warn('⚠️ Botones no encontrados');
-    setTimeout(arguments.callee, 100);
+    setTimeout(initMaterialesTerceros, 100);
     return;
   }
   

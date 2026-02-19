@@ -9,6 +9,7 @@ const cors = require('cors');
 const { spawn } = require('child_process'); // Módulo para ejecutar otros programas
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
+const logger = require('./logger'); // Importar nuestro nuevo logger
 
 // Usar variable de entorno o fallback seguro solo para desarrollo
 const SECRET_KEY = process.env.JWT_SECRET || 'MR_LETREROS_SECURE_KEY_2024';
@@ -47,6 +48,16 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.static(PUBLIC_DIR));
 
+// Middleware para loguear todas las peticiones
+app.use((req, res, next) => {
+  // Logueamos información útil de la petición entrante
+  logger.info('Petición recibida', {
+    method: req.method,
+    url: req.originalUrl,
+    ip: req.ip,
+  });
+  next();
+});
 
 // ==================== AUTH MIDDLEWARE ====================
 
@@ -54,7 +65,10 @@ const verifyToken = (req, res, next) => {
   const token = req.headers['authorization'];
   if (!token) return res.status(403).json({ error: 'Token requerido' });
 
-  // Formato ideal: "Bearer <token>"
+  if (!token) {
+    logger.warn('Acceso denegado: Token no proporcionado', { ip: req.ip, url: req.originalUrl });
+    return res.status(403).json({ error: 'Token requerido' });
+  }
   const tokenString = token.startsWith('Bearer ') ? token.slice(7) : token;
 
   try {
@@ -62,6 +76,7 @@ const verifyToken = (req, res, next) => {
     req.user = decoded;
     next();
   } catch (err) {
+    logger.warn('Token inválido o expirado', { token: tokenString, error: err.message, ip: req.ip });
     return res.status(401).json({ error: 'Token inválido o expirado' });
   }
 };
@@ -88,7 +103,7 @@ const requirePermission = (permission) => {
   return (req, res, next) => {
     // Por ahora, permitimos paso si es superadmin, sino logueamos advertencia
     if (req.user && req.user.rol === 'superadmin') return next();
-    console.warn(`[AUTH] Permiso '${permission}' verificado pero no implementado completamente.`);
+    logger.warn(`[AUTH] Permiso '${permission}' verificado pero no implementado completamente.`, { user: req.user.usuario });
     next();
   };
 };
@@ -104,18 +119,20 @@ app.post('/api/auth/login', async (req, res) => {
       const data = await fs.readFile(FILES.usuarios, 'utf-8');
       users = JSON.parse(data);
     } catch (error) {
-      console.error('Error leyendo usuarios:', error.message);
+      logger.error('Error leyendo el archivo de usuarios durante el login.', { error: error.message });
       return res.status(500).json({ error: 'Error al leer usuarios' });
     }
 
     const user = users.find(u => u.usuario === usuario);
 
     if (!user) {
+      logger.warn('Intento de login fallido: Usuario no encontrado', { usuario, ip: req.ip });
       return res.status(401).json({ error: 'Usuario no encontrado' });
     }
 
     const validPassword = await bcrypt.compare(password, user.password);
     if (!validPassword) {
+      logger.warn('Intento de login fallido: Contraseña incorrecta', { usuario, ip: req.ip });
       return res.status(401).json({ error: 'Contraseña incorrecta' });
     }
 
@@ -125,6 +142,7 @@ app.post('/api/auth/login', async (req, res) => {
       { expiresIn: '24h' }
     );
 
+    logger.info('Login exitoso', { usuario: user.usuario, rol: user.rol });
     res.json({
       token,
       user: {
@@ -135,7 +153,7 @@ app.post('/api/auth/login', async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error en login:', error);
+    logger.error('Error inesperado en la ruta de login', { error: error.stack });
     res.status(500).json({ error: 'Error en el servidor' });
   }
 });
@@ -158,6 +176,7 @@ app.get('/api/users', verifyToken, requireRole(['admin', 'superadmin']), async (
     const safeUsers = users.map(({ password, ...user }) => user);
     res.json(safeUsers);
   } catch (error) {
+    logger.error('Error al leer usuarios en /api/users', { error: error.stack });
     res.status(500).json({ error: 'Error al leer usuarios' });
   }
 });
@@ -195,6 +214,7 @@ app.post('/api/users', verifyToken, requireRole(['admin', 'superadmin']), async 
     const { password: _, ...safeUser } = newUser;
     res.status(201).json(safeUser);
   } catch (error) {
+    logger.error('Error al crear usuario', { error: error.stack });
     res.status(500).json({ error: 'Error al crear usuario' });
   }
 });
@@ -210,6 +230,7 @@ app.get('/api/users/:id', verifyToken, requireRole(['admin', 'superadmin']), asy
     const { password, ...safeUser } = user;
     res.json(safeUser);
   } catch (error) {
+    logger.error('Error al leer un solo usuario', { id: req.params.id, error: error.stack });
     res.status(500).json({ error: 'Error al leer usuario' });
   }
 });
@@ -238,6 +259,7 @@ app.put('/api/users/:id', verifyToken, requireRole(['admin', 'superadmin']), asy
     const { password, ...safeUser } = users[userIndex];
     res.json(safeUser);
   } catch (error) {
+    logger.error('Error al actualizar usuario', { id, error: error.stack });
     res.status(500).json({ error: 'Error al actualizar usuario' });
   }
 });
@@ -281,6 +303,7 @@ app.put('/api/users/:id/password', verifyToken, async (req, res) => {
 
     res.json({ success: true, message: 'Contraseña actualizada' });
   } catch (error) {
+    logger.error('Error al cambiar contraseña', { id, error: error.stack });
     res.status(500).json({ error: 'Error al cambiar la contraseña' });
   }
 });
@@ -313,6 +336,7 @@ app.delete('/api/users/:id', verifyToken, requireRole(['superadmin']), async (re
 
     res.json({ success: true });
   } catch (error) {
+    logger.error('Error al eliminar usuario', { id, error: error.stack });
     res.status(500).json({ error: 'Error al eliminar usuario' });
   }
 });
@@ -323,7 +347,7 @@ app.delete('/api/users/:id', verifyToken, requireRole(['superadmin']), async (re
 
 async function initializeDataStructure() {
   try {
-    console.log('🚀 Iniciando servidor MR Letreros...');
+    logger.info('🚀 Iniciando servidor MR Letreros...');
 
     // Crear directorios
     await fs.mkdir(DATA_DIR, { recursive: true });
@@ -335,7 +359,7 @@ async function initializeDataStructure() {
     for (const [name, filepath] of Object.entries(FILES)) {
       try {
         await fs.access(filepath);
-        console.log(`   ✅ ${name}: existe`);
+        logger.info(`   ✅ Archivo de datos '${name}' existe.`);
       } catch {
         let initialData = [];
         if (name === 'trabajos') {
@@ -345,32 +369,29 @@ async function initializeDataStructure() {
         }
 
         await fs.writeFile(filepath, JSON.stringify(initialData, null, 2));
-        console.log(`   📝 ${name}: creado`);
+        logger.info(`   📝 Archivo de datos '${name}' creado.`);
       }
     }
 
-    console.log('');
-    console.log('✅ Estructura de datos inicializada');
-    console.log('📁 Datos: ' + DATA_DIR);
-    console.log('📁 Web: ' + PUBLIC_DIR);
-    console.log('');
-    console.log('🌐 Servidor corriendo en:');
-    console.log(`   Local: http://localhost:${PORT}`);
-    console.log(`   Red: http://${getLocalIP()}:${PORT}`);
-    console.log('');
-    console.log('💡 Otras PCs pueden acceder usando:');
-    console.log(`   http://${getLocalIP()}:${PORT}`);
-    console.log('');
+    logger.info('================================================');
+    logger.info('✅ Estructura de datos inicializada');
+    logger.info('📁 Datos: ' + DATA_DIR);
+    logger.info('📁 Web: ' + PUBLIC_DIR);
+    logger.info('================================================');
+    logger.info('🌐 Servidor corriendo en:');
+    logger.info(`   Local: http://localhost:${PORT}`);
+    logger.info(`   Red: http://${getLocalIP()}:${PORT}`);
+    logger.info('================================================');
 
   } catch (error) {
-    console.error('❌ Error al inicializar:', error);
+    logger.error('❌ Error fatal durante la inicialización', { error: error.stack });
   }
 }
 
 // Función para verificar si Python está disponible
 async function checkPython() {
   return new Promise((resolve) => {
-    console.log('🔍 Verificando la instalación de Python...');
+    logger.info('🔍 Verificando la instalación de Python...');
 
     // Función auxiliar para probar un comando
     const tryCommand = (cmd) => {
@@ -384,7 +405,7 @@ async function checkPython() {
     (async () => {
       // 1. Intentar con 'py' (Lanzador de Windows, evita conflictos con Inkscape)
       if (await tryCommand('py')) {
-        console.log('   ✅ Python encontrado (Lanzador "py").');
+        logger.info('   ✅ Python encontrado (Lanzador "py").');
         pythonCmd = 'py';
         resolve(true);
         return;
@@ -392,13 +413,13 @@ async function checkPython() {
 
       // 2. Intentar con 'python' estándar
       if (await tryCommand('python')) {
-        console.log('   ✅ Python encontrado (Comando "python").');
+        logger.info('   ✅ Python encontrado (Comando "python").');
         pythonCmd = 'python';
         resolve(true);
         return;
       }
 
-      console.error('   ❌ No se encontró una instalación de Python válida.');
+      logger.error('   ❌ No se encontró una instalación de Python válida.');
       resolve(false);
     })();
   });
@@ -427,7 +448,7 @@ async function readJSON(filepath) {
     return JSON.parse(data);
   } catch (error) {
     // Propagar el error para que sea manejado por el endpoint que lo llamó
-    console.error(`Error leyendo o parseando ${filepath}:`, error.message);
+    logger.error(`Error leyendo o parseando ${filepath}`, { error: error.message });
     throw error;
   }
 }
@@ -437,7 +458,7 @@ async function writeJSON(filepath, data) {
     await fs.writeFile(filepath, JSON.stringify(data, null, 2));
     return true;
   } catch (error) {
-    console.error(`Error escribiendo ${filepath}:`, error.message);
+    logger.error(`Error escribiendo ${filepath}`, { error: error.message });
     return false;
   }
 }
@@ -449,7 +470,7 @@ app.get('/api/gremio/clientes', verifyToken, async (req, res) => {
     const data = await readJSON(FILES.gremio_clientes);
     res.json(data);
   } catch (error) {
-    console.error('Error GET /api/gremio/clientes:', error.message);
+    logger.error('Error en GET /api/gremio/clientes', { error: error.message });
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
@@ -461,7 +482,7 @@ app.post('/api/gremio/clientes', verifyToken, async (req, res) => {
     const success = await writeJSON(FILES.gremio_clientes, clientes);
     res.json({ success, data: req.body });
   } catch (error) {
-    console.error('Error POST /api/gremio/clientes:', error.message);
+    logger.error('Error en POST /api/gremio/clientes', { error: error.message });
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
@@ -478,7 +499,7 @@ app.put('/api/gremio/clientes/:id', verifyToken, async (req, res) => {
       res.status(404).json({ success: false, error: 'Cliente no encontrado' });
     }
   } catch (error) {
-    console.error('Error PUT /api/gremio/clientes:', error.message);
+    logger.error('Error en PUT /api/gremio/clientes', { error: error.message });
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
@@ -490,7 +511,7 @@ app.delete('/api/gremio/clientes/:id', verifyToken, requireRole(['admin']), asyn
     await writeJSON(FILES.gremio_clientes, filtered);
     res.json({ success: true });
   } catch (error) {
-    console.error('Error DELETE /api/gremio/clientes:', error.message);
+    logger.error('Error en DELETE /api/gremio/clientes', { error: error.message });
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
@@ -502,7 +523,7 @@ app.get('/api/gremio/data', verifyToken, async (req, res) => {
     const data = await readJSON(FILES.gremio_data);
     res.json(data);
   } catch (error) {
-    console.error('Error GET /api/gremio/data:', error.message);
+    logger.error('Error en GET /api/gremio/data', { error: error.message });
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
@@ -512,7 +533,7 @@ app.post('/api/gremio/data', verifyToken, async (req, res) => {
     const success = await writeJSON(FILES.gremio_data, req.body);
     res.json({ success });
   } catch (error) {
-    console.error('Error POST /api/gremio/data:', error.message);
+    logger.error('Error en POST /api/gremio/data', { error: error.message });
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
@@ -524,7 +545,7 @@ app.get('/api/clientes/data', verifyToken, async (req, res) => {
     const data = await readJSON(FILES.clientes_data);
     res.json(data);
   } catch (error) {
-    console.error('Error GET /api/clientes/data:', error.message);
+    logger.error('Error en GET /api/clientes/data', { error: error.message });
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
@@ -534,7 +555,7 @@ app.post('/api/clientes/data', verifyToken, async (req, res) => {
     const success = await writeJSON(FILES.clientes_data, req.body);
     res.json({ success });
   } catch (error) {
-    console.error('Error POST /api/clientes/data:', error.message);
+    logger.error('Error en POST /api/clientes/data', { error: error.message });
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
@@ -549,7 +570,7 @@ app.get('/api/precios', async (req, res) => {
     const data = await readJSON(FILES.precios);
     res.json(data);
   } catch (error) {
-    console.error('Error GET /api/precios:', error.message);
+    logger.error('Error en GET /api/precios', { error: error.message });
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
@@ -559,7 +580,7 @@ app.post('/api/precios', verifyToken, requireRole(['admin']), async (req, res) =
     const success = await writeJSON(FILES.precios, req.body);
     res.json({ success });
   } catch (error) {
-    console.error('Error POST /api/precios:', error.message);
+    logger.error('Error en POST /api/precios', { error: error.message });
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
@@ -571,7 +592,7 @@ app.get('/api/costos', verifyToken, requireRole(['admin']), async (req, res) => 
     const data = await readJSON(FILES.costos);
     res.json(data);
   } catch (error) {
-    console.error('Error GET /api/costos:', error.message);
+    logger.error('Error en GET /api/costos', { error: error.message });
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
@@ -581,7 +602,7 @@ app.post('/api/costos', verifyToken, requireRole(['admin']), async (req, res) =>
     const success = await writeJSON(FILES.costos, req.body);
     res.json({ success });
   } catch (error) {
-    console.error('Error POST /api/costos:', error.message);
+    logger.error('Error en POST /api/costos', { error: error.message });
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
@@ -593,7 +614,7 @@ app.get('/api/gastos', verifyToken, requireRole(['admin']), async (req, res) => 
     const data = await readJSON(FILES.gastos);
     res.json(data);
   } catch (error) {
-    console.error('Error GET /api/gastos:', error.message);
+    logger.error('Error en GET /api/gastos', { error: error.message });
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
@@ -603,7 +624,7 @@ app.post('/api/gastos', verifyToken, requireRole(['admin']), async (req, res) =>
     const success = await writeJSON(FILES.gastos, req.body);
     res.json({ success });
   } catch (error) {
-    console.error('Error POST /api/gastos:', error.message);
+    logger.error('Error en POST /api/gastos', { error: error.message });
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
@@ -615,20 +636,20 @@ app.get('/api/materiales', verifyToken, async (req, res) => {
     const data = await readJSON(FILES.materiales);
     res.json(data);
   } catch (error) {
-    console.error('Error GET /api/materiales:', error.message);
+    logger.error('Error en GET /api/materiales', { error: error.message });
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
 
 app.post('/api/materiales', verifyToken, requireRole(['admin']), async (req, res) => {
   try {
-    console.log('[MATERIALES-POST] Recibiendo POST');
-    console.log('[MATERIALES-POST] Tipo de datos:', Array.isArray(req.body) ? 'Array' : 'Objeto');
-    console.log('[MATERIALES-POST] Cantidad:', Array.isArray(req.body) ? req.body.length : 1);
+    logger.info('[MATERIALES-POST] Recibiendo POST', {
+      dataType: Array.isArray(req.body) ? 'Array' : 'Object',
+      count: Array.isArray(req.body) ? req.body.length : 1
+    });
 
     // Si es un array, guardar directamente
     if (Array.isArray(req.body)) {
-      console.log('[MATERIALES-POST] Guardando array completo...');
       const success = await writeJSON(FILES.materiales, req.body);
       console.log('[MATERIALES-POST] ✅ Guardado exitoso:', success);
       res.json({ success });
@@ -641,11 +662,11 @@ app.post('/api/materiales', verifyToken, requireRole(['admin']), async (req, res
       }
       materiales.push(req.body);
       const success = await writeJSON(FILES.materiales, materiales);
-      console.log('[MATERIALES-POST] ✅ Objeto agregado, guardado exitoso:', success);
+      logger.info('[MATERIALES-POST] Objeto único agregado y guardado.', { success });
       res.json({ success });
     }
   } catch (error) {
-    console.error('[MATERIALES-POST] ❌ Error en POST /api/materiales:', error);
+    logger.error('[MATERIALES-POST] Error en POST /api/materiales', { error: error.stack });
     res.status(500).json({ success: false, error: error.message });
   }
 });
@@ -654,7 +675,7 @@ app.post('/api/materiales', verifyToken, requireRole(['admin']), async (req, res
 
 app.get('/api/categorias', verifyToken, async (req, res) => {
   const data = await readJSON(FILES.categorias);
-  console.log('[CATEGORÍAS API] GET /api/categorias. Datos:', data);
+  logger.info('[CATEGORÍAS API] GET /api/categorias', { count: data.length });
   res.json(Array.isArray(data) ? data : []);
 });
 
@@ -681,7 +702,7 @@ app.post('/api/categorias', verifyToken, async (req, res) => {
       res.status(400).json({ success: false, error: 'Formato inválido' });
     }
   } catch (error) {
-    console.error('Error en POST /api/categorias:', error);
+    logger.error('Error en POST /api/categorias', { error: error.stack });
     res.status(500).json({ success: false, error: error.message });
   }
 });
@@ -697,7 +718,7 @@ app.delete('/api/categorias/:categoria', verifyToken, async (req, res) => {
     const success = await writeJSON(FILES.categorias, categorias);
     res.json({ success });
   } catch (error) {
-    console.error('Error en DELETE /api/categorias:', error);
+    logger.error('Error en DELETE /api/categorias', { error: error.stack });
     res.status(500).json({ success: false, error: error.message });
   }
 });
@@ -710,7 +731,7 @@ app.get('/api/terceros', async (req, res) => {
     const data = await readJSON(FILES.terceros);
     res.json(data);
   } catch (error) {
-    console.error('Error GET /api/terceros:', error.message);
+    logger.error('Error en GET /api/terceros', { error: error.message });
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
@@ -720,7 +741,7 @@ app.post('/api/terceros', verifyToken, async (req, res) => {
     const success = await writeJSON(FILES.terceros, req.body);
     res.json({ success });
   } catch (error) {
-    console.error('Error POST /api/terceros:', error.message);
+    logger.error('Error en POST /api/terceros', { error: error.message });
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
@@ -732,7 +753,7 @@ app.get('/api/business-rules', verifyToken, async (req, res) => {
     const data = await readJSON(FILES.business_rules);
     res.json(data);
   } catch (error) {
-    console.error('Error GET /api/business-rules:', error.message);
+    logger.error('Error en GET /api/business-rules', { error: error.message });
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
@@ -766,6 +787,7 @@ app.get('/api/statistics/today', async (req, res) => {
       facturado: facturadoGremio + facturadoClientes
     });
   } catch (error) {
+    logger.error('Error en GET /api/statistics/today', { error: error.message });
     res.status(500).json({ error: error.message });
   }
 });
@@ -858,6 +880,7 @@ app.get('/api/rendimientos', async (req, res) => {
       gastosDetalle: gastosPorCategoria
     });
   } catch (error) {
+    logger.error('Error en GET /api/rendimientos', { error: error.message });
     res.status(500).json({ error: error.message });
   }
 });
@@ -895,12 +918,12 @@ app.post('/api/process-file', (req, res) => {
       // Intenta parsear el error por si Python envió un JSON
       try {
         const errJson = JSON.parse(errorData);
-        console.error(`Error del script de Python (file_processor.py): ${errJson.error}`);
+        logger.error(`Error del script de Python (file_processor.py): ${errJson.error}`, { details: errorData });
         res.status(500).json({ error: 'Error durante el procesamiento del archivo.', details: errJson.error });
         return;
       } catch (e) {
         // Si no es JSON, es un error del sistema
-        console.error(`Error del script de Python (file_processor.py): ${errorData}`);
+        logger.error(`Error del script de Python (file_processor.py)`, { details: errorData });
         res.status(500).json({ error: 'Error durante el procesamiento del archivo.', details: errorData });
       }
     } else {
@@ -908,6 +931,7 @@ app.post('/api/process-file', (req, res) => {
         const result = JSON.parse(resultData);
         res.json(result);
       } catch (e) {
+        logger.error('Fallo al parsear resultado de Python (file_processor.py)', { data: resultData });
         res.status(500).json({ error: 'Fallo al leer el resultado del script de Python.' });
       }
     }
@@ -940,7 +964,7 @@ app.post('/api/nesting/solve', (req, res) => {
   // 4. Cuando el script de Python termina, se ejecuta este bloque
   pythonProcess.on('close', (code) => {
     if (code !== 0) {
-      console.error(`Error del script de Python: ${errorData}`);
+      logger.error(`Error del script de Python (nesting_solver.py)`, { details: errorData });
       res.status(500).json({ error: 'Error durante el proceso de nesting en el servidor.', details: errorData });
     } else {
       try {
@@ -948,7 +972,7 @@ app.post('/api/nesting/solve', (req, res) => {
         const result = JSON.parse(resultData);
         res.json(result);
       } catch (e) {
-        console.error(`Error al parsear la salida de Python: ${e}`);
+        logger.error(`Error al parsear la salida de Python (nesting_solver.py)`, { error: e, data: resultData });
         res.status(500).json({ error: 'Fallo al leer el resultado del script de Python.' });
       }
     }
@@ -959,7 +983,7 @@ app.post('/api/nesting/solve', (req, res) => {
     pythonProcess.stdin.write(JSON.stringify(req.body));
     pythonProcess.stdin.end();
   } catch (error) {
-    console.error('Error al escribir en el stdin de Python:', error);
+    logger.error('Error al escribir en el stdin de Python (nesting_solver.py)', { error });
     res.status(500).json({ error: 'No se pudieron enviar los datos al proceso de Python.' });
   }
 });
@@ -988,7 +1012,7 @@ app.get('/api/trabajos', verifyToken, async (req, res) => {
     if (!data.notifications) data.notifications = [];
     res.json(data);
   } catch (error) {
-    console.error('Error leyendo trabajos:', error);
+    logger.error('Error leyendo trabajos', { error: error.stack });
     res.status(500).json({ error: 'Error leyendo trabajos' });
   }
 });
@@ -1015,13 +1039,13 @@ app.get('/api/clientes', verifyToken, async (req, res) => {
       await fs.access(filePath);
     } catch {
       await writeJSON(filePath, []);
-      console.log('   📝 clientes.json creado');
+      logger.info('   📝 clientes.json creado');
     }
 
     const data = await readJSON(filePath);
     res.json(data);
   } catch (error) {
-    console.error('❌ Error leyendo clientes:', error);
+    logger.error('❌ Error leyendo clientes', { error: error.stack });
     res.status(500).json({ error: 'Error leyendo clientes' });
   }
 });
@@ -1036,7 +1060,7 @@ app.post('/api/clientes', verifyToken, async (req, res) => {
     // Si el body es un array, se asume que es la lista completa de clientes para guardar.
     if (Array.isArray(incomingData)) {
       await writeJSON(filePath, incomingData);
-      console.log(`✅ Lista de clientes guardada: ${incomingData.length} registros`);
+      logger.info(`✅ Lista de clientes guardada: ${incomingData.length} registros`);
       return res.json({ success: true });
     }
     // Si es un objeto, se asume que es un nuevo cliente para agregar a la lista.
@@ -1045,7 +1069,7 @@ app.post('/api/clientes', verifyToken, async (req, res) => {
     await writeJSON(filePath, clientes);
     res.json({ success: true, data: incomingData });
   } catch (error) {
-    console.error('❌ Error guardando clientes:', error);
+    logger.error('❌ Error guardando clientes', { error: error.stack });
     res.status(500).json({ error: 'Error guardando clientes' });
   }
 });
@@ -1063,7 +1087,7 @@ app.put('/api/clientes/:id', verifyToken, async (req, res) => {
       res.status(404).json({ success: false, error: 'Cliente no encontrado' });
     }
   } catch (error) {
-    console.error('❌ Error actualizando cliente:', error);
+    logger.error('❌ Error actualizando cliente', { error: error.stack });
     res.status(500).json({ error: 'Error actualizando cliente' });
   }
 });
@@ -1076,7 +1100,7 @@ app.delete('/api/clientes/:id', verifyToken, requireRole(['admin']), async (req,
     await writeJSON(filePath, filtered);
     res.json({ success: true });
   } catch (error) {
-    console.error('❌ Error eliminando cliente:', error);
+    logger.error('❌ Error eliminando cliente', { error: error.stack });
     res.status(500).json({ error: 'Error eliminando cliente' });
   }
 });
@@ -1089,7 +1113,7 @@ app.post('/api/system/reset/:section?', verifyToken, requireRole(['superadmin'])
   try {
     // Si no hay sección o es 'all', reseteo total
     if (!section || section === 'all') {
-      console.log('⚠️ [API] Solicitud de reseteo TOTAL recibida');
+      logger.warn('⚠️ [API] Solicitud de reseteo TOTAL recibida', { user: req.user.usuario });
       for (const [name, filepath] of Object.entries(FILES)) {
         let initialData = [];
         if (name === 'trabajos') {
@@ -1099,13 +1123,13 @@ app.post('/api/system/reset/:section?', verifyToken, requireRole(['superadmin'])
         }
         await writeJSON(filepath, initialData);
       }
-      console.log('✅ [API] Sistema reseteado correctamente');
+      logger.warn('✅ [API] Sistema reseteado completamente por el usuario', { user: req.user.usuario });
       return res.json({ success: true, message: 'Sistema reseteado completamente' });
     }
 
     // Reseteo parcial de una sección específica
     if (FILES[section]) {
-      console.log(`⚠️ [API] Solicitud de reseteo PARCIAL: ${section}`);
+      logger.warn(`⚠️ [API] Solicitud de reseteo PARCIAL: ${section}`, { user: req.user.usuario });
       const filepath = FILES[section];
       let initialData = [];
 
@@ -1121,7 +1145,7 @@ app.post('/api/system/reset/:section?', verifyToken, requireRole(['superadmin'])
       return res.status(400).json({ error: 'Sección no válida' });
     }
   } catch (error) {
-    console.error('❌ [API] Error reseteando:', error);
+    logger.error('❌ [API] Error reseteando el sistema', { section, user: req.user.usuario, error: error.stack });
     res.status(500).json({ error: error.message });
   }
 });
@@ -1132,8 +1156,9 @@ initializeDataStructure().then(() => {
   // Verificar Python antes de iniciar el servidor web
   checkPython().then(pythonOk => {
     if (!pythonOk) {
-      console.error('\n⚠️ ADVERTENCIA: La función de nesting en el servidor (Python) NO funcionará.');
-      console.error('   Por favor, instala Python y asegúrate de que esté en el PATH del sistema.\n');
+      logger.warn('*********************************************************************');
+      logger.warn('ADVERTENCIA: La función de nesting (Python) NO funcionará. Instala Python.');
+      logger.warn('*********************************************************************');
     }
     app.listen(PORT, '0.0.0.0', () => {
       // El mensaje principal ya se muestra en initializeDataStructure
@@ -1143,9 +1168,9 @@ initializeDataStructure().then(() => {
 
 // Manejo de errores
 process.on('uncaughtException', (error) => {
-  console.error('❌ Error no capturado:', error);
+  logger.error('❌ Error no capturado (uncaughtException)', { error: error.stack });
 });
 
 process.on('unhandledRejection', (error) => {
-  console.error('❌ Promesa rechazada:', error);
+  logger.error('❌ Promesa rechazada no manejada (unhandledRejection)', { error: error.stack });
 });

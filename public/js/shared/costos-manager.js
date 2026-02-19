@@ -17,7 +17,7 @@ const costosManager = {
       if (window.mrDataManager) {
         console.log('[costosManager] 📡 Cargando desde servidor...');
         const serverData = await window.mrDataManager.getCostos();
-        if (Array.isArray(serverData) && serverData.length > 0) {
+        if (Array.isArray(serverData)) {
           this.costos = { products: serverData };
           console.log('✅ Costos cargados desde servidor:', serverData.length);
           // Actualizar localStorage como cache

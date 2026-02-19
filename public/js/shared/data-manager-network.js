@@ -100,7 +100,9 @@ class MRLetrerosDataManager {
 
       // Si el token es inválido o el rol no tiene permiso, cerrar sesión
       if (response.status === 401 || response.status === 403) {
-        window.AUTH.logout(); // Asumiendo que AUTH está disponible globalmente
+        if (window.AUTH && typeof window.AUTH.logout === 'function') {
+          window.AUTH.logout();
+        }
         throw new Error(`Authentication error: ${response.statusText}`); // Lanzar error para que el catch lo maneje
       }
       if (!response.ok) {
@@ -264,7 +266,7 @@ class MRLetrerosDataManager {
       return precios;
     } catch (error) {
       console.error('[PRECIOS] Error obteniendo precios:', error);
-      return [];
+      return null;
     }
   }
 
@@ -288,7 +290,7 @@ class MRLetrerosDataManager {
       return costos;
     } catch (error) {
       console.error('[COSTOS] Error obteniendo costos:', error);
-      return [];
+      return null;
     }
   }
 
@@ -513,7 +515,8 @@ class PreciosManagerNetwork {
   }
 
   async getPrecios() {
-    return await this.dataManager.getPrecios();
+    const data = await this.dataManager.getPrecios();
+    return data || [];
   }
 
   async savePrecios(precios) {
@@ -538,7 +541,8 @@ class CostosManagerNetwork {
   }
 
   async loadCostos() {
-    this.products = await this.dataManager.getCostos();
+    const data = await this.dataManager.getCostos();
+    this.products = data || [];
     return this.products;
   }
 
