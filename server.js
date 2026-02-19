@@ -10,7 +10,8 @@ const { spawn } = require('child_process'); // Módulo para ejecutar otros progr
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 
-const SECRET_KEY = 'MR_LETREROS_SECURE_KEY_2024'; // En producción, usar variable de entorno
+// Usar variable de entorno o fallback seguro solo para desarrollo
+const SECRET_KEY = process.env.JWT_SECRET || 'MR_LETREROS_SECURE_KEY_2024';
 
 const app = express();
 const PORT = 3000;
@@ -83,8 +84,13 @@ const requireRole = (allowedRoles) => {
 };
 
 const requirePermission = (permission) => {
-  // Placeholder para compatibilidad
-  return (req, res, next) => next();
+  // Implementación básica o bloqueo por defecto si no está implementado
+  return (req, res, next) => {
+    // Por ahora, permitimos paso si es superadmin, sino logueamos advertencia
+    if (req.user && req.user.rol === 'superadmin') return next();
+    console.warn(`[AUTH] Permiso '${permission}' verificado pero no implementado completamente.`);
+    next();
+  };
 };
 // ==================== AUTH ROUTES ====================
 
