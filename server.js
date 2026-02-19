@@ -91,7 +91,7 @@ const requirePermission = (permission) => {
 app.post('/api/auth/login', async (req, res) => {
   try {
     const { usuario, password } = req.body;
-    
+
     // Leer usuarios
     let users = [];
     try {
@@ -101,7 +101,7 @@ app.post('/api/auth/login', async (req, res) => {
       console.error('Error leyendo usuarios:', error.message);
       return res.status(500).json({ error: 'Error al leer usuarios' });
     }
-    
+
     const user = users.find(u => u.usuario === usuario);
 
     if (!user) {
@@ -146,157 +146,169 @@ app.get('/api/auth/me', verifyToken, (req, res) => {
 
 // GET all users
 app.get('/api/users', verifyToken, requireRole(['admin', 'superadmin']), async (req, res) => {
-    try {
-        const users = await readJSON(FILES.usuarios);
-        // Don't send passwords to the client
-        const safeUsers = users.map(({ password, ...user }) => user);
-        res.json(safeUsers);
-    } catch (error) {
-        res.status(500).json({ error: 'Error al leer usuarios' });
-    }
+  try {
+    const users = await readJSON(FILES.usuarios);
+    // Don't send passwords to the client
+    const safeUsers = users.map(({ password, ...user }) => user);
+    res.json(safeUsers);
+  } catch (error) {
+    res.status(500).json({ error: 'Error al leer usuarios' });
+  }
 });
 
 // POST create a new user
 app.post('/api/users', verifyToken, requireRole(['admin', 'superadmin']), async (req, res) => {
-    try {
-        const { nombre, usuario, password, rol, activo } = req.body;
-        if (!nombre || !usuario || !password || !rol) {
-            return res.status(400).json({ error: 'Faltan campos requeridos' });
-        }
-        if (password.length < 6) {
-            return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres' });
-        }
-
-        const users = await readJSON(FILES.usuarios);
-        if (users.find(u => u.usuario === usuario)) {
-            return res.status(409).json({ error: 'El nombre de usuario ya existe' });
-        }
-
-        const hashedPassword = await bcrypt.hash(password, 10);
-        const newUser = {
-            id: `usr_${Date.now()}`,
-            nombre,
-            usuario,
-            password: hashedPassword,
-            rol,
-            activo: activo !== undefined ? activo : true,
-            fechaCreacion: new Date().toISOString()
-        };
-
-        users.push(newUser);
-        await writeJSON(FILES.usuarios, users);
-        
-        const { password: _, ...safeUser } = newUser;
-        res.status(201).json(safeUser);
-    } catch (error) {
-        res.status(500).json({ error: 'Error al crear usuario' });
+  try {
+    const { nombre, usuario, password, rol, activo } = req.body;
+    if (!nombre || !usuario || !password || !rol) {
+      return res.status(400).json({ error: 'Faltan campos requeridos' });
     }
+    if (password.length < 6) {
+      return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres' });
+    }
+
+    const users = await readJSON(FILES.usuarios);
+    if (users.find(u => u.usuario === usuario)) {
+      return res.status(409).json({ error: 'El nombre de usuario ya existe' });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const newUser = {
+      id: `usr_${Date.now()}`,
+      nombre,
+      usuario,
+      password: hashedPassword,
+      rol,
+      activo: activo !== undefined ? activo : true,
+      fechaCreacion: new Date().toISOString()
+    };
+
+    users.push(newUser);
+    await writeJSON(FILES.usuarios, users);
+
+    const { password: _, ...safeUser } = newUser;
+    res.status(201).json(safeUser);
+  } catch (error) {
+    res.status(500).json({ error: 'Error al crear usuario' });
+  }
 });
 
 // GET a single user by ID
 app.get('/api/users/:id', verifyToken, requireRole(['admin', 'superadmin']), async (req, res) => {
-    try {
-        const users = await readJSON(FILES.usuarios);
-        const user = users.find(u => u.id === req.params.id);
-        if (!user) {
-            return res.status(404).json({ error: 'Usuario no encontrado' });
-        }
-        const { password, ...safeUser } = user;
-        res.json(safeUser);
-    } catch (error) {
-        res.status(500).json({ error: 'Error al leer usuario' });
+  try {
+    const users = await readJSON(FILES.usuarios);
+    const user = users.find(u => u.id === req.params.id);
+    if (!user) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
     }
+    const { password, ...safeUser } = user;
+    res.json(safeUser);
+  } catch (error) {
+    res.status(500).json({ error: 'Error al leer usuario' });
+  }
 });
 
 // PUT update a user
 app.put('/api/users/:id', verifyToken, requireRole(['admin', 'superadmin']), async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { nombre, rol, activo } = req.body;
-        
-        const users = await readJSON(FILES.usuarios);
-        const userIndex = users.findIndex(u => u.id === id);
+  try {
+    const { id } = req.params;
+    const { nombre, rol, activo } = req.body;
 
-        if (userIndex === -1) {
-            return res.status(404).json({ error: 'Usuario no encontrado' });
-        }
+    const users = await readJSON(FILES.usuarios);
+    const userIndex = users.findIndex(u => u.id === id);
 
-        // Prevent non-superadmin from editing superadmin
-        if (users[userIndex].rol === 'superadmin' && req.user.rol !== 'superadmin') {
-             return res.status(403).json({ error: 'No tienes permiso para editar a un superadmin' });
-        }
-
-        users[userIndex] = { ...users[userIndex], nombre, rol, activo };
-        await writeJSON(FILES.usuarios, users);
-        
-        const { password, ...safeUser } = users[userIndex];
-        res.json(safeUser);
-    } catch (error) {
-        res.status(500).json({ error: 'Error al actualizar usuario' });
+    if (userIndex === -1) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
     }
+
+    // Prevent non-superadmin from editing superadmin
+    if (users[userIndex].rol === 'superadmin' && req.user.rol !== 'superadmin') {
+      return res.status(403).json({ error: 'No tienes permiso para editar a un superadmin' });
+    }
+
+    users[userIndex] = { ...users[userIndex], nombre, rol, activo };
+    await writeJSON(FILES.usuarios, users);
+
+    const { password, ...safeUser } = users[userIndex];
+    res.json(safeUser);
+  } catch (error) {
+    res.status(500).json({ error: 'Error al actualizar usuario' });
+  }
 });
 
-// PUT change user password (admin)
-app.put('/api/users/:id/password', verifyToken, requireRole(['admin', 'superadmin']), async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { password } = req.body;
+// PUT change user password (self or admin)
+app.put('/api/users/:id/password', verifyToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { password } = req.body;
 
-        if (!password) {
-            return res.status(400).json({ error: 'Se requiere una nueva contraseña' });
-        }
+    // Allow self-service OR admin/superadmin
+    const isSelf = req.user.id === id;
+    const isAdmin = ['admin', 'superadmin'].includes(req.user.rol?.toLowerCase());
 
-        const users = await readJSON(FILES.usuarios);
-        const userIndex = users.findIndex(u => u.id === id);
-
-        if (userIndex === -1) {
-            return res.status(404).json({ error: 'Usuario no encontrado' });
-        }
-        
-        // Prevent non-superadmin from changing superadmin password
-        if (users[userIndex].rol === 'superadmin' && req.user.rol !== 'superadmin') {
-             return res.status(403).json({ error: 'No tienes permiso para cambiar la contraseña de un superadmin' });
-        }
-
-        users[userIndex].password = await bcrypt.hash(password, 10);
-        await writeJSON(FILES.usuarios, users);
-
-        res.json({ success: true, message: 'Contraseña actualizada' });
-    } catch (error) {
-        res.status(500).json({ error: 'Error al cambiar la contraseña' });
+    if (!isSelf && !isAdmin) {
+      return res.status(403).json({ error: 'No tienes permiso para cambiar esta contraseña' });
     }
+
+    if (!password) {
+      return res.status(400).json({ error: 'Se requiere una nueva contraseña' });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres' });
+    }
+
+    const users = await readJSON(FILES.usuarios);
+    const userIndex = users.findIndex(u => u.id === id);
+
+    if (userIndex === -1) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    // Prevent non-superadmin from changing superadmin password (unless it's their own)
+    if (users[userIndex].rol === 'superadmin' && req.user.rol !== 'superadmin' && !isSelf) {
+      return res.status(403).json({ error: 'No tienes permiso para cambiar la contraseña de un superadmin' });
+    }
+
+    users[userIndex].password = await bcrypt.hash(password, 10);
+    await writeJSON(FILES.usuarios, users);
+
+    res.json({ success: true, message: 'Contraseña actualizada' });
+  } catch (error) {
+    res.status(500).json({ error: 'Error al cambiar la contraseña' });
+  }
 });
 
 
 // DELETE a user
 app.delete('/api/users/:id', verifyToken, requireRole(['superadmin']), async (req, res) => {
-    try {
-        const { id } = req.params;
+  try {
+    const { id } = req.params;
 
-        // Prevent self-deletion
-        if (req.user.id === id) {
-            return res.status(403).json({ error: 'No puedes eliminar tu propia cuenta' });
-        }
-        
-        const users = await readJSON(FILES.usuarios);
-        const userToDelete = users.find(u => u.id === id);
-
-        if (!userToDelete) {
-            return res.status(404).json({ error: 'Usuario no encontrado' });
-        }
-        
-        // Prevent deleting self or another superadmin
-        if (userToDelete.rol === 'superadmin') {
-            return res.status(403).json({ error: 'No se puede eliminar a un superadmin' });
-        }
-
-        const updatedUsers = users.filter(u => u.id !== id);
-        await writeJSON(FILES.usuarios, updatedUsers);
-
-        res.json({ success: true });
-    } catch (error) {
-        res.status(500).json({ error: 'Error al eliminar usuario' });
+    // Prevent self-deletion
+    if (req.user.id === id) {
+      return res.status(403).json({ error: 'No puedes eliminar tu propia cuenta' });
     }
+
+    const users = await readJSON(FILES.usuarios);
+    const userToDelete = users.find(u => u.id === id);
+
+    if (!userToDelete) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    // Prevent deleting self or another superadmin
+    if (userToDelete.rol === 'superadmin') {
+      return res.status(403).json({ error: 'No se puede eliminar a un superadmin' });
+    }
+
+    const updatedUsers = users.filter(u => u.id !== id);
+    await writeJSON(FILES.usuarios, updatedUsers);
+
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: 'Error al eliminar usuario' });
+  }
 });
 
 
@@ -427,58 +439,98 @@ async function writeJSON(filepath, data) {
 // ==================== ENDPOINTS GREMIO CLIENTES ====================
 
 app.get('/api/gremio/clientes', verifyToken, async (req, res) => {
-  const data = await readJSON(FILES.gremio_clientes);
-  res.json(data);
+  try {
+    const data = await readJSON(FILES.gremio_clientes);
+    res.json(data);
+  } catch (error) {
+    console.error('Error GET /api/gremio/clientes:', error.message);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
 });
 
 app.post('/api/gremio/clientes', verifyToken, async (req, res) => {
-  const clientes = await readJSON(FILES.gremio_clientes);
-  clientes.push(req.body);
-  const success = await writeJSON(FILES.gremio_clientes, clientes);
-  res.json({ success, data: req.body });
+  try {
+    const clientes = await readJSON(FILES.gremio_clientes);
+    clientes.push(req.body);
+    const success = await writeJSON(FILES.gremio_clientes, clientes);
+    res.json({ success, data: req.body });
+  } catch (error) {
+    console.error('Error POST /api/gremio/clientes:', error.message);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
 });
 
 app.put('/api/gremio/clientes/:id', verifyToken, async (req, res) => {
-  const clientes = await readJSON(FILES.gremio_clientes);
-  const index = clientes.findIndex(c => c.id === req.params.id);
-  if (index !== -1) {
-    clientes[index] = { ...clientes[index], ...req.body };
-    await writeJSON(FILES.gremio_clientes, clientes);
-    res.json({ success: true, data: clientes[index] });
-  } else {
-    res.status(404).json({ success: false, error: 'Cliente no encontrado' });
+  try {
+    const clientes = await readJSON(FILES.gremio_clientes);
+    const index = clientes.findIndex(c => c.id === req.params.id);
+    if (index !== -1) {
+      clientes[index] = { ...clientes[index], ...req.body };
+      await writeJSON(FILES.gremio_clientes, clientes);
+      res.json({ success: true, data: clientes[index] });
+    } else {
+      res.status(404).json({ success: false, error: 'Cliente no encontrado' });
+    }
+  } catch (error) {
+    console.error('Error PUT /api/gremio/clientes:', error.message);
+    res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
 
 app.delete('/api/gremio/clientes/:id', verifyToken, requireRole(['admin']), async (req, res) => {
-  const clientes = await readJSON(FILES.gremio_clientes);
-  const filtered = clientes.filter(c => c.id !== req.params.id);
-  await writeJSON(FILES.gremio_clientes, filtered);
-  res.json({ success: true });
+  try {
+    const clientes = await readJSON(FILES.gremio_clientes);
+    const filtered = clientes.filter(c => c.id !== req.params.id);
+    await writeJSON(FILES.gremio_clientes, filtered);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error DELETE /api/gremio/clientes:', error.message);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
 });
 
 // ==================== ENDPOINTS GREMIO COTIZACIONES ====================
 
 app.get('/api/gremio/data', verifyToken, async (req, res) => {
-  const data = await readJSON(FILES.gremio_data);
-  res.json(data);
+  try {
+    const data = await readJSON(FILES.gremio_data);
+    res.json(data);
+  } catch (error) {
+    console.error('Error GET /api/gremio/data:', error.message);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
 });
 
 app.post('/api/gremio/data', verifyToken, async (req, res) => {
-  const success = await writeJSON(FILES.gremio_data, req.body);
-  res.json({ success });
+  try {
+    const success = await writeJSON(FILES.gremio_data, req.body);
+    res.json({ success });
+  } catch (error) {
+    console.error('Error POST /api/gremio/data:', error.message);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
 });
 
 // ==================== ENDPOINTS CLIENTES COTIZACIONES ====================
 
 app.get('/api/clientes/data', verifyToken, async (req, res) => {
-  const data = await readJSON(FILES.clientes_data);
-  res.json(data);
+  try {
+    const data = await readJSON(FILES.clientes_data);
+    res.json(data);
+  } catch (error) {
+    console.error('Error GET /api/clientes/data:', error.message);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
 });
 
 app.post('/api/clientes/data', verifyToken, async (req, res) => {
-  const success = await writeJSON(FILES.clientes_data, req.body);
-  res.json({ success });
+  try {
+    const success = await writeJSON(FILES.clientes_data, req.body);
+    res.json({ success });
+  } catch (error) {
+    console.error('Error POST /api/clientes/data:', error.message);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
 });
 
 
@@ -487,44 +539,79 @@ app.post('/api/clientes/data', verifyToken, async (req, res) => {
 // Se hace público para que el bot de WhatsApp pueda consultarlo sin token.
 // La edición (POST) sigue protegida.
 app.get('/api/precios', async (req, res) => {
-  const data = await readJSON(FILES.precios);
-  res.json(data);
+  try {
+    const data = await readJSON(FILES.precios);
+    res.json(data);
+  } catch (error) {
+    console.error('Error GET /api/precios:', error.message);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
 });
 
 app.post('/api/precios', verifyToken, requireRole(['admin']), async (req, res) => {
-  const success = await writeJSON(FILES.precios, req.body);
-  res.json({ success });
+  try {
+    const success = await writeJSON(FILES.precios, req.body);
+    res.json({ success });
+  } catch (error) {
+    console.error('Error POST /api/precios:', error.message);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
 });
 
 // ==================== ENDPOINTS COSTOS ====================
 
 app.get('/api/costos', verifyToken, requireRole(['admin']), async (req, res) => {
-  const data = await readJSON(FILES.costos);
-  res.json(data);
+  try {
+    const data = await readJSON(FILES.costos);
+    res.json(data);
+  } catch (error) {
+    console.error('Error GET /api/costos:', error.message);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
 });
 
 app.post('/api/costos', verifyToken, requireRole(['admin']), async (req, res) => {
-  const success = await writeJSON(FILES.costos, req.body);
-  res.json({ success });
+  try {
+    const success = await writeJSON(FILES.costos, req.body);
+    res.json({ success });
+  } catch (error) {
+    console.error('Error POST /api/costos:', error.message);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
 });
 
 // ==================== ENDPOINTS GASTOS ====================
 
 app.get('/api/gastos', verifyToken, requireRole(['admin']), async (req, res) => {
-  const data = await readJSON(FILES.gastos);
-  res.json(data);
+  try {
+    const data = await readJSON(FILES.gastos);
+    res.json(data);
+  } catch (error) {
+    console.error('Error GET /api/gastos:', error.message);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
 });
 
 app.post('/api/gastos', verifyToken, requireRole(['admin']), async (req, res) => {
-  const success = await writeJSON(FILES.gastos, req.body);
-  res.json({ success });
+  try {
+    const success = await writeJSON(FILES.gastos, req.body);
+    res.json({ success });
+  } catch (error) {
+    console.error('Error POST /api/gastos:', error.message);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
 });
 
 // ==================== ENDPOINTS MATERIALES ====================
 
 app.get('/api/materiales', verifyToken, async (req, res) => {
-  const data = await readJSON(FILES.materiales);
-  res.json(data);
+  try {
+    const data = await readJSON(FILES.materiales);
+    res.json(data);
+  } catch (error) {
+    console.error('Error GET /api/materiales:', error.message);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
 });
 
 app.post('/api/materiales', verifyToken, requireRole(['admin']), async (req, res) => {
@@ -613,20 +700,35 @@ app.delete('/api/categorias/:categoria', verifyToken, async (req, res) => {
 
 
 app.get('/api/terceros', async (req, res) => {
-  const data = await readJSON(FILES.terceros);
-  res.json(data);
+  try {
+    const data = await readJSON(FILES.terceros);
+    res.json(data);
+  } catch (error) {
+    console.error('Error GET /api/terceros:', error.message);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
 });
 
-app.post('/api/terceros', async (req, res) => {
-  const success = await writeJSON(FILES.terceros, req.body);
-  res.json({ success });
+app.post('/api/terceros', verifyToken, async (req, res) => {
+  try {
+    const success = await writeJSON(FILES.terceros, req.body);
+    res.json({ success });
+  } catch (error) {
+    console.error('Error POST /api/terceros:', error.message);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
 });
 
 // ==================== ENDPOINT REGLAS DE NEGOCIO ====================
 
-app.get('/api/business-rules', async (req, res) => {
-  const data = await readJSON(FILES.business_rules);
-  res.json(data);
+app.get('/api/business-rules', verifyToken, async (req, res) => {
+  try {
+    const data = await readJSON(FILES.business_rules);
+    res.json(data);
+  } catch (error) {
+    console.error('Error GET /api/business-rules:', error.message);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
 });
 
 // ==================== ENDPOINT ESTADÍSTICAS ====================
@@ -975,7 +1077,7 @@ app.delete('/api/clientes/:id', verifyToken, requireRole(['admin']), async (req,
 
 // ==================== ENDPOINT RESETEO TOTAL Y PARCIAL ====================
 
-app.post('/api/system/reset/:section?', async (req, res) => {
+app.post('/api/system/reset/:section?', verifyToken, requireRole(['superadmin']), async (req, res) => {
   const section = req.params.section;
 
   try {

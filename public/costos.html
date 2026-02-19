@@ -189,7 +189,7 @@
       async function applyAverageCostToPrice(categoria, promedioCosto) {
         try {
           // Obtener precios existentes
-          const preciosResp = await fetch('/api/precios');
+          const preciosResp = await AUTH.fetch('/api/precios');
           let precios = [];
           if (preciosResp.ok) {
             const data = await preciosResp.json();
@@ -204,7 +204,7 @@
             existingPrice.costo = promedioCosto;
             existingPrice.updatedAt = new Date().toISOString();
 
-            const response = await fetch('/api/precios', {
+            const response = await AUTH.fetch('/api/precios', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify(precios)

@@ -410,7 +410,7 @@
         };
 
         try {
-          const getResp = await fetch('/api/precios');
+          const getResp = await AUTH.fetch('/api/precios');
           let currentList = [];
           if (getResp.ok) {
             const data = await getResp.json();
@@ -429,7 +429,7 @@
             currentList.push(priceData);
           }
 
-          const response = await fetch('/api/precios', {
+          const response = await AUTH.fetch('/api/precios', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(currentList)
@@ -571,7 +571,7 @@
         if (!confirm('¿Eliminar este precio?')) return;
         try {
           // Obtener lista actual, filtrar y reescribir (endpoint espera array completo)
-          const getResp = await fetch('/api/precios');
+          const getResp = await AUTH.fetch('/api/precios');
           let currentList = [];
           if (getResp.ok) {
             const data = await getResp.json();
@@ -579,7 +579,7 @@
           }
 
           const filtered = currentList.filter(p => String(p.id) !== String(id));
-          const response = await fetch('/api/precios', {
+          const response = await AUTH.fetch('/api/precios', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(filtered)

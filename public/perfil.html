@@ -70,7 +70,7 @@
                 const p2 = document.getElementById('confirmPassword').value;
 
                 if (p1 !== p2) return alert('Las contraseñas no coinciden');
-                if (p1.length < 4) return alert('La contraseña es muy corta');
+                if (p1.length < 6) return alert('La contraseña debe tener al menos 6 caracteres');
 
                 try {
                     const res = await AUTH.fetch(`/api/users/${user.id}/password`, {
