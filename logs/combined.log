@@ -21999,3 +21999,320 @@
 {"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 08:38:39","url":"/api/trabajos"}
 {"level":"info","message":"🔌 PC conectada al sistema (ID: lBK_GRT_njQstN52AAAV)","service":"mr-letreros-api","timestamp":"2026-07-13 08:38:39"}
 {"level":"warn","message":"[Google Sync] No se pudo sincronizar costos: timeout of 15000ms exceeded","service":"mr-letreros-api","timestamp":"2026-07-13 08:45:12"}
+{"level":"error","message":"[Google Sync] Error en el proceso:","service":"mr-letreros-api","timestamp":"2026-07-13 08:53:04"}
+{"level":"info","message":"[Google Sync] Detectados 1 pedidos nuevos de Google.","service":"mr-letreros-api","timestamp":"2026-07-13 09:07:32"}
+{"level":"info","message":"[Google Sync] Procesando Pedido: Gremio=\"Mundi Letreros\", WhatsApp=\"3425095044\"","service":"mr-letreros-api","timestamp":"2026-07-13 09:07:32"}
+{"level":"info","message":"[Google Sync] SQLite: Trabajo guardado para Mundi Letreros","service":"mr-letreros-api","timestamp":"2026-07-13 09:07:33"}
+{"level":"error","message":"❌ El bot no pudo enviar el mensaje a 3425095044: ","service":"mr-letreros-api","timestamp":"2026-07-13 09:07:33"}
+{"level":"info","message":"📥 Mensaje guardado en cola pendiente para 3425095044","service":"mr-letreros-api","timestamp":"2026-07-13 09:07:33"}
+{"level":"info","message":"[Google Sync] Sincronización finalizada: 1 trabajos añadidos.","service":"mr-letreros-api","timestamp":"2026-07-13 09:07:33"}
+{"ip":"192.168.68.106","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 09:07:43","url":"/api/costos"}
+{"ip":"192.168.68.106","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 09:07:43","url":"/api/health"}
+{"ip":"192.168.68.106","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 09:07:43","url":"/api/gremio/data"}
+{"ip":"192.168.68.106","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 09:07:43","url":"/api/trabajos"}
+{"ip":"192.168.68.106","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 09:07:43","url":"/api/clientes/data"}
+{"ip":"192.168.68.106","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 09:07:43","url":"/api/tareas"}
+{"level":"info","message":"🔌 PC conectada al sistema (ID: WIxkPwTZf1KF3dbgAAAX)","service":"mr-letreros-api","timestamp":"2026-07-13 09:07:43"}
+{"ip":"192.168.68.106","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 09:07:44","url":"/api/trabajos"}
+{"ip":"192.168.68.106","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 09:07:49","url":"/api/google/folder-images?folderId=1GElNDKQjT_ox-0tCIi0VadOQeX_wVlrN"}
+{"level":"info","message":"🔍 [Drive Scraper] Ejecutando fallback de scraping para carpeta: 1GElNDKQjT_ox-0tCIi0VadOQeX_wVlrN","service":"mr-letreros-api","timestamp":"2026-07-13 09:07:50"}
+{"level":"info","message":"✨ [Drive Scraper] Éxito: Encontrados 2 archivos para la carpeta 1GElNDKQjT_ox-0tCIi0VadOQeX_wVlrN","service":"mr-letreros-api","timestamp":"2026-07-13 09:07:52"}
+{"ip":"192.168.68.106","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 09:07:52","url":"/api/google/folder-images?folderId=1X7uyiEPGHxRekga-9XgNqLN1e3-tm3Ww"}
+{"level":"info","message":"🔍 [Drive Scraper] Ejecutando fallback de scraping para carpeta: 1X7uyiEPGHxRekga-9XgNqLN1e3-tm3Ww","service":"mr-letreros-api","timestamp":"2026-07-13 09:07:52"}
+{"level":"warn","message":"No se pudo generar thumbnail para archivo 1VockBd9KusBWA5rp61Vf4FGktz5qMuPA: Request failed with status code 404","service":"mr-letreros-api","timestamp":"2026-07-13 09:07:56"}
+{"level":"info","message":"✨ [Drive Scraper] Éxito: Encontrados 2 archivos para la carpeta 1X7uyiEPGHxRekga-9XgNqLN1e3-tm3Ww","service":"mr-letreros-api","timestamp":"2026-07-13 09:07:56"}
+{"ip":"192.168.68.106","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 09:07:57","url":"/api/google/folder-images?folderId=1To2qkGBFcX9vNbPyd08a9FE7su0_ESLs"}
+{"level":"info","message":"🔍 [Drive Scraper] Ejecutando fallback de scraping para carpeta: 1To2qkGBFcX9vNbPyd08a9FE7su0_ESLs","service":"mr-letreros-api","timestamp":"2026-07-13 09:07:58"}
+{"level":"warn","message":"No se pudo generar thumbnail para archivo 1KO6ai27ptco0G1LY-HPKhrXL3Pm10ezB: Request failed with status code 404","service":"mr-letreros-api","timestamp":"2026-07-13 09:08:01"}
+{"level":"info","message":"✨ [Drive Scraper] Éxito: Encontrados 2 archivos para la carpeta 1To2qkGBFcX9vNbPyd08a9FE7su0_ESLs","service":"mr-letreros-api","timestamp":"2026-07-13 09:08:01"}
+{"ip":"192.168.68.106","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 09:08:01","url":"/api/google/folder-images?folderId=17AdjGk8rwDAxm_bfuSQHWTO6aVI9gj01"}
+{"level":"info","message":"🔍 [Drive Scraper] Ejecutando fallback de scraping para carpeta: 17AdjGk8rwDAxm_bfuSQHWTO6aVI9gj01","service":"mr-letreros-api","timestamp":"2026-07-13 09:08:02"}
+{"level":"info","message":"✨ [Drive Scraper] Éxito: Encontrados 2 archivos para la carpeta 17AdjGk8rwDAxm_bfuSQHWTO6aVI9gj01","service":"mr-letreros-api","timestamp":"2026-07-13 09:08:05"}
+{"ip":"192.168.68.106","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 09:08:06","url":"/api/google/folder-images?folderId=12xgRN71pi2v_fauD1tbqRUr5ZN2prSUJ"}
+{"level":"info","message":"🔍 [Drive Scraper] Ejecutando fallback de scraping para carpeta: 12xgRN71pi2v_fauD1tbqRUr5ZN2prSUJ","service":"mr-letreros-api","timestamp":"2026-07-13 09:08:07"}
+{"level":"info","message":"✨ [Drive Scraper] Éxito: Encontrados 2 archivos para la carpeta 12xgRN71pi2v_fauD1tbqRUr5ZN2prSUJ","service":"mr-letreros-api","timestamp":"2026-07-13 09:08:09"}
+{"ip":"192.168.68.106","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 09:08:10","url":"/api/google/folder-images?folderId=19dW1RpUWcGrLJeurU5G81pY8vse3cu6_"}
+{"level":"info","message":"🔍 [Drive Scraper] Ejecutando fallback de scraping para carpeta: 19dW1RpUWcGrLJeurU5G81pY8vse3cu6_","service":"mr-letreros-api","timestamp":"2026-07-13 09:08:11"}
+{"level":"warn","message":"No se pudo generar thumbnail para archivo 19z6AiaPbZsEDbVkijZ5bofv7CGQD8zlP: Request failed with status code 404","service":"mr-letreros-api","timestamp":"2026-07-13 09:08:13"}
+{"level":"info","message":"✨ [Drive Scraper] Éxito: Encontrados 1 archivos para la carpeta 19dW1RpUWcGrLJeurU5G81pY8vse3cu6_","service":"mr-letreros-api","timestamp":"2026-07-13 09:08:13"}
+{"ip":"192.168.68.106","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 09:08:13","url":"/api/google/folder-images?folderId=1ZUjAFtcnDsKV4facfDRJaM7tA50oktC_"}
+{"level":"info","message":"🔍 [Drive Scraper] Ejecutando fallback de scraping para carpeta: 1ZUjAFtcnDsKV4facfDRJaM7tA50oktC_","service":"mr-letreros-api","timestamp":"2026-07-13 09:08:14"}
+{"level":"warn","message":"No se pudo generar thumbnail para archivo 1GGUGEb9lnbuGpapifgMUnOTcq8C_S0hv: Request failed with status code 404","service":"mr-letreros-api","timestamp":"2026-07-13 09:08:18"}
+{"level":"info","message":"✨ [Drive Scraper] Éxito: Encontrados 2 archivos para la carpeta 1ZUjAFtcnDsKV4facfDRJaM7tA50oktC_","service":"mr-letreros-api","timestamp":"2026-07-13 09:08:18"}
+{"ip":"192.168.68.106","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 09:08:18","url":"/api/google/folder-images?folderId=1nRL1epcMjWwFEkf7f6s3JDxdQqpWp6Ml"}
+{"level":"info","message":"🔍 [Drive Scraper] Ejecutando fallback de scraping para carpeta: 1nRL1epcMjWwFEkf7f6s3JDxdQqpWp6Ml","service":"mr-letreros-api","timestamp":"2026-07-13 09:08:19"}
+{"level":"warn","message":"No se pudo generar thumbnail para archivo 1d6PhiG6HnsF7A-e9uiT-5QUg5yqmvNNt: Request failed with status code 404","service":"mr-letreros-api","timestamp":"2026-07-13 09:08:22"}
+{"level":"info","message":"✨ [Drive Scraper] Éxito: Encontrados 2 archivos para la carpeta 1nRL1epcMjWwFEkf7f6s3JDxdQqpWp6Ml","service":"mr-letreros-api","timestamp":"2026-07-13 09:08:22"}
+{"ip":"192.168.68.106","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 09:08:22","url":"/api/google/folder-images?folderId=1CbAt6HdIU9ObvzG0tkqwHw9RQ_dPk3Ml"}
+{"level":"info","message":"🔍 [Drive Scraper] Ejecutando fallback de scraping para carpeta: 1CbAt6HdIU9ObvzG0tkqwHw9RQ_dPk3Ml","service":"mr-letreros-api","timestamp":"2026-07-13 09:08:23"}
+{"level":"warn","message":"No se pudo generar thumbnail para archivo 12eHl3lGAsCNOdH3h2JvlMjCyFacOumHy: Request failed with status code 404","service":"mr-letreros-api","timestamp":"2026-07-13 09:08:27"}
+{"level":"info","message":"✨ [Drive Scraper] Éxito: Encontrados 2 archivos para la carpeta 1CbAt6HdIU9ObvzG0tkqwHw9RQ_dPk3Ml","service":"mr-letreros-api","timestamp":"2026-07-13 09:08:27"}
+{"ip":"192.168.68.106","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 09:08:27","url":"/api/google/folder-images?folderId=1WI661rcYyzob7TG7qkVd6Hdn59gwJjBN"}
+{"level":"info","message":"🔍 [Drive Scraper] Ejecutando fallback de scraping para carpeta: 1WI661rcYyzob7TG7qkVd6Hdn59gwJjBN","service":"mr-letreros-api","timestamp":"2026-07-13 09:08:29"}
+{"level":"info","message":"✨ [Drive Scraper] Éxito: Encontrados 1 archivos para la carpeta 1WI661rcYyzob7TG7qkVd6Hdn59gwJjBN","service":"mr-letreros-api","timestamp":"2026-07-13 09:08:31"}
+{"ip":"192.168.68.106","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 09:08:32","url":"/api/google/folder-images?folderId=1O31erq3O8kchn3m5lxJlvqNWAYeh8ND2"}
+{"level":"info","message":"🔍 [Drive Scraper] Ejecutando fallback de scraping para carpeta: 1O31erq3O8kchn3m5lxJlvqNWAYeh8ND2","service":"mr-letreros-api","timestamp":"2026-07-13 09:08:35"}
+{"level":"warn","message":"No se pudo generar thumbnail para archivo 17Id5YCw5qhg1ExzXVHXjE4QzD3A2H-xl: Request failed with status code 404","service":"mr-letreros-api","timestamp":"2026-07-13 09:08:37"}
+{"level":"info","message":"✨ [Drive Scraper] Éxito: Encontrados 2 archivos para la carpeta 1O31erq3O8kchn3m5lxJlvqNWAYeh8ND2","service":"mr-letreros-api","timestamp":"2026-07-13 09:08:37"}
+{"ip":"192.168.68.106","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 09:08:38","url":"/api/google/folder-images?folderId=1Jl8y6IzX7eKmJXeSFSAU4W1YPGZsK0cJ"}
+{"level":"info","message":"🔍 [Drive Scraper] Ejecutando fallback de scraping para carpeta: 1Jl8y6IzX7eKmJXeSFSAU4W1YPGZsK0cJ","service":"mr-letreros-api","timestamp":"2026-07-13 09:08:39"}
+{"level":"warn","message":"No se pudo generar thumbnail para archivo 15EPxJHRmX1ck67CjuKcDcNkjJQOTAfCm: Request failed with status code 404","service":"mr-letreros-api","timestamp":"2026-07-13 09:08:42"}
+{"level":"info","message":"✨ [Drive Scraper] Éxito: Encontrados 2 archivos para la carpeta 1Jl8y6IzX7eKmJXeSFSAU4W1YPGZsK0cJ","service":"mr-letreros-api","timestamp":"2026-07-13 09:08:42"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 09:08:45","url":"/sounds/notification.mp3"}
+{"level":"info","message":"🔌 PC conectada al sistema (ID: 4kFSxd-SFEPYJ9K-AAAZ)","service":"mr-letreros-api","timestamp":"2026-07-13 09:34:56"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 09:34:56","url":"/api/tareas"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 09:34:56","url":"/api/trabajos"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 09:35:04","url":"/api/health"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 09:35:04","url":"/api/costos"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 09:35:05","url":"/api/gremio/data"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 09:35:05","url":"/api/trabajos"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 09:35:05","url":"/api/clientes/data"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 09:35:05","url":"/api/tareas"}
+{"level":"info","message":"🔌 PC conectada al sistema (ID: OeRru0kN80QMs1OXAAAb)","service":"mr-letreros-api","timestamp":"2026-07-13 09:35:05"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 09:35:05","url":"/api/trabajos"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 09:35:06","url":"/api/google/folder-images?folderId=1GElNDKQjT_ox-0tCIi0VadOQeX_wVlrN"}
+{"level":"info","message":"🔍 [Drive Scraper] Ejecutando fallback de scraping para carpeta: 1GElNDKQjT_ox-0tCIi0VadOQeX_wVlrN","service":"mr-letreros-api","timestamp":"2026-07-13 09:35:07"}
+{"level":"info","message":"✨ [Drive Scraper] Éxito: Encontrados 2 archivos para la carpeta 1GElNDKQjT_ox-0tCIi0VadOQeX_wVlrN","service":"mr-letreros-api","timestamp":"2026-07-13 09:35:08"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 09:35:08","url":"/api/google/folder-images?folderId=1X7uyiEPGHxRekga-9XgNqLN1e3-tm3Ww"}
+{"level":"info","message":"🔍 [Drive Scraper] Ejecutando fallback de scraping para carpeta: 1X7uyiEPGHxRekga-9XgNqLN1e3-tm3Ww","service":"mr-letreros-api","timestamp":"2026-07-13 09:35:09"}
+{"level":"warn","message":"No se pudo generar thumbnail para archivo 1VockBd9KusBWA5rp61Vf4FGktz5qMuPA: Request failed with status code 404","service":"mr-letreros-api","timestamp":"2026-07-13 09:35:10"}
+{"level":"info","message":"✨ [Drive Scraper] Éxito: Encontrados 2 archivos para la carpeta 1X7uyiEPGHxRekga-9XgNqLN1e3-tm3Ww","service":"mr-letreros-api","timestamp":"2026-07-13 09:35:10"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 09:35:10","url":"/api/google/folder-images?folderId=1To2qkGBFcX9vNbPyd08a9FE7su0_ESLs"}
+{"level":"info","message":"🔍 [Drive Scraper] Ejecutando fallback de scraping para carpeta: 1To2qkGBFcX9vNbPyd08a9FE7su0_ESLs","service":"mr-letreros-api","timestamp":"2026-07-13 09:35:11"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 09:35:11","url":"/api/google/folder-images?folderId=17AdjGk8rwDAxm_bfuSQHWTO6aVI9gj01"}
+{"level":"info","message":"🔍 [Drive Scraper] Ejecutando fallback de scraping para carpeta: 17AdjGk8rwDAxm_bfuSQHWTO6aVI9gj01","service":"mr-letreros-api","timestamp":"2026-07-13 09:35:12"}
+{"level":"warn","message":"No se pudo generar thumbnail para archivo 1KO6ai27ptco0G1LY-HPKhrXL3Pm10ezB: Request failed with status code 404","service":"mr-letreros-api","timestamp":"2026-07-13 09:35:12"}
+{"level":"info","message":"✨ [Drive Scraper] Éxito: Encontrados 2 archivos para la carpeta 1To2qkGBFcX9vNbPyd08a9FE7su0_ESLs","service":"mr-letreros-api","timestamp":"2026-07-13 09:35:12"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 09:35:12","url":"/api/google/folder-images?folderId=12xgRN71pi2v_fauD1tbqRUr5ZN2prSUJ"}
+{"level":"info","message":"🔍 [Drive Scraper] Ejecutando fallback de scraping para carpeta: 12xgRN71pi2v_fauD1tbqRUr5ZN2prSUJ","service":"mr-letreros-api","timestamp":"2026-07-13 09:35:13"}
+{"level":"info","message":"✨ [Drive Scraper] Éxito: Encontrados 2 archivos para la carpeta 17AdjGk8rwDAxm_bfuSQHWTO6aVI9gj01","service":"mr-letreros-api","timestamp":"2026-07-13 09:35:13"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 09:35:13","url":"/api/google/folder-images?folderId=19dW1RpUWcGrLJeurU5G81pY8vse3cu6_"}
+{"level":"info","message":"✨ [Drive Scraper] Éxito: Encontrados 2 archivos para la carpeta 12xgRN71pi2v_fauD1tbqRUr5ZN2prSUJ","service":"mr-letreros-api","timestamp":"2026-07-13 09:35:13"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 09:35:13","url":"/api/google/folder-images?folderId=1ZUjAFtcnDsKV4facfDRJaM7tA50oktC_"}
+{"level":"info","message":"🔍 [Drive Scraper] Ejecutando fallback de scraping para carpeta: 19dW1RpUWcGrLJeurU5G81pY8vse3cu6_","service":"mr-letreros-api","timestamp":"2026-07-13 09:35:14"}
+{"level":"info","message":"🔍 [Drive Scraper] Ejecutando fallback de scraping para carpeta: 1ZUjAFtcnDsKV4facfDRJaM7tA50oktC_","service":"mr-letreros-api","timestamp":"2026-07-13 09:35:14"}
+{"level":"warn","message":"No se pudo generar thumbnail para archivo 19z6AiaPbZsEDbVkijZ5bofv7CGQD8zlP: Request failed with status code 404","service":"mr-letreros-api","timestamp":"2026-07-13 09:35:15"}
+{"level":"info","message":"✨ [Drive Scraper] Éxito: Encontrados 1 archivos para la carpeta 19dW1RpUWcGrLJeurU5G81pY8vse3cu6_","service":"mr-letreros-api","timestamp":"2026-07-13 09:35:15"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 09:35:15","url":"/api/google/folder-images?folderId=1nRL1epcMjWwFEkf7f6s3JDxdQqpWp6Ml"}
+{"level":"warn","message":"No se pudo generar thumbnail para archivo 1GGUGEb9lnbuGpapifgMUnOTcq8C_S0hv: Request failed with status code 404","service":"mr-letreros-api","timestamp":"2026-07-13 09:35:15"}
+{"level":"info","message":"✨ [Drive Scraper] Éxito: Encontrados 2 archivos para la carpeta 1ZUjAFtcnDsKV4facfDRJaM7tA50oktC_","service":"mr-letreros-api","timestamp":"2026-07-13 09:35:15"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 09:35:15","url":"/api/google/folder-images?folderId=1CbAt6HdIU9ObvzG0tkqwHw9RQ_dPk3Ml"}
+{"level":"info","message":"🔍 [Drive Scraper] Ejecutando fallback de scraping para carpeta: 1nRL1epcMjWwFEkf7f6s3JDxdQqpWp6Ml","service":"mr-letreros-api","timestamp":"2026-07-13 09:35:16"}
+{"level":"info","message":"🔍 [Drive Scraper] Ejecutando fallback de scraping para carpeta: 1CbAt6HdIU9ObvzG0tkqwHw9RQ_dPk3Ml","service":"mr-letreros-api","timestamp":"2026-07-13 09:35:16"}
+{"level":"warn","message":"No se pudo generar thumbnail para archivo 1d6PhiG6HnsF7A-e9uiT-5QUg5yqmvNNt: Request failed with status code 404","service":"mr-letreros-api","timestamp":"2026-07-13 09:35:16"}
+{"level":"info","message":"✨ [Drive Scraper] Éxito: Encontrados 2 archivos para la carpeta 1nRL1epcMjWwFEkf7f6s3JDxdQqpWp6Ml","service":"mr-letreros-api","timestamp":"2026-07-13 09:35:16"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 09:35:16","url":"/api/google/folder-images?folderId=1WI661rcYyzob7TG7qkVd6Hdn59gwJjBN"}
+{"level":"info","message":"🔍 [Drive Scraper] Ejecutando fallback de scraping para carpeta: 1WI661rcYyzob7TG7qkVd6Hdn59gwJjBN","service":"mr-letreros-api","timestamp":"2026-07-13 09:35:17"}
+{"level":"info","message":"✨ [Drive Scraper] Éxito: Encontrados 1 archivos para la carpeta 1WI661rcYyzob7TG7qkVd6Hdn59gwJjBN","service":"mr-letreros-api","timestamp":"2026-07-13 09:35:18"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 09:35:18","url":"/api/google/folder-images?folderId=1O31erq3O8kchn3m5lxJlvqNWAYeh8ND2"}
+{"level":"info","message":"🔍 [Drive Scraper] Ejecutando fallback de scraping para carpeta: 1O31erq3O8kchn3m5lxJlvqNWAYeh8ND2","service":"mr-letreros-api","timestamp":"2026-07-13 09:35:19"}
+{"level":"warn","message":"No se pudo generar thumbnail para archivo 17Id5YCw5qhg1ExzXVHXjE4QzD3A2H-xl: Request failed with status code 404","service":"mr-letreros-api","timestamp":"2026-07-13 09:35:20"}
+{"level":"info","message":"✨ [Drive Scraper] Éxito: Encontrados 2 archivos para la carpeta 1O31erq3O8kchn3m5lxJlvqNWAYeh8ND2","service":"mr-letreros-api","timestamp":"2026-07-13 09:35:20"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 09:35:20","url":"/api/google/folder-images?folderId=1Jl8y6IzX7eKmJXeSFSAU4W1YPGZsK0cJ"}
+{"level":"info","message":"🔍 [Drive Scraper] Ejecutando fallback de scraping para carpeta: 1Jl8y6IzX7eKmJXeSFSAU4W1YPGZsK0cJ","service":"mr-letreros-api","timestamp":"2026-07-13 09:35:21"}
+{"level":"warn","message":"No se pudo generar thumbnail para archivo 15EPxJHRmX1ck67CjuKcDcNkjJQOTAfCm: Request failed with status code 404","service":"mr-letreros-api","timestamp":"2026-07-13 09:35:22"}
+{"level":"info","message":"✨ [Drive Scraper] Éxito: Encontrados 2 archivos para la carpeta 1Jl8y6IzX7eKmJXeSFSAU4W1YPGZsK0cJ","service":"mr-letreros-api","timestamp":"2026-07-13 09:35:22"}
+{"level":"warn","message":"No se pudo generar thumbnail para archivo 12eHl3lGAsCNOdH3h2JvlMjCyFacOumHy: Request failed with status code 404","service":"mr-letreros-api","timestamp":"2026-07-13 09:35:23"}
+{"level":"info","message":"✨ [Drive Scraper] Éxito: Encontrados 2 archivos para la carpeta 1CbAt6HdIU9ObvzG0tkqwHw9RQ_dPk3Ml","service":"mr-letreros-api","timestamp":"2026-07-13 09:35:23"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"PUT","service":"mr-letreros-api","timestamp":"2026-07-13 09:37:40","url":"/api/trabajos/goog_1783944452987ptu7p"}
+{"level":"info","message":"✅ Trabajo actualizado en SQLite: goog_1783944452987ptu7p","service":"mr-letreros-api","timestamp":"2026-07-13 09:37:40"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 09:37:40","url":"/api/gremio/data"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 09:37:40","url":"/api/clientes/data"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 09:37:40","url":"/api/trabajos"}
+{"ip":"192.168.68.106","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 09:37:40","url":"/api/gremio/data"}
+{"ip":"192.168.68.106","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 09:37:40","url":"/api/clientes/data"}
+{"ip":"192.168.68.106","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 09:37:40","url":"/api/trabajos"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 09:37:42","url":"/api/clientes/data"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 09:37:42","url":"/api/gremio/data"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 09:37:42","url":"/api/trabajos"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 09:37:43","url":"/api/gremio/data"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 09:38:06","url":"/api/health"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 09:38:06","url":"/api/costos"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 09:38:06","url":"/api/tareas"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 09:38:06","url":"/api/tareas"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 09:38:06","url":"/api/trabajos"}
+{"level":"info","message":"🔌 PC conectada al sistema (ID: CJJyqKo_hvo5-oiYAAAd)","service":"mr-letreros-api","timestamp":"2026-07-13 09:38:06"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"PUT","service":"mr-letreros-api","timestamp":"2026-07-13 09:38:18","url":"/api/tareas/task_1781632980842_164"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 09:38:18","url":"/api/tareas"}
+{"level":"info","message":"🔄 Recargando datos_mr_letreros/tareas_internas.json desde disco a SQLite (modificación de archivo detectada)","service":"mr-letreros-api","timestamp":"2026-07-13 09:38:18"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"PUT","service":"mr-letreros-api","timestamp":"2026-07-13 09:38:29","url":"/api/tareas/task_1781696186213_472"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 09:38:29","url":"/api/tareas"}
+{"level":"info","message":"🔄 Recargando datos_mr_letreros/tareas_internas.json desde disco a SQLite (modificación de archivo detectada)","service":"mr-letreros-api","timestamp":"2026-07-13 09:38:29"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"PUT","service":"mr-letreros-api","timestamp":"2026-07-13 09:38:41","url":"/api/tareas/task_1782500650213_665"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 09:38:41","url":"/api/tareas"}
+{"level":"info","message":"🔄 Recargando datos_mr_letreros/tareas_internas.json desde disco a SQLite (modificación de archivo detectada)","service":"mr-letreros-api","timestamp":"2026-07-13 09:38:41"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"PUT","service":"mr-letreros-api","timestamp":"2026-07-13 09:38:52","url":"/api/tareas/task_1781696186213_472"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 09:38:52","url":"/api/tareas"}
+{"level":"info","message":"🔄 Recargando datos_mr_letreros/tareas_internas.json desde disco a SQLite (modificación de archivo detectada)","service":"mr-letreros-api","timestamp":"2026-07-13 09:38:52"}
+{"ip":"192.168.68.106","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 09:48:28","url":"/api/health"}
+{"ip":"192.168.68.106","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 09:48:28","url":"/api/costos"}
+{"ip":"192.168.68.106","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 09:48:28","url":"/api/tareas"}
+{"ip":"192.168.68.106","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 09:48:28","url":"/api/gremio/data"}
+{"level":"info","message":"🔌 PC conectada al sistema (ID: PtfZUqRon43F_eB8AAAf)","service":"mr-letreros-api","timestamp":"2026-07-13 09:48:28"}
+{"ip":"192.168.68.106","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 09:48:28","url":"/api/trabajos"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 09:52:07","url":"/api/health"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 09:52:07","url":"/api/costos"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 09:52:07","url":"/api/gremio/data"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 09:52:07","url":"/api/trabajos"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 09:52:07","url":"/api/clientes/data"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 09:52:07","url":"/api/tareas"}
+{"level":"info","message":"🔌 PC conectada al sistema (ID: GUl9CAr3roRCYRyXAAAh)","service":"mr-letreros-api","timestamp":"2026-07-13 09:52:07"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 09:52:08","url":"/api/trabajos"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 09:52:09","url":"/api/google/folder-images?folderId=1GElNDKQjT_ox-0tCIi0VadOQeX_wVlrN"}
+{"level":"info","message":"🔍 [Drive Scraper] Ejecutando fallback de scraping para carpeta: 1GElNDKQjT_ox-0tCIi0VadOQeX_wVlrN","service":"mr-letreros-api","timestamp":"2026-07-13 09:52:10"}
+{"level":"info","message":"✨ [Drive Scraper] Éxito: Encontrados 2 archivos para la carpeta 1GElNDKQjT_ox-0tCIi0VadOQeX_wVlrN","service":"mr-letreros-api","timestamp":"2026-07-13 09:52:11"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 09:52:11","url":"/api/google/folder-images?folderId=1X7uyiEPGHxRekga-9XgNqLN1e3-tm3Ww"}
+{"level":"info","message":"🔍 [Drive Scraper] Ejecutando fallback de scraping para carpeta: 1X7uyiEPGHxRekga-9XgNqLN1e3-tm3Ww","service":"mr-letreros-api","timestamp":"2026-07-13 09:52:12"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 09:52:12","url":"/api/google/folder-images?folderId=1To2qkGBFcX9vNbPyd08a9FE7su0_ESLs"}
+{"level":"info","message":"🔍 [Drive Scraper] Ejecutando fallback de scraping para carpeta: 1To2qkGBFcX9vNbPyd08a9FE7su0_ESLs","service":"mr-letreros-api","timestamp":"2026-07-13 09:52:13"}
+{"level":"warn","message":"No se pudo generar thumbnail para archivo 1VockBd9KusBWA5rp61Vf4FGktz5qMuPA: Request failed with status code 404","service":"mr-letreros-api","timestamp":"2026-07-13 09:52:13"}
+{"level":"info","message":"✨ [Drive Scraper] Éxito: Encontrados 2 archivos para la carpeta 1X7uyiEPGHxRekga-9XgNqLN1e3-tm3Ww","service":"mr-letreros-api","timestamp":"2026-07-13 09:52:13"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 09:52:13","url":"/api/google/folder-images?folderId=17AdjGk8rwDAxm_bfuSQHWTO6aVI9gj01"}
+{"level":"info","message":"🔍 [Drive Scraper] Ejecutando fallback de scraping para carpeta: 17AdjGk8rwDAxm_bfuSQHWTO6aVI9gj01","service":"mr-letreros-api","timestamp":"2026-07-13 09:52:14"}
+{"level":"warn","message":"No se pudo generar thumbnail para archivo 1KO6ai27ptco0G1LY-HPKhrXL3Pm10ezB: Request failed with status code 404","service":"mr-letreros-api","timestamp":"2026-07-13 09:52:15"}
+{"level":"info","message":"✨ [Drive Scraper] Éxito: Encontrados 2 archivos para la carpeta 1To2qkGBFcX9vNbPyd08a9FE7su0_ESLs","service":"mr-letreros-api","timestamp":"2026-07-13 09:52:15"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 09:52:15","url":"/api/google/folder-images?folderId=12xgRN71pi2v_fauD1tbqRUr5ZN2prSUJ"}
+{"level":"info","message":"🔍 [Drive Scraper] Ejecutando fallback de scraping para carpeta: 12xgRN71pi2v_fauD1tbqRUr5ZN2prSUJ","service":"mr-letreros-api","timestamp":"2026-07-13 09:52:16"}
+{"level":"info","message":"✨ [Drive Scraper] Éxito: Encontrados 2 archivos para la carpeta 12xgRN71pi2v_fauD1tbqRUr5ZN2prSUJ","service":"mr-letreros-api","timestamp":"2026-07-13 09:52:16"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 09:52:16","url":"/api/google/folder-images?folderId=19dW1RpUWcGrLJeurU5G81pY8vse3cu6_"}
+{"level":"info","message":"🔍 [Drive Scraper] Ejecutando fallback de scraping para carpeta: 19dW1RpUWcGrLJeurU5G81pY8vse3cu6_","service":"mr-letreros-api","timestamp":"2026-07-13 09:52:17"}
+{"level":"info","message":"✨ [Drive Scraper] Éxito: Encontrados 2 archivos para la carpeta 17AdjGk8rwDAxm_bfuSQHWTO6aVI9gj01","service":"mr-letreros-api","timestamp":"2026-07-13 09:52:18"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 09:52:18","url":"/api/google/folder-images?folderId=1ZUjAFtcnDsKV4facfDRJaM7tA50oktC_"}
+{"level":"warn","message":"No se pudo generar thumbnail para archivo 19z6AiaPbZsEDbVkijZ5bofv7CGQD8zlP: Request failed with status code 404","service":"mr-letreros-api","timestamp":"2026-07-13 09:52:18"}
+{"level":"info","message":"✨ [Drive Scraper] Éxito: Encontrados 1 archivos para la carpeta 19dW1RpUWcGrLJeurU5G81pY8vse3cu6_","service":"mr-letreros-api","timestamp":"2026-07-13 09:52:18"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 09:52:18","url":"/api/google/folder-images?folderId=1nRL1epcMjWwFEkf7f6s3JDxdQqpWp6Ml"}
+{"level":"info","message":"🔍 [Drive Scraper] Ejecutando fallback de scraping para carpeta: 1ZUjAFtcnDsKV4facfDRJaM7tA50oktC_","service":"mr-letreros-api","timestamp":"2026-07-13 09:52:19"}
+{"level":"info","message":"🔍 [Drive Scraper] Ejecutando fallback de scraping para carpeta: 1nRL1epcMjWwFEkf7f6s3JDxdQqpWp6Ml","service":"mr-letreros-api","timestamp":"2026-07-13 09:52:19"}
+{"level":"warn","message":"No se pudo generar thumbnail para archivo 1GGUGEb9lnbuGpapifgMUnOTcq8C_S0hv: Request failed with status code 404","service":"mr-letreros-api","timestamp":"2026-07-13 09:52:20"}
+{"level":"info","message":"✨ [Drive Scraper] Éxito: Encontrados 2 archivos para la carpeta 1ZUjAFtcnDsKV4facfDRJaM7tA50oktC_","service":"mr-letreros-api","timestamp":"2026-07-13 09:52:20"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 09:52:20","url":"/api/google/folder-images?folderId=1CbAt6HdIU9ObvzG0tkqwHw9RQ_dPk3Ml"}
+{"level":"warn","message":"No se pudo generar thumbnail para archivo 1d6PhiG6HnsF7A-e9uiT-5QUg5yqmvNNt: Request failed with status code 404","service":"mr-letreros-api","timestamp":"2026-07-13 09:52:20"}
+{"level":"info","message":"✨ [Drive Scraper] Éxito: Encontrados 2 archivos para la carpeta 1nRL1epcMjWwFEkf7f6s3JDxdQqpWp6Ml","service":"mr-letreros-api","timestamp":"2026-07-13 09:52:20"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 09:52:20","url":"/api/google/folder-images?folderId=1WI661rcYyzob7TG7qkVd6Hdn59gwJjBN"}
+{"level":"info","message":"🔍 [Drive Scraper] Ejecutando fallback de scraping para carpeta: 1WI661rcYyzob7TG7qkVd6Hdn59gwJjBN","service":"mr-letreros-api","timestamp":"2026-07-13 09:52:21"}
+{"level":"info","message":"🔍 [Drive Scraper] Ejecutando fallback de scraping para carpeta: 1CbAt6HdIU9ObvzG0tkqwHw9RQ_dPk3Ml","service":"mr-letreros-api","timestamp":"2026-07-13 09:52:21"}
+{"level":"info","message":"✨ [Drive Scraper] Éxito: Encontrados 1 archivos para la carpeta 1WI661rcYyzob7TG7qkVd6Hdn59gwJjBN","service":"mr-letreros-api","timestamp":"2026-07-13 09:52:21"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 09:52:21","url":"/api/google/folder-images?folderId=1O31erq3O8kchn3m5lxJlvqNWAYeh8ND2"}
+{"level":"warn","message":"No se pudo generar thumbnail para archivo 12eHl3lGAsCNOdH3h2JvlMjCyFacOumHy: Request failed with status code 404","service":"mr-letreros-api","timestamp":"2026-07-13 09:52:22"}
+{"level":"info","message":"✨ [Drive Scraper] Éxito: Encontrados 2 archivos para la carpeta 1CbAt6HdIU9ObvzG0tkqwHw9RQ_dPk3Ml","service":"mr-letreros-api","timestamp":"2026-07-13 09:52:22"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 09:52:22","url":"/api/google/folder-images?folderId=1Jl8y6IzX7eKmJXeSFSAU4W1YPGZsK0cJ"}
+{"level":"info","message":"🔍 [Drive Scraper] Ejecutando fallback de scraping para carpeta: 1O31erq3O8kchn3m5lxJlvqNWAYeh8ND2","service":"mr-letreros-api","timestamp":"2026-07-13 09:52:22"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"PUT","service":"mr-letreros-api","timestamp":"2026-07-13 09:52:22","url":"/api/trabajos/goog_1783944452987ptu7p"}
+{"level":"info","message":"✅ Trabajo actualizado en SQLite: goog_1783944452987ptu7p","service":"mr-letreros-api","timestamp":"2026-07-13 09:52:22"}
+{"level":"info","message":"📲 Intentando enviar WhatsApp de retiro a 5493425095044...","service":"mr-letreros-api","timestamp":"2026-07-13 09:52:22"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 09:52:22","url":"/api/gremio/data"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 09:52:22","url":"/api/trabajos"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 09:52:22","url":"/api/clientes/data"}
+{"level":"error","message":"❌ Error de conexión con el bot al enviar notificación de retiro: fetch failed","service":"mr-letreros-api","timestamp":"2026-07-13 09:52:22"}
+{"level":"info","message":"📥 Notificación guardada en cola pendiente para 5493425095044","service":"mr-letreros-api","timestamp":"2026-07-13 09:52:23"}
+{"level":"info","message":"🔍 [Drive Scraper] Ejecutando fallback de scraping para carpeta: 1Jl8y6IzX7eKmJXeSFSAU4W1YPGZsK0cJ","service":"mr-letreros-api","timestamp":"2026-07-13 09:52:23"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 09:52:23","url":"/api/gremio/data"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 09:52:23","url":"/api/trabajos"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 09:52:23","url":"/api/clientes/data"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 09:52:24","url":"/api/gremio/data"}
+{"level":"warn","message":"No se pudo generar thumbnail para archivo 17Id5YCw5qhg1ExzXVHXjE4QzD3A2H-xl: Request failed with status code 404","service":"mr-letreros-api","timestamp":"2026-07-13 09:52:25"}
+{"level":"info","message":"✨ [Drive Scraper] Éxito: Encontrados 2 archivos para la carpeta 1O31erq3O8kchn3m5lxJlvqNWAYeh8ND2","service":"mr-letreros-api","timestamp":"2026-07-13 09:52:25"}
+{"level":"warn","message":"No se pudo generar thumbnail para archivo 15EPxJHRmX1ck67CjuKcDcNkjJQOTAfCm: Request failed with status code 404","service":"mr-letreros-api","timestamp":"2026-07-13 09:52:26"}
+{"level":"info","message":"✨ [Drive Scraper] Éxito: Encontrados 2 archivos para la carpeta 1Jl8y6IzX7eKmJXeSFSAU4W1YPGZsK0cJ","service":"mr-letreros-api","timestamp":"2026-07-13 09:52:26"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"PUT","service":"mr-letreros-api","timestamp":"2026-07-13 09:53:34","url":"/api/trabajos/goog_1783424729296c64y0"}
+{"level":"info","message":"✅ Trabajo actualizado en SQLite: goog_1783424729296c64y0","service":"mr-letreros-api","timestamp":"2026-07-13 09:53:34"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 09:53:34","url":"/api/gremio/data"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 09:53:34","url":"/api/trabajos"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 09:53:34","url":"/api/clientes/data"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 09:53:34","url":"/api/clientes/data"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 09:53:35","url":"/api/gremio/data"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 09:53:35","url":"/api/trabajos"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 09:53:37","url":"/api/gremio/data"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"POST","service":"mr-letreros-api","timestamp":"2026-07-13 09:55:39","url":"/api/vectorizar"}
+{"file":"WhatsApp Image 2026-07-12 at 22.06.07.jpeg","level":"info","message":"[VECTORIZADOR] Iniciando trabajo 1783947339082 usando método starvector","service":"mr-letreros-api","timestamp":"2026-07-13 09:55:39"}
+{"level":"info","message":"[VECTORIZADOR] Análisis completado con Groq (Llama 4 Scout)","service":"mr-letreros-api","timestamp":"2026-07-13 09:55:40"}
+{"level":"info","message":"[VECTORIZADOR] Procesando con StarVector...","service":"mr-letreros-api","timestamp":"2026-07-13 09:55:40"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"POST","service":"mr-letreros-api","timestamp":"2026-07-13 10:10:44","url":"/api/vectorizar"}
+{"file":"WhatsApp Image 2026-07-12 at 22.06.07.jpeg","level":"info","message":"[VECTORIZADOR] Iniciando trabajo 1783948244953 usando método vtracer","service":"mr-letreros-api","timestamp":"2026-07-13 10:10:44"}
+{"level":"info","message":"[VECTORIZADOR] Análisis completado con Groq (Llama 4 Scout)","service":"mr-letreros-api","timestamp":"2026-07-13 10:10:46"}
+{"level":"info","message":"[VECTORIZADOR] Procesando con VTracer...","service":"mr-letreros-api","timestamp":"2026-07-13 10:10:46"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"POST","service":"mr-letreros-api","timestamp":"2026-07-13 10:11:33","url":"/api/vectorizar"}
+{"file":"WhatsApp Image 2026-07-12 at 22.06.07.jpeg","level":"info","message":"[VECTORIZADOR] Iniciando trabajo 1783948293374 usando método starvector","service":"mr-letreros-api","timestamp":"2026-07-13 10:11:33"}
+{"level":"info","message":"[VECTORIZADOR] Análisis completado con Groq (Llama 4 Scout)","service":"mr-letreros-api","timestamp":"2026-07-13 10:11:35"}
+{"level":"info","message":"[VECTORIZADOR] Procesando con StarVector...","service":"mr-letreros-api","timestamp":"2026-07-13 10:11:35"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"POST","service":"mr-letreros-api","timestamp":"2026-07-13 10:12:32","url":"/api/ai/upscale"}
+{"level":"info","message":"[IMAGE-PROCESSOR] Aumentando resolución: 1783948352561 (factor 2, modo standard)","service":"mr-letreros-api","timestamp":"2026-07-13 10:12:32"}
+{"level":"info","message":"[IMAGE-PROCESSOR] Upscale completado para 1783948352561","service":"mr-letreros-api","timestamp":"2026-07-13 10:13:02"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"POST","service":"mr-letreros-api","timestamp":"2026-07-13 10:13:10","url":"/api/ai/remove-bg"}
+{"level":"info","message":"[IMAGE-PROCESSOR] Iniciando quitar fondo para 1783948390569","service":"mr-letreros-api","timestamp":"2026-07-13 10:13:10"}
+{"level":"info","message":"[IMAGE-PROCESSOR] Fondo quitado exitosamente para 1783948390569","service":"mr-letreros-api","timestamp":"2026-07-13 10:13:23"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"POST","service":"mr-letreros-api","timestamp":"2026-07-13 10:13:36","url":"/api/vectorizar"}
+{"file":"WhatsApp Image 2026-07-12 at 22.06.07.jpeg","level":"info","message":"[VECTORIZADOR] Iniciando trabajo 1783948416380 usando método vtracer","service":"mr-letreros-api","timestamp":"2026-07-13 10:13:36"}
+{"level":"info","message":"[VECTORIZADOR] Análisis completado con Groq (Llama 4 Scout)","service":"mr-letreros-api","timestamp":"2026-07-13 10:13:37"}
+{"level":"info","message":"[VECTORIZADOR] Procesando con VTracer...","service":"mr-letreros-api","timestamp":"2026-07-13 10:13:37"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"POST","service":"mr-letreros-api","timestamp":"2026-07-13 10:13:51","url":"/api/ai/upscale"}
+{"level":"info","message":"[IMAGE-PROCESSOR] Aumentando resolución: 1783948431503 (factor 2, modo ultra_anime)","service":"mr-letreros-api","timestamp":"2026-07-13 10:13:51"}
+{"level":"warn","message":"[Google Sync] Error al sincronizar precios: timeout of 15000ms exceeded","service":"mr-letreros-api","timestamp":"2026-07-13 10:14:45"}
+{"level":"info","message":"[IMAGE-PROCESSOR] Upscale completado para 1783948431503","service":"mr-letreros-api","timestamp":"2026-07-13 10:15:32"}
+{"error":"StarVector falló: [transformers] `torch_dtype` is deprecated! Use `dtype` instead!\r\n\rLoading weights:   0%|          | 0/292 [00:00<?, ?it/s]\rLoading weights:  41%|####1     | 120/292 [00:00<00:00, 1183.12it/s]\rLoading weights:  82%|########1 | 239/292 [00:00<00:00, 1025.90it/s]\rLoading weights: 100%|##########| 292/292 [00:00<00:00, 1188.79it/s]\r\n[transformers] \u001b[1mGPTBigCodeForCausalLM LOAD REPORT\u001b[0m from: bigcode/starcoderbase-1b\r\nKey            | Status  | \r\n---------------+---------+-\r\nlm_head.weight | MISSING | \r\n\r\nNotes:\r\n- MISSING:\tthose params were newly initialized because missing from the checkpoint. Consider training on your downstream task.\r\n[transformers] The new embeddings will be initialized from a multivariate normal distribution that has old embeddings' mean and covariance. As described in this article: https://nlp.stanford.edu/~johnhew/vocab-expansion.html. To disable this, use `mean_resizing=False`\r\n[transformers] The new lm_head weights will be initialized from a multivariate normal distribution that has old embeddings' mean and covariance. As described in this article: https://nlp.stanford.edu/~johnhew/vocab-expansion.html. To disable this, use `mean_resizing=False`\r\n[transformers] You are using a model of type `starvector` to instantiate a model of type ``. This may be expected if you are loading a checkpoint that shares a subset of the architecture (e.g., loading a `sam2_video` checkpoint into `Sam2Model`), but is otherwise not supported and can yield errors. Please verify that the checkpoint is compatible with the model you are instantiating.\r\n","level":"error","message":"[VECTORIZADOR] Error","service":"mr-letreros-api","timestamp":"2026-07-13 10:16:22"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 10:26:28","url":"/api/trabajos"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 10:26:28","url":"/api/tareas"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 10:26:28","url":"/api/rendimientos"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 10:26:28","url":"/api/clientes"}
+{"level":"info","message":"🔌 PC conectada al sistema (ID: kI2JKql4HccWLfVlAAAj)","service":"mr-letreros-api","timestamp":"2026-07-13 10:26:28"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 10:26:28","url":"/api/trabajos"}
+{"level":"info","message":"🔄 Recargando datos_mr_letreros/trabajos.json desde disco a SQLite (modificación de archivo detectada)","service":"mr-letreros-api","timestamp":"2026-07-13 10:26:28"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 10:26:29","url":"/api/trabajos"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 10:26:30","url":"/api/health"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 10:26:30","url":"/api/costos"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 10:26:30","url":"/api/gremio/data"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 10:26:30","url":"/api/trabajos"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 10:26:30","url":"/api/tareas"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 10:26:30","url":"/api/clientes/data"}
+{"level":"info","message":"🔌 PC conectada al sistema (ID: WwvHcz5u5eEoMetnAAAl)","service":"mr-letreros-api","timestamp":"2026-07-13 10:26:30"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 10:26:32","url":"/api/trabajos"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 10:26:33","url":"/api/google/folder-images?folderId=1X7uyiEPGHxRekga-9XgNqLN1e3-tm3Ww"}
+{"level":"info","message":"🔍 [Drive Scraper] Ejecutando fallback de scraping para carpeta: 1X7uyiEPGHxRekga-9XgNqLN1e3-tm3Ww","service":"mr-letreros-api","timestamp":"2026-07-13 10:26:34"}
+{"level":"warn","message":"No se pudo generar thumbnail para archivo 1VockBd9KusBWA5rp61Vf4FGktz5qMuPA: Request failed with status code 404","service":"mr-letreros-api","timestamp":"2026-07-13 10:26:35"}
+{"level":"info","message":"✨ [Drive Scraper] Éxito: Encontrados 2 archivos para la carpeta 1X7uyiEPGHxRekga-9XgNqLN1e3-tm3Ww","service":"mr-letreros-api","timestamp":"2026-07-13 10:26:35"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 10:26:35","url":"/api/google/folder-images?folderId=1To2qkGBFcX9vNbPyd08a9FE7su0_ESLs"}
+{"level":"info","message":"🔍 [Drive Scraper] Ejecutando fallback de scraping para carpeta: 1To2qkGBFcX9vNbPyd08a9FE7su0_ESLs","service":"mr-letreros-api","timestamp":"2026-07-13 10:26:36"}
+{"level":"warn","message":"No se pudo generar thumbnail para archivo 1KO6ai27ptco0G1LY-HPKhrXL3Pm10ezB: Request failed with status code 404","service":"mr-letreros-api","timestamp":"2026-07-13 10:26:37"}
+{"level":"info","message":"✨ [Drive Scraper] Éxito: Encontrados 2 archivos para la carpeta 1To2qkGBFcX9vNbPyd08a9FE7su0_ESLs","service":"mr-letreros-api","timestamp":"2026-07-13 10:26:37"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 10:26:37","url":"/api/google/folder-images?folderId=1GElNDKQjT_ox-0tCIi0VadOQeX_wVlrN"}
+{"level":"info","message":"🔍 [Drive Scraper] Ejecutando fallback de scraping para carpeta: 1GElNDKQjT_ox-0tCIi0VadOQeX_wVlrN","service":"mr-letreros-api","timestamp":"2026-07-13 10:26:38"}
+{"level":"info","message":"✨ [Drive Scraper] Éxito: Encontrados 2 archivos para la carpeta 1GElNDKQjT_ox-0tCIi0VadOQeX_wVlrN","service":"mr-letreros-api","timestamp":"2026-07-13 10:26:39"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 10:26:39","url":"/api/google/folder-images?folderId=17AdjGk8rwDAxm_bfuSQHWTO6aVI9gj01"}
+{"level":"info","message":"🔍 [Drive Scraper] Ejecutando fallback de scraping para carpeta: 17AdjGk8rwDAxm_bfuSQHWTO6aVI9gj01","service":"mr-letreros-api","timestamp":"2026-07-13 10:26:40"}
+{"level":"info","message":"✨ [Drive Scraper] Éxito: Encontrados 2 archivos para la carpeta 17AdjGk8rwDAxm_bfuSQHWTO6aVI9gj01","service":"mr-letreros-api","timestamp":"2026-07-13 10:26:41"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 10:26:41","url":"/api/google/folder-images?folderId=12xgRN71pi2v_fauD1tbqRUr5ZN2prSUJ"}
+{"level":"info","message":"🔍 [Drive Scraper] Ejecutando fallback de scraping para carpeta: 12xgRN71pi2v_fauD1tbqRUr5ZN2prSUJ","service":"mr-letreros-api","timestamp":"2026-07-13 10:26:41"}
+{"level":"info","message":"✨ [Drive Scraper] Éxito: Encontrados 2 archivos para la carpeta 12xgRN71pi2v_fauD1tbqRUr5ZN2prSUJ","service":"mr-letreros-api","timestamp":"2026-07-13 10:26:42"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 10:26:42","url":"/api/google/folder-images?folderId=19dW1RpUWcGrLJeurU5G81pY8vse3cu6_"}
+{"level":"info","message":"🔍 [Drive Scraper] Ejecutando fallback de scraping para carpeta: 19dW1RpUWcGrLJeurU5G81pY8vse3cu6_","service":"mr-letreros-api","timestamp":"2026-07-13 10:26:43"}
+{"level":"warn","message":"No se pudo generar thumbnail para archivo 19z6AiaPbZsEDbVkijZ5bofv7CGQD8zlP: Request failed with status code 404","service":"mr-letreros-api","timestamp":"2026-07-13 10:26:44"}
+{"level":"info","message":"✨ [Drive Scraper] Éxito: Encontrados 1 archivos para la carpeta 19dW1RpUWcGrLJeurU5G81pY8vse3cu6_","service":"mr-letreros-api","timestamp":"2026-07-13 10:26:44"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 10:26:44","url":"/api/google/folder-images?folderId=1ZUjAFtcnDsKV4facfDRJaM7tA50oktC_"}
+{"level":"info","message":"🔍 [Drive Scraper] Ejecutando fallback de scraping para carpeta: 1ZUjAFtcnDsKV4facfDRJaM7tA50oktC_","service":"mr-letreros-api","timestamp":"2026-07-13 10:26:44"}
+{"level":"warn","message":"No se pudo generar thumbnail para archivo 1GGUGEb9lnbuGpapifgMUnOTcq8C_S0hv: Request failed with status code 404","service":"mr-letreros-api","timestamp":"2026-07-13 10:26:46"}
+{"level":"info","message":"✨ [Drive Scraper] Éxito: Encontrados 2 archivos para la carpeta 1ZUjAFtcnDsKV4facfDRJaM7tA50oktC_","service":"mr-letreros-api","timestamp":"2026-07-13 10:26:46"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 10:26:46","url":"/api/google/folder-images?folderId=1nRL1epcMjWwFEkf7f6s3JDxdQqpWp6Ml"}
+{"level":"info","message":"🔍 [Drive Scraper] Ejecutando fallback de scraping para carpeta: 1nRL1epcMjWwFEkf7f6s3JDxdQqpWp6Ml","service":"mr-letreros-api","timestamp":"2026-07-13 10:26:47"}
+{"level":"warn","message":"No se pudo generar thumbnail para archivo 1d6PhiG6HnsF7A-e9uiT-5QUg5yqmvNNt: Request failed with status code 404","service":"mr-letreros-api","timestamp":"2026-07-13 10:26:48"}
+{"level":"info","message":"✨ [Drive Scraper] Éxito: Encontrados 2 archivos para la carpeta 1nRL1epcMjWwFEkf7f6s3JDxdQqpWp6Ml","service":"mr-letreros-api","timestamp":"2026-07-13 10:26:48"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 10:26:48","url":"/api/google/folder-images?folderId=1CbAt6HdIU9ObvzG0tkqwHw9RQ_dPk3Ml"}
+{"level":"info","message":"🔍 [Drive Scraper] Ejecutando fallback de scraping para carpeta: 1CbAt6HdIU9ObvzG0tkqwHw9RQ_dPk3Ml","service":"mr-letreros-api","timestamp":"2026-07-13 10:26:49"}
+{"level":"warn","message":"No se pudo generar thumbnail para archivo 12eHl3lGAsCNOdH3h2JvlMjCyFacOumHy: Request failed with status code 404","service":"mr-letreros-api","timestamp":"2026-07-13 10:26:50"}
+{"level":"info","message":"✨ [Drive Scraper] Éxito: Encontrados 2 archivos para la carpeta 1CbAt6HdIU9ObvzG0tkqwHw9RQ_dPk3Ml","service":"mr-letreros-api","timestamp":"2026-07-13 10:26:50"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 10:26:50","url":"/api/google/folder-images?folderId=1WI661rcYyzob7TG7qkVd6Hdn59gwJjBN"}
+{"level":"info","message":"🔍 [Drive Scraper] Ejecutando fallback de scraping para carpeta: 1WI661rcYyzob7TG7qkVd6Hdn59gwJjBN","service":"mr-letreros-api","timestamp":"2026-07-13 10:26:51"}
+{"level":"info","message":"✨ [Drive Scraper] Éxito: Encontrados 1 archivos para la carpeta 1WI661rcYyzob7TG7qkVd6Hdn59gwJjBN","service":"mr-letreros-api","timestamp":"2026-07-13 10:26:51"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 10:26:51","url":"/api/google/folder-images?folderId=1O31erq3O8kchn3m5lxJlvqNWAYeh8ND2"}
+{"level":"info","message":"🔍 [Drive Scraper] Ejecutando fallback de scraping para carpeta: 1O31erq3O8kchn3m5lxJlvqNWAYeh8ND2","service":"mr-letreros-api","timestamp":"2026-07-13 10:26:52"}
+{"level":"warn","message":"No se pudo generar thumbnail para archivo 17Id5YCw5qhg1ExzXVHXjE4QzD3A2H-xl: Request failed with status code 404","service":"mr-letreros-api","timestamp":"2026-07-13 10:26:53"}
+{"level":"info","message":"✨ [Drive Scraper] Éxito: Encontrados 2 archivos para la carpeta 1O31erq3O8kchn3m5lxJlvqNWAYeh8ND2","service":"mr-letreros-api","timestamp":"2026-07-13 10:26:53"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"GET","service":"mr-letreros-api","timestamp":"2026-07-13 10:26:53","url":"/api/google/folder-images?folderId=1Jl8y6IzX7eKmJXeSFSAU4W1YPGZsK0cJ"}
+{"level":"info","message":"🔍 [Drive Scraper] Ejecutando fallback de scraping para carpeta: 1Jl8y6IzX7eKmJXeSFSAU4W1YPGZsK0cJ","service":"mr-letreros-api","timestamp":"2026-07-13 10:26:54"}
+{"level":"warn","message":"No se pudo generar thumbnail para archivo 15EPxJHRmX1ck67CjuKcDcNkjJQOTAfCm: Request failed with status code 404","service":"mr-letreros-api","timestamp":"2026-07-13 10:26:55"}
+{"level":"info","message":"✨ [Drive Scraper] Éxito: Encontrados 2 archivos para la carpeta 1Jl8y6IzX7eKmJXeSFSAU4W1YPGZsK0cJ","service":"mr-letreros-api","timestamp":"2026-07-13 10:26:55"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"POST","service":"mr-letreros-api","timestamp":"2026-07-13 10:26:55","url":"/api/trabajos/goog_1783944452987ptu7p/reenviar-listo"}
+{"level":"info","message":"📲 Intentando enviar WhatsApp de retiro a 5493425095044...","service":"mr-letreros-api","timestamp":"2026-07-13 10:26:55"}
+{"level":"error","message":"❌ Error de conexión con el bot al enviar notificación de retiro: fetch failed","service":"mr-letreros-api","timestamp":"2026-07-13 10:26:55"}
+{"level":"info","message":"📥 Notificación guardada en cola pendiente para 5493425095044","service":"mr-letreros-api","timestamp":"2026-07-13 10:26:55"}
+{"ip":"192.168.68.108","level":"info","message":"Petición recibida","method":"POST","service":"mr-letreros-api","timestamp":"2026-07-13 10:28:39","url":"/api/trabajos/goog_1783944452987ptu7p/reenviar-listo"}
+{"level":"info","message":"📲 Intentando enviar WhatsApp de retiro a 5493425095044...","service":"mr-letreros-api","timestamp":"2026-07-13 10:28:39"}
