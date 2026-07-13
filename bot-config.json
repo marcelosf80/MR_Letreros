@@ -1,0 +1,339 @@
+{
+  "VENDEDORES": [
+    "5493425276549"
+  ],
+  "startKeywords": [
+    "hola",
+    "buenos dias",
+    "buenas tardes",
+    "asesor",
+    "ayuda",
+    "empezar"
+  ],
+  "priceKeywords": [
+    "precio",
+    "cotizar",
+    "valor",
+    "costo"
+  ],
+  "PREGUNTAS": {
+    "start": {
+      "texto": "👋 ¡Hola! Soy el asistente de MR Letreros.\nPara ayudarte mejor, selecciona una opción:\n\n1️⃣ Letreros\n2️⃣ Vinilos\n3️⃣ Mantenimiento\n4️⃣ Banners\n5️⃣ No sé aún",
+      "opciones": {
+        "1": {
+          "next": "letreros",
+          "score": 10
+        },
+        "2": {
+          "next": "vinilos",
+          "score": 10
+        },
+        "3": {
+          "next": "mantenimiento",
+          "score": 10
+        },
+        "4": {
+          "next": "banners",
+          "score": 10
+        },
+        "5": {
+          "next": "Q2",
+          "score": 0
+        }
+      }
+    },
+    "letreros": {
+      "texto": "Selecciona el tipo de letrero:\n\n1️⃣ Lona impresa\n2️⃣ Corpóreas\n3️⃣ Cajón\n4️⃣ No sé",
+      "opciones": {
+        "1": {
+          "next": "lonas",
+          "score": 10
+        },
+        "2": {
+          "next": "corporeas",
+          "score": 10
+        },
+        "3": {
+          "next": "Q2",
+          "score": 50
+        },
+        "4": {
+          "next": "Q2",
+          "score": 5
+        }
+      }
+    },
+    "lonas": {
+      "texto": "Tipo de lona:\n\n1️⃣ Lona Front Impresa\n2️⃣ Lona Backlight",
+      "opciones": {
+        "1": {
+          "next": "lona_front",
+          "score": 10
+        },
+        "2": {
+          "next": "lona_back",
+          "score": 10
+        }
+      }
+    },
+    "lona_front": {
+      "texto": "Opciones para Lona Front:\n\n1️⃣ Cartel completo + instalación\n2️⃣ Solo la lona\n3️⃣ Solo la lona + laca",
+      "opciones": {
+        "1": {
+          "next": "Q2",
+          "score": 50
+        },
+        "2": {
+          "next": "Q2",
+          "score": 30
+        },
+        "3": {
+          "next": "Q2",
+          "score": 40
+        }
+      }
+    },
+    "lona_back": {
+      "texto": "Opciones para Lona Backlight:\n\n1️⃣ Cartel completo + instalación\n2️⃣ Solo la lona\n3️⃣ Lona + laca",
+      "opciones": {
+        "1": {
+          "next": "Q2",
+          "score": 50
+        },
+        "2": {
+          "next": "Q2",
+          "score": 30
+        },
+        "3": {
+          "next": "Q2",
+          "score": 40
+        }
+      }
+    },
+    "corporeas": {
+      "texto": "Material de Corpóreas:\n\n1️⃣ Polifan\n2️⃣ Chapa",
+      "opciones": {
+        "1": {
+          "next": "polifan",
+          "score": 10
+        },
+        "2": {
+          "next": "chapa",
+          "score": 10
+        }
+      }
+    },
+    "polifan": {
+      "texto": "Opciones de Polifan:\n\n1️⃣ Polifan pintado\n2️⃣ Polifan frente de acrílico\n3️⃣ Polifan frente de acero",
+      "opciones": {
+        "1": {
+          "next": "Q2",
+          "score": 40
+        },
+        "2": {
+          "next": "Q2",
+          "score": 50
+        },
+        "3": {
+          "next": "Q2",
+          "score": 60
+        }
+      }
+    },
+    "chapa": {
+      "texto": "Opciones de Chapa:\n\n1️⃣ Chapa con acrílico + iluminación\n2️⃣ Chapa completa con iluminación\n3️⃣ Chapa sin iluminación",
+      "opciones": {
+        "1": {
+          "next": "Q2",
+          "score": 60
+        },
+        "2": {
+          "next": "Q2",
+          "score": 60
+        },
+        "3": {
+          "next": "Q2",
+          "score": 40
+        }
+      }
+    },
+    "vinilos": {
+      "texto": "Tipo de Vinilo:\n\n1️⃣ Base Gris\n2️⃣ Microperforado\n3️⃣ Esmerilado\n4️⃣ Clear\n5️⃣ Para rotular\n6️⃣ Ploteo Vehicular\n7️⃣ Vidrieras / Paredes",
+      "opciones": {
+        "1": {
+          "next": "Q2",
+          "score": 30
+        },
+        "2": {
+          "next": "Q2",
+          "score": 30
+        },
+        "3": {
+          "next": "Q2",
+          "score": 30
+        },
+        "4": {
+          "next": "Q2",
+          "score": 30
+        },
+        "5": {
+          "next": "Q2",
+          "score": 30
+        },
+        "6": {
+          "next": "Q2",
+          "score": 50
+        },
+        "7": {
+          "next": "Q2",
+          "score": 40
+        }
+      }
+    },
+    "mantenimiento": {
+      "texto": "Tipo de Mantenimiento:\n\n1️⃣ Cambio de lona\n2️⃣ Cambio de vinilo\n3️⃣ Cambio de luces",
+      "opciones": {
+        "1": {
+          "next": "Q2",
+          "score": 40
+        },
+        "2": {
+          "next": "Q2",
+          "score": 30
+        },
+        "3": {
+          "next": "Q2",
+          "score": 40
+        }
+      }
+    },
+    "banners": {
+      "texto": "Tipo de Banner:\n\n1️⃣ Banners dos velas\n2️⃣ Banner rollup\n3️⃣ Flybanner",
+      "opciones": {
+        "1": {
+          "next": "Q2",
+          "score": 30
+        },
+        "2": {
+          "next": "Q2",
+          "score": 40
+        },
+        "3": {
+          "next": "Q2",
+          "score": 40
+        }
+      }
+    },
+    "Q2": {
+      "texto": "¿Para cuándo lo necesitas?\n\n1️⃣ Urgente (Esta semana)\n2️⃣ Próximas 2 semanas\n3️⃣ Próximo mes\n4️⃣ Solo estoy cotizando",
+      "opciones": {
+        "1": {
+          "next": "Q3",
+          "score": 30
+        },
+        "2": {
+          "next": "Q3",
+          "score": 20
+        },
+        "3": {
+          "next": "Q3",
+          "score": 10
+        },
+        "4": {
+          "next": "Q3",
+          "score": 0
+        }
+      }
+    },
+    "Q3": {
+      "texto": "¿Ya cuentas con el diseño?\n\n1️⃣ Sí, tengo el archivo listo\n2️⃣ Tengo una idea / boceto\n3️⃣ No, necesito diseño desde cero",
+      "opciones": {
+        "1": {
+          "next": "Q4",
+          "score": 20
+        },
+        "2": {
+          "next": "Q4",
+          "score": 10
+        },
+        "3": {
+          "next": "Q4",
+          "score": 5
+        }
+      }
+    },
+    "Q4": {
+      "texto": "¿Dónde se instalará?\n\n1️⃣ Exterior (Fachada/Altura)\n2️⃣ Interior (Oficina/Local)\n3️⃣ Vehículo\n4️⃣ No requiere instalación",
+      "opciones": {
+        "1": {
+          "next": "Q5",
+          "score": 20
+        },
+        "2": {
+          "next": "Q5",
+          "score": 10
+        },
+        "3": {
+          "next": "Q5",
+          "score": 15
+        },
+        "4": {
+          "next": "Q5",
+          "score": 5
+        }
+      }
+    },
+    "Q5": {
+      "texto": "¿Cuál es el tamaño estimado?\n\n1️⃣ Grande (> 2 metros)\n2️⃣ Mediano (1 - 2 metros)\n3️⃣ Pequeño (< 1 metro)\n4️⃣ No estoy seguro",
+      "opciones": {
+        "1": {
+          "next": "Q6",
+          "score": 20
+        },
+        "2": {
+          "next": "Q6",
+          "score": 15
+        },
+        "3": {
+          "next": "Q6",
+          "score": 10
+        },
+        "4": {
+          "next": "Q6",
+          "score": 5
+        }
+      }
+    },
+    "Q6": {
+      "texto": "¿Es para una empresa o particular?\n\n1️⃣ Empresa / Negocio\n2️⃣ Particular / Personal",
+      "opciones": {
+        "1": {
+          "next": "Q7",
+          "score": 20
+        },
+        "2": {
+          "next": "Q7",
+          "score": 10
+        }
+      }
+    },
+    "Q7": {
+      "texto": "Por último, ¿tienes un presupuesto asignado?\n\n1️⃣ Sí, definido\n2️⃣ Flexible / A convenir\n3️⃣ Busco la opción más económica",
+      "opciones": {
+        "1": {
+          "next": null,
+          "score": 20
+        },
+        "2": {
+          "next": null,
+          "score": 15
+        },
+        "3": {
+          "next": null,
+          "score": 5
+        }
+      }
+    }
+  },
+  "botEnabled": true
+}

@@ -1,0 +1,118 @@
+/* ==================== COSTOS MODULE - STYLES ==================== */
+
+:root {
+  --costos-color: #F39C12;
+  --costos-dark: #E67E22;
+  --costos-light: rgba(243, 156, 18, 0.1);
+}
+
+.main-header {
+  background: linear-gradient(135deg, var(--costos-color), var(--costos-dark));
+  box-shadow: 0 4px 20px rgba(243, 156, 18, 0.3);
+}
+
+.section-title {
+  background: linear-gradient(135deg, var(--costos-color), var(--costos-dark));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--costos-color), var(--costos-dark));
+}
+
+.btn-primary:hover {
+  box-shadow: 0 8px 25px rgba(243, 156, 18, 0.4);
+}
+
+.highlight-box {
+  background: linear-gradient(135deg, rgba(243, 156, 18, 0.1), rgba(243, 156, 18, 0.05));
+  border-color: rgba(243, 156, 18, 0.3);
+}
+
+.highlight-box h4 {
+  color: var(--costos-color);
+}
+
+.modal-header {
+  background: linear-gradient(135deg, var(--costos-color), var(--costos-dark));
+}
+
+.form-input:focus,
+.form-select:focus {
+  border-color: var(--costos-color);
+  box-shadow: 0 0 15px rgba(243, 156, 18, 0.3);
+}
+
+.product-card:hover {
+  border-color: var(--costos-color);
+  box-shadow: 0 8px 25px rgba(243, 156, 18, 0.2);
+}
+
+.product-card h3 {
+  color: var(--costos-color);
+}
+
+.products-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+/* Calc Display */
+.calc-display {
+  background: rgba(243, 156, 18, 0.1);
+  border: 2px solid rgba(243, 156, 18, 0.3);
+  border-radius: 12px;
+  padding: 1.5rem;
+  text-align: center;
+  margin-top: 1rem;
+}
+
+.calc-label {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 1px;
+  margin-bottom: 0.5rem;
+}
+
+.calc-value {
+  color: var(--costos-color);
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.calc-formula {
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  font-style: italic;
+}
+
+/* Product Card */
+.product-card {
+  background: rgba(255, 255, 255, 0.05);
+  border: 2px solid rgba(243, 156, 18, 0.2);
+  border-radius: 12px;
+  padding: 1.5rem;
+  transition: all 0.3s;
+}
+
+.product-card:hover {
+  transform: translateY(-5px);
+}
+
+/* Form Row */
+.form-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+/* Light Theme */
+.light-theme {
+  --costos-color: #E67E22;
+  --costos-dark: #D35400;
+}

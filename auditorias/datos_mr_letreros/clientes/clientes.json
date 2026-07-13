@@ -1,0 +1,26 @@
+[
+  {
+    "name": "Lisso Profesional",
+    "telefono": "3425 39-7585",
+    "email": "",
+    "direccion": "",
+    "id": "cliente_cli_1770639220346",
+    "fechaRegistro": "2026-02-09T12:13:40.346Z"
+  },
+  {
+    "name": "Carolina GyM",
+    "telefono": "",
+    "email": "",
+    "direccion": "",
+    "id": "cliente_cli_1770657857352",
+    "fechaRegistro": "2026-02-09T17:24:17.352Z"
+  },
+  {
+    "name": "Kiosco escolar",
+    "telefono": "3425 12-6234",
+    "email": "",
+    "direccion": "",
+    "id": "cliente_cli_1770989806107",
+    "fechaRegistro": "2026-02-13T13:36:46.107Z"
+  }
+]

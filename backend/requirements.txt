@@ -1,0 +1,8 @@
+fastapi
+uvicorn[standard]
+numpy
+shapely>=2.0.0
+svgpathtools
+python-multipart
+scipy
+pyclipper

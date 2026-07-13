@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sistema GREMIO — MR Letreros</title>
+  <script src="js/auth.js"></script>
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/sidebar-universal.css">
+  <script src="js/shared/pricing-manager.js"></script>
+  <script src="js/shared/order-status-manager.js"></script>
+  <script src="js/shared/promotions-manager.js"></script>
+  <script src="js/shared/multi-category-manager.js"></script>
+  <script src="js/shared/work-manager.js"></script>
+  <script src="js/shared/quote-editor.js"></script>
+  <script src="js/shared/notification-system.js"></script>
+  <script src="js/shared/notification-polling.js"></script>
+
+  <!-- Bootstrap 5 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="css/maxton-theme.css">
+  <link rel="stylesheet" href="css/gremio.css">
+</head>
+
+<body class="bg-light">
+  <div class="main-content">
+
+    <!-- Top Bar -->
+    <div class="mx-topbar">
+      <h1 class="top-bar-title m-0">🟢 Sistema Gremio</h1>
+      <div class="top-bar-actions">
+        <button class="btn btn-secondary btn-small" onclick="updateStatistics()">↻ Actualizar</button>
+        <div class="notif-bell" id="notificationBell" onclick="window.location.href='trabajos.html'" title="Trabajos pendientes">
+          🔔
+          <span class="notif-badge" id="notificationBadge">0</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="content-container">
+      <div class="workspace">
+
+        <!-- ══ PANEL IZQUIERDO: CLIENTE ══ -->
+        <div class="panel-cliente">
+          <div class="card mx-card animate-fade-in-up" style="margin-bottom:0; animation-delay: 0.1s;">
+            <div class="card-header">
+              <h2 class="card-title">👤 Cliente</h2>
+              <button class="btn btn-secondary btn-small" onclick="clearQuote()">Limpiar</button>
+            </div>
+
+            <!-- Estado del cliente -->
+            <div class="client-status empty" id="clientStatus">
+              <div class="client-avatar">👤</div>
+              <div>
+                <div style="font-size:0.78rem; color:var(--txt-2);">Sin cliente cargado</div>
+                <div style="font-size:0.7rem; color:var(--txt-muted);">Buscá o ingresá un nombre</div>
+              </div>
+            </div>
+
+            <!-- Nombre con búsqueda -->
+            <div class="form-group">
+              <label class="form-label">Nombre *</label>
+              <div class="input-with-btn">
+                <input type="text" id="clientName" class="form-input" placeholder="Nombre del cliente..."
+                  oninput="onClientNameInput(this.value)">
+                <button class="btn-search" id="btnSearchClient" title="Buscar cliente">🔍</button>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Teléfono</label>
+              <input type="tel" id="clientPhone" class="form-input" placeholder="011 1234-5678">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Email</label>
+              <input type="email" id="clientEmail" class="form-input" placeholder="email@ejemplo.com">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Dirección</label>
+              <input type="text" id="clientAddress" class="form-input" placeholder="Dirección de entrega">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Fecha de Entrega</label>
+              <input type="date" id="deliveryDate" class="form-input">
+            </div>
+
+            <!-- Botones guardar / limpiar cliente -->
+            <div style="display:flex; gap:0.5rem; margin-top:0.5rem;">
+              <button class="btn btn-primary" style="flex:1;" id="btnSaveClient">
+                💾 Guardar Cliente
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ══ PANEL CENTRAL: PRODUCTOS ══ -->
+        <div class="panel-centro">
+
+          <!-- Promociones y Descuentos -->
+          <div class="card mx-card animate-fade-in-up" id="promotionsCard" style="animation-delay: 0.2s;">
+            <div class="card-header">
+              <h2 class="card-title">🎁 Descuentos por Cantidad</h2>
+              <button class="btn btn-primary btn-small" onclick="if(window.promotionsManager) window.promotionsManager.openModal()">
+                + Regla
+              </button>
+            </div>
+            <div id="promotionsList">
+              <p class="empty-state">Cargando promociones...</p>
+            </div>
+          </div>
+
+          <!-- Servicios terceros -->
+          <div class="card mx-card animate-fade-in-up" style="margin-top:1rem; animation-delay: 0.3s;">
+            <div class="card-header">
+              <h2 class="card-title">🔧 Servicios de Terceros</h2>
+              <button class="btn btn-secondary btn-small" onclick="window.MRModals.open(document.getElementById('terceroServiceModal'))">
+                + Agregar
+              </button>
+            </div>
+            <div id="terceroServicesList">
+              <p class="empty-state">Sin servicios de terceros</p>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- ══ PANEL DERECHO: HISTORIAL ══ -->
+        <div class="panel-historial">
+          <div class="card mx-card animate-fade-in-up" style="animation-delay: 0.4s;">
+            <div class="card-header" style="flex-shrink:0;">
+              <h2 class="card-title">📜 Historial</h2>
+              <button class="btn btn-secondary btn-small" onclick="clearHistorialFilter()">Ver Todos</button>
+            </div>
+
+            <!-- Barra de filtros -->
+            <div class="filter-strip">
+              <input type="text" class="filter-search-mini" id="historialSearch"
+                placeholder="Filtrar por cliente..."
+                oninput="filterHistoryByClient(this.value)">
+              <span class="filter-chip active" data-filter="todos" onclick="setHistorialFilter('todos',this)">Todos</span>
+              <span class="filter-chip" data-filter="pendiente" onclick="setHistorialFilter('pendiente',this)">Pendientes</span>
+              <span class="filter-chip" data-filter="aprobada" onclick="setHistorialFilter('aprobada',this)">Aprobadas</span>
+            </div>
+
+            <div id="historyFilterMsg"
+              style="display:none; padding:0.5rem 1rem; font-size:0.78rem; color:var(--brand-warm); border-bottom:1px solid var(--glass-border);">
+              Filtrando: <b id="filterClientName"></b>
+            </div>
+
+            <div class="historial-scroll">
+              <div id="quotesList">
+                <p class="empty-state">Ingresá un cliente para ver su historial</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ══ PANEL TOTALES ══ -->
+        <div class="panel-totales">
+          <div class="card mx-card animate-fade-in-up" style="border-color:var(--glass-warm); margin-bottom:0; animation-delay: 0.5s;">
+            <div class="totales-grid">
+
+              <!-- Costos -->
+              <div class="total-block">
+                <div class="total-label">Costo Total</div>
+                <div class="total-value cost">
+                  <span id="totalCostos">$0</span>
+                </div>
+              </div>
+
+              <!-- Subtotal + IVA -->
+              <div class="total-block">
+                <div class="total-label">Subtotal</div>
+                <div class="total-value" id="subtotal">$0</div>
+                <div style="font-size:0.72rem; color:var(--txt-2); margin-top:4px;">
+                  <label style="cursor:pointer; display:inline-flex; align-items:center; gap:4px;">
+                    <input type="checkbox" id="ivaCheckbox"
+                      onchange="if(window.calculateTotals){window.calculateTotals()}"
+                      style="width:12px; height:12px; accent-color:var(--brand);">
+                    IVA 21%: <span id="iva">$0</span>
+                  </label>
+                </div>
+              </div>
+
+              <!-- Total -->
+              <div class="total-block">
+                <div class="total-label" style="color:#34D399;">Total Final</div>
+                <div class="total-value main" id="total">$0</div>
+                <div style="font-size:0.72rem; color:var(--txt-2); margin-top:4px;">Ganancia: <span id="gananciaNetaDisplay">$0</span></div>
+              </div>
+
+              <div class="total-block">
+                <div class="total-label" style="color:var(--brand);">Ajuste / Descuento (%)</div>
+                <div style="display:flex; gap:5px; flex-direction:column;">
+                  <div style="display:flex; gap:5px;">
+                    <input type="number" id="descuentoEspecial" class="form-input" 
+                           placeholder="+/- %" value="0" oninput="calculateTotals()"
+                           style="font-weight:bold; color:var(--brand); text-align:right; border-color:var(--brand); flex:1;">
+                    <button class="btn btn-primary btn-small" onclick="calculateTotals()" title="Aplicar Ajuste" style="padding: 0 10px;">✅</button>
+                  </div>
+                  <div style="font-size:0.65rem; color:var(--txt-muted); text-align:right; margin-top:-2px;">
+                    (+) suma recargo · (-) resta desc.
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Información de descuentos -->
+              <div id="discountInfo" style="display: none; grid-column: 1 / -1; margin-top: 0.5rem; padding: 0.75rem; background: rgba(76, 175, 80, 0.1); border-radius: 8px; border: 1px solid rgba(76, 175, 80, 0.3);">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <span style="font-size: 0.85rem;">🎁 Descuento Promoción (<span id="discountPercent">0</span>%):</span>
+                  <span style="font-size: 1rem; font-weight: bold; color: #4CAF50;" id="discountAmount">$0</span>
+                </div>
+                <small style="display: block; margin-top: 0.25rem; opacity: 0.8; font-size: 0.7rem;">
+                  Total aplicable: <span id="totalMeters">0</span> m²
+                </small>
+              </div>
+
+              <!-- Anticipo + acciones -->
+              <div style="display:flex; flex-direction:column; gap:0.75rem;">
+                <div class="anticipo-block">
+                  <div class="anticipo-label">Anticipo</div>
+                  <input type="number" id="montoAnticipo" class="form-input"
+                    placeholder="$0.00" oninput="calcularSaldo()">
+                  <div class="saldo-line">Saldo: <span id="saldoPendiente" style="color:var(--brand-warm);">$0</span></div>
+                </div>
+                <div class="actions-block">
+                  <button class="btn btn-primary" onclick="saveQuote()">💾 Guardar</button>
+                  <button class="btn btn-secondary" onclick="generatePDF()">📄 PDF</button>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /workspace -->
+    </div><!-- /content-container -->
+
+    <!-- ══ MODAL PRODUCTO ══ -->
+    <div class="modal" id="productModal">
+      <div class="modal-content" style="max-width:640px;">
+        <div class="modal-header">
+          <h2 class="modal-title">📦 Agregar Material</h2>
+          <button class="btn-close" id="btnCloseProduct">×</button>
+        </div>
+        <div class="modal-body">
+          <div class="highlight-box">
+            <h4>🎯 Seleccionar Material</h4>
+            <div class="form-group">
+              <label class="form-label">Categoría *</label>
+              <select id="productCategory" class="form-select" onchange="loadProductsByCategory()">
+                <option value="">Seleccioná una categoría...</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Producto *</label>
+              <select id="productName" class="form-select" onchange="loadProductPrice()" disabled>
+                <option value="">Primero seleccioná una categoría</option>
+              </select>
+            </div>
+            <div id="priceInfo" style="display:none; margin-top:0.75rem; padding:0.75rem; background:rgba(52,211,153,0.08); border-radius:var(--r-sm); border:1px solid rgba(52,211,153,0.25);">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span style="font-size:0.85rem; color:var(--txt-2);">💚 Precio Gremio / m²</span>
+                <span id="precioGremioDisplay" style="color:#34D399; font-size:1.2rem; font-weight:800;">$0</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="highlight-box" style="margin-bottom:0;">
+            <h4>📏 Medidas</h4>
+            <div class="form-row" id="productDimensionsRow">
+              <div class="form-group" id="groupAncho">
+                <label class="form-label" id="labelAncho">Ancho (cm) *</label>
+                <input type="number" id="productAncho" class="form-input" placeholder="100" min="0.01" step="0.01" oninput="calcularTotalMaterial()">
+              </div>
+              <div class="form-group" id="groupAlto">
+                <label class="form-label" id="labelAlto">Alto (cm) *</label>
+                <input type="number" id="productAlto" class="form-input" placeholder="100" min="0.01" step="0.01" oninput="calcularTotalMaterial()">
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Cantidad *</label>
+              <input type="number" id="productCantidad" class="form-input" placeholder="1" min="1" value="1" oninput="calcularTotalMaterial()">
+            </div>
+          </div>
+
+          <div class="calc-display" style="margin-top:1rem;">
+            <div class="calc-label">TOTAL DEL MATERIAL</div>
+            <div class="calc-value" id="productTotal">$0.00</div>
+            <div class="calc-formula" id="productFormula">Completá los datos para ver el cálculo</div>
+          </div>
+          <div id="calculoDetalle" style="display:none; margin-top:0.75rem; padding:0.75rem; background:var(--glass-1); border-radius:var(--r-sm); font-size:0.82rem;">
+            <div style="display:flex; justify-content:space-between; margin-bottom:0.3rem;">
+              <span style="color:var(--txt-2);">m² por unidad</span>
+              <span id="m2PorUnidad" style="font-weight:700;">0 m²</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; margin-bottom:0.3rem;">
+              <span style="color:var(--txt-2);">m² totales</span>
+              <span id="m2Totales" style="font-weight:700;">0 m²</span>
+            </div>
+            <div style="display:flex; justify-content:space-between;">
+              <span style="color:var(--txt-2);">Precio por pieza</span>
+              <span id="precioUnitario" style="color:var(--brand-warm); font-weight:700;">$0</span>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" id="btnCancelProduct">Cancelar</button>
+          <button class="btn btn-primary" id="btnSaveProduct">➕ Agregar a Cotización</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ MODAL TERCERO ══ -->
+    <div class="modal" id="terceroServiceModal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 class="modal-title">🔧 Agregar Servicio de Tercero</h2>
+          <button class="btn-close" id="btnCloseTerceroService">×</button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label">Servicio *</label>
+            <select id="terceroService" class="form-select" onchange="loadTerceroPrice()">
+              <option value="">Seleccioná un servicio...</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Cantidad *</label>
+              <input type="number" id="terceroQuantity" class="form-input" placeholder="1" min="0.01" step="0.01" oninput="calcularTotalTercero()">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Costo unitario</label>
+              <input type="number" id="terceroCosto" class="form-input" readonly style="opacity:0.7;">
+              <small style="color:#F87171; font-size:0.71rem;">Lo que te cuesta</small>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Precio para el cliente</label>
+            <input type="number" id="terceroPrecioCliente" class="form-input" readonly style="opacity:0.7;">
+            <small style="color:#34D399; font-size:0.71rem;">Lo que cobrás</small>
+          </div>
+          <div class="calc-display" style="margin-top:1rem;">
+            <div class="calc-label">COSTO TOTAL (PARA VOS)</div>
+            <div class="calc-value" id="terceroTotalCosto" style="color:#F87171;">$0.00</div>
+          </div>
+          <div class="calc-display" style="margin-top:0.75rem;">
+            <div class="calc-label">TOTAL PARA EL CLIENTE</div>
+            <div class="calc-value" id="terceroTotal">$0.00</div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" id="btnCancelTerceroService">Cancelar</button>
+          <button class="btn btn-primary" id="btnSaveTerceroService">➕ Agregar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+    <script src="js/shared/modal-system.js"></script>
+    <script src="js/shared/data-manager-network.js"></script>
+    <script src="js/shared/data-manager-extension.js"></script>
+    <script src="js/shared/pdf-generator.js"></script>
+    <script src="js/shared/sidebar-universal.js"></script>
+    <script src="js/gremio/gremio-main.js"></script>
+    <script src="js/gremio/gremio-extensions.js"></script>
+    <script src="js/gremio/gremio-extensions-v2.js"></script>
+
+    <script>
+      // ── Filtro de historial ──
+      let historialFiltroEstado = 'todos';
+      let historialFiltroNombre = '';
+
+      window.filterHistoryByClient = function(value) {
+        historialFiltroNombre = value.trim();
+        const msg = document.getElementById('historyFilterMsg');
+        const nameEl = document.getElementById('filterClientName');
+        if (historialFiltroNombre) {
+          msg.style.display = 'block';
+          nameEl.textContent = historialFiltroNombre;
+        } else {
+          msg.style.display = 'none';
+        }
+        applyHistorialFilters();
+      };
+
+      window.setHistorialFilter = function(estado, el) {
+        historialFiltroEstado = estado;
+        document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+        el.classList.add('active');
+        applyHistorialFilters();
+      };
+
+      window.clearHistorialFilter = function() {
+        historialFiltroNombre = '';
+        historialFiltroEstado = 'todos';
+        document.getElementById('historialSearch').value = '';
+        document.getElementById('historyFilterMsg').style.display = 'none';
+        document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+        document.querySelector('[data-filter="todos"]').classList.add('active');
+        if (window.loadQuotations) window.loadQuotations();
+      };
+
+      function applyHistorialFilters() {
+        // Trigger renderQuotations con los filtros actuales
+        if (window._renderQuotationsFiltered) {
+          window._renderQuotationsFiltered(historialFiltroNombre, historialFiltroEstado);
+        } else if (window.loadQuotations) {
+          // Fallback: guardar filtros en variables globales que gremio-main.js lee
+          window.filterName = historialFiltroNombre;
+          window.loadQuotations();
+        }
+      }
+
+      // ── Estado del cliente en panel ──
+      window.onClientNameInput = function(value) {
+        filterHistoryByClient(value);
+        const status = document.getElementById('clientStatus');
+        if (value.trim()) {
+          status.className = 'client-status loaded';
+          status.innerHTML = `
+            <div class="client-avatar">✅</div>
+            <div>
+              <div style="font-weight:700;">${value}</div>
+              <div style="font-size:0.7rem; color:rgba(52,211,153,0.7);">Editando cliente</div>
+            </div>`;
+        } else {
+          status.className = 'client-status empty';
+          status.innerHTML = `
+            <div class="client-avatar">👤</div>
+            <div>
+              <div style="font-size:0.78rem; color:var(--txt-2);">Sin cliente cargado</div>
+              <div style="font-size:0.7rem; color:var(--txt-muted);">Buscá o ingresá un nombre</div>
+            </div>`;
+        }
+      };
+
+      // ── Notificaciones ──
+      // (Ahora manejadas por notification-polling.js)
+    </script>
+
+  </div>
+
+    <script>
+      // ── Override completo de selectClient — reemplaza la versión del JS externo ──
+      // Se ejecuta DESPUÉS de que gremio-main.js define window.selectClient
+      // Espera que allClients esté cargado y sobreescribe con versión robusta
+      (function waitAndOverride() {
+        function doOverride() {
+          // allClients vive en el scope de gremio-main.js
+          // Lo tomamos de window por si acaso, o esperamos al primer click de búsqueda
+          window.selectClient = function(id) {
+            // Buscar en allClients (variable global de gremio-main.js)
+            const clients = window.allClients || [];
+            const client = clients.find(c => String(c.id) === String(id));
+
+            if (!client) {
+              console.warn('[selectClient] No se encontró cliente con id:', id);
+              return;
+            }
+
+            // Guardar ID activo
+            window.currentClientId = client.id;
+
+            // Llenar campos
+            const nombre = client.name || client.nombre || '';
+            const tel    = client.telefono || client.phone || '';
+            const email  = client.email || '';
+            const dir    = client.direccion || client.address || '';
+
+            const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = val; };
+            setVal('clientName',    nombre);
+            setVal('clientPhone',   tel);
+            setVal('clientEmail',   email);
+            setVal('clientAddress', dir);
+
+            // Cerrar modal — restaurar scroll del body
+            const modal = document.getElementById('searchClientModal');
+            if (modal) {
+              modal.classList.remove('active');
+            }
+            document.body.style.overflow = ''; // CRÍTICO: restaurar scroll
+
+            // Actualizar UI visual del panel cliente
+            if (window.onClientNameInput) window.onClientNameInput(nombre);
+
+            // Filtrar historial
+            if (window.filterHistoryByClient) window.filterHistoryByClient(nombre);
+
+            // Actualizar botón de guardar
+            if (window.updateClientActionButton) window.updateClientActionButton();
+
+            console.log('[selectClient] ✅ Cliente cargado:', nombre);
+          };
+        }
+
+        // Asegurar que corre después de todos los scripts
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', doOverride);
+        } else {
+          doOverride();
+        }
+      })();
+    </script>
+  <!-- Bootstrap 5 JS Bundle -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

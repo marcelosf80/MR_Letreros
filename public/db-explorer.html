@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Base de Datos SQLite - MR Letreros</title>
+    <meta name="description" content="Explorador visual de la base de datos SQLite del sistema MR Letreros">
+    <script src="js/auth.js"></script>
+    <link rel="stylesheet" href="css/base.css">
+    <link rel="stylesheet" href="css/sidebar-universal.css">
+    <script src="js/shared/data-manager-network.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/maxton-theme.css">
+
+    <style>
+        :root {
+            --db-accent: #7c3aed;
+            --db-accent-light: #a855f7;
+            --db-accent-glow: rgba(124, 58, 237, 0.25);
+            --db-row-hover: rgba(124, 58, 237, 0.08);
+        }
+
+        .db-header {
+            background: linear-gradient(135deg, var(--db-accent) 0%, #2563eb 100%);
+            border-radius: 16px;
+            padding: 2rem;
+            margin-bottom: 1.5rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .db-header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -10%;
+            width: 300px;
+            height: 300px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 50%;
+        }
+
+        .db-header h1 {
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: #fff;
+            margin: 0;
+        }
+
+        .db-header .subtitle {
+            color: rgba(255,255,255,0.75);
+            font-size: 0.9rem;
+            margin-top: 0.25rem;
+        }
+
+        .db-stat-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.25rem 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            transition: all 0.2s;
+        }
+
+        .db-stat-card:hover {
+            border-color: var(--db-accent);
+            box-shadow: 0 0 16px var(--db-accent-glow);
+        }
+
+        .db-stat-icon {
+            width: 48px;
+            height: 48px;
+            background: var(--db-accent-glow);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4rem;
+            flex-shrink: 0;
+        }
+
+        .db-stat-label {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .db-stat-value {
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            line-height: 1.2;
+        }
+
+        /* Panel split */
+        .db-panel {
+            display: grid;
+            grid-template-columns: 340px 1fr;
+            gap: 1.25rem;
+            height: calc(100vh - 280px);
+            min-height: 500px;
+        }
+
+        .db-list-panel, .db-detail-panel {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .db-panel-header {
+            padding: 1rem 1.25rem;
+            border-bottom: 1px solid var(--border-color);
+            font-weight: 600;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            background: var(--bg-primary);
+            flex-shrink: 0;
+        }
+
+        .db-search {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--border-color);
+            flex-shrink: 0;
+        }
+
+        .db-search input {
+            width: 100%;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 0.5rem 0.75rem;
+            color: var(--text-primary);
+            font-size: 0.875rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .db-search input:focus {
+            border-color: var(--db-accent);
+        }
+
+        .db-file-list {
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .db-file-item {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--border-color);
+            cursor: pointer;
+            transition: all 0.15s;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .db-file-item:hover {
+            background: var(--db-row-hover);
+        }
+
+        .db-file-item.active {
+            background: var(--db-accent-glow);
+            border-left: 3px solid var(--db-accent);
+        }
+
+        .db-file-icon {
+            font-size: 1.1rem;
+            flex-shrink: 0;
+        }
+
+        .db-file-name {
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: var(--text-primary);
+            word-break: break-all;
+            line-height: 1.3;
+        }
+
+        .db-file-meta {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            margin-top: 2px;
+        }
+
+        .db-file-size {
+            margin-left: auto;
+            font-size: 0.7rem;
+            color: var(--db-accent-light);
+            font-weight: 600;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        /* Detail panel */
+        .db-detail-toolbar {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--border-color);
+            background: var(--bg-primary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-shrink: 0;
+            flex-wrap: wrap;
+        }
+
+        .db-detail-content {
+            flex: 1;
+            overflow: auto;
+            padding: 1rem;
+        }
+
+        .db-detail-empty {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            gap: 0.75rem;
+        }
+
+        .db-empty-icon {
+            font-size: 3rem;
+            opacity: 0.4;
+        }
+
+        /* JSON viewer */
+        .json-tree {
+            font-family: 'Fira Code', 'Courier New', monospace;
+            font-size: 0.82rem;
+            line-height: 1.7;
+        }
+
+        /* Table view */
+        .db-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.82rem;
+        }
+
+        .db-table th {
+            background: var(--bg-primary);
+            padding: 0.5rem 0.75rem;
+            text-align: left;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-secondary);
+            border-bottom: 1px solid var(--border-color);
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+
+        .db-table td {
+            padding: 0.5rem 0.75rem;
+            border-bottom: 1px solid rgba(var(--border-color-rgb, 255,255,255), 0.05);
+            color: var(--text-primary);
+            max-width: 320px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .db-table tr:hover td {
+            background: var(--db-row-hover);
+        }
+
+        /* Badges */
+        .badge-count {
+            background: var(--db-accent);
+            color: white;
+            font-size: 0.65rem;
+            padding: 2px 7px;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+
+        .badge-type {
+            font-size: 0.65rem;
+            padding: 2px 7px;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+
+        .badge-array { background: rgba(16,185,129,0.15); color: #10b981; }
+        .badge-object { background: rgba(245,158,11,0.15); color: #f59e0b; }
+        .badge-other { background: rgba(99,102,241,0.15); color: #6366f1; }
+
+        /* Btn group */
+        .db-view-btn {
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            padding: 0.3rem 0.7rem;
+            border-radius: 6px;
+            font-size: 0.78rem;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .db-view-btn.active, .db-view-btn:hover {
+            background: var(--db-accent);
+            border-color: var(--db-accent);
+            color: white;
+        }
+
+        .btn-refresh {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            padding: 0.3rem 0.7rem;
+            border-radius: 6px;
+            font-size: 0.78rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-left: auto;
+        }
+
+        .btn-refresh:hover {
+            border-color: var(--db-accent);
+            color: var(--db-accent-light);
+        }
+
+        .spinner-sm {
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        pre.json-pre {
+            background: var(--bg-primary);
+            border-radius: 10px;
+            padding: 1rem;
+            font-size: 0.8rem;
+            line-height: 1.6;
+            overflow: auto;
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            margin: 0;
+            max-height: calc(100vh - 400px);
+        }
+
+        .key { color: #7dd3fc; }
+        .string { color: #86efac; }
+        .number { color: #fda4af; }
+        .boolean { color: #c4b5fd; }
+        .null { color: #9ca3af; }
+
+        .loading-pulse {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+        .loading-pulse span {
+            width: 8px; height: 8px;
+            background: var(--db-accent);
+            border-radius: 50%;
+            animation: pulse-dot 1.4s ease-in-out infinite;
+        }
+        .loading-pulse span:nth-child(2) { animation-delay: 0.2s; }
+        .loading-pulse span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes pulse-dot { 0%,80%,100%{transform:scale(0);opacity:0.4} 40%{transform:scale(1);opacity:1} }
+    </style>
+</head>
+
+<body>
+    <div id="sidebar-container"></div>
+    <div class="main-content" id="mainContent">
+        <div class="content-wrapper p-3">
+
+            <!-- Header -->
+            <div class="db-header">
+                <div class="d-flex align-items-center gap-3">
+                    <div>
+                        <h1>🗄️ Explorador de Base de Datos</h1>
+                        <p class="subtitle mb-0">SQLite · <code style="opacity:.8">datos_mr_letreros/mr_letreros.db</code></p>
+                    </div>
+                    <button class="btn-refresh ms-auto" onclick="loadFileList()" id="btnRefreshAll" style="color:white;border-color:rgba(255,255,255,.4)">
+                        🔄 Actualizar
+                    </button>
+                </div>
+            </div>
+
+            <!-- Stat cards -->
+            <div class="row g-3 mb-3" id="statCards">
+                <div class="col-auto">
+                    <div class="db-stat-card">
+                        <div class="db-stat-icon">📋</div>
+                        <div>
+                            <div class="db-stat-label">Tablas / Archivos</div>
+                            <div class="db-stat-value" id="statTotal">—</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-auto">
+                    <div class="db-stat-card">
+                        <div class="db-stat-icon">💾</div>
+                        <div>
+                            <div class="db-stat-label">Tamaño Total</div>
+                            <div class="db-stat-value" id="statSize">—</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-auto">
+                    <div class="db-stat-card">
+                        <div class="db-stat-icon">🕐</div>
+                        <div>
+                            <div class="db-stat-label">Última Actualización</div>
+                            <div class="db-stat-value" id="statLastUpdate" style="font-size:1rem">—</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main panel -->
+            <div class="db-panel">
+                <!-- File list -->
+                <div class="db-list-panel">
+                    <div class="db-panel-header">
+                        🗂️ Colecciones
+                        <span class="badge-count ms-auto" id="fileCount">0</span>
+                    </div>
+                    <div class="db-search">
+                        <input type="text" id="searchInput" placeholder="🔍 Filtrar archivos..." oninput="filterFiles(this.value)">
+                    </div>
+                    <div class="db-file-list" id="fileList">
+                        <div class="db-detail-empty" style="height:200px">
+                            <div class="loading-pulse"><span></span><span></span><span></span></div>
+                            <small>Cargando...</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Detail view -->
+                <div class="db-detail-panel">
+                    <div class="db-panel-header" id="detailTitle">
+                        📄 Seleccioná un archivo para ver su contenido
+                    </div>
+                    <div class="db-detail-toolbar" id="detailToolbar" style="display:none!important">
+                        <button class="db-view-btn active" id="btnTable" onclick="switchView('table')">📊 Tabla</button>
+                        <button class="db-view-btn" id="btnJson" onclick="switchView('json')">{ } JSON</button>
+                        <span class="ms-2" id="detailMeta" style="font-size:.78rem;color:var(--text-secondary)"></span>
+                        <button class="btn-refresh" onclick="reloadDetail()">🔄</button>
+                    </div>
+                    <div class="db-detail-content" id="detailContent">
+                        <div class="db-detail-empty">
+                            <div class="db-empty-icon">🗄️</div>
+                            <strong>Base de Datos SQLite</strong>
+                            <small>Seleccioná un archivo de la lista para explorar sus datos</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script src="js/shared/sidebar-universal.js"></script>
+    <script>
+        let allFiles = [];
+        let currentKey = null;
+        let currentData = null;
+        let currentView = 'table';
+
+        async function apiGet(url) {
+            const token = localStorage.getItem('mr_token');
+            const res = await fetch(url, { headers: { 'Authorization': 'Bearer ' + token } });
+            if (!res.ok) throw new Error(await res.text());
+            return res.json();
+        }
+
+        function formatBytes(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+            return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+        }
+
+        function getFileIcon(key) {
+            if (key.includes('clientes')) return '👥';
+            if (key.includes('trabajos')) return '🔨';
+            if (key.includes('precios')) return '💰';
+            if (key.includes('costos')) return '📊';
+            if (key.includes('materiales')) return '📦';
+            if (key.includes('terceros')) return '🚚';
+            if (key.includes('gastos')) return '💳';
+            if (key.includes('usuarios')) return '🔐';
+            if (key.includes('tareas')) return '✅';
+            if (key.includes('led')) return '💡';
+            if (key.includes('calculadora')) return '🧮';
+            if (key.includes('instagram')) return '📸';
+            return '📄';
+        }
+
+        async function loadFileList() {
+            try {
+                const data = await apiGet('/api/admin/sqlite');
+                allFiles = data.registros || [];
+
+                const totalBytes = allFiles.reduce((s, r) => s + r.bytes, 0);
+                document.getElementById('statTotal').textContent = allFiles.length;
+                document.getElementById('statSize').textContent = formatBytes(totalBytes);
+                document.getElementById('statLastUpdate').textContent = allFiles[0]?.ultima_actualizacion || '—';
+                document.getElementById('fileCount').textContent = allFiles.length;
+
+                renderFileList(allFiles);
+            } catch (e) {
+                document.getElementById('fileList').innerHTML =
+                    `<div class="p-3 text-danger small">❌ Error: ${e.message}</div>`;
+            }
+        }
+
+        function renderFileList(files) {
+            const el = document.getElementById('fileList');
+            if (!files.length) {
+                el.innerHTML = '<div class="p-3 text-secondary small text-center">Sin resultados</div>';
+                return;
+            }
+            el.innerHTML = files.map(f => {
+                const name = f.key.split('/').pop();
+                const active = f.key === currentKey ? 'active' : '';
+                return `
+                <div class="db-file-item ${active}" onclick="loadDetail('${f.key}')" id="item-${f.key.replace(/\//g,'-').replace(/\./g,'_')}">
+                    <div class="db-file-icon">${getFileIcon(f.key)}</div>
+                    <div style="flex:1;min-width:0">
+                        <div class="db-file-name">${name}</div>
+                        <div class="db-file-meta">${f.ultima_actualizacion || ''}</div>
+                    </div>
+                    <div class="db-file-size">${formatBytes(f.bytes)}</div>
+                </div>`;
+            }).join('');
+        }
+
+        function filterFiles(query) {
+            const q = query.toLowerCase();
+            const filtered = allFiles.filter(f => f.key.toLowerCase().includes(q));
+            document.getElementById('fileCount').textContent = filtered.length;
+            renderFileList(filtered);
+        }
+
+        async function loadDetail(key) {
+            currentKey = key;
+            document.getElementById('detailTitle').textContent = '⏳ Cargando ' + key.split('/').pop() + '...';
+            document.getElementById('detailToolbar').style.removeProperty('display');
+            document.getElementById('detailContent').innerHTML =
+                '<div class="db-detail-empty"><div class="loading-pulse"><span></span><span></span><span></span></div></div>';
+
+            // highlight active
+            document.querySelectorAll('.db-file-item').forEach(el => el.classList.remove('active'));
+            const id = 'item-' + key.replace(/\//g,'-').replace(/\./g,'_');
+            document.getElementById(id)?.classList.add('active');
+
+            try {
+                const result = await apiGet('/api/admin/sqlite/' + key);
+                currentData = result;
+                document.getElementById('detailTitle').textContent =
+                    getFileIcon(key) + ' ' + key.split('/').pop();
+
+                const type = Array.isArray(result.data) ? 'array' :
+                             (typeof result.data === 'object' ? 'object' : 'otro');
+                const typeBadge = `<span class="badge-type badge-${type === 'array' ? 'array' : type === 'object' ? 'object' : 'other'}">${type === 'array' ? 'Array' : type === 'object' ? 'Objeto' : 'Texto'}</span>`;
+                document.getElementById('detailMeta').innerHTML =
+                    `${typeBadge} &nbsp; <strong>${result.registros}</strong> registro(s) &nbsp; · &nbsp; ${result.ultima_actualizacion}`;
+
+                renderView(currentView);
+            } catch (e) {
+                document.getElementById('detailContent').innerHTML =
+                    `<div class="p-3 text-danger small">❌ ${e.message}</div>`;
+            }
+        }
+
+        function reloadDetail() {
+            if (currentKey) loadDetail(currentKey);
+        }
+
+        function switchView(view) {
+            currentView = view;
+            document.getElementById('btnTable').classList.toggle('active', view === 'table');
+            document.getElementById('btnJson').classList.toggle('active', view === 'json');
+            renderView(view);
+        }
+
+        function renderView(view) {
+            if (!currentData) return;
+            if (view === 'json') renderJson();
+            else renderTable();
+        }
+
+        function renderJson() {
+            const formatted = JSON.stringify(currentData.data, null, 2);
+            const highlighted = formatted
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                .replace(/"([^"]+)":/g, '<span class="key">"$1"</span>:')
+                .replace(/: "([^"]*)"/g, ': <span class="string">"$1"</span>')
+                .replace(/: (\d+\.?\d*)/g, ': <span class="number">$1</span>')
+                .replace(/: (true|false)/g, ': <span class="boolean">$1</span>')
+                .replace(/: null/g, ': <span class="null">null</span>');
+            document.getElementById('detailContent').innerHTML =
+                `<pre class="json-pre"><code>${highlighted}</code></pre>`;
+        }
+
+        function renderTable() {
+            const data = currentData?.data;
+            if (!data) return;
+
+            if (Array.isArray(data) && data.length > 0) {
+                const keys = [...new Set(data.flatMap(o => typeof o === 'object' ? Object.keys(o) : []))].slice(0, 15);
+                const rows = data.slice(0, 200);
+                const html = `
+                <table class="db-table">
+                    <thead><tr>${keys.map(k => `<th>${k}</th>`).join('')}</tr></thead>
+                    <tbody>${rows.map(row => `
+                        <tr>${keys.map(k => {
+                            const v = row?.[k];
+                            const display = v === null ? '<span class="null">null</span>'
+                                : v === undefined ? ''
+                                : typeof v === 'object' ? `<span class="badge-type badge-object">{…}</span>`
+                                : String(v).length > 60 ? String(v).substring(0, 60) + '…'
+                                : String(v);
+                            return `<td title="${typeof v === 'string' ? v.replace(/"/g,'&quot;') : ''}">${display}</td>`;
+                        }).join('')}</tr>
+                    `).join('')}</tbody>
+                </table>
+                ${data.length > 200 ? `<p class="text-secondary small p-2">Mostrando 200 de ${data.length} registros. Usá la vista JSON para ver todos.</p>` : ''}`;
+                document.getElementById('detailContent').innerHTML = html;
+            } else if (typeof data === 'object' && data !== null) {
+                const entries = Object.entries(data);
+                const html = `
+                <table class="db-table">
+                    <thead><tr><th>Clave</th><th>Valor</th><th>Tipo</th></tr></thead>
+                    <tbody>${entries.map(([k, v]) => `
+                        <tr>
+                            <td class="key" style="font-family:monospace">${k}</td>
+                            <td>${typeof v === 'object' ? JSON.stringify(v).substring(0, 80) + '…' : String(v)}</td>
+                            <td><span class="badge-type ${typeof v === 'object' ? 'badge-object' : 'badge-other'}">${typeof v}</span></td>
+                        </tr>
+                    `).join('')}</tbody>
+                </table>`;
+                document.getElementById('detailContent').innerHTML = html;
+            } else {
+                document.getElementById('detailContent').innerHTML =
+                    `<div class="p-3 text-secondary small">Datos no tabulables. Usá la vista JSON.</div>`;
+            }
+        }
+
+        // Inicializar
+        document.addEventListener('DOMContentLoaded', () => {
+            loadFileList();
+        });
+    </script>
+</body>
+</html>

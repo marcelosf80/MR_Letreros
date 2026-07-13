@@ -1,0 +1,132 @@
+[
+  {
+    "id": "1769813156569",
+    "clientId": "cliente_cli_1769813040434",
+    "cliente": {
+      "nombre": "test",
+      "telefono": "03425276549",
+      "email": "marcelojmaidana@gmail.com",
+      "direccion": "Ruperto Godoy 3362"
+    },
+    "fechaEntrega": "",
+    "productos": [
+      {
+        "id": "1769813131551",
+        "tipo": "material",
+        "categoria": "Lona Front 13 Oz",
+        "producto": "90",
+        "ancho": 240,
+        "alto": 50,
+        "cantidad": 1,
+        "m2PorUnidad": 1.2,
+        "m2Totales": 1.2,
+        "costoMaterial": 1823.4683281412254,
+        "costoUnitario": 2188.1619937694704,
+        "costoTotal": 2188.1619937694704,
+        "precioCliente": 28000,
+        "precioUnitario": 33600,
+        "total": 33600
+      }
+    ],
+    "terceros": [
+      {
+        "id": "1769813131551_t",
+        "tipo": "tercero",
+        "nombre": "tensado (240x50cm) (Vinculado)",
+        "empresa": "test 1",
+        "cantidad": 1,
+        "ancho": 240,
+        "alto": 50,
+        "factorCalculo": 1.2,
+        "costo": 7000,
+        "precioCliente": 14000,
+        "unidad": "m²",
+        "totalCosto": 8400,
+        "total": 16800
+      }
+    ],
+    "costoTotal": 10588.16199376947,
+    "subtotal": 50400,
+    "iva": 10584,
+    "totalCliente": 60984,
+    "ganancia": 50395.83800623053,
+    "anticipo": 0,
+    "saldo": 60984,
+    "fecha": "2026-01-30T22:45:56.569Z",
+    "estado": "pendiente"
+  },
+  {
+    "id": "1770224032206",
+    "clientId": "cliente_cli_1770223826666",
+    "cliente": {
+      "nombre": "lona de escenario",
+      "telefono": "",
+      "email": "",
+      "direccion": ""
+    },
+    "fechaEntrega": "",
+    "productos": [
+      {
+        "id": "1770223866207",
+        "tipo": "material",
+        "categoria": "Lona Front 13 Oz",
+        "producto": "Lona 13oZ",
+        "ancho": 800,
+        "alto": 50,
+        "cantidad": 1,
+        "m2PorUnidad": 4,
+        "m2Totales": 4,
+        "costoMaterial": 2000,
+        "costoUnitario": 8000,
+        "costoTotal": 8000,
+        "precioCliente": 32000,
+        "precioUnitario": 128000,
+        "total": 128000
+      },
+      {
+        "id": "1770223918970",
+        "tipo": "material",
+        "categoria": "Lona Front 13 Oz",
+        "producto": "Ojales",
+        "ancho": 800,
+        "alto": 50,
+        "cantidad": 32,
+        "m2PorUnidad": 4,
+        "m2Totales": 128,
+        "costoMaterial": 800,
+        "costoUnitario": 3200,
+        "costoTotal": 102400,
+        "precioCliente": 1600,
+        "precioUnitario": 6400,
+        "total": 204800
+      },
+      {
+        "id": "1770223952862",
+        "tipo": "material",
+        "categoria": "Lona Front 13 Oz",
+        "producto": "Soldadura",
+        "ancho": 8000,
+        "alto": 50,
+        "cantidad": 1,
+        "m2PorUnidad": 40,
+        "m2Totales": 40,
+        "costoMaterial": 3700,
+        "costoUnitario": 148000,
+        "costoTotal": 148000,
+        "precioCliente": 7000,
+        "precioUnitario": 280000,
+        "total": 280000
+      }
+    ],
+    "terceros": [],
+    "costoTotal": 258400,
+    "subtotal": 612800,
+    "iva": 128688,
+    "totalCliente": 741488,
+    "ganancia": 483088,
+    "anticipo": 0,
+    "saldo": 741488,
+    "fecha": "2026-02-04T16:53:52.206Z",
+    "estado": "pendiente"
+  }
+]

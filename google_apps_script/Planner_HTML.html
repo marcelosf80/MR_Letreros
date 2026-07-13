@@ -1,0 +1,100 @@
+<div id="plannerModal">
+    <div class="planner-content">
+        <div class="flex h-full">
+            <!-- Sidebar -->
+            <div class="planner-sidebar flex flex-col">
+                <div class="flex items-center justify-between mb-10">
+                    <div>
+                        <h3 class="text-yellow-400 font-black italic tracking-tighter text-2xl uppercase">Visor de Corte</h3>
+                        <p class="text-[9px] text-gray-500 uppercase font-bold tracking-[0.3em]">Optimización de Pedidos</p>
+                    </div>
+                    <button type="button" onclick="closePlanner()" class="text-gray-600 hover:text-white transition-colors"><i class="fa-solid fa-circle-xmark text-3xl"></i></button>
+                </div>
+                
+                <div class="space-y-8">
+                    <div class="planner-stat-card">
+                        <label class="text-[9px] text-gray-500 uppercase font-bold tracking-widest block mb-2">Ancho de Rollo en Stock</label>
+                        <div id="plannerRollSelect" class="flex flex-wrap gap-2 mb-2">
+                            <!-- Opciones inyectadas por JS -->
+                        </div>
+                        <div class="flex items-center gap-2" id="plannerCustomWidthContainer" style="display:none;">
+                            <input type="number" id="plannerRollWidthInput" class="input-premium py-1 text-xl font-black w-24 text-center bg-transparent border-white/10" value="122" onchange="pChangeRollWidth()">
+                            <span class="text-sm text-gray-400 font-bold">cm (Manual)</span>
+                        </div>
+                    </div>
+
+                    <div class="space-y-4">
+                        <label class="text-[9px] text-gray-500 uppercase font-bold tracking-widest block">Añadir Piezas</label>
+                        <div class="grid grid-cols-2 gap-3 mb-3">
+                            <div>
+                                <label class="text-[10px] text-gray-400 mb-1 block">Ancho (cm)</label>
+                                <input type="number" id="pW" class="input-premium py-2 text-center" placeholder="0">
+                            </div>
+                            <div>
+                                <label class="text-[10px] text-gray-400 mb-1 block">Largo (cm)</label>
+                                <input type="number" id="pH" class="input-premium py-2 text-center" placeholder="0">
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="text-[10px] text-gray-400 mb-1 block">Nombre / Archivo de la pieza</label>
+                            <input type="text" id="pRef" class="input-premium py-2 text-center" placeholder="Ej: Logo Frontal, Letra A...">
+                        </div>
+                        <div class="grid grid-cols-2 gap-3 mb-4">
+                            <div>
+                                <label class="text-[10px] text-gray-400 mb-1 block">Separación (cm)</label>
+                                <input type="number" id="pSep" class="input-premium py-2 text-center" value="2">
+                            </div>
+                            <div>
+                                <label class="text-[10px] text-gray-400 mb-1 block">Cantidad</label>
+                                <input type="number" id="pQ" class="input-premium py-2 text-center" value="1">
+                            </div>
+                        </div>
+                        <div class="flex gap-2">
+                            <button type="button" onclick="addPlannerItem()" class="btn-premium py-4 text-xs font-black shadow-lg shadow-yellow-400/20 flex-1">AÑADIR AL PLANO</button>
+                            <button type="button" onclick="pAutoOrganize()" class="bg-indigo-600 hover:bg-indigo-500 text-white py-4 px-4 rounded-xl text-xs font-black shadow-lg shadow-indigo-500/20 transition-colors" title="Acomodar Automáticamente">
+                                <i class="fa-solid fa-wand-magic-sparkles"></i>
+                            </button>
+                        </div>
+                        <div class="flex gap-2 mt-2">
+                            <button type="button" onclick="pUndo()" class="bg-gray-700 hover:bg-gray-600 text-white py-2 px-3 rounded-xl text-xs font-bold transition-colors" title="Deshacer"><i class="fa-solid fa-rotate-left"></i></button>
+                            <button type="button" onclick="pRedo()" class="bg-gray-700 hover:bg-gray-600 text-white py-2 px-3 rounded-xl text-xs font-bold transition-colors" title="Rehacer"><i class="fa-solid fa-rotate-right"></i></button>
+                            <button type="button" onclick="pCenterAll()" class="bg-blue-600 hover:bg-blue-500 text-white py-2 px-3 flex-1 rounded-xl text-xs font-bold transition-colors" title="Centrar al Rollo"><i class="fa-solid fa-arrows-left-right-to-line"></i> Centrar</button>
+                            <button type="button" onclick="pRotateAll()" class="bg-purple-600 hover:bg-purple-500 text-white py-2 px-3 flex-1 rounded-xl text-xs font-bold transition-colors" title="Girar Todas 90°"><i class="fa-solid fa-rotate"></i> Girar 90°</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-auto pt-8 border-t border-white/5 space-y-4">
+                    <div class="grid grid-cols-2 gap-6">
+                        <div>
+                            <p class="text-[9px] text-gray-500 uppercase mb-1 font-bold">M. Lineales</p>
+                            <p class="text-2xl font-black text-white" id="resM">0.00m</p>
+                        </div>
+                        <div>
+                            <p class="text-[9px] text-gray-500 uppercase mb-1 font-bold">Desperdicio</p>
+                            <p class="text-2xl font-black text-red-400" id="resW">0%</p>
+                        </div>
+                    </div>
+                    <button type="button" onclick="applyPlanner()" class="btn-premium py-5 bg-gradient-to-r from-yellow-400 to-yellow-600 border-none text-base shadow-xl shadow-yellow-400/10">TRANSFERIR A PEDIDO</button>
+                </div>
+            </div>
+            
+            <!-- Viewer -->
+            <div class="planner-viewer">
+                <div class="roll-wrap" style="position:relative; margin-top:40px; margin-left:40px;">
+                    <div class="ruler-corner">cm</div>
+                    <div id="rulerH" class="ruler-h"></div>
+                    <div id="rulerV" class="ruler-v"></div>
+                    <div class="roll-container" id="plannerContainer" style="background:#0d0d0d; position:relative; border:2px solid #333; box-shadow:0 30px 80px -20px rgba(0,0,0,0.9); overflow:visible;">
+                        <div class="waste-layer"></div>
+                        <div class="absolute -top-12 left-0 right-0 flex items-center justify-center gap-6 opacity-30">
+                            <div class="h-[1px] flex-1 bg-white"></div>
+                            <div class="text-[11px] text-white font-black uppercase tracking-[0.4em]" id="pRollInfo">ROLLO: 122cm</div>
+                            <div class="h-[1px] flex-1 bg-white"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

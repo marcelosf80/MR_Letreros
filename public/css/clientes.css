@@ -1,0 +1,226 @@
+/* ── Layout de 3 paneles ── */
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(250px, 300px) 1fr minmax(280px, 320px);
+      grid-template-rows: 1fr auto;
+      gap: 1rem;
+      align-items: start;
+    }
+
+    .panel-cliente  { grid-column:1; grid-row:1/3; position:sticky; top:80px; }
+    .panel-centro   { grid-column:2; grid-row:1; }
+    .panel-historial{
+      grid-column:3; grid-row:1/3;
+      position:sticky; top:80px;
+      height:calc(100vh - 100px);
+      max-height:calc(100vh - 100px);
+      display:flex; flex-direction:column;
+      overflow:hidden;
+    }
+    .panel-totales  { grid-column:2; grid-row:2; }
+
+    /* ── Tipo de cliente badge ── */
+    .tipo-selector {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 0.75rem;
+    }
+    .tipo-btn {
+      flex: 1;
+      padding: 0.55rem;
+      border-radius: var(--r-sm);
+      border: 1px solid var(--glass-border);
+      background: var(--glass-1);
+      color: var(--txt-2);
+      font-size: 0.8rem;
+      font-weight: 700;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.18s;
+    }
+    .tipo-btn:hover { border-color:var(--glass-warm); color:var(--txt); }
+    .tipo-btn.active-cliente {
+      background: rgba(96,165,250,0.15);
+      border-color: rgba(96,165,250,0.4);
+      color: #60A5FA;
+    }
+    .tipo-btn.active-gremio {
+      background: rgba(52,211,153,0.15);
+      border-color: rgba(52,211,153,0.4);
+      color: #34D399;
+    }
+
+    /* ── Client status ── */
+    .client-status {
+      display: flex; align-items:center; gap:0.6rem;
+      padding: 0.75rem 1rem;
+      border-radius: var(--r-sm);
+      font-size: 0.82rem; font-weight:600;
+      margin-bottom: 1rem;
+      transition: all 0.2s;
+    }
+    .client-status.empty {
+      background: rgba(96,165,250,0.06);
+      border: 1px dashed rgba(96,165,250,0.25);
+      color: var(--txt-2);
+    }
+    .client-status.loaded {
+      background: rgba(96,165,250,0.1);
+      border: 1px solid rgba(96,165,250,0.3);
+      color: #60A5FA;
+    }
+    .client-avatar {
+      width:38px; height:38px; border-radius:10px;
+      background:linear-gradient(135deg, #60A5FA, #3B82F6);
+      display:flex; align-items:center; justify-content:center;
+      font-size:1.1rem; flex-shrink:0;
+    }
+
+    .input-with-btn { display:flex; gap:0.5rem; }
+    .input-with-btn .form-input { flex:1; }
+    .btn-search {
+      background: rgba(96,165,250,0.12);
+      border: 1px solid rgba(96,165,250,0.3);
+      color: #60A5FA;
+      border-radius:var(--r-sm); padding:0 0.75rem;
+      cursor:pointer; font-size:1rem; flex-shrink:0;
+      transition:all 0.2s;
+    }
+    .btn-search:hover { background:#60A5FA; color:#fff; }
+
+    /* ── Historial ── */
+    .panel-historial .card {
+      flex:1; display:flex; flex-direction:column;
+      overflow:hidden; margin-bottom:0;
+    }
+    .historial-scroll {
+      flex:1; overflow-y:auto;
+      min-height:0;
+    }
+
+    .quote-item {
+      padding:0.85rem 1rem;
+      border-bottom:1px solid var(--glass-border);
+      cursor:pointer; transition:all 0.18s;
+    }
+    .quote-item:hover { background:var(--glass-1); }
+    .quote-item:last-child { border-bottom:none; }
+    .quote-item-header {
+      display:flex; justify-content:space-between;
+      align-items:flex-start; gap:0.5rem; margin-bottom:0.3rem;
+    }
+    .quote-cliente-name { font-weight:700; font-size:0.87rem; color:var(--txt); line-height:1.2; }
+    .quote-total { font-weight:800; font-size:0.9rem; color:var(--brand-warm); white-space:nowrap; }
+    .quote-meta { font-size:0.72rem; color:var(--txt-2); display:flex; gap:0.5rem; align-items:center; }
+    .quote-badge {
+      display:inline-flex; align-items:center; gap:3px;
+      padding:2px 7px; border-radius:20px;
+      font-size:0.67rem; font-weight:700;
+      text-transform:uppercase; letter-spacing:0.04em;
+    }
+    .badge-green  { background:rgba(52,211,153,0.15); border:1px solid rgba(52,211,153,0.3); color:#34D399; }
+    .badge-yellow { background:rgba(255,209,102,0.15); border:1px solid rgba(255,209,102,0.3); color:#FFD166; }
+    .badge-blue   { background:rgba(96,165,250,0.15);  border:1px solid rgba(96,165,250,0.3);  color:#60A5FA; }
+    .badge-gremio { background:rgba(52,211,153,0.15);  border:1px solid rgba(52,211,153,0.3);  color:#34D399; }
+
+    /* ── Filter strip ── */
+    .filter-strip {
+      display:flex; gap:0.4rem; align-items:center;
+      padding:0.6rem 1rem; border-bottom:1px solid var(--glass-border);
+      flex-wrap:wrap;
+    }
+    .filter-chip {
+      padding:3px 10px; border-radius:20px;
+      font-size:0.72rem; font-weight:700;
+      border:1px solid var(--glass-border);
+      background:var(--glass-1); color:var(--txt-2);
+      cursor:pointer; transition:all 0.15s;
+    }
+    .filter-chip:hover, .filter-chip.active {
+      background:rgba(96,165,250,0.12);
+      border-color:rgba(96,165,250,0.35);
+      color:#60A5FA;
+    }
+    .filter-search-mini {
+      flex:1; min-width:100px;
+      background:var(--glass-1);
+      border:1px solid var(--glass-border);
+      border-radius:var(--r-sm);
+      padding:3px 8px; color:var(--txt);
+      font-size:0.78rem; outline:none;
+    }
+    .filter-search-mini:focus { border-color:#60A5FA; }
+    .filter-search-mini::placeholder { color:var(--txt-muted); }
+
+    /* ── Totales ── */
+    .totales-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 1.25rem;
+      align-items: center;
+    }
+    .total-block { text-align:center; }
+    .total-label {
+      font-size:0.68rem; font-weight:700;
+      letter-spacing:0.06em; text-transform:uppercase;
+      color:var(--txt-2); margin-bottom:0.25rem;
+    }
+    .total-value { font-size:1.5rem; font-weight:900; font-style:italic; color:var(--txt); line-height:1; }
+    .total-value.main { font-size:2rem; color:#34D399; }
+    .total-value.cost { font-size:1.1rem; color:var(--txt-2); }
+
+    .anticipo-block {
+      background:var(--glass-1); border:1px solid var(--glass-border);
+      border-radius:var(--r-sm); padding:0.75rem 1rem; min-width:140px;
+    }
+    .anticipo-label { font-size:0.68rem; font-weight:700; letter-spacing:0.06em; text-transform:uppercase; color:var(--txt-2); margin-bottom:0.3rem; }
+    .anticipo-block .form-input { padding:0.35rem 0.6rem; font-size:0.9rem; }
+    .saldo-line { font-size:0.75rem; color:var(--txt-2); margin-top:0.3rem; }
+    .actions-block { display:flex; flex-direction:column; gap:0.5rem; }
+    .actions-block .btn { width:100%; }
+
+    /* ── Precio info box ── */
+    .price-info-box {
+      display:none;
+      padding:0.75rem;
+      background:rgba(96,165,250,0.08);
+      border:1px solid rgba(96,165,250,0.25);
+      border-radius:var(--r-sm);
+      margin-bottom:0.75rem;
+    }
+    .price-info-box .price-row {
+      display:flex; justify-content:space-between; align-items:center;
+    }
+    .price-label { font-size:0.82rem; color:var(--txt-2); }
+    .price-val   { font-size:1.15rem; font-weight:800; color:#60A5FA; }
+
+    /* Responsive */
+    @media(max-width:1400px) { 
+      .workspace { grid-template-columns: 280px 1fr 300px; } 
+    }
+    
+    @media(max-width:1280px) {
+      .workspace { 
+        grid-template-columns: 1fr 300px; 
+        grid-template-rows: auto;
+      }
+      .panel-cliente { grid-column: 1; grid-row: 1; position: static; }
+      .panel-centro { grid-column: 1; grid-row: 2; }
+      .panel-totales { grid-column: 1; grid-row: 3; }
+      .panel-historial { grid-column: 2; grid-row: 1 / 4; top: 80px; position: sticky; }
+    }
+
+    @media(max-width:992px) {
+      .workspace { grid-template-columns: 1fr; }
+      .panel-cliente, .panel-historial { position: static; max-height: none; }
+      .panel-cliente   { grid-column: 1; grid-row: 1; }
+      .panel-centro    { grid-column: 1; grid-row: 2; }
+      .panel-totales   { grid-column: 1; grid-row: 3; }
+      .panel-historial { grid-column: 1; grid-row: 4; height: auto; }
+      .totales-grid    { grid-template-columns: 1fr 1fr; }
+    }
+    
+    @media(max-width:600px) {
+      .totales-grid { grid-template-columns: 1fr; }
+      .total-value.main { font-size: 1.6rem; }
+    }

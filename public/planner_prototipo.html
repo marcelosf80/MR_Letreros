@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visual Planner — MR Letreros</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root { --brand:#ffd700; --danger:#f87171; --bg:#020617; --card:#0f172a; --border:rgba(255,215,0,0.12); }
+        *{box-sizing:border-box;margin:0;padding:0}
+        body{font-family:'Outfit',sans-serif;background:var(--bg);color:#f1f5f9;height:100vh;display:flex;overflow:hidden}
+
+        /* SIDEBAR */
+        .sidebar{width:350px;background:var(--card);border-right:1px solid var(--border);padding:28px;display:flex;flex-direction:column;gap:24px;z-index:10;overflow-y:auto}
+        .logo{display:flex;align-items:center;gap:12px}
+        .logo-icon{width:42px;height:42px;background:linear-gradient(135deg,var(--brand),#b8860b);border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:900;color:#000;font-size:1.1rem}
+        h1{font-size:1.4rem;font-weight:900;color:var(--brand);text-transform:uppercase;font-style:italic;letter-spacing:-0.04em}
+        .section-title{font-size:.65rem;text-transform:uppercase;letter-spacing:.2em;color:#475569;font-weight:800;display:block;margin-bottom:10px}
+        label{display:block;font-size:.75rem;margin-bottom:6px;color:#94a3b8;font-weight:600}
+        .input{width:100%;background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:10px 12px;color:#fff;font-family:inherit;outline:none;transition:border .3s}
+        .input:focus{border-color:var(--brand);box-shadow:0 0 12px rgba(255,215,0,.15)}
+        .btn{display:block;width:100%;padding:14px;border-radius:14px;border:none;font-family:inherit;font-weight:800;cursor:pointer;transition:all .3s;text-transform:uppercase;letter-spacing:1px;font-size:.75rem}
+        .btn-primary{background:linear-gradient(135deg,var(--brand),#b8860b);color:#000;box-shadow:0 8px 20px rgba(204,172,0,.2)}
+        .btn-primary:hover{transform:translateY(-2px);box-shadow:0 12px 30px rgba(204,172,0,.3)}
+        .btn-outline{background:transparent;color:#cbd5e1;border:1px solid var(--border)}
+        .btn-outline:hover{background:rgba(255,255,255,.05)}
+        .stats{margin-top:auto;background:rgba(0,0,0,.35);border-radius:16px;padding:20px;border:1px solid var(--border)}
+        .stat-row{display:flex;justify-content:space-between;font-size:.85rem;margin-bottom:10px}
+        .stat-val{font-weight:800;color:var(--brand)}
+
+        /* VIEWER */
+        .viewer{flex:1;padding:60px;overflow:auto;background:#000;background-image:linear-gradient(rgba(255,255,255,.015) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.015) 1px,transparent 1px);background-size:40px 40px;display:flex;justify-content:center;position:relative}
+        .roll-wrap{position:relative;margin-top:40px;margin-left:40px}
+        .roll{background:#0d0d0d;position:relative;border:2px solid #333;box-shadow:0 30px 80px -20px rgba(0,0,0,.9);overflow:visible}
+        .waste-bg{position:absolute;inset:0;background:repeating-linear-gradient(45deg,rgba(239,68,68,.025),rgba(239,68,68,.025) 10px,rgba(239,68,68,.05) 10px,rgba(239,68,68,.05) 20px);pointer-events:none;z-index:0}
+
+        /* RULERS */
+        .ruler-h{position:absolute;top:-30px;left:0;right:0;height:30px;background:#080808;border:1px solid #222;border-bottom:2px solid #333;overflow:hidden}
+        .ruler-v{position:absolute;left:-30px;top:0;width:30px;background:#080808;border:1px solid #222;border-right:2px solid #333;overflow:hidden}
+        .ruler-corner{position:absolute;top:-30px;left:-30px;width:30px;height:30px;background:#080808;border:1px solid #222;z-index:5;display:flex;align-items:center;justify-content:center;font-size:8px;color:#555;font-weight:800}
+        .rtick{position:absolute;background:#444}
+        .rtick-h{width:1px;bottom:0}
+        .rtick-v{height:1px;right:0}
+        .rtick-10{background:var(--brand)!important}
+        .rlabel{position:absolute;font-size:8px;color:#666;font-weight:700;font-family:'Outfit',sans-serif}
+
+        /* ITEMS */
+        .piece{position:absolute;background:linear-gradient(135deg,rgba(255,215,0,.15),rgba(255,215,0,.35));border:2px solid var(--brand);border-radius:5px;cursor:move;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:.7rem;font-weight:800;color:#fff;user-select:none;z-index:2;box-shadow:0 6px 18px rgba(0,0,0,.5);text-shadow:0 1px 2px rgba(0,0,0,.6);transition:border-color .15s,box-shadow .15s}
+        .piece:hover{border-color:#fff;box-shadow:0 0 25px rgba(255,215,0,.4);z-index:100}
+        .piece .ctrls{position:absolute;top:-14px;right:-14px;display:flex;gap:5px;opacity:0;transition:opacity .15s}
+        .piece:hover .ctrls{opacity:1}
+        .cbtn{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;cursor:pointer;border:2px solid var(--card);color:#fff;transition:transform .2s}
+        .cbtn:hover{transform:scale(1.2)}
+        .cbtn-del{background:var(--danger)}
+        .cbtn-rot{background:#6366f1}
+        .piece .coords{position:absolute;bottom:-16px;left:0;font-size:7px;color:#555;font-weight:600;white-space:nowrap}
+    </style>
+</head>
+<body>
+<aside class="sidebar">
+    <div class="logo">
+        <div class="logo-icon">MR</div>
+        <div><h1>Visor de Corte</h1><p style="font-size:.6rem;color:#475569;letter-spacing:.15em;text-transform:uppercase;font-weight:700">Optimización Visual</p></div>
+    </div>
+
+    <div>
+        <span class="section-title">Material / Rollo</span>
+        <div style="margin-bottom:12px">
+            <label>Tipo de Material</label>
+            <select id="selMat" class="input" onchange="changeMaterial()">
+                <option value="122">Vinilo de Corte (122cm)</option>
+                <option value="150">Vinilo Impreso (150cm)</option>
+                <option value="250">Lona Front (250cm)</option>
+                <option value="100">Papel Fotográfico (100cm)</option>
+                <option value="custom">Ancho Personalizado...</option>
+            </select>
+        </div>
+        <div id="customWrap" style="display:none;margin-bottom:12px">
+            <label>Ancho Manual (cm)</label>
+            <input type="number" id="customW" class="input" value="122" onchange="applyCustomWidth()">
+        </div>
+        <div style="background:rgba(0,0,0,.3);padding:14px;border-radius:12px;border:1px solid var(--border)">
+            <p style="font-size:.6rem;color:#475569;text-transform:uppercase;letter-spacing:.15em;font-weight:700;margin-bottom:4px">Ancho Actual del Rollo</p>
+            <div style="font-size:2rem;font-weight:900;color:#fff" id="rollWDisplay">122 cm</div>
+        </div>
+    </div>
+
+    <div>
+        <span class="section-title">Añadir Pieza</span>
+        <div style="display:flex;gap:10px;margin-bottom:10px">
+            <div style="flex:1"><label>Ancho (cm)</label><input type="number" id="inW" class="input" value="50"></div>
+            <div style="flex:1"><label>Alto (cm)</label><input type="number" id="inH" class="input" value="30"></div>
+        </div>
+        <div style="margin-bottom:14px"><label>Cantidad</label><input type="number" id="inQ" class="input" value="1"></div>
+        <button class="btn btn-primary" onclick="addPiece()"><i class="fa-solid fa-plus" style="margin-right:6px"></i> Agregar al Plano</button>
+        <div style="display:flex;gap:8px;margin-top:10px">
+            <button class="btn btn-outline" style="flex:1" onclick="exportSVG()"><i class="fa-solid fa-file-export" style="margin-right:4px"></i> SVG</button>
+            <button class="btn btn-outline" style="flex:1" onclick="exportJSON()"><i class="fa-solid fa-download" style="margin-right:4px"></i> JSON</button>
+            <button class="btn btn-outline" style="flex:1" onclick="clearAll()"><i class="fa-solid fa-trash" style="margin-right:4px"></i> Limpiar</button>
+        </div>
+    </div>
+
+    <div class="stats">
+        <span class="section-title">Resultados de Producción</span>
+        <div class="stat-row"><span>Piezas</span><span class="stat-val" id="sCount">0</span></div>
+        <div class="stat-row"><span>Metros Lineales</span><span class="stat-val" id="sMeters">0.00 m</span></div>
+        <div class="stat-row"><span>Aprovechamiento</span><span class="stat-val" id="sEff" style="color:#4ade80">0%</span></div>
+        <div class="stat-row"><span>Desperdicio</span><span class="stat-val" id="sWaste" style="color:var(--danger)">0%</span></div>
+    </div>
+</aside>
+
+<main class="viewer" id="viewer">
+    <div class="roll-wrap">
+        <div class="ruler-corner">cm</div>
+        <div class="ruler-h" id="rulerH"></div>
+        <div class="ruler-v" id="rulerV"></div>
+        <div class="roll" id="roll">
+            <div class="waste-bg"></div>
+        </div>
+    </div>
+</main>
+
+<script>
+const SC = 4; // 1cm = 4px
+let pieces = [];
+let rollW = 122;
+let dragItem = null, dragOX, dragOY;
+
+function changeMaterial() {
+    const v = document.getElementById('selMat').value;
+    document.getElementById('customWrap').style.display = v === 'custom' ? 'block' : 'none';
+    if (v !== 'custom') { rollW = parseInt(v); applyRoll(); }
+}
+function applyCustomWidth() { rollW = parseInt(document.getElementById('customW').value) || 122; applyRoll(); }
+function applyRoll() {
+    document.getElementById('rollWDisplay').innerText = rollW + ' cm';
+    document.getElementById('roll').style.width = (rollW * SC) + 'px';
+    drawRulers(); updateStats();
+}
+
+// === RULERS ===
+function drawRulers() {
+    const rh = document.getElementById('rulerH');
+    const rv = document.getElementById('rulerV');
+    rh.innerHTML = ''; rv.innerHTML = '';
+
+    // Tomar la altura real del contenedor del rollo en cm
+    const rollEl = document.getElementById('roll');
+    const rollHeightPx = rollEl.offsetHeight;
+    const rollHeightCm = Math.ceil(rollHeightPx / SC);
+
+    // Regla horizontal (ancho)
+    for (let i = 0; i <= rollW; i += 5) {
+        const is10 = i % 10 === 0;
+        let t = document.createElement('div');
+        t.className = 'rtick rtick-h' + (is10 ? ' rtick-10' : '');
+        t.style.left = (i * SC) + 'px'; t.style.height = (is10 ? '14px' : '7px');
+        rh.appendChild(t);
+        if (is10) { let l = document.createElement('div'); l.className = 'rlabel'; l.style.left = (i * SC + 3) + 'px'; l.style.top = '3px'; l.textContent = i; rh.appendChild(l); }
+    }
+
+    // Regla vertical (largo) — cubre toda la altura del contenedor
+    rv.style.height = rollHeightPx + 'px';
+    for (let i = 0; i <= rollHeightCm; i += 5) {
+        const is10 = i % 10 === 0;
+        let t = document.createElement('div');
+        t.className = 'rtick rtick-v' + (is10 ? ' rtick-10' : '');
+        t.style.top = (i * SC) + 'px'; t.style.width = (is10 ? '14px' : '7px');
+        rv.appendChild(t);
+        if (is10) { let l = document.createElement('div'); l.className = 'rlabel'; l.style.top = (i * SC + 1) + 'px'; l.style.right = '17px'; l.textContent = i; rv.appendChild(l); }
+    }
+}
+
+// === PIECES ===
+function getMaxY() { let m = 0; pieces.forEach(p => { if (p.y + p.h > m) m = p.y + p.h; }); return m; }
+function nextY() { return pieces.length === 0 ? 5 : getMaxY() + 2; }
+
+function addPiece() {
+    const w = parseFloat(document.getElementById('inW').value);
+    const h = parseFloat(document.getElementById('inH').value);
+    const q = parseInt(document.getElementById('inQ').value) || 1;
+    if (!w || !h) return;
+    if (w > rollW && h > rollW) { alert('⚠️ La pieza excede el rollo en ambos sentidos.'); return; }
+    for (let i = 0; i < q; i++) {
+        const pc = { id: 'pc' + Date.now() + '_' + i, w, h, x: 0, y: nextY(), rot: false };
+        pieces.push(pc);
+        renderPiece(pc);
+    }
+    updateStats();
+}
+
+function renderPiece(pc) {
+    const el = document.createElement('div');
+    el.className = 'piece'; el.id = pc.id;
+    applyStyle(el, pc);
+    el.innerHTML = `<div style="font-size:6px;opacity:.5;letter-spacing:.1em;margin-bottom:1px">PIEZA</div><div class="dtxt">${pc.w}×${pc.h}</div><div class="coords" id="c_${pc.id}">x:${Math.round(pc.x)} y:${Math.round(pc.y)}</div><div class="ctrls"><div class="cbtn cbtn-rot" data-act="rot" title="Girar 90°"><i class="fa-solid fa-rotate"></i></div><div class="cbtn cbtn-del" data-act="del" title="Eliminar"><i class="fa-solid fa-trash"></i></div></div>`;
+
+    el.addEventListener('mousedown', e => {
+        if (e.target.closest('[data-act="del"]')) { removePiece(pc.id); return; }
+        if (e.target.closest('[data-act="rot"]')) { rotatePiece(pc.id); return; }
+        dragItem = { el, pc }; dragOX = e.clientX - el.offsetLeft; dragOY = e.clientY - el.offsetTop;
+        el.style.zIndex = 500;
+    });
+    document.getElementById('roll').appendChild(el);
+}
+
+function applyStyle(el, pc) {
+    el.style.width = (pc.w * SC) + 'px'; el.style.height = (pc.h * SC) + 'px';
+    el.style.left = (pc.x * SC) + 'px'; el.style.top = (pc.y * SC) + 'px';
+}
+
+document.addEventListener('mousemove', e => {
+    if (!dragItem) return;
+    let nx = e.clientX - dragOX, ny = e.clientY - dragOY;
+    const cont = document.getElementById('roll');
+    const maxR = cont.offsetWidth - dragItem.el.offsetWidth;
+    // Snap
+    if (nx < 8) nx = 0; if (nx > maxR - 8) nx = maxR; if (ny < 0) ny = 0;
+    dragItem.el.style.left = nx + 'px'; dragItem.el.style.top = ny + 'px';
+    dragItem.pc.x = nx / SC; dragItem.pc.y = ny / SC;
+    const coordEl = document.getElementById('c_' + dragItem.pc.id);
+    if (coordEl) coordEl.textContent = `x:${Math.round(dragItem.pc.x)} y:${Math.round(dragItem.pc.y)}`;
+    updateStats();
+});
+document.addEventListener('mouseup', () => { if (dragItem) { dragItem.el.style.zIndex = 2; dragItem = null; } });
+
+function rotatePiece(id) {
+    const pc = pieces.find(p => p.id === id);
+    if (pc.h > rollW) { alert('No se puede girar: excede el ancho del rollo.'); return; }
+    [pc.w, pc.h] = [pc.h, pc.w]; pc.rot = !pc.rot;
+    const el = document.getElementById(id);
+    applyStyle(el, pc);
+    el.querySelector('.dtxt').textContent = `${pc.w}×${pc.h}`;
+    updateStats();
+}
+
+function removePiece(id) {
+    pieces = pieces.filter(p => p.id !== id);
+    document.getElementById(id)?.remove();
+    updateStats();
+}
+
+function clearAll() {
+    if (pieces.length && !confirm('¿Limpiar todo el plano?')) return;
+    pieces = []; document.querySelectorAll('.piece').forEach(e => e.remove()); updateStats();
+}
+
+// === STATS ===
+function updateStats() {
+    const maxY = getMaxY(); let area = 0;
+    pieces.forEach(p => area += p.w * p.h);
+    const rollArea = rollW * maxY;
+    const eff = rollArea > 0 ? (area / rollArea) * 100 : 0;
+    document.getElementById('sCount').textContent = pieces.length;
+    document.getElementById('sMeters').textContent = (maxY / 100).toFixed(2) + ' m';
+    document.getElementById('sEff').textContent = Math.round(eff) + '%';
+    document.getElementById('sWaste').textContent = Math.round(100 - eff) + '%';
+    // El rollo tendrá un mínimo de 5 metros (500cm * SC = 2000px) para que la regla sea larga desde el inicio.
+    // Además, siempre dejamos un buffer de 2 metros (200 * SC = 800px) debajo de la última pieza.
+    const calculatedHeight = (maxY * SC) + 800;
+    const finalHeight = Math.max(2000, calculatedHeight);
+    
+    document.getElementById('roll').style.minHeight = finalHeight + 'px';
+    drawRulers();
+}
+
+// === EXPORTS ===
+function exportSVG() {
+    const maxY = getMaxY();
+    let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${rollW}mm" height="${maxY}mm" viewBox="0 0 ${rollW} ${maxY}">`;
+    svg += `<rect width="100%" height="100%" fill="#fff" stroke="#ccc" stroke-width=".3"/>`;
+    // Ruler marks in SVG
+    for (let i = 0; i <= rollW; i += 10) svg += `<line x1="${i}" y1="0" x2="${i}" y2="2" stroke="#999" stroke-width=".1"/><text x="${i}" y="4" font-size="1.5" fill="#999" text-anchor="middle" font-family="Arial">${i}</text>`;
+    for (let i = 0; i <= maxY; i += 10) svg += `<line x1="0" y1="${i}" x2="2" y2="${i}" stroke="#999" stroke-width=".1"/><text x="3" y="${i + .5}" font-size="1.5" fill="#999" font-family="Arial">${i}</text>`;
+    pieces.forEach(p => {
+        svg += `<rect x="${p.x}" y="${p.y}" width="${p.w}" height="${p.h}" fill="none" stroke="#000" stroke-width=".15"/>`;
+        svg += `<text x="${p.x + p.w / 2}" y="${p.y + p.h / 2}" font-size="1.8" text-anchor="middle" dominant-baseline="middle" fill="#333" font-family="Arial" font-weight="bold">${p.w}×${p.h}</text>`;
+    });
+    svg += '</svg>';
+    download(svg, 'image/svg+xml', `Plano_Corte_${rollW}cm_${Date.now()}.svg`);
+}
+
+function exportJSON() {
+    const data = { rollWidth: rollW, pieces: pieces.map(p => ({ w: p.w, h: p.h, x: Math.round(p.x * 10) / 10, y: Math.round(p.y * 10) / 10, rotated: p.rot })), stats: { meters: (getMaxY() / 100).toFixed(2), pieces: pieces.length } };
+    download(JSON.stringify(data, null, 2), 'application/json', `Layout_${Date.now()}.json`);
+}
+
+function download(content, mime, name) {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([content], { type: mime }));
+    a.download = name; a.click();
+}
+
+// INIT
+applyRoll();
+</script>
+</body>
+</html>

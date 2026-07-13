@@ -1,0 +1,459 @@
+/**
+ * ═══════════════════════════════════════════════════════
+ *  MR LETREROS — RENDIMIENTOS MODULE 2026 (Refactored)
+ *  Pastel Glassmorphism 2.0 · Accent: --secondary (Lavender)
+ * ═══════════════════════════════════════════════════════
+ *
+ * CAMBIOS VS VERSIÓN ANTERIOR:
+ *  - body: background linear-gradient(#0f0c29, #302b63, #24243e) → var(--bg-void) crema
+ *  - body: color: #fff → var(--txt) #4A4A4A
+ *  - .header: background rgba(15,12,41,0.8) → glass claro con --secondary
+ *  - .stat-card / .semaforo / .chart-card / .gastos-section:
+ *    rgba(15,12,41,0.6) → rgba(255,255,255,0.75) glass
+ *  - .modal / .modal-content: oscuro → glass claro
+ *  - .modal-header: gradiente morado → fondo --secondary claro
+ *  - .gasto-item: rgba(0,0,0,0.3) → glass claro
+ *  - .form-input: fondo oscuro → fondo claro legible
+ *  - .btn-primary: gradiente morado → --secondary con texto oscuro
+ *  - Semáforo: luces mantienen sus colores de semántica (verde/amarillo/rojo)
+ *  - Fuente: reemplaza Segoe UI por var(--font-body) de base.css
+ */
+
+:root {
+  /* Colores locales mapeados a la paleta de base.css */
+  --rend-color:       #7C5CBF;   /* Lavanda profunda — legible sobre blanco */
+  --rend-accent:      #C7CEEA;   /* --secondary pastel */
+  --rend-accent-bg:   rgba(199, 206, 234, 0.18);
+  --rend-border:      rgba(199, 206, 234, 0.45);
+  --rend-hover-shadow: rgba(199, 206, 234, 0.35);
+
+  /* Variables legacy — se redefinen para no romper referencias en HTML/JS */
+  --rendimientos-color: var(--rend-color);
+  --rendimientos-dark:  #5A3A9F;
+}
+
+/* ════════════════════════════════
+   RESET PARCIAL (no anula base.css)
+════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; }
+
+/* Body theme uses base.css */
+body {
+  padding: 2rem;
+}
+
+/* ════════════════════════════════
+   HEADER — Glass claro (reemplaza rgba(15,12,41,0.8))
+════════════════════════════════ */
+.header {
+  background: var(--bg-surface);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  padding: 1.5rem 2rem;
+  border-radius: 20px;
+  margin-bottom: 2rem;
+  box-shadow:
+    0 8px 32px rgba(199, 206, 234, 0.2),
+    0 1px 0 rgba(255,255,255,0.9) inset;
+  border: 1px solid var(--rend-border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.header h1 {
+  font-size: 2rem;
+  font-weight: 900;
+  font-style: italic;
+  /* Gradiente pastel —reemplaza el gradiente morado/oscuro */
+  background: linear-gradient(135deg, var(--rend-color) 0%, #C7CEEA 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ── Btn Home override local ── */
+.btn-home {
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid var(--rend-border);
+  color: #4A4A4A;
+  padding: 0.68rem 1.35rem;
+  border-radius: 12px;
+  cursor: pointer;
+  font-weight: 700;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  backdrop-filter: blur(8px);
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.btn-home:hover {
+  background: #fff;
+  border-color: rgba(199, 206, 234, 0.7);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px var(--rend-hover-shadow);
+}
+
+/* ════════════════════════════════
+   STATS GRID
+════════════════════════════════ */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+/* Stat card — reemplaza rgba(15,12,41,0.6) */
+.stat-card {
+  background: var(--card-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1.5px solid var(--rend-border);
+  border-radius: 18px;
+  padding: 2rem;
+  text-align: center;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Shimmer Stroke al hover */
+.stat-card::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 2.5px;
+  background: var(--rend-accent);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 350ms ease;
+}
+.stat-card:hover::after { transform: scaleX(1); }
+
+.stat-card:hover {
+  border-color: var(--rend-color);
+  transform: translateY(-5px);
+  box-shadow: 0 12px 32px var(--rend-hover-shadow);
+}
+
+.stat-label {
+  color: #757575;  /* --txt-2 */
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.5rem;
+}
+
+.stat-value {
+  font-size: 2.5rem;
+  font-weight: 900;
+  font-style: italic;
+  color: var(--rend-color);
+}
+.stat-value.negative { color: #FF9AA2; }
+.stat-value.warning  { color: #FFDAC1; }
+
+/* ════════════════════════════════
+   SEMÁFORO — Glass claro
+════════════════════════════════ */
+.semaforo {
+  background: var(--card-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1.5px solid var(--rend-border);
+  border-radius: 20px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+}
+
+.semaforo-luces {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* Las luces mantienen sus colores semánticos */
+.luz {
+  width: 60px; height: 60px;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.06);
+  border: 3px solid rgba(0,0,0,0.1);
+  opacity: 0.35;
+  transition: all 0.35s;
+}
+.luz.active {
+  opacity: 1;
+  box-shadow: 0 0 20px currentColor;
+}
+.luz.verde   { color: #4CAF50; }
+.luz.amarillo{ color: #FFC107; }
+.luz.rojo    { color: #FF5252; }
+.luz.verde.active   { background: #4CAF50; border-color: rgba(76,175,80,0.3); }
+.luz.amarillo.active{ background: #FFC107; border-color: rgba(255,193,7,0.3); }
+.luz.rojo.active    { background: #FF5252; border-color: rgba(255,82,82,0.3); }
+
+.semaforo-info { flex: 1; }
+.semaforo-info h3 { font-size: 1.5rem; font-weight: 800; margin-bottom: 1rem; color: var(--txt); }
+.recomendacion { font-size: 1.1rem; line-height: 1.6; color: var(--txt-2); }
+
+/* ════════════════════════════════
+   CHARTS CONTAINER
+════════════════════════════════ */
+.charts-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+/* Chart card — reemplaza rgba(15,12,41,0.6) */
+.chart-card {
+  background: var(--card-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1.5px solid var(--rend-border);
+  border-radius: 20px;
+  padding: 2rem;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+}
+
+.chart-card h3 {
+  margin-bottom: 1.5rem;
+  color: var(--rend-color);
+  font-weight: 800;
+  font-style: italic;
+}
+
+/* ════════════════════════════════
+   GASTOS SECTION
+════════════════════════════════ */
+.gastos-section {
+  background: var(--card-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1.5px solid var(--rend-border);
+  border-radius: 20px;
+  padding: 2rem;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+}
+
+.gastos-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+/* ── Botones locales — Shimmer Stroke ── */
+.btn {
+  position: relative;
+  padding: 0.7rem 1.4rem;
+  border: none;
+  border-radius: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  font-size: 0.9rem;
+  font-family: inherit;
+  overflow: hidden;
+}
+
+/* Shimmer universal en botones */
+.btn::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 40%; height: 100%;
+  background: linear-gradient(105deg, transparent, rgba(255,255,255,0.3), transparent);
+  transform: translateX(-150%) skewX(-15deg);
+  pointer-events: none;
+}
+.btn:hover::before { animation: rend-shimmer 0.55s ease-out; }
+
+@keyframes rend-shimmer {
+  0%   { transform: translateX(-150%) skewX(-15deg); }
+  100% { transform: translateX(250%)  skewX(-15deg); }
+}
+
+/* Primary — --secondary lavender (reemplaza gradiente morado oscuro) */
+.btn-primary {
+  background: var(--rend-accent);
+  color: #3A2A6A;  /* lavanda oscuro, contraste WCAG AA */
+  box-shadow: 0 4px 14px rgba(199, 206, 234, 0.4);
+}
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(199, 206, 234, 0.6);
+  background: #D5DAEF;
+}
+
+.btn-danger {
+  background: rgba(255, 154, 162, 0.2);
+  border: 1px solid rgba(255, 154, 162, 0.45);
+  color: #C0685A;
+}
+.btn-danger:hover {
+  background: rgba(255, 154, 162, 0.35);
+  border-color: rgba(255, 154, 162, 0.7);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(255, 154, 162, 0.3);
+}
+
+/* ── Gasto Item — glass claro ── */
+.gasto-item {
+  background: var(--bg-deep);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--rend-border);
+  border-radius: 12px;
+  padding: 1rem 1.2rem;
+  margin-bottom: 0.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: all 0.25s;
+}
+.gasto-item:hover {
+  border-color: rgba(199, 206, 234, 0.7);
+  background: var(--bg-surface);
+  box-shadow: 0 4px 16px var(--rend-hover-shadow);
+  transform: translateX(3px);
+}
+.gasto-item strong { color: var(--txt); }
+.gasto-item small  { color: var(--txt-2); }
+
+/* ════════════════════════════════
+   MODAL — Glass claro
+════════════════════════════════ */
+.modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  /* Overlay claro — era rgba(0,0,0,0.85) */
+  background: rgba(235, 233, 248, 0.35);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+.modal.active { display: flex; }
+
+/* Modal content — reemplaza rgba(15,12,41,0.95) */
+.modal-content {
+  background: var(--card-bg);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-radius: 20px;
+  max-width: 500px;
+  width: 100%;
+  border: 1px solid var(--rend-border);
+  box-shadow:
+    0 20px 60px rgba(199, 206, 234, 0.3),
+    0 1px 0 rgba(255,255,255,0.9) inset;
+  animation: rend-modal-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes rend-modal-in {
+  from { opacity: 0; transform: translateY(-30px) scale(0.94); }
+  to   { opacity: 1; transform: translateY(0)     scale(1); }
+}
+
+/* Modal header — reemplaza gradiente morado oscuro */
+.modal-header {
+  background: rgba(199, 206, 234, 0.25);
+  padding: 1.5rem;
+  border-radius: 20px 20px 0 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--rend-border);
+  box-shadow: 0 2px 12px rgba(199, 206, 234, 0.15);
+}
+
+.modal-title {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #3A2A6A;
+}
+
+.btn-close {
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(199, 206, 234, 0.4);
+  color: #4A4A4A;
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 1.3rem;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.btn-close:hover {
+  transform: rotate(90deg) scale(1.1);
+  background: rgba(255, 154, 162, 0.2);
+  border-color: rgba(255, 154, 162, 0.5);
+  color: #C0685A;
+}
+
+.modal-body { padding: 2rem; }
+
+/* ════════════════════════════════
+   FORMULARIO EN MODAL
+════════════════════════════════ */
+.form-group { margin-bottom: 1.5rem; }
+
+.form-label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 700;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #757575;  /* era rgba(255,255,255,0.9) — ahora legible */
+}
+
+/* Form input — reemplaza fondo oscuro */
+.form-input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: var(--bg-deep);
+  border: 1.5px solid rgba(199, 206, 234, 0.4);
+  border-radius: 12px;
+  color: var(--txt);  /* texto legible */
+  font-size: 1rem;
+  font-family: inherit;
+  backdrop-filter: blur(4px);
+  transition: all 0.25s;
+}
+.form-input:focus {
+  outline: none;
+  border-color: var(--rend-color);
+  background: #fff;
+  box-shadow: 0 0 0 4px rgba(199, 206, 234, 0.25);
+}
+.form-input::placeholder { color: #A0A0A0; }
+
+/* ════════════════════════════════
+   SCROLLBAR
+════════════════════════════════ */
+::-webkit-scrollbar       { width: 6px; }
+::-webkit-scrollbar-track { background: rgba(199, 206, 234, 0.1); }
+::-webkit-scrollbar-thumb { background: var(--rend-accent); border-radius: 6px; }
+::-webkit-scrollbar-thumb:hover { background: var(--rend-color); }
+
+/* ════════════════════════════════
+   RESPONSIVE
+════════════════════════════════ */
+@media (max-width: 768px) {
+  .charts-container { grid-template-columns: 1fr; }
+  .header           { flex-direction: column; gap: 1rem; }
+  .semaforo         { flex-direction: column; }
+  .stat-value       { font-size: 1.8rem; }
+}

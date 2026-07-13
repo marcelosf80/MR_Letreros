@@ -1,0 +1,1039 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generador de Presupuestos - MR Letreros</title>
+    <meta name="description" content="Genera presupuestos profesionales para proyectos de cartelería y señalización.">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="css/presupuesto-gen.css">
+    <script src="js/shared/data-manager-network.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="js/shared/pdf-generator.js"></script>
+    <script src="js/auth.js"></script>
+    <link rel="stylesheet" href="css/base.css">
+    <link rel="stylesheet" href="css/sidebar-universal.css">
+    <link rel="stylesheet" href="css/maxton-theme.css">
+    <style>
+        /* Modal Estilo Premium */
+        .pg-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            backdrop-filter: blur(8px);
+        }
+        .pg-modal-content {
+            background: #1e293b;
+            border: 1px solid rgba(255, 215, 0, 0.25);
+            border-radius: 16px;
+            width: 90%;
+            max-width: 600px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            overflow: hidden;
+            font-family: 'Inter', sans-serif;
+            color: white;
+            animation: pgModalFadeIn 0.3s ease-out;
+        }
+        @keyframes pgModalFadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .pg-modal-header {
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid #334155;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .pg-modal-header h3 {
+            margin: 0;
+            font-size: 1.25rem;
+            color: #ffd700;
+            font-weight: 700;
+        }
+        .pg-modal-close {
+            background: transparent;
+            border: none;
+            color: #94a3b8;
+            font-size: 1.75rem;
+            cursor: pointer;
+            line-height: 1;
+            transition: color 0.2s;
+        }
+        .pg-modal-close:hover {
+            color: #ef4444;
+        }
+        .pg-modal-body {
+            padding: 1.5rem;
+        }
+        .pg-modal-list {
+            max-height: 350px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            padding-right: 0.25rem;
+        }
+        .pg-modal-list::-webkit-scrollbar {
+            width: 6px;
+        }
+        .pg-modal-list::-webkit-scrollbar-track {
+            background: #0f172a;
+            border-radius: 4px;
+        }
+        .pg-modal-list::-webkit-scrollbar-thumb {
+            background: #475569;
+            border-radius: 4px;
+        }
+        .pg-modal-list::-webkit-scrollbar-thumb:hover {
+            background: #ffd700;
+        }
+        .pg-modal-item {
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 10px;
+            padding: 1rem;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.2s ease;
+        }
+        .pg-modal-item:hover {
+            border-color: #ffd700;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(255, 215, 0, 0.1);
+        }
+        .pg-modal-item-left {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+            align-items: flex-start;
+        }
+        .pg-modal-item-number {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: #ffd700;
+            background: rgba(255, 215, 0, 0.1);
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            width: fit-content;
+        }
+        .pg-modal-item-name {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #f8fafc;
+        }
+        .pg-modal-item-date {
+            font-size: 0.8rem;
+            color: #64748b;
+        }
+        .pg-modal-item-right {
+            text-align: right;
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+        .pg-modal-item-price {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #4ade80;
+        }
+        .pg-modal-item-status {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #94a3b8;
+        }
+    </style>
+</head>
+<body class="pg-body">
+    <div class="main-content" style="height: 100vh; display: flex; flex-direction: column;">
+    <!-- HEADER -->
+    <header class="pg-header">
+        <div class="pg-header-left">
+            <a href="index.html"><i class="fas fa-arrow-left"></i> Volver</a>
+            <span class="pg-header-title">GENERADOR DE PRESUPUESTOS</span>
+        </div>
+        <div class="pg-header-actions">
+            <button class="pg-btn pg-btn-outline pg-btn-sm" onclick="newBudget()" title="Nuevo presupuesto"><i class="fas fa-file-alt"></i> Nuevo</button>
+            <button class="pg-btn pg-btn-outline pg-btn-sm" id="btnDeleteActive" onclick="deleteActiveBudget()" style="color: #ef4444; border-color: rgba(239, 68, 68, 0.4); display: none;" title="Eliminar este presupuesto"><i class="fas fa-trash-alt"></i> Eliminar</button>
+            <button class="pg-btn pg-btn-outline pg-btn-sm" onclick="saveDraft()" title="Guardar borrador"><i class="fas fa-save"></i> Guardar</button>
+            <button class="pg-btn pg-btn-outline pg-btn-sm" onclick="loadDraft()" title="Cargar borrador"><i class="fas fa-folder-open"></i> Cargar</button>
+            <button class="pg-btn pg-btn-success pg-btn-sm" onclick="exportPNG()" title="Exportar como imagen"><i class="fas fa-image"></i> PNG</button>
+            <button class="pg-btn pg-btn-primary pg-btn-sm" onclick="printBudget()" title="Imprimir o guardar PDF"><i class="fas fa-print"></i> Imprimir / PDF</button>
+        </div>
+    </header>
+
+    <!-- LAYOUT -->
+    <main class="pg-layout">
+
+        <!-- SIDEBAR -->
+        <aside class="pg-sidebar">
+
+
+            <!-- 2. CLIENTE -->
+            <div class="pg-section">
+                <h3 class="pg-section-title"><i class="fas fa-user-tie"></i> Datos del Cliente</h3>
+                <div class="pg-field">
+                    <label class="pg-label">Nombre / Razón Social</label>
+                    <input class="pg-input" id="clientName" placeholder="Nombre del cliente..." oninput="updatePreview()">
+                </div>
+                <div class="pg-field">
+                    <label class="pg-label">Teléfono</label>
+                    <input class="pg-input" id="clientPhone" placeholder="Teléfono..." oninput="updatePreview()">
+                </div>
+                <div class="pg-field">
+                    <label class="pg-label">Dirección / Ubicación del trabajo</label>
+                    <input class="pg-input" id="clientAddress" placeholder="Dirección..." oninput="updatePreview()">
+                </div>
+            </div>
+
+            <!-- 3. PRESUPUESTO -->
+            <div class="pg-section">
+                <h3 class="pg-section-title"><i class="fas fa-hashtag"></i> Configuración</h3>
+                <div class="pg-row">
+                    <div class="pg-field">
+                        <label class="pg-label">Nº Presupuesto</label>
+                        <input class="pg-input" id="budgetNumber" value="001" oninput="updatePreview()">
+                    </div>
+                    <div class="pg-field">
+                        <label class="pg-label">Fecha</label>
+                        <input class="pg-input" type="date" id="budgetDate" oninput="updatePreview()">
+                    </div>
+                </div>
+                <div class="pg-row">
+                    <div class="pg-field">
+                        <label class="pg-label">Validez (días)</label>
+                        <input class="pg-input" type="number" id="budgetValidity" value="15" oninput="updatePreview()">
+                    </div>
+                    <div class="pg-field">
+                        <label class="pg-label">Moneda</label>
+                        <select class="pg-input" id="budgetCurrency" onchange="updatePreview()">
+                            <option value="$" selected>$ ARS</option>
+                            <option value="U$D">U$D USD</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4. ITEMS -->
+            <div class="pg-section">
+                <h3 class="pg-section-title"><i class="fas fa-list-ol"></i> Ítems del Presupuesto</h3>
+                <div id="itemsContainer"></div>
+                <button class="pg-btn pg-btn-primary pg-btn-sm pg-btn-full" onclick="addItem()" style="margin-top:10px;">
+                    <i class="fas fa-plus"></i> Agregar Ítem
+                </button>
+            </div>
+
+            <!-- 5. DESCUENTO / IVA -->
+            <div class="pg-section">
+                <h3 class="pg-section-title"><i class="fas fa-percent"></i> Ajustes Finales</h3>
+                <div class="pg-row">
+                    <div class="pg-field">
+                        <label class="pg-label">Descuento (%)</label>
+                        <input class="pg-input" type="number" id="discountPercent" value="0" min="0" max="100" oninput="updatePreview()">
+                    </div>
+                    <div class="pg-field">
+                        <label class="pg-label">IVA (%)</label>
+                        <input class="pg-input" type="number" id="ivaPercent" value="21" oninput="updatePreview()">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 6. IMAGENES -->
+            <div class="pg-section">
+                <h3 class="pg-section-title"><i class="fas fa-images"></i> Imágenes del Proyecto</h3>
+                <button class="pg-btn pg-btn-gold pg-btn-sm pg-btn-full" onclick="document.getElementById('projectImageInput').click()">
+                    <i class="fas fa-upload"></i> Agregar Imagen
+                </button>
+                <input type="file" id="projectImageInput" accept="image/*" multiple style="display:none" onchange="handleProjectImages(event)">
+                <p style="font-size:11px; color: var(--pg-text-muted); margin-top:6px;">
+                    Renders 3D, fotos de la fachada, diseños, etc.
+                </p>
+            </div>
+
+        </aside>
+
+        <!-- DOCUMENT PREVIEW -->
+        <div class="pg-preview-area">
+            <div class="pg-document" id="budgetDocument">
+                <!-- Header Exacto MR Img -->
+                <img src="img/encabezado pdf.png" class="pg-doc-header-img" alt="Header">
+
+                <!-- Title Row -->
+                <div class="pg-doc-title-row">
+                    <div class="pg-doc-title" contenteditable="true">PRESUPUESTO</div>
+                    <div class="pg-doc-number" id="docBudgetNumber">Nº 001</div>
+                </div>
+
+                <!-- Date & Validity -->
+                <div style="display:flex; justify-content:space-between; font-size:12px; color:#666; margin-bottom:20px;">
+                    <span>Fecha: <strong id="docDate">--</strong></span>
+                    <span>Validez: <strong id="docValidity">15</strong> días</span>
+                </div>
+
+                <!-- Client Box -->
+                <div class="pg-doc-client-box">
+                    <h4>Datos del Cliente</h4>
+                    <div contenteditable="true" id="docClientInfo">
+                        <strong>Cliente:</strong> ---<br>
+                        <strong>Tel:</strong> ---<br>
+                        <strong>Dirección:</strong> ---
+                    </div>
+                </div>
+
+                <!-- Items Table -->
+                <table class="pg-doc-table">
+                    <thead>
+                        <tr>
+                            <th style="width:30px;">Nº</th>
+                            <th>Descripción</th>
+                            <th style="width:60px;">Cant.</th>
+                            <th style="width:90px;">P. Unitario</th>
+                            <th style="width:90px; text-align:right;">Subtotal</th>
+                        </tr>
+                    </thead>
+                    <tbody id="docItemsBody">
+                        <tr>
+                            <td colspan="5" style="text-align:center; color:#ccc; padding:30px; font-style:italic;">
+                                Agregá ítems desde el panel izquierdo
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <!-- Totals -->
+                <div class="pg-doc-totals">
+                    <div class="pg-doc-totals-box" id="docTotalsBox">
+                        <div class="pg-doc-total-row">
+                            <span>Subtotal</span>
+                            <span id="docSubtotal">$ 0.00</span>
+                        </div>
+                        <div class="pg-doc-total-row" id="docDiscountRow" style="display:none;">
+                            <span>Descuento (<span id="docDiscountPercent">0</span>%)</span>
+                            <span id="docDiscountAmount">-$ 0.00</span>
+                        </div>
+                        <div class="pg-doc-total-row">
+                            <span>IVA (<span id="docIvaPercent">21</span>%)</span>
+                            <span id="docIvaAmount">$ 0.00</span>
+                        </div>
+                        <div class="pg-doc-total-row pg-total-final">
+                            <span>TOTAL</span>
+                            <span id="docTotal">$ 0.00</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Project Images -->
+                <div class="pg-doc-images" id="docImagesSection" style="display:none;">
+                    <div class="pg-doc-images-title">📸 Imágenes del Proyecto</div>
+                    <div class="pg-doc-images-grid" id="docImagesGrid"></div>
+                </div>
+
+                <!-- Notes -->
+                <div class="pg-doc-notes">
+                    <h4>Condiciones y Observaciones</h4>
+                    <div contenteditable="true" id="docNotes">
+                        • Los precios incluyen materiales y mano de obra.<br>
+                        • Plazo de entrega estimado: 7-15 días hábiles.<br>
+                        • Forma de pago: 50% anticipo, 50% contra entrega.<br>
+                        • Los diseños quedan sujetos a aprobación del cliente.<br>
+                        • Presupuesto válido por el periodo indicado.
+                    </div>
+                </div>
+
+                <!-- Footer Exacto MR Img -->
+                <img src="img/pie pdf.png" class="pg-doc-footer-img" alt="Footer">
+            </div>
+        </div>
+    </main>
+
+    <!-- Edit Hint -->
+    <div class="pg-edit-hint">
+        <i class="fas fa-mouse-pointer"></i> Hacé click sobre cualquier texto del documento para editarlo directamente
+    </div>
+    </div> <!-- /main-content -->
+    
+    <script src="js/shared/sidebar-universal.js"></script>
+
+    <script>
+        // === STATE ===
+        let items = [];
+        let projectImages = [];
+        let logoDataUrl = null;
+        let currentBudgetId = null;
+
+        // === INIT ===
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Set today's date
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('budgetDate').value = today;
+            
+            // Auto-load next budget number
+            await loadNextBudgetNumber();
+            
+
+            // Check for pending items from other tools
+            let hasPendingItems = false;
+            try {
+                const pending = JSON.parse(localStorage.getItem('mr_pending_budget_items') || '[]');
+                if (pending && pending.length > 0) {
+                    items = [...pending];
+                    hasPendingItems = true;
+                    localStorage.removeItem('mr_pending_budget_items'); // clear after pulling
+                    
+                    // Render items early
+                    renderItems();
+                }
+            } catch(e) {
+                console.error('Error loading pending items', e);
+            }
+            
+            // Add initial empty item only if there are no pending items pulled
+            if (!hasPendingItems) {
+                addItem();
+            } else {
+                updatePreview(); // Ensure full UI sync
+            }
+        });
+
+        // === ITEMS MANAGEMENT ===
+        function addItem() {
+            const id = Date.now();
+            items.push({ id, description: '', qty: 1, price: 0 });
+            renderItems();
+            updatePreview();
+        }
+
+        function removeItem(id) {
+            items = items.filter(item => item.id !== id);
+            renderItems();
+            updatePreview();
+        }
+
+        function renderItems() {
+            const container = document.getElementById('itemsContainer');
+            container.innerHTML = '';
+            
+            items.forEach((item, idx) => {
+                const subtotal = item.qty * item.price;
+                const row = document.createElement('div');
+                row.className = 'pg-item-card';
+                row.innerHTML = `
+                    <div class="pg-item-card-header">
+                        <span class="pg-item-num">Ítem ${idx + 1}</span>
+                        <button class="pg-item-delete" onclick="removeItem(${item.id})" title="Eliminar"><i class="fas fa-trash-alt"></i></button>
+                    </div>
+                    <div class="pg-item-card-body">
+                        <textarea placeholder="Descripción..." onchange="updateItemField(${item.id}, 'description', this.value)">${item.description}</textarea>
+                        <div class="pg-item-card-stats">
+                            <div class="pg-is-box">
+                                <label>Cant.</label>
+                                <input type="number" min="1" value="${item.qty}" onchange="updateItemField(${item.id}, 'qty', parseFloat(this.value)||1)">
+                            </div>
+                            <div class="pg-is-box">
+                                <label>P. Unit.</label>
+                                <input type="number" min="0" step="0.01" value="${item.price}" onchange="updateItemField(${item.id}, 'price', parseFloat(this.value)||0)">
+                            </div>
+                            <div class="pg-is-box">
+                                <label>Subtotal</label>
+                                <div class="pg-item-sub">${formatMoney(subtotal)}</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(row);
+            });
+        }
+
+        function updateItemField(id, field, value) {
+            const item = items.find(i => i.id === id);
+            if (item) {
+                item[field] = value;
+                renderItems();
+                updatePreview();
+            }
+        }
+
+        // === PREVIEW UPDATE ===
+        function updatePreview() {
+            const currency = document.getElementById('budgetCurrency').value;
+
+            // Budget Info
+            const budgetNum = document.getElementById('budgetNumber').value;
+            const budgetDate = document.getElementById('budgetDate').value;
+            const validity = document.getElementById('budgetValidity').value;
+            
+            document.getElementById('docBudgetNumber').textContent = `Nº ${budgetNum}`;
+            document.getElementById('docDate').textContent = budgetDate ? formatDate(budgetDate) : '--';
+            document.getElementById('docValidity').textContent = validity;
+
+            // Client Info
+            const clientName = document.getElementById('clientName').value || '---';
+            const clientPhone = document.getElementById('clientPhone').value || '---';
+            const clientAddr = document.getElementById('clientAddress').value || '---';
+            
+            document.getElementById('docClientInfo').innerHTML = 
+                `<strong>Cliente:</strong> ${clientName}<br>` +
+                `<strong>Tel:</strong> ${clientPhone}<br>` +
+                `<strong>Dirección:</strong> ${clientAddr}`;
+
+            // Items Table
+            const tbody = document.getElementById('docItemsBody');
+            if (items.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#ccc; padding:30px; font-style:italic;">
+                    Agregá ítems desde el panel izquierdo</td></tr>`;
+            } else {
+                tbody.innerHTML = items.map((item, idx) => {
+                    const sub = item.qty * item.price;
+                    return `<tr>
+                        <td>${idx + 1}</td>
+                        <td>${item.description || '<span style="color:#ccc">Sin descripción</span>'}</td>
+                        <td>${item.qty}</td>
+                        <td>${currency} ${formatNum(item.price)}</td>
+                        <td class="pg-td-right">${currency} ${formatNum(sub)}</td>
+                    </tr>`;
+                }).join('');
+            }
+
+            // Totals
+            const subtotal = items.reduce((sum, item) => sum + (item.qty * item.price), 0);
+            const discountPct = parseFloat(document.getElementById('discountPercent').value) || 0;
+            const ivaPct = parseFloat(document.getElementById('ivaPercent').value) || 0;
+            
+            const discountAmount = subtotal * (discountPct / 100);
+            const afterDiscount = subtotal - discountAmount;
+            const ivaAmount = afterDiscount * (ivaPct / 100);
+            const total = afterDiscount + ivaAmount;
+            
+            document.getElementById('docSubtotal').textContent = `${currency} ${formatNum(subtotal)}`;
+            
+            const discountRow = document.getElementById('docDiscountRow');
+            if (discountPct > 0) {
+                discountRow.style.display = 'flex';
+                document.getElementById('docDiscountPercent').textContent = discountPct;
+                document.getElementById('docDiscountAmount').textContent = `-${currency} ${formatNum(discountAmount)}`;
+            } else {
+                discountRow.style.display = 'none';
+            }
+            
+            document.getElementById('docIvaPercent').textContent = ivaPct;
+            document.getElementById('docIvaAmount').textContent = `${currency} ${formatNum(ivaAmount)}`;
+            document.getElementById('docTotal').textContent = `${currency} ${formatNum(total)}`;
+        }
+
+        // === LOGO ===
+        function handleLogoUpload(e) {
+            if (e.target.files.length > 0) {
+                const reader = new FileReader();
+                reader.onload = function(ev) {
+                    logoDataUrl = ev.target.result;
+                    const img = document.getElementById('logoPreview');
+                    img.src = logoDataUrl;
+                    img.style.display = 'block';
+                    document.getElementById('logoPlaceholder').style.display = 'none';
+                };
+                reader.readAsDataURL(e.target.files[0]);
+            }
+        }
+
+        // === PROJECT IMAGES ===
+        function handleProjectImages(e) {
+            const files = Array.from(e.target.files);
+            files.forEach(file => {
+                const reader = new FileReader();
+                reader.onload = function(ev) {
+                    projectImages.push(ev.target.result);
+                    renderProjectImages();
+                };
+                reader.readAsDataURL(file);
+            });
+            // Reset input
+            e.target.value = '';
+        }
+
+        function renderProjectImages() {
+            const section = document.getElementById('docImagesSection');
+            const grid = document.getElementById('docImagesGrid');
+            
+            if (projectImages.length === 0) {
+                section.style.display = 'none';
+                return;
+            }
+            
+            section.style.display = 'block';
+            grid.innerHTML = projectImages.map((src, idx) => `
+                <div class="pg-doc-image-slot">
+                    <img src="${src}" alt="Imagen ${idx + 1}">
+                    <button class="pg-img-remove" onclick="removeProjectImage(${idx})" title="Quitar">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function removeProjectImage(idx) {
+            projectImages.splice(idx, 1);
+            renderProjectImages();
+        }
+
+        // === EXPORT ===
+        function exportPNG() {
+            const doc = document.getElementById('budgetDocument');
+            // Temporarily hide remove buttons
+            doc.querySelectorAll('.pg-img-remove').forEach(b => b.style.display = 'none');
+            
+            html2canvas(doc, { 
+                scale: 2, 
+                useCORS: true,
+                backgroundColor: '#ffffff'
+            }).then(canvas => {
+                const link = document.createElement('a');
+                const budgetNum = document.getElementById('budgetNumber').value;
+                const clientName = document.getElementById('clientName').value || 'cliente';
+                link.download = `Presupuesto_${budgetNum}_${clientName.replace(/\s+/g,'_')}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+                // Restore buttons
+                doc.querySelectorAll('.pg-img-remove').forEach(b => b.style.display = '');
+            });
+        }
+
+        function printBudget() {
+            const docElement = document.getElementById('budgetDocument');
+            
+            // Show loading message
+            if (window.showNotification) {
+                window.showNotification({title: 'Generando PDF', message: 'Por favor, esperá unos segundos...'});
+            }
+
+            // Clone the element to render it outside any layout or scroll constraints
+            const clone = docElement.cloneNode(true);
+            
+            // Hide delete buttons and borders in the clone
+            clone.querySelectorAll('.pg-img-remove').forEach(b => b.style.display = 'none');
+            clone.style.border = 'none';
+            clone.style.boxShadow = 'none';
+            
+            // Position the clone off-screen but visible to html2canvas
+            clone.style.position = 'absolute';
+            clone.style.left = '-9999px';
+            clone.style.top = '0';
+            clone.style.width = '210mm';
+            clone.style.height = 'auto';
+            clone.style.minHeight = '297mm';
+            clone.style.margin = '0';
+            clone.style.padding = '25mm 20mm 50mm 20mm';
+            clone.style.backgroundColor = '#ffffff';
+            
+            document.body.appendChild(clone);
+
+            // Wait for DOM to register the clone
+            setTimeout(() => {
+                html2canvas(clone, { 
+                    scale: 2, 
+                    useCORS: true,
+                    backgroundColor: '#ffffff'
+                }).then(canvas => {
+                    // Remove the clone from DOM
+                    document.body.removeChild(clone);
+
+                    const imgData = canvas.toDataURL('image/png');
+                    
+                    const { jsPDF } = window.jspdf;
+                    
+                    // Calculate dynamic height in mm based on the aspect ratio of the captured canvas
+                    const pdfWidth = 210;
+                    const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+                    
+                    // Set the page size custom to [width, height] matching the content
+                    const pdf = new jsPDF('p', 'mm', [pdfWidth, pdfHeight]);
+                    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+                    
+                    const budgetNum = document.getElementById('budgetNumber').value;
+                    const clientName = document.getElementById('clientName').value || 'cliente';
+                    pdf.save(`Presupuesto_${budgetNum}_${clientName.replace(/\s+/g,'_')}.pdf`);
+                }).catch(err => {
+                    if (clone.parentNode) {
+                        document.body.removeChild(clone);
+                    }
+                    console.error('Error generating PDF:', err);
+                    alert('Error al generar PDF. Intenta de nuevo.');
+                });
+            }, 100);
+        }
+
+        // === SAVE / LOAD ===
+        async function loadNextBudgetNumber() {
+            if (!window.mrDataManager) return;
+            try {
+                const cotizaciones = await window.mrDataManager.getGremioCotizaciones();
+                let maxNumber = 0;
+                cotizaciones.forEach(c => {
+                    if (c.budgetNumber) {
+                        const num = parseInt(c.budgetNumber);
+                        if (!isNaN(num) && num > maxNumber) {
+                            maxNumber = num;
+                        }
+                    }
+                });
+                document.getElementById('budgetNumber').value = String(maxNumber + 1).padStart(3, '0');
+            } catch (e) {
+                console.error('Error loading budget number', e);
+            }
+        }
+
+        async function saveDraft() {
+            if (!window.mrDataManager) {
+                alert("Error: Gestor de datos no cargado");
+                return;
+            }
+
+            const currency = document.getElementById('budgetCurrency').value;
+            const clientName = document.getElementById('clientName').value || 'Sin nombre';
+            
+            // Map items to productos format for system compatibility
+            const productos = items.map(item => ({
+                producto: item.description,
+                cantidad: item.qty,
+                total: item.qty * item.price,
+                costoTotal: 0
+            }));
+
+            const subtotal = items.reduce((sum, item) => sum + (item.qty * item.price), 0);
+            const discountPct = parseFloat(document.getElementById('discountPercent').value) || 0;
+            const ivaPct = parseFloat(document.getElementById('ivaPercent').value) || 0;
+            
+            const discountAmount = subtotal * (discountPct / 100);
+            const afterDiscount = subtotal - discountAmount;
+            const ivaAmount = afterDiscount * (ivaPct / 100);
+            const total = afterDiscount + ivaAmount;
+
+            const data = {
+                id: currentBudgetId || ('cot_gen_' + Date.now()), // Keep existing ID if editing
+                clientId: 'cli_gen_' + Date.now(),
+                cliente: {
+                    nombre: clientName,
+                    telefono: document.getElementById('clientPhone').value,
+                    direccion: document.getElementById('clientAddress').value
+                },
+                fecha: new Date().toISOString(),
+                fechaEntrega: '',
+                productos: productos,
+                terceros: [],
+                multiCategories: null,
+                costoTotal: 0,
+                subtotal: subtotal,
+                iva: ivaAmount,
+                descuentoEspecial: discountAmount,
+                porcentajeDescuento: discountPct,
+                totalCliente: total,
+                ganancia: total, // Cost is 0
+                anticipo: 0,
+                saldo: total,
+                estado: 'pendiente',
+                // Specific to this tool
+                isCustomBudget: true,
+                budgetNumber: document.getElementById('budgetNumber').value,
+                notes: document.getElementById('docNotes').innerHTML,
+                images: projectImages
+            };
+            
+            try {
+                const cotizaciones = await window.mrDataManager.getGremioCotizaciones();
+                
+                if (currentBudgetId) {
+                    const existingIndex = cotizaciones.findIndex(c => c.id === currentBudgetId);
+                    if (existingIndex !== -1) {
+                        // Preserve original status and client IDs
+                        data.clientId = cotizaciones[existingIndex].clientId || data.clientId;
+                        data.estado = cotizaciones[existingIndex].estado || data.estado;
+                        data.fecha = cotizaciones[existingIndex].fecha || data.fecha;
+                        cotizaciones[existingIndex] = data;
+                    } else {
+                        cotizaciones.push(data);
+                    }
+                } else {
+                    cotizaciones.push(data);
+                }
+                
+                const success = await window.mrDataManager.saveGremioCotizaciones(cotizaciones);
+                
+                if (success) {
+                    alert(`✅ Presupuesto Nº ${data.budgetNumber} guardado en el servidor exitosamente.`);
+                    currentBudgetId = data.id;
+                    const btnDelete = document.getElementById('btnDeleteActive');
+                    if (btnDelete) btnDelete.style.display = 'inline-flex';
+                } else {
+                    alert('❌ Error al guardar en el servidor.');
+                }
+            } catch (e) {
+                console.error(e);
+                alert('❌ Error de conexión al guardar.');
+            }
+        }
+
+        let modalBudgets = []; // Guardado de presupuestos global para búsqueda
+
+        async function loadDraft() {
+            if (!window.mrDataManager) {
+                alert("Error: Gestor de datos no cargado");
+                return;
+            }
+            try {
+                const cotizaciones = await window.mrDataManager.getGremioCotizaciones();
+                // Filtrar los creados por esta herramienta
+                modalBudgets = cotizaciones.filter(c => c.isCustomBudget);
+                
+                if (modalBudgets.length === 0) {
+                    alert('No hay presupuestos personalizados guardados en el servidor.');
+                    return;
+                }
+                
+                // Mostrar el modal y resetear la búsqueda
+                document.getElementById('loadBudgetModal').style.display = 'flex';
+                document.getElementById('modalSearchInput').value = '';
+                renderModalBudgets(modalBudgets);
+            } catch(e) {
+                console.error(e);
+                alert('Error al cargar presupuestos.');
+            }
+        }
+
+        function closeLoadModal() {
+            document.getElementById('loadBudgetModal').style.display = 'none';
+        }
+
+        function renderModalBudgets(list) {
+            const listEl = document.getElementById('modalBudgetsList');
+            if (list.length === 0) {
+                listEl.innerHTML = '<div style="text-align:center; padding:20px; color:#64748b;">No se encontraron presupuestos</div>';
+                return;
+            }
+
+            listEl.innerHTML = list.map(c => {
+                const date = new Date(c.fecha).toLocaleDateString('es-AR');
+                const price = c.totalCliente || c.total || 0;
+                return `
+                    <div class="pg-modal-item" onclick="selectModalBudget('${c.id}')">
+                        <div class="pg-modal-item-left">
+                            <span class="pg-modal-item-number">Nº ${c.budgetNumber || '---'}</span>
+                            <span class="pg-modal-item-name">${c.cliente?.nombre || 'Sin cliente'}</span>
+                            <span class="pg-modal-item-date">📅 ${date}</span>
+                        </div>
+                        <div class="pg-modal-item-right" style="display:flex; align-items:center; gap: 15px;">
+                            <div style="text-align: right; display: flex; flex-direction: column; gap: 0.25rem;">
+                                <span class="pg-modal-item-price">$ ${price.toLocaleString('es-AR', { minimumFractionDigits: 0 })}</span>
+                                <span class="pg-modal-item-status">${c.estado === 'aprobada' || c.aprobada ? '✅ Aprobado' : '⏳ Pendiente'}</span>
+                            </div>
+                            <button class="pg-btn pg-btn-outline pg-btn-sm" style="color: #ef4444; border-color: rgba(239, 68, 68, 0.4); padding: 5px 10px; margin: 0;" onclick="deleteModalBudget('${c.id}', event)" title="Eliminar Presupuesto">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function filterModalBudgets() {
+            const query = document.getElementById('modalSearchInput').value.toLowerCase();
+            const filtered = modalBudgets.filter(c => 
+                (c.cliente?.nombre || '').toLowerCase().includes(query) ||
+                (c.budgetNumber || '').toLowerCase().includes(query)
+            );
+            renderModalBudgets(filtered);
+        }
+
+        function selectModalBudget(id) {
+            const data = modalBudgets.find(c => c.id === id);
+            if (data) {
+                restoreDraftFromServer(data);
+                closeLoadModal();
+            }
+        }
+
+        function restoreDraftFromServer(data) {
+            currentBudgetId = data.id;
+            const btnDelete = document.getElementById('btnDeleteActive');
+            if (btnDelete) btnDelete.style.display = 'inline-flex';
+            
+            document.getElementById('clientName').value = data.cliente.nombre || '';
+            document.getElementById('clientPhone').value = data.cliente.telefono || '';
+            document.getElementById('clientAddress').value = data.cliente.direccion || '';
+            
+            document.getElementById('budgetNumber').value = data.budgetNumber || '';
+            document.getElementById('budgetDate').value = data.fecha ? data.fecha.split('T')[0] : '';
+            // Currency is not explicitly saved in standard quotes, assume ARS for now
+            
+            items = data.productos.map((p, idx) => ({
+                id: Date.now() + idx,
+                description: p.producto,
+                qty: p.cantidad,
+                price: p.total / (p.cantidad || 1) // Infer unit price
+            }));
+            
+            renderItems();
+            
+            document.getElementById('discountPercent').value = data.porcentajeDescuento || 0;
+            
+            // IVA calculation (reverse engineer)
+            if (data.iva > 0 && data.subtotal > 0) {
+                document.getElementById('ivaPercent').value = Math.round((data.iva / (data.subtotal - data.descuentoEspecial)) * 100);
+            } else {
+                document.getElementById('ivaPercent').value = 0;
+            }
+            
+            // Notes and images
+            if (data.notes) document.getElementById('docNotes').innerHTML = data.notes;
+            
+            projectImages = data.images || [];
+            renderProjectImages();
+            
+            updatePreview();
+        }
+
+        async function deleteActiveBudget() {
+            if (!currentBudgetId) return;
+            await deleteModalBudget(currentBudgetId);
+        }
+
+        async function deleteModalBudget(id, event) {
+            if (event) event.stopPropagation(); // Evitar click en elemento del modal
+            
+            const data = modalBudgets.find(c => c.id === id);
+            const clientName = data?.cliente?.nombre || 'este presupuesto';
+            const num = data?.budgetNumber || '---';
+            
+            if (!confirm(`¿Estás seguro de que querés eliminar el Presupuesto Nº ${num} de "${clientName}"? Esta acción no se puede deshacer.`)) {
+                return;
+            }
+            
+            try {
+                const cotizaciones = await window.mrDataManager.getGremioCotizaciones();
+                const filtered = cotizaciones.filter(c => c.id !== id);
+                const success = await window.mrDataManager.saveGremioCotizaciones(filtered);
+                
+                if (success) {
+                    alert('✅ Presupuesto eliminado correctamente.');
+                    // Actualizar lista en el modal local
+                    modalBudgets = modalBudgets.filter(c => c.id !== id);
+                    renderModalBudgets(modalBudgets);
+                    
+                    // Si el presupuesto eliminado era el que estaba cargado en pantalla, limpiar pantalla
+                    if (currentBudgetId === id) {
+                        currentBudgetId = null;
+                        const btnDelete = document.getElementById('btnDeleteActive');
+                        if (btnDelete) btnDelete.style.display = 'none';
+                        
+                        // Limpiar formulario
+                        document.getElementById('clientName').value = '';
+                        document.getElementById('clientPhone').value = '';
+                        document.getElementById('clientAddress').value = '';
+                        await loadNextBudgetNumber();
+                        document.getElementById('budgetDate').value = new Date().toISOString().split('T')[0];
+                        items = [];
+                        addItem();
+                        projectImages = [];
+                        renderProjectImages();
+                        document.getElementById('discountPercent').value = 0;
+                        document.getElementById('ivaPercent').value = 21;
+                        document.getElementById('docNotes').innerHTML = 
+                            '• Los precios incluyen materiales y mano de obra.<br>' +
+                            '• Plazo de entrega estimado: 7-15 días hábiles.<br>' +
+                            '• Forma de pago: 50% anticipo, 50% contra entrega.<br>' +
+                            '• Los diseños quedan sujetos a aprobación del cliente.<br>' +
+                            '• Presupuesto válido por el periodo indicado.';
+                        updatePreview();
+                    }
+                } else {
+                    alert('❌ Error al guardar los cambios en el servidor.');
+                }
+            } catch (e) {
+                console.error(e);
+                alert('❌ Error de conexión al eliminar.');
+            }
+        }
+
+        async function newBudget() {
+            if (!confirm('¿Crear un nuevo presupuesto? Los cambios no guardados se perderán.')) return;
+            currentBudgetId = null;
+            const btnDelete = document.getElementById('btnDeleteActive');
+            if (btnDelete) btnDelete.style.display = 'none';
+            
+            // Clear client data
+            document.getElementById('clientName').value = '';
+            document.getElementById('clientPhone').value = '';
+            document.getElementById('clientAddress').value = '';
+            
+            // Increment budget number from server
+            await loadNextBudgetNumber();
+            
+            // Reset date
+            document.getElementById('budgetDate').value = new Date().toISOString().split('T')[0];
+            
+            // Clear items
+            items = [];
+            addItem();
+            
+            // Clear images
+            projectImages = [];
+            renderProjectImages();
+            
+            // Reset adjustments
+            document.getElementById('discountPercent').value = 0;
+            document.getElementById('ivaPercent').value = 21;
+            
+            // Reset notes
+            document.getElementById('docNotes').innerHTML = 
+                '• Los precios incluyen materiales y mano de obra.<br>' +
+                '• Plazo de entrega estimado: 7-15 días hábiles.<br>' +
+                '• Forma de pago: 50% anticipo, 50% contra entrega.<br>' +
+                '• Los diseños quedan sujetos a aprobación del cliente.<br>' +
+                '• Presupuesto válido por el periodo indicado.';
+            
+            updatePreview();
+        }
+
+        // === HELPERS ===
+        function formatNum(n) {
+            return n.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        function formatMoney(n) {
+            const currency = document.getElementById('budgetCurrency').value;
+            return `${currency} ${formatNum(n)}`;
+        }
+
+        function formatDate(dateStr) {
+            const parts = dateStr.split('-');
+            return `${parts[2]}/${parts[1]}/${parts[0]}`;
+        }
+    </script>
+
+    <!-- Modal Seleccionar Presupuesto -->
+    <div id="loadBudgetModal" class="pg-modal" style="display:none;">
+        <div class="pg-modal-content">
+            <div class="pg-modal-header">
+                <h3>Cargar Presupuesto Existente</h3>
+                <button class="pg-modal-close" onclick="closeLoadModal()">&times;</button>
+            </div>
+            <div class="pg-modal-body">
+                <div style="margin-bottom: 1.25rem;">
+                    <input type="text" id="modalSearchInput" placeholder="🔍 Buscar por cliente o Nº de presupuesto..." oninput="filterModalBudgets()" style="width:100%; padding:0.75rem 1rem; border-radius:10px; border:1px solid #334155; background:#0f172a; color:white; outline:none; transition: border-color 0.2s;" onfocus="this.style.borderColor='#ffd700'" onblur="this.style.borderColor='#334155'">
+                </div>
+                <div id="modalBudgetsList" class="pg-modal-list">
+                    <!-- Lista inyectada dinámicamente -->
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

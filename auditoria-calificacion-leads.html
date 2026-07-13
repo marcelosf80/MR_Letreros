@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auditoría de Calificación de Leads - MR Letreros</title>
+    <link rel="stylesheet" href="../css/base.css">
+    <style>
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .table-container {
+            overflow-x: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #333;
+        }
+        th {
+            background-color: #2a2a2a;
+        }
+        tr:hover {
+            background-color: #2c2c2c;
+        }
+        .score {
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+        .level-hot { color: #ff4757; font-weight: bold; }
+        .level-warm { color: #ffa502; font-weight: bold; }
+        .level-cold { color: #70a1ff; font-weight: bold; }
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #888;
+        }
+        .filters {
+            margin: 20px 0;
+            display: flex;
+            gap: 10px;
+        }
+        .btn-filter {
+            background: #333; color: #e0e0e0; border: 1px solid #555;
+        }
+        .btn-filter.active { background: #2196F3; border-color: #2196F3; color: white; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🕵️ Auditoría de Calificación de Leads</h1>
+            <div>
+                <a href="/index.html" class="btn btn-secondary">Volver al Inicio</a>
+                <button class="btn btn-primary" onclick="loadLeads()">🔄 Recargar</button>
+            </div>
+        </div>
+
+        <div class="filters">
+            <button class="btn btn-filter active" onclick="filterLeads('all', this)">Todos</button>
+            <button class="btn btn-filter" onclick="filterLeads('hot', this)">🔥 Hot Leads</button>
+            <button class="btn btn-filter" onclick="filterLeads('warm', this)">☀️ Warm Leads</button>
+            <button class="btn btn-filter" onclick="filterLeads('cold', this)">❄️ Cold Leads</button>
+        </div>
+
+        <div class="table-container">
+            <table id="leadsTable">
+                <thead>
+                    <tr>
+                        <th>Cliente</th>
+                        <th>Contacto</th>
+                        <th>Tipo</th>
+                        <th>Puntaje</th>
+                        <th>Calificación</th>
+                        <th>Observaciones</th>
+                    </tr>
+                </thead>
+                <tbody id="leadsTableBody">
+                    <!-- Los datos se cargarán aquí -->
+                </tbody>
+            </table>
+            <div id="loadingState" class="empty-state">Cargando leads...</div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = '/api/clientes';
+        let allQualifiedLeads = [];
+
+        async function fetchWithAuth(url, options = {}) {
+            const token = localStorage.getItem('mr_token');
+            if (!token) {
+                alert('No se encontró token de autenticación. Por favor, inicie sesión.');
+                window.location.href = '/index.html';
+                return null;
+            }
+            const headers = { ...options.headers, 'Authorization': `Bearer ${token}` };
+            return fetch(url, { ...options, headers });
+        }
+
+        function calculateScore(client) {
+            let score = 0;
+            let observations = [];
+
+            if (client.telefono || client.contact || client.phone) {
+                score += 2;
+                observations.push('Tiene teléfono');
+            }
+            if (client.email) {
+                score += 2;
+                observations.push('Tiene email');
+            }
+            if (client.direccion || client.address) {
+                score += 1;
+                observations.push('Tiene dirección');
+            }
+            if (client.tipo && client.tipo.toLowerCase() === 'gremio') {
+                score += 3;
+                observations.push('Cliente de Gremio');
+            }
+            if (client.notes || client.notas) {
+                score += 2;
+                observations.push('Tiene notas previas');
+            }
+            
+            return { score: Math.min(score, 10), observations: observations.join(', ') };
+        }
+
+        function getQualificationLevel(score) {
+            if (score >= 8) return { text: '🔥 Hot Lead', class: 'level-hot' };
+            if (score >= 5) return { text: '☀️ Warm Lead', class: 'level-warm' };
+            return { text: '❄️ Cold Lead', class: 'level-cold' };
+        }
+
+        function renderLeads(leads) {
+            const tableBody = document.getElementById('leadsTableBody');
+            
+            if (leads.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 20px;">No se encontraron leads en esta categoría.</td></tr>';
+                return;
+            }
+
+            tableBody.innerHTML = leads.map(lead => `
+                <tr>
+                    <td>${lead.nombre || lead.name}</td>
+                    <td>${lead.telefono || lead.email || 'N/A'}</td>
+                    <td>${lead.tipo || 'N/A'}</td>
+                    <td class="score">${lead.score}/10</td>
+                    <td class="${lead.level.class}">${lead.level.text}</td>
+                    <td>${lead.observations}</td>
+                </tr>
+            `).join('');
+        }
+
+        function filterLeads(type, btn) {
+            // Actualizar botón activo
+            document.querySelectorAll('.btn-filter').forEach(b => b.classList.remove('active'));
+            if(btn) btn.classList.add('active');
+
+            if (type === 'all') {
+                renderLeads(allQualifiedLeads);
+            } else {
+                const filtered = allQualifiedLeads.filter(lead => {
+                    if (type === 'hot') return lead.score >= 8;
+                    if (type === 'warm') return lead.score >= 5 && lead.score < 8;
+                    if (type === 'cold') return lead.score < 5;
+                });
+                renderLeads(filtered);
+            }
+        }
+
+        async function loadLeads() {
+            const loadingState = document.getElementById('loadingState');
+            
+            document.getElementById('leadsTableBody').innerHTML = '';
+            loadingState.style.display = 'block';
+            loadingState.textContent = 'Cargando leads...';
+
+            try {
+                const response = await fetchWithAuth(API_URL);
+                if (!response || !response.ok) throw new Error(`Error del servidor: ${response?.statusText || 'No se pudo conectar'}`);
+                const clients = await response.json();
+
+                if (!Array.isArray(clients) || clients.length === 0) {
+                    loadingState.textContent = 'No se encontraron clientes para auditar.';
+                    return;
+                }
+
+                allQualifiedLeads = clients.map(client => {
+                    const { score, observations } = calculateScore(client);
+                    const level = getQualificationLevel(score);
+                    return { ...client, score, observations, level };
+                }).sort((a, b) => b.score - a.score);
+
+                renderLeads(allQualifiedLeads);
+                loadingState.style.display = 'none';
+
+            } catch (error) {
+                console.error('Error al cargar los leads:', error);
+                loadingState.textContent = `Error al cargar: ${error.message}`;
+                loadingState.style.color = 'red';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', loadLeads);
+    </script>
+</body>
+</html>

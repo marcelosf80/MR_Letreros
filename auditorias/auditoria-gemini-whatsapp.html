@@ -1,0 +1,1145 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Auditoría — Gemini AI + Bot WhatsApp | MR Letreros</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@300;400;500&display=swap');
+
+  :root {
+    --bg:       #0a0a14;
+    --surface:  #12121f;
+    --border:   rgba(255,255,255,0.07);
+    --accent:   #4285f4;
+    --accent2:  #ea4335;
+    --green:    #34a853;
+    --yellow:   #fbbc04;
+    --purple:   #a78bfa;
+    --text:     #e5e7eb;
+    --muted:    #6b7280;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-weight: 300;
+    line-height: 1.7;
+    min-height: 100vh;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 250 250' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ── HEADER ── */
+  header {
+    position: relative;
+    padding: 4rem 4rem 3rem;
+    border-bottom: 1px solid var(--border);
+    overflow: hidden;
+  }
+
+  header::before {
+    content: '';
+    position: absolute;
+    top: -100px; right: -80px;
+    width: 500px; height: 500px;
+    background: radial-gradient(circle, rgba(66,133,244,0.12) 0%, transparent 65%);
+    pointer-events: none;
+  }
+
+  .header-eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+  }
+
+  .gemini-logo {
+    width: 32px; height: 32px;
+    background: linear-gradient(135deg, #4285f4, #ea4335, #fbbc04, #34a853);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    font-weight: 800;
+    color: white;
+    font-family: 'Syne', sans-serif;
+    flex-shrink: 0;
+  }
+
+  .header-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.2em;
+    color: var(--accent);
+    text-transform: uppercase;
+  }
+
+  h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(2rem, 4vw, 3.2rem);
+    font-weight: 800;
+    line-height: 1.1;
+    background: linear-gradient(135deg, #fff 0%, rgba(66,133,244,0.7) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 1rem;
+  }
+
+  .header-meta {
+    display: flex;
+    gap: 2rem;
+    flex-wrap: wrap;
+  }
+
+  .meta-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--muted);
+  }
+
+  .meta-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+
+  /* ── LAYOUT ── */
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 3rem 4rem;
+    position: relative;
+    z-index: 1;
+  }
+
+  @media (max-width: 768px) {
+    .container { padding: 2rem 1.5rem; }
+    header { padding: 2.5rem 1.5rem; }
+  }
+
+  .section-number {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--accent);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 0.5rem;
+  }
+
+  .section-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 0.4rem;
+  }
+
+  .section-subtitle {
+    font-size: 0.9rem;
+    color: var(--muted);
+    margin-bottom: 2rem;
+  }
+
+  section { margin-bottom: 4rem; }
+
+  .divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 3rem 0;
+  }
+
+  /* ── BENEFIT BANNER ── */
+  .benefit-banner {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1rem;
+    margin-bottom: 3rem;
+  }
+
+  .benefit-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 12px;
+    padding: 1.25rem 1.5rem;
+    transition: transform 0.2s;
+  }
+
+  .benefit-card:hover { transform: translateY(-2px); }
+
+  .benefit-icon { font-size: 1.4rem; margin-bottom: 0.5rem; }
+
+  .benefit-card h4 {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 0.3rem;
+  }
+
+  .benefit-card p { font-size: 0.82rem; color: var(--muted); line-height: 1.5; }
+
+  /* ── COMPARISON GRID ── */
+  .compare-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
+
+  @media (max-width: 768px) { .compare-grid { grid-template-columns: 1fr; } }
+
+  .compare-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 1.75rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .compare-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    border-radius: 14px 14px 0 0;
+  }
+
+  .compare-card.without::before { background: linear-gradient(90deg, #6b7280, #9ca3af); }
+  .compare-card.with::before { background: linear-gradient(90deg, var(--accent), var(--green)); }
+
+  .compare-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.3rem 0.8rem;
+    border-radius: 20px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 0.85rem;
+    border: 1px solid;
+  }
+
+  .compare-card.without .compare-badge { background: rgba(107,114,128,0.1); color: var(--muted); border-color: rgba(107,114,128,0.3); }
+  .compare-card.with .compare-badge { background: rgba(66,133,244,0.1); color: var(--accent); border-color: rgba(66,133,244,0.3); }
+
+  .compare-card h3 {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 1rem;
+  }
+
+  .example-box {
+    background: rgba(0,0,0,0.3);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    font-size: 0.82rem;
+    line-height: 1.6;
+  }
+
+  .msg-user { color: rgba(255,255,255,0.9); margin-bottom: 0.5rem; }
+  .msg-bot { color: var(--green); }
+
+  .pros-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+  }
+
+  .pros-list div {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    font-size: 0.82rem;
+    color: rgba(255,255,255,0.8);
+  }
+
+  .compare-card.with .pros-list div::before { content: '✓'; color: var(--green); font-weight: 700; flex-shrink: 0; }
+  .compare-card.without .pros-list div::before { content: '✗'; color: var(--muted); flex-shrink: 0; }
+
+  /* ── CODE BLOCKS ── */
+  .code-block {
+    background: #070810;
+    border: 1px solid rgba(66,133,244,0.15);
+    border-radius: 10px;
+    padding: 1.25rem 1.5rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    line-height: 1.8;
+    overflow-x: auto;
+    color: #c9d1d9;
+  }
+
+  .code-block .kw  { color: #ff7b72; }
+  .code-block .fn  { color: #79c0ff; }
+  .code-block .str { color: #a5d6ff; }
+  .code-block .cm  { color: #4d5f70; font-style: italic; }
+  .code-block .nm  { color: #ffa657; }
+  .code-block .kv  { color: #d2a8ff; }
+  .code-block .gs  { color: #56d364; }
+
+  /* ── ARCH GRID ── */
+  .arch-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  @media (max-width: 768px) { .arch-grid { grid-template-columns: 1fr; } }
+
+  .arch-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem;
+  }
+
+  .arch-card h4 {
+    font-family: 'Syne', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  /* ── STEPS ── */
+  .steps { display: flex; flex-direction: column; gap: 1.25rem; }
+
+  .step {
+    display: grid;
+    grid-template-columns: 48px 1fr;
+    gap: 1.25rem;
+    align-items: start;
+  }
+
+  .step-num {
+    width: 48px; height: 48px;
+    border-radius: 12px;
+    background: rgba(66,133,244,0.08);
+    border: 1px solid rgba(66,133,244,0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--accent);
+    flex-shrink: 0;
+  }
+
+  .step-content h4 {
+    font-family: 'Syne', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 0.35rem;
+  }
+
+  .step-content p { font-size: 0.875rem; color: var(--muted); margin-bottom: 0.75rem; line-height: 1.6; }
+
+  /* ── TAGS ── */
+  .tag {
+    display: inline-block;
+    padding: 0.2rem 0.6rem;
+    border-radius: 6px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    font-weight: 600;
+    margin: 0.15rem;
+    border: 1px solid;
+  }
+
+  .tag-ai  { background: rgba(66,133,244,0.1);  color: var(--accent); border-color: rgba(66,133,244,0.25); }
+  .tag-api { background: rgba(52,168,83,0.1);   color: var(--green);  border-color: rgba(52,168,83,0.25); }
+  .tag-free{ background: rgba(52,168,83,0.1);   color: var(--green);  border-color: rgba(52,168,83,0.25); }
+  .tag-adv { background: rgba(167,139,250,0.1); color: var(--purple); border-color: rgba(167,139,250,0.25); }
+
+  /* ── USE CASES ── */
+  .usecase-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.25rem;
+    margin-bottom: 2rem;
+  }
+
+  .usecase-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem;
+  }
+
+  .usecase-card h4 {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .usecase-card p { font-size: 0.82rem; color: var(--muted); margin-bottom: 0.75rem; }
+
+  .usecase-example {
+    background: rgba(0,0,0,0.3);
+    border-left: 2px solid var(--accent);
+    padding: 0.75rem;
+    border-radius: 4px;
+    font-size: 0.78rem;
+    line-height: 1.6;
+  }
+
+  /* ── TIMELINE ── */
+  .timeline { display: flex; flex-direction: column; }
+
+  .tl-item {
+    display: grid;
+    grid-template-columns: 110px 1px 1fr;
+    gap: 0 1.5rem;
+    align-items: start;
+    padding-bottom: 2rem;
+  }
+
+  .tl-week {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    text-align: right;
+    padding-top: 0.15rem;
+  }
+
+  .tl-line { position: relative; background: var(--border); width: 1px; }
+
+  .tl-line::before {
+    content: '';
+    position: absolute;
+    top: 6px; left: -4px;
+    width: 9px; height: 9px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 10px rgba(66,133,244,0.6);
+  }
+
+  .tl-content { padding-left: 0.5rem; }
+
+  .tl-content h4 { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.95rem; color: #fff; margin-bottom: 0.4rem; }
+  .tl-content p  { font-size: 0.83rem; color: var(--muted); line-height: 1.6; }
+
+  /* ── PRICING TABLE ── */
+  .pricing-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1.25rem;
+    margin-bottom: 2rem;
+  }
+
+  .price-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem;
+    text-align: center;
+  }
+
+  .price-card h4 {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 0.5rem;
+  }
+
+  .price-amount {
+    font-family: 'Syne', sans-serif;
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--green);
+    line-height: 1;
+    margin-bottom: 0.5rem;
+  }
+
+  .price-card p { font-size: 0.75rem; color: var(--muted); }
+
+  /* ── FOOTER ── */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 2rem 4rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .footer-brand { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.9rem; color: rgba(255,255,255,0.3); }
+  .footer-note  { font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: var(--muted); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-eyebrow">
+    <div class="gemini-logo">G</div>
+    <div class="header-label">MR Letreros · Inteligencia Artificial</div>
+  </div>
+  <h1>Auditoría: Gemini AI<br>en el Bot de WhatsApp</h1>
+  <div class="header-meta">
+    <div class="meta-item"><div class="meta-dot"></div> API Gratuita de Google</div>
+    <div class="meta-item"><div class="meta-dot"></div> Respuestas Naturales</div>
+    <div class="meta-item"><div class="meta-dot"></div> Calificación Inteligente</div>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- BENEFICIOS -->
+  <div class="benefit-banner">
+    <div class="benefit-card">
+      <div class="benefit-icon">💬</div>
+      <h4>Conversación Natural</h4>
+      <p>El cliente puede escribir con sus propias palabras, no solo números. Gemini entiende intención y contexto.</p>
+    </div>
+    <div class="benefit-card">
+      <div class="benefit-icon">🧠</div>
+      <h4>Análisis Inteligente</h4>
+      <p>Evalúa no solo QUÉ responde, sino CÓMO lo dice. Detecta urgencia, presupuesto y seriedad automáticamente.</p>
+    </div>
+    <div class="benefit-card">
+      <div class="benefit-icon">🎯</div>
+      <h4>Scoring Preciso</h4>
+      <p>Gemini asigna puntajes basándose en múltiples señales: tono, detalle, consistencia, urgencia real.</p>
+    </div>
+    <div class="benefit-card">
+      <div class="benefit-icon">🤝</div>
+      <h4>Experiencia Humana</h4>
+      <p>Respuestas personalizadas y empáticas. El cliente no nota que habla con un bot.</p>
+    </div>
+    <div class="benefit-card">
+      <div class="benefit-icon">💰</div>
+      <h4>100% Gratuito</h4>
+      <p>API de Gemini sin costo (60 requests/minuto). Cero pago adicional al sistema que ya tenés.</p>
+    </div>
+  </div>
+
+  <!-- SECCIÓN 1: COMPARACIÓN -->
+  <section>
+    <div class="section-number">01 · Comparación</div>
+    <h2 class="section-title">Con IA vs Sin IA</h2>
+    <p class="section-subtitle">Diferencia entre el bot rígido y el bot inteligente con Gemini</p>
+
+    <div class="compare-grid">
+      
+      <div class="compare-card without">
+        <div class="compare-badge">🤖 Sin IA</div>
+        <h3>Bot Actual (Rígido)</h3>
+        
+        <div class="example-box">
+          <div class="msg-user"><strong>Cliente:</strong> "Hola, necesito un letrero"</div>
+          <div class="msg-bot"><strong>Bot:</strong> "¿Qué necesitas?<br>1️⃣ Letreros corporales<br>2️⃣ Señalética<br>3️⃣ Diseño gráfico<br>4️⃣ No estoy seguro"</div>
+          <div class="msg-user" style="margin-top:0.5rem;"><strong>Cliente:</strong> "Necesito algo luminoso para mi local, tipo caja de luz pero grande"</div>
+          <div class="msg-bot"><strong>Bot:</strong> "❌ Por favor responde con el número (1, 2, 3 o 4)"</div>
+        </div>
+
+        <div class="pros-list">
+          <div>Cliente frustrado por respuestas rígidas</div>
+          <div>No entiende lenguaje natural</div>
+          <div>Pierde leads que no siguen el formato</div>
+          <div>Experiencia poco amigable</div>
+          <div>No detecta urgencia ni tono</div>
+        </div>
+      </div>
+
+      <div class="compare-card with">
+        <div class="compare-badge">🧠 Con Gemini AI</div>
+        <h3>Bot Inteligente</h3>
+        
+        <div class="example-box">
+          <div class="msg-user"><strong>Cliente:</strong> "Hola, necesito un letrero"</div>
+          <div class="msg-bot"><strong>Bot:</strong> "¡Hola! Con gusto te ayudo. ¿Qué tipo de letrero estás buscando y para qué lo necesitas?"</div>
+          <div class="msg-user" style="margin-top:0.5rem;"><strong>Cliente:</strong> "Necesito algo luminoso para mi local, tipo caja de luz pero grande, como de 2 metros. Lo necesito urgente para la semana que viene"</div>
+          <div class="msg-bot"><strong>Bot:</strong> "Perfecto, una caja de luz de 2m es justo lo que hacemos. Veo que es urgente. ¿Cuál es tu presupuesto aproximado para esto?"</div>
+        </div>
+
+        <div class="pros-list">
+          <div>Conversación natural y fluida</div>
+          <div>Entiende sinónimos y contexto</div>
+          <div>Detecta urgencia automáticamente</div>
+          <div>Hace preguntas de seguimiento inteligentes</div>
+          <div>Califica al lead con más precisión</div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- SECCIÓN 2: CASOS DE USO -->
+  <section>
+    <div class="section-number">02 · Casos de Uso</div>
+    <h2 class="section-title">Qué Puede Hacer Gemini en el Bot</h2>
+    <p class="section-subtitle">Capacidades específicas que mejoran la calificación de leads</p>
+
+    <div class="usecase-grid">
+
+      <div class="usecase-card">
+        <h4>🔍 Análisis de Intención</h4>
+        <p>Gemini detecta si el cliente solo está "viendo precios" o tiene un proyecto real.</p>
+        <div class="usecase-example">
+          <strong>Cliente:</strong> "Cuánto sale más o menos un letrero?"<br>
+          <strong>Gemini detecta:</strong> ❄️ Frío (consulta vaga, sin detalles)<br><br>
+          <strong>Cliente:</strong> "Necesito cotización para 3 cajas de luz de 1.5x1m con iluminación LED para mi cadena de locales"<br>
+          <strong>Gemini detecta:</strong> 🔥 Caliente (específico, múltiples unidades, B2B)
+        </div>
+      </div>
+
+      <div class="usecase-card">
+        <h4>⏰ Detección de Urgencia</h4>
+        <p>Identifica keywords de urgencia aunque el cliente no responda la pregunta directamente.</p>
+        <div class="usecase-example">
+          <strong>Cliente:</strong> "Inauguramos el viernes y todavía no tengo el cartel"<br>
+          <strong>Gemini detecta:</strong> Urgencia extrema (+30 pts)<br><br>
+          <strong>Cliente:</strong> "Es para más adelante, voy viendo"<br>
+          <strong>Gemini detecta:</strong> Sin urgencia (0 pts)
+        </div>
+      </div>
+
+      <div class="usecase-card">
+        <h4>💰 Inferencia de Presupuesto</h4>
+        <p>Estima el presupuesto aunque el cliente no lo diga explícitamente.</p>
+        <div class="usecase-example">
+          <strong>Cliente:</strong> "Necesito algo económico, básico"<br>
+          <strong>Gemini infiere:</strong> Presupuesto bajo (&lt;$20k)<br><br>
+          <strong>Cliente:</strong> "Queremos algo de primera calidad para nuestra sede central"<br>
+          <strong>Gemini infiere:</strong> Presupuesto alto ($50k+)
+        </div>
+      </div>
+
+      <div class="usecase-card">
+        <h4>🏢 Identificación B2B vs B2C</h4>
+        <p>Detecta si es empresa (Tier A probable) o particular (Tier C probable).</p>
+        <div class="usecase-example">
+          <strong>Cliente:</strong> "Soy de RH de Telecom, necesitamos señalética"<br>
+          <strong>Gemini detecta:</strong> B2B corporativo (+25 pts)<br><br>
+          <strong>Cliente:</strong> "Es para el cumple de mi hijo"<br>
+          <strong>Gemini detecta:</strong> B2C personal (0 pts)
+        </div>
+      </div>
+
+      <div class="usecase-card">
+        <h4>🔄 Preguntas de Seguimiento Dinámicas</h4>
+        <p>Gemini hace preguntas relevantes según lo que ya se dijo.</p>
+        <div class="usecase-example">
+          Si el cliente menciona "local" → Gemini pregunta ubicación y tamaño<br><br>
+          Si dice "evento" → Gemini pregunta fecha y tipo de evento<br><br>
+          Si dice "empresa" → Gemini pregunta cuántas sucursales
+        </div>
+      </div>
+
+      <div class="usecase-card">
+        <h4>😤 Manejo de Objeciones</h4>
+        <p>Responde dudas comunes sin necesidad de vendedor humano.</p>
+        <div class="usecase-example">
+          <strong>Cliente:</strong> "Pero ustedes son muy caros"<br>
+          <strong>Bot con Gemini:</strong> "Entiendo la preocupación por el precio. Te cuento que trabajamos con diferentes materiales y podemos ajustarnos a tu presupuesto. ¿Cuánto tenías pensado invertir?"
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- SECCIÓN 3: CÓMO OBTENER LA API -->
+  <section>
+    <div class="section-number">03 · Obtener la API de Gemini</div>
+    <h2 class="section-title">100% Gratuito y Sin Tarjeta</h2>
+    <p class="section-subtitle">Proceso de registro en Google AI Studio (2 minutos)</p>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">01</div>
+        <div class="step-content">
+          <h4>Ir a Google AI Studio</h4>
+          <p>Abrir <code>https://aistudio.google.com/</code> y hacer login con tu cuenta de Google (cualquier cuenta sirve, no necesita ser empresarial).</p>
+          <div><span class="tag tag-free">Gratis</span></div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">02</div>
+        <div class="step-content">
+          <h4>Crear API Key</h4>
+          <p>Click en "Get API Key" → "Create API Key" → Copiar la key que empieza con <code>AIzaSy...</code></p>
+          <div class="code-block" style="margin-top: 0.5rem;">
+<span class="cm"># Tu API key se verá así:</span>
+AIzaSyDemoKey1234567890abcdefgh_EJEMPLO
+
+<span class="cm"># Guardarla en un lugar seguro - la vas a usar en el bot</span>
+          </div>
+          <div><span class="tag tag-api">API Key</span></div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">03</div>
+        <div class="step-content">
+          <h4>Límites Gratuitos</h4>
+          <p>La API gratuita tiene estos límites (más que suficientes para MR Letreros):</p>
+          <div class="code-block" style="margin-top: 0.5rem;">
+<span class="gs">✅ 60 requests por minuto</span>
+<span class="gs">✅ 1,500 requests por día</span>
+<span class="gs">✅ Hasta 32,000 tokens por request</span>
+
+<span class="cm"># Para referencia:</span>
+<span class="cm"># - 1 conversación típica = 1-5 requests</span>
+<span class="cm"># - Si tenés 100 leads por día = ~300 requests</span>
+<span class="cm"># - Estás MUY por debajo del límite</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- SECCIÓN 4: ARQUITECTURA -->
+  <section>
+    <div class="section-number">04 · Arquitectura de Integración</div>
+    <h2 class="section-title">Cómo se Conecta al Bot Existente</h2>
+    <p class="section-subtitle">Modificaciones mínimas — el bot sigue funcionando igual, solo se agrega Gemini</p>
+
+    <div class="arch-grid">
+      <div class="arch-card">
+        <h4>🔄 Flujo Sin IA (actual)</h4>
+        <div class="code-block">
+Cliente escribe mensaje
+    ↓
+Bot busca conversación activa
+    ↓
+Valida respuesta (debe ser 1, 2, 3 o 4)
+    ↓
+Suma puntaje según opción elegida
+    ↓
+Pasa a siguiente pregunta
+    ↓
+Al terminar: calcula tier (hot/warm/cold)
+        </div>
+      </div>
+
+      <div class="arch-card">
+        <h4>🧠 Flujo Con IA (propuesto)</h4>
+        <div class="code-block">
+Cliente escribe mensaje (texto libre)
+    ↓
+Bot busca conversación activa
+    ↓
+<span class="gs">Gemini analiza el mensaje completo</span>
+    ↓
+<span class="gs">Gemini extrae: intención, urgencia, presupuesto</span>
+    ↓
+<span class="gs">Gemini asigna puntaje (0-140)</span>
+    ↓
+<span class="gs">Gemini genera pregunta de seguimiento contextual</span>
+    ↓
+Al acumular info suficiente: tier final
+        </div>
+      </div>
+    </div>
+
+    <div class="arch-card">
+      <h4>📦 Instalar SDK de Gemini</h4>
+      <div class="code-block">
+npm install @google/generative-ai
+
+<span class="cm"># O si prefieres usar fetch directamente (sin SDK):</span>
+<span class="cm"># No necesitas instalar nada - Node.js 18+ tiene fetch nativo</span>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- SECCIÓN 5: CÓDIGO -->
+  <section>
+    <div class="section-number">05 · Implementación</div>
+    <h2 class="section-title">Código Modificado del Bot</h2>
+    <p class="section-subtitle">Solo cambian 3 funciones — el resto del bot queda igual</p>
+
+    <div class="arch-card">
+      <h4>🔧 Configuración Inicial (agregar al inicio del bot)</h4>
+      <div class="code-block">
+<span class="kw">const</span> { GoogleGenerativeAI } = <span class="fn">require</span>(<span class="str">'@google/generative-ai'</span>);
+
+<span class="cm">// Tu API key de Google AI Studio</span>
+<span class="kw">const</span> GEMINI_API_KEY = <span class="str">'AIzaSy...'</span>; <span class="cm">← Reemplazar con tu key</span>
+<span class="kw">const</span> genAI = <span class="kw">new</span> <span class="fn">GoogleGenerativeAI</span>(GEMINI_API_KEY);
+<span class="kw">const</span> model = genAI.<span class="fn">getGenerativeModel</span>({ <span class="kv">model</span>: <span class="str">'gemini-pro'</span> });
+      </div>
+    </div>
+
+    <div class="arch-card">
+      <h4>🧠 Función para Analizar Mensajes con Gemini</h4>
+      <div class="code-block">
+<span class="cm">/**
+ * Analiza el mensaje del cliente con Gemini y extrae información clave
+ * @param {string} mensajeCliente - Lo que escribió el cliente
+ * @param {array} historial - Mensajes previos de la conversación
+ * @returns {object} { score, siguientePregunta, resumenAnalisis }
+ */</span>
+<span class="kw">async function</span> <span class="fn">analizarConGemini</span>(mensajeCliente, historial = []) {
+  <span class="cm">// Construir el prompt para Gemini</span>
+  <span class="kw">const</span> prompt = <span class="str">`
+Eres un asistente de ventas experto en calificar leads para un negocio de letreros y gráfica.
+
+CONTEXTO DEL NEGOCIO:
+- MR Letreros fabrica: letreros corporales, luminosos, vinilos, señalética
+- Clientes ideales: empresas (B2B) con presupuesto $20k+ y necesidad urgente
+- Leads fríos: particulares sin presupuesto definido que "solo preguntan"
+
+HISTORIAL DE LA CONVERSACIÓN:
+${historial.<span class="fn">map</span>(h => <span class="str">`${h.rol}: ${h.mensaje}`</span>).<span class="fn">join</span>(<span class="str">'\n'</span>)}
+
+ÚLTIMO MENSAJE DEL CLIENTE:
+"${mensajeCliente}"
+
+TAREA:
+Analiza el mensaje y devuelve un JSON con:
+1. "score": número de 0 a 30 según estos criterios:
+   - Urgencia (0-10): ¿Es urgente? Keywords: "ya", "urgente", "esta semana"
+   - Presupuesto (0-10): ¿Tiene dinero? Keywords: "presupuesto", monto específico, "no importa el precio"
+   - Seriedad (0-10): ¿Es proyecto real? Detalles específicos vs vago
+
+2. "insights": objeto con:
+   - "esEmpresa": boolean (detecta si es B2B)
+   - "urgencia": "alta" | "media" | "baja" | "ninguna"
+   - "presupuestoEstimado": "alto" | "medio" | "bajo" | "indefinido"
+   - "intentoReal": boolean (¿Es consulta seria o solo pregunta?)
+
+3. "siguientePregunta": string - La pregunta más inteligente para hacerle ahora
+   (debe ser natural, conversacional, y extraer info que falta)
+
+4. "resumen": string breve de lo que entendiste
+
+RESPONDE SOLO CON EL JSON, SIN EXPLICACIONES ADICIONALES.
+`</span>;
+
+  <span class="kw">try</span> {
+    <span class="kw">const</span> result = <span class="kw">await</span> model.<span class="fn">generateContent</span>(prompt);
+    <span class="kw">const</span> responseText = result.response.<span class="fn">text</span>();
+    
+    <span class="cm">// Extraer JSON de la respuesta (a veces Gemini agrega ```json)</span>
+    <span class="kw">const</span> jsonMatch = responseText.<span class="fn">match</span>(/\{[\s\S]*\}/);
+    <span class="kw">if</span> (!jsonMatch) {
+      <span class="kw">throw new</span> <span class="fn">Error</span>(<span class="str">'No se pudo parsear respuesta de Gemini'</span>);
+    }
+    
+    <span class="kw">const</span> analisis = JSON.<span class="fn">parse</span>(jsonMatch[<span class="nm">0</span>]);
+    
+    console.<span class="fn">log</span>(<span class="str">'🧠 Gemini analizó:'</span>, analisis);
+    <span class="kw">return</span> analisis;
+    
+  } <span class="kw">catch</span> (err) {
+    console.<span class="fn">error</span>(<span class="str">'❌ Error en Gemini:', err</span>);
+    <span class="cm">// Fallback: si Gemini falla, usar lógica básica</span>
+    <span class="kw">return</span> {
+      <span class="kv">score</span>: <span class="nm">10</span>,
+      <span class="kv">insights</span>: { <span class="kv">esEmpresa</span>: <span class="kw">false</span>, <span class="kv">urgencia</span>: <span class="str">'baja'</span> },
+      <span class="kv">siguientePregunta</span>: <span class="str">'¿Cuándo necesitarías este trabajo?'</span>,
+      <span class="kv">resumen</span>: <span class="str">'Análisis manual (Gemini no disponible)'</span>
+    };
+  }
+}
+      </div>
+    </div>
+
+    <div class="arch-card">
+      <h4>🔄 Modificar el Event Handler de Mensajes</h4>
+      <div class="code-block">
+client.<span class="fn">on</span>(<span class="str">'message'</span>, <span class="kw">async</span> (message) => {
+  <span class="kw">if</span> (message.from.<span class="fn">includes</span>(<span class="str">'@g.us'</span>) || message.fromMe) <span class="kw">return</span>;
+
+  <span class="kw">const</span> numero = <span class="fn">formatearNumero</span>(message.from);
+  <span class="kw">const</span> texto = message.body.<span class="fn">trim</span>();
+  <span class="kw">const</span> contacto = <span class="kw">await</span> message.<span class="fn">getContact</span>();
+  <span class="kw">const</span> nombreContacto = contacto.pushname || numero;
+
+  <span class="kw">let</span> conversaciones = <span class="fn">loadJSON</span>(CONFIG.conversationsFile);
+
+  <span class="cm">// ━━━ CASO 1: Nueva conversación ━━━</span>
+  <span class="kw">if</span> (!conversaciones[numero]) {
+    conversaciones[numero] = {
+      <span class="kv">nombre</span>: nombreContacto,
+      <span class="kv">historial</span>: [],
+      <span class="kv">scoreAcumulado</span>: <span class="nm">0</span>,
+      <span class="kv">turnosPregunta</span>: <span class="nm">0</span>,
+      <span class="kv">iniciado</span>: <span class="kw">new</span> <span class="fn">Date</span>().<span class="fn">toISOString</span>()
+    };
+
+    <span class="kw">await</span> message.<span class="fn">reply</span>(
+      <span class="str">`👋 ¡Hola *${nombreContacto}*! Soy el asistente de *MR Letreros*.\n\n` +
+      `Contame qué necesitas y te ayudo a encontrar la mejor solución para vos.`</span>
+    );
+
+    <span class="fn">saveJSON</span>(CONFIG.conversationsFile, conversaciones);
+    <span class="kw">return</span>;
+  }
+
+  <span class="cm">// ━━━ CASO 2: Conversación activa → Analizar con Gemini ━━━</span>
+  <span class="kw">const</span> conv = conversaciones[numero];
+  
+  <span class="cm">// Agregar mensaje al historial</span>
+  conv.historial.<span class="fn">push</span>({ <span class="kv">rol</span>: <span class="str">'cliente'</span>, <span class="kv">mensaje</span>: texto });
+
+  <span class="cm">// 🧠 ANALIZAR CON GEMINI</span>
+  <span class="kw">const</span> analisis = <span class="kw">await</span> <span class="fn">analizarConGemini</span>(texto, conv.historial);
+  
+  <span class="cm">// Acumular score</span>
+  conv.scoreAcumulado += analisis.score;
+  conv.turnosPregunta++;
+
+  <span class="cm">// Decidir si seguir preguntando o terminar</span>
+  <span class="kw">const</span> TURNOS_MAXIMOS = <span class="nm">5</span>; <span class="cm">// Máx 5 intercambios</span>
+  <span class="kw">const</span> SCORE_SUFICIENTE = <span class="nm">60</span>; <span class="cm">// Si ya tiene score alto, terminar</span>
+
+  <span class="kw">if</span> (conv.turnosPregunta >= TURNOS_MAXIMOS || 
+      conv.scoreAcumulado >= SCORE_SUFICIENTE) {
+    
+    <span class="cm">// ━━━ CLASIFICAR Y TOMAR ACCIÓN ━━━</span>
+    <span class="kw">const</span> tier = <span class="fn">calcularTier</span>(conv.scoreAcumulado);
+    
+    <span class="cm">// Guardar lead</span>
+    <span class="kw">const</span> leadData = {
+      <span class="kv">id</span>: <span class="str">`lead_${Date.now()}`</span>,
+      <span class="kv">nombre</span>: nombreContacto,
+      <span class="kv">numero</span>: numero,
+      <span class="kv">scoreTotal</span>: conv.scoreAcumulado,
+      <span class="kv">tier</span>: tier,
+      <span class="kv">historial</span>: conv.historial,
+      <span class="kv">insights</span>: analisis.insights,
+      <span class="kv">fecha</span>: <span class="kw">new</span> <span class="fn">Date</span>().<span class="fn">toISOString</span>()
+    };
+
+    <span class="kw">let</span> leadsFile = tier === <span class="str">'hot'</span> ? CONFIG.leadsHotFile :
+                      tier === <span class="str">'warm'</span> ? CONFIG.leadsWarmFile :
+                      CONFIG.leadsColdFile;
+    
+    <span class="kw">const</span> leads = <span class="fn">loadJSON</span>(leadsFile);
+    leads[leadData.id] = leadData;
+    <span class="fn">saveJSON</span>(leadsFile, leads);
+
+    <span class="cm">// Eliminar conversación</span>
+    <span class="kw">delete</span> conversaciones[numero];
+    <span class="fn">saveJSON</span>(CONFIG.conversationsFile, conversaciones);
+
+    <span class="cm">// Respuestas según tier (igual que antes)</span>
+    <span class="kw">if</span> (tier === <span class="str">'hot'</span>) {
+      <span class="kw">await</span> message.<span class="fn">reply</span>(<span class="str">'🔥 Perfecto! Un vendedor te contacta en menos de 15 min.'</span>);
+      <span class="cm">// Notificar vendedor...</span>
+    } <span class="cm">// ... resto igual</span>
+
+  } <span class="kw">else</span> {
+    <span class="cm">// ━━━ CONTINUAR CONVERSACIÓN ━━━</span>
+    <span class="kw">await</span> message.<span class="fn">reply</span>(analisis.siguientePregunta);
+    conv.historial.<span class="fn">push</span>({ 
+      <span class="kv">rol</span>: <span class="str">'bot'</span>, 
+      <span class="kv">mensaje</span>: analisis.siguientePregunta 
+    });
+    <span class="fn">saveJSON</span>(CONFIG.conversationsFile, conversaciones);
+  }
+});
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- SECCIÓN 6: CRONOGRAMA -->
+  <section>
+    <div class="section-number">06 · Implementación</div>
+    <h2 class="section-title">Timeline de Integración</h2>
+
+    <div class="timeline">
+      <div class="tl-item">
+        <div class="tl-week">Día 1<br>30 min</div>
+        <div class="tl-line"></div>
+        <div class="tl-content">
+          <h4>Obtener API Key de Gemini</h4>
+          <p>Registrarse en Google AI Studio y copiar la API key. Probar con un request de ejemplo para verificar que funciona.</p>
+        </div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-week">Día 1<br>1-2 hs</div>
+        <div class="tl-line"></div>
+        <div class="tl-content">
+          <h4>Agregar función analizarConGemini()</h4>
+          <p>Instalar SDK, copiar la función de análisis, probar con mensajes de prueba. Ajustar el prompt según los criterios de MR Letreros.</p>
+        </div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-week">Día 2<br>2-3 hs</div>
+        <div class="tl-line"></div>
+        <div class="tl-content">
+          <h4>Modificar event handler del bot</h4>
+          <p>Cambiar la lógica de preguntas rígidas por análisis con Gemini. Probar con conversaciones reales. Ajustar scoring y criterios de clasificación.</p>
+        </div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-week">Día 3<br>2 hs</div>
+        <div class="tl-line"></div>
+        <div class="tl-content">
+          <h4>Testing y ajuste de prompts</h4>
+          <p>Probar con 10-20 conversaciones variadas (leads calientes, tibios y fríos). Afinar el prompt de Gemini para mejorar precisión. Agregar fallbacks si Gemini falla.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- SECCIÓN 7: PRICING -->
+  <section>
+    <div class="section-number">07 · Costos</div>
+    <h2 class="section-title">¿Cuánto Sale?</h2>
+
+    <div class="pricing-grid">
+      <div class="price-card">
+        <h4>Gemini API Gratuita</h4>
+        <div class="price-amount">$0</div>
+        <p>60 requests/min · 1,500/día<br>Más que suficiente</p>
+      </div>
+      <div class="price-card">
+        <h4>Bot de WhatsApp</h4>
+        <div class="price-amount">$0</div>
+        <p>whatsapp-web.js local<br>Sin costo mensual</p>
+      </div>
+      <div class="price-card">
+        <h4>Servidor Local</h4>
+        <div class="price-amount">$0</div>
+        <p>Corre en tu PC<br>Sin VPS necesario</p>
+      </div>
+      <div class="price-card" style="border: 2px solid var(--green);">
+        <h4>TOTAL</h4>
+        <div class="price-amount">$0</div>
+        <p>Sistema completo<br>100% gratuito</p>
+      </div>
+    </div>
+
+    <div style="background: rgba(52,168,83,0.08); border: 1px solid rgba(52,168,83,0.2); border-radius: 12px; padding: 1.5rem; margin-top: 1rem;">
+      <p style="font-size: 0.9rem; color: rgba(255,255,255,0.85); line-height: 1.7;">
+        <strong style="color: var(--green);">💡 Bonus:</strong> Si tu negocio crece y necesitas más requests, el plan pago de Gemini cuesta <strong>$0.00025 por request</strong>. Con 10,000 requests mensuales serían <strong>$2.50 USD/mes</strong> — prácticamente nada.
+      </p>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- SECCIÓN 8: VENTAJAS vs DESVENTAJAS -->
+  <section>
+    <div class="section-number">08 · Trade-offs</div>
+    <h2 class="section-title">Ventajas y Consideraciones</h2>
+
+    <div class="arch-grid">
+      <div class="arch-card">
+        <h4 style="color: var(--green);">✅ Ventajas</h4>
+        <div class="code-block">
+✓ Conversación 100% natural
+✓ Scoring más preciso
+✓ Experiencia de usuario superior
+✓ Detecta urgencia/presupuesto automáticamente
+✓ Se adapta al contexto de cada cliente
+✓ Gratis (API de Gemini sin costo)
+✓ No requiere entrenar modelo propio
+✓ Mejora con el tiempo (Google actualiza Gemini)
+        </div>
+      </div>
+
+      <div class="arch-card">
+        <h4 style="color: var(--yellow);">⚠️ Consideraciones</h4>
+        <div class="code-block">
+△ Dependencia de API externa (Google)
+△ Latencia: ~1-2 seg por respuesta
+△ Consumo de tokens (limitado gratis)
+△ Respuestas no 100% predecibles
+△ Requiere ajustar prompts inicialmente
+△ Fallback si API falla (tener plan B)
+△ Prompt engineering inicial (1-2 días)
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- CONCLUSIÓN -->
+  <section>
+    <div class="section-number">09 · Recomendación</div>
+    <h2 class="section-title">¿Vale la Pena?</h2>
+
+    <div class="arch-card" style="border: 2px solid var(--accent);">
+      <h4 style="color: var(--accent);">🎯 Recomendación Final</h4>
+      <p style="font-size: 0.95rem; color: rgba(255,255,255,0.9); line-height: 1.8; margin-bottom: 1.5rem;">
+        <strong>SÍ, implementar Gemini es una mejora enorme.</strong> La diferencia entre un bot rígido y uno con IA es abismal. Tus clientes van a sentir que hablan con una persona, no con una máquina. Y el scoring va a ser mucho más preciso porque Gemini detecta señales que el bot rígido no puede ver (tono, urgencia implícita, seriedad).
+      </p>
+
+      <p style="font-size: 0.9rem; color: var(--muted); line-height: 1.7; margin-bottom: 1rem;">
+        <strong style="color: #fff;">Plan de acción:</strong>
+      </p>
+
+      <div class="code-block">
+<span class="gs">Fase 1 (Ya tenés):</span>
+Bot básico con preguntas rígidas funcionando
+
+<span class="gs">Fase 2 (Esta semana):</span>
+Agregar Gemini para conversación natural
+→ 3 días de desarrollo
+→ $0 de costo
+→ 10x mejor experiencia de usuario
+
+<span class="gs">Fase 3 (Próximo mes):</span>
+Analizar conversiones reales
+Ajustar prompts según feedback
+Optimizar scoring con datos reales
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<footer>
+  <div class="footer-brand">MR Letreros · Sistema Interno</div>
+  <div class="footer-note">Auditoría de Integración Gemini AI · v1.0 — Google Generative AI API</div>
+</footer>
+
+</body>
+</html>

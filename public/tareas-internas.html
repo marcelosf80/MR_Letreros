@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tareas Internas - MR Letreros</title>
+    <script src="js/auth.js"></script>
+    <link rel="stylesheet" href="css/base.css">
+    <link rel="stylesheet" href="css/sidebar-universal.css">
+
+    <!-- IMPORTANTE: Cargar data-manager PRIMERO -->
+    <script src="js/shared/data-manager-network.js"></script>
+
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/maxton-theme.css">
+    
+    <style>
+        .kanban-board {
+            display: flex;
+            gap: 1.5rem;
+            overflow-x: auto;
+            padding-bottom: 1rem;
+            min-height: calc(100vh - 180px);
+        }
+        
+        .kanban-col {
+            flex: 1;
+            min-width: 300px;
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 1rem;
+            border: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .kanban-header {
+            font-size: 1.1rem;
+            font-weight: 600;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--accent-primary);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .kanban-header .badge {
+            background: var(--accent-primary);
+        }
+
+        .kanban-cards {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            min-height: 100px; /* para poder dropear cuando está vacío */
+        }
+
+        .task-card {
+            background: var(--bg-primary);
+            border-radius: 8px;
+            padding: 1rem;
+            border: 1px solid var(--border-color);
+            cursor: grab;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .task-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            border-color: var(--accent-primary);
+        }
+        
+        .task-card:active {
+            cursor: grabbing;
+        }
+
+        .task-title {
+            font-weight: 600;
+            font-size: 1rem;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+        }
+
+        .task-desc {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            margin-bottom: 0.75rem;
+        }
+
+        .task-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            border-top: 1px solid var(--border-color);
+            padding-top: 0.5rem;
+        }
+
+        .task-attachments {
+            display: flex;
+            gap: 0.25rem;
+            align-items: center;
+        }
+
+        /* Drag & Drop Styles */
+        .kanban-cards.drag-over {
+            background: rgba(var(--accent-primary-rgb), 0.1);
+            border-radius: 8px;
+            outline: 2px dashed var(--accent-primary);
+        }
+
+        .task-card.dragging {
+            opacity: 0.5;
+        }
+
+        /* Modal Styles */
+        .file-upload-zone {
+            border: 2px dashed var(--border-color);
+            border-radius: 8px;
+            padding: 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: var(--bg-secondary);
+        }
+
+        .file-upload-zone:hover, .file-upload-zone.drag-over {
+            border-color: var(--accent-primary);
+            background: rgba(var(--accent-primary-rgb), 0.05);
+        }
+
+        .attachment-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.5rem 0.75rem;
+            background: var(--bg-secondary);
+            border-radius: 6px;
+            margin-bottom: 0.5rem;
+            border: 1px solid var(--border-color);
+        }
+        .attachment-item a {
+            color: var(--accent-primary);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .attachment-item a:hover {
+            text-decoration: underline;
+        }
+
+        /* Modal Visibility Fixes */
+        #taskModal .modal-title {
+            color: #ffffff !important;
+        }
+        #taskModal .form-label {
+            color: #a1a1aa !important;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            letter-spacing: 0.5px;
+        }
+        #taskModal .form-control, 
+        #taskModal .form-select {
+            background-color: rgba(0, 0, 0, 0.2) !important;
+            color: #ffffff !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        }
+        #taskModal .form-control::placeholder {
+            color: rgba(255, 255, 255, 0.3) !important;
+        }
+        #taskModal h6 {
+            color: #e4e4e7 !important;
+        }
+        #taskModal .file-upload-zone {
+            color: #a1a1aa !important;
+        }
+        #taskModal .file-upload-zone div {
+            color: inherit;
+        }
+    </style>
+</head>
+
+<body class="bg-light">
+    <!-- Sidebar Universal (se inserta automáticamente) -->
+
+    <div class="main-content">
+        <!-- Top Bar -->
+        <div class="mx-topbar">
+            <h1 class="top-bar-title m-0">📋 Tareas Internas e Instrucciones</h1>
+            <div class="top-bar-actions">
+                <button class="btn btn-primary" onclick="openNewTaskModal()">
+                    + Nueva Tarea
+                </button>
+            </div>
+        </div>
+
+        <div class="content-container pt-4">
+            <!-- Loading State -->
+            <div id="loadingState" class="text-center py-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Cargando...</span>
+                </div>
+                <p class="mt-2 text-secondary">Cargando tareas...</p>
+            </div>
+
+            <!-- Kanban Board -->
+            <div id="kanbanBoard" class="kanban-board" style="display: none;">
+                <!-- Columna Pendiente -->
+                <div class="kanban-col">
+                    <div class="kanban-header">
+                        <span>⏳ Pendiente</span>
+                        <span class="badge" id="count-pendiente">0</span>
+                    </div>
+                    <div class="kanban-cards" id="col-pendiente" data-status="pendiente">
+                        <!-- Cards irán aquí -->
+                    </div>
+                </div>
+
+                <!-- Columna En Proceso -->
+                <div class="kanban-col">
+                    <div class="kanban-header" style="border-bottom-color: #f59e0b;">
+                        <span>🔧 En Proceso</span>
+                        <span class="badge" style="background: #f59e0b;" id="count-en_proceso">0</span>
+                    </div>
+                    <div class="kanban-cards" id="col-en_proceso" data-status="en_proceso">
+                        <!-- Cards irán aquí -->
+                    </div>
+                </div>
+
+                <!-- Columna Completado -->
+                <div class="kanban-col">
+                    <div class="kanban-header" style="border-bottom-color: #10b981;">
+                        <span>✅ Completado</span>
+                        <span class="badge" style="background: #10b981;" id="count-completado">0</span>
+                    </div>
+                    <div class="kanban-cards" id="col-completado" data-status="completado">
+                        <!-- Cards irán aquí -->
+                    </div>
+                </div>
+                </div>
+            </div>
+
+            <!-- Notificador inferior -->
+            <div class="mt-4 p-3 mx-card d-flex justify-content-between align-items-center animate-fade-in-up" id="taskNotifier" style="display: none !important;">
+                <div>
+                    <span style="color: #fbbf24; font-weight: 600;">⏳ <span id="notif-pendientes">0</span> Pendientes</span>
+                    <span class="mx-3 text-muted">|</span>
+                    <span style="color: #34d399; font-weight: 600;">✅ <span id="notif-completados">0</span> Completadas</span>
+                </div>
+                <div class="text-muted" style="font-size: 0.9rem;" id="notif-last-added">
+                    Última agregada: -
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Modal Tarea -->
+    <div class="modal fade" id="taskModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content mx-card">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="taskModalTitle">Nueva Tarea</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="taskForm">
+                        <input type="hidden" id="taskId">
+                        <div class="mb-3">
+                            <label class="form-label">Título de la Tarea / Trabajo</label>
+                            <input type="text" class="form-control" id="taskTitle" required placeholder="Ej: Imprimir lonas para cliente X...">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Estado</label>
+                            <select class="form-select" id="taskStatus">
+                                <option value="pendiente">⏳ Pendiente</option>
+                                <option value="en_proceso">🔧 En Proceso</option>
+                                <option value="completado">✅ Completado</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Instrucciones / Notas Detalladas</label>
+                            <textarea class="form-control" id="taskDesc" rows="5" placeholder="Detalles, medidas, materiales a utilizar..."></textarea>
+                        </div>
+                        
+                        <hr class="my-4" style="border-color: var(--border-color)">
+                        
+                        <h6 class="mb-3">Archivos Adjuntos</h6>
+                        <div class="file-upload-zone mb-3" id="dropZone" onclick="document.getElementById('fileInput').click()">
+                            <div>📁 Haz clic o arrastra archivos aquí para subir</div>
+                            <div style="font-size:0.8rem; opacity:0.7">Imágenes, PDFs, Corel, SVG (Max 50MB)</div>
+                            <input type="file" id="fileInput" style="display:none" multiple>
+                        </div>
+                        
+                        <!-- Lista de archivos subidos -->
+                        <div id="attachmentsList"></div>
+                        <div id="uploadingProgress" class="text-primary mt-2" style="display:none;">
+                            <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                            Subiendo archivo...
+                        </div>
+
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-danger" id="btnDeleteTask" style="display:none;" onclick="deleteTask()">Eliminar Tarea</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" onclick="saveTask()">Guardar Tarea</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sidebar Universal Script -->
+    <script src="js/shared/sidebar-universal.js"></script>
+    <!-- Bootstrap 5 JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Lógica de Tareas -->
+    <script src="js/tareas-internas.js"></script>
+</body>
+
+</html>

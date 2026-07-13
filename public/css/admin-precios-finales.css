@@ -1,0 +1,18 @@
+/* Body uses base.css variables */
+        .container { max-width: 900px; margin: 2rem auto; padding: 2rem; background: var(--card-bg); border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+        h1 { color: #FFC107; border-bottom: 2px solid #FFC107; padding-bottom: 0.5rem; margin-bottom: 1.5rem; }
+        .price-item { background: var(--bg-deep); padding: 1rem; margin-bottom: 0.5rem; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; border-left: 4px solid #FFC107; }
+        .price-info { flex: 1; }
+        .price-name { font-weight: bold; font-size: 1.1rem; color: var(--txt); }
+        .price-value { color: #FFC107; font-family: monospace; font-size: 1.2rem; }
+        .price-actions { display: flex; gap: 0.5rem; }
+        input, select { padding: 0.7rem; background: var(--bg-deep); border: 1px solid var(--border-color); color: var(--txt); border-radius: 4px; width: 100%; }
+        .form-row { display: flex; gap: 1rem; margin-bottom: 1rem; align-items: flex-end; flex-wrap: wrap; }
+        .btn { padding: 0.7rem 1.5rem; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; transition: all 0.2s; }
+        .btn-primary { background: #FFC107; color: #000; }
+        .btn-primary:hover { background: #ffdb6e; }
+        .btn-danger { background: #F44336; color: white; }
+        .btn-danger:hover { background: #ff7961; }
+        .btn-secondary { background: #4f4f4f; color: #f0f0f0; text-decoration: none; display: inline-block; }
+        .btn-secondary:hover { background: #666; }
+        label { display: block; margin-bottom: 0.3rem; color: var(--txt-2); font-size: 0.9rem; }

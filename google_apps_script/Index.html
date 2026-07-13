@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <base target="_top">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cotizador Gremio - MR Letreros</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            background-color: #000;
+            color: #f1f1f1;
+            font-family: 'Segoe UI', sans-serif;
+            background-image: radial-gradient(circle at top right, #222 0%, #000 70%);
+            background-attachment: fixed;
+        }
+
+        .glass-card {
+            background: rgba(30, 30, 30, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 215, 0, 0.15);
+            border-radius: 16px;
+        }
+
+        .input-premium {
+            background: rgba(10, 10, 10, 0.8);
+            border: 1px solid #333;
+            color: white;
+            padding: 14px;
+            border-radius: 12px;
+            width: 100%;
+            transition: all 0.3s;
+        }
+
+        .input-premium:focus {
+            border-color: #ffd700;
+            outline: none;
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.1);
+        }
+
+        .btn-premium {
+            background: linear-gradient(135deg, #ffd700 0%, #ccac00 100%);
+            color: #000;
+            font-weight: 800;
+            border-radius: 12px;
+            cursor: pointer;
+            border: none;
+            width: 100%;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .file-drop-zone {
+            border: 2px dashed #444;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            position: relative;
+        }
+
+        .warning-badge {
+            border: 1px solid transparent;
+            padding: 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            margin-top: 10px;
+            display: none;
+            font-weight: bold;
+        }
+
+        #successOverlay,
+        #modeSelectionOverlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(10px);
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #successOverlay {
+            display: none;
+        }
+
+        .logo-anim {
+            animation: pulse 2.5s infinite ease-in-out;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+
+            50% {
+                transform: scale(1.02);
+                opacity: 0.9;
+            }
+        }
+
+        /* Ocultar subida de archivos en modo cotizar */
+        body.mode-cotizar .file-drop-zone {
+            display: none !important;
+        }
+
+        body.mode-cotizar #uploadProgressContainer {
+            display: none !important;
+        }
+    </style>
+    <!-- ESTILOS MODULARES DEL PLANNER -->
+
+</head>
+
+<body class="p-4 md:p-8" style="overflow: hidden;">
+
+    <!-- Selector de Modo -->
+    <div id="modeSelectionOverlay">
+        <img src="https://mrletreros.com.ar/assets/img/logo.webp" class="mb-8" alt="MR Letreros"
+            style="max-width:250px">
+        <h2 class="text-3xl font-black text-white mb-8 uppercase text-center tracking-tighter">¿Qué deseas hacer hoy?
+        </h2>
+        <div class="flex flex-col md:flex-row gap-6 w-full max-w-3xl px-6">
+            <button onclick="setAppMode('cotizar')"
+                class="flex-1 bg-white/5 hover:bg-white/10 border border-white/20 p-8 rounded-2xl transition-all hover:scale-105 group">
+                <i
+                    class="fa-solid fa-calculator text-5xl text-blue-400 mb-4 group-hover:scale-110 transition-transform"></i>
+                <h3 class="text-xl font-bold text-white mb-2">SOLO QUIERO COTIZAR</h3>
+                <p class="text-sm text-gray-400">Ver precios estimados sin enviar ningún pedido.</p>
+            </button>
+            <button onclick="setAppMode('pedido')"
+                class="flex-1 bg-yellow-500/10 hover:bg-yellow-500/20 border border-yellow-500/30 p-8 rounded-2xl transition-all hover:scale-105 group">
+                <i
+                    class="fa-solid fa-truck-fast text-5xl text-yellow-400 mb-4 group-hover:scale-110 transition-transform"></i>
+                <h3 class="text-xl font-bold text-yellow-400 mb-2">QUIERO HACER UN PEDIDO</h3>
+                <p class="text-sm text-gray-400">Cotizar y enviar los archivos para producción.</p>
+            </button>
+        </div>
+    </div>
+
+    <div id="successOverlay">
+        <img src="https://mrletreros.com.ar/assets/img/logo.webp" class="logo-anim mb-8" alt="MR Letreros"
+            style="max-width:300px">
+        <h2 class="text-4xl font-black text-yellow-400 mb-2 uppercase text-center tracking-tighter">¡PEDIDO ENVIADO!
+        </h2>
+        <div class="mt-12 text-yellow-400/40 text-sm animate-pulse italic tracking-widest uppercase">Reiniciando
+            sistema...</div>
+    </div>
+
+    <!-- ESTRUCTURA MODULAR DEL PLANNER -->
+    <?!= include('Planner'); ?>
+
+    <div class="max-w-4xl mx-auto space-y-8" id="mainContent">
+        <header class="flex flex-col items-center space-y-4 mb-10 text-center">
+            <img src="https://i.postimg.cc/NFn4MY1f/encabezado-pdf.png" class="w-full h-auto rounded-xl logo-anim"
+                alt="MR Letreros">
+            <p class="text-yellow-400 font-bold tracking-widest text-sm uppercase italic">Cotizador Gremio - MR Letreros
+            </p>
+        </header>
+
+        <form id="cotizadorForm" class="space-y-6">
+            <div class="glass-card p-6 md:p-8">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <input type="text" id="nombreGremio" class="input-premium" placeholder="Nombre Gremio / Empresa"
+                        required>
+                    <input type="tel" id="whatsapp" class="input-premium" placeholder="WhatsApp (Ej: 3424123456)"
+                        required>
+                </div>
+            </div>
+
+            <div id="productosContainer" class="space-y-6"></div>
+
+            <div class="text-center py-4">
+                <button type="button" onclick="agregarProducto()"
+                    class="bg-white/5 hover:bg-white/10 text-white font-bold py-4 px-10 rounded-2xl border border-dashed border-white/20 transition-all">
+                    <i class="fa-solid fa-plus mr-2 text-yellow-400"></i> AGREGAR TRABAJO
+                </button>
+            </div>
+
+            <div class="glass-card p-8 border-t-4 border-yellow-400 shadow-2xl">
+                <div class="flex flex-col md:flex-row items-center justify-between gap-8">
+                    <div class="text-center md:text-left">
+                        <p class="text-gray-500 text-sm font-bold uppercase mb-1">Total Estimado Final</p>
+                        <div class="text-6xl font-black text-yellow-400" id="totalLabel">$0</div>
+                    </div>
+                    <button type="submit" class="btn-premium py-5 px-12 text-xl" id="btnSubmit">ENVIAR PEDIDO</button>
+                </div>
+                <!-- Barra de Progreso -->
+                <div id="uploadProgressContainer" class="hidden mt-6 space-y-2">
+                    <div class="flex justify-between text-xs text-yellow-400 font-bold uppercase">
+                        <span id="uploadStatusText">Subiendo archivos...</span>
+                        <span id="uploadProgressPercent">0%</span>
+                    </div>
+                    <div class="w-full bg-white/10 rounded-full h-3 overflow-hidden border border-white/5">
+                        <div id="uploadProgressBar"
+                            class="bg-gradient-to-r from-yellow-400 to-yellow-600 h-full rounded-full transition-all duration-300"
+                            style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        window.appMode = 'cotizar'; // Default
+        function setAppMode(mode) {
+            window.appMode = mode;
+            document.getElementById('modeSelectionOverlay').style.display = 'none';
+            document.body.style.overflow = 'auto'; // Re-enable scrolling
+
+            if (mode === 'cotizar') {
+                document.body.classList.add('mode-cotizar');
+                document.getElementById('btnSubmit').innerHTML = 'REINICIAR COTIZADOR';
+                document.getElementById('btnSubmit').style.background = 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)';
+                document.getElementById('btnSubmit').style.color = 'white';
+            } else {
+                document.body.classList.remove('mode-cotizar');
+                document.getElementById('btnSubmit').innerHTML = 'ENVIAR PEDIDO';
+                document.getElementById('btnSubmit').style.background = '';
+                document.getElementById('btnSubmit').style.color = '#000';
+            }
+        }
+
+        var catalogo = [];
+        var stockPorTipo = {};
+        var itemsCount = 0;
+        var filesByItem = {};
+        var totalBytes = 0;
+
+        const OPCIONES_POLY = [
+            { label: '1.20 x 0.60 m (Placa Completa)', factor: 1.00 },
+            { label: '1.00 x 0.60 m', factor: 0.88 },
+            { label: '0.80 x 0.60 m', factor: 0.73 },
+            { label: '0.60 x 0.60 m (Media Placa)', factor: 0.58 },
+            { label: '0.40 x 0.60 m', factor: 0.40 },
+            { label: '0.20 x 0.60 m', factor: 0.21 }
+        ];
+
+        function init() {
+            google.script.run.withSuccessHandler(function (data) {
+                catalogo = data.catalog;
+                stockPorTipo = data.stock;
+                agregarProducto();
+            }).getCatalogData();
+        }
+
+        function agregarProducto() {
+            itemsCount++;
+            var id = itemsCount;
+            filesByItem['item_' + id] = [];
+            var cats = [];
+            catalogo.forEach(function (p) { if (cats.indexOf(p.categoria) === -1) cats.push(p.categoria); });
+
+            var html = `<div class="glass-card p-6 md:p-8 relative" id="card_${id}">` +
+                `<button type="button" onclick="eliminar(${id})" class="absolute top-4 right-4 text-gray-600 hover:text-red-500"><i class="fa-solid fa-trash-can text-xl"></i></button>` +
+                '<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">' +
+                `<select id="cat_${id}" class="input-premium" onchange="updateProds(${id})"><option value="">Categoría...</option>` +
+                cats.map(function (c) { return '<option value="' + c + '">' + c + '</option>'; }).join('') + '</select>' +
+                `<select id="prod_${id}" class="input-premium" onchange="ajustarInputs(${id})"><option value="">Producto...</option></select>` +
+                '</div>' +
+                `<div id="inputs_container_${id}" class="mb-4"></div>` +
+                `<div id="warn_${id}" class="warning-badge mb-4"></div>` +
+                `<div id="accept_container_${id}" class="mb-4 hidden bg-white/5 p-4 rounded-xl border border-yellow-500/20 transition-all">` +
+                `<div class="text-xs text-yellow-400 font-bold uppercase mb-3">Opción de Fabricación:</div>` +
+                `<div class="flex flex-col gap-3">` +
+                `<label class="flex items-start gap-3 cursor-pointer text-gray-200"><input type="radio" name="desp_choice_${id}" value="pagar" checked onchange="calc()" class="mt-1" style="width:16px;height:16px;accent-color:#ffd700;"><span class="text-xs"><strong>Prioritario (Pagar desperdicio):</strong> Se cobra ancho de <span id="w_cob_${id}" class="font-bold"></span>cm ($<span id="price_con_${id}" class="font-bold"></span>) - Despacho normal</span></label>` +
+                `<label class="flex items-start gap-3 cursor-pointer text-gray-200"><input type="radio" name="desp_choice_${id}" value="esperar" onchange="calc()" class="mt-1" style="width:16px;height:16px;accent-color:#ffd700;"><span class="text-xs"><strong>Espera Agrupación (Sin desperdicio):</strong> Se cobra ancho de <span id="w_exact_${id}" class="font-bold"></span>cm ($<span id="price_sin_${id}" class="font-bold"></span>) - Demora adicional</span></label>` +
+                `</div></div>` +
+                `<textarea id="note_${id}" class="input-premium h-20 mt-4" placeholder="Instrucciones"></textarea>` +
+                `<div class="mt-6"><div class="file-drop-zone relative overflow-hidden" id="drop_${id}">` +
+                `<input type="file" class="absolute inset-0 opacity-0 cursor-pointer z-10" multiple onchange="handleFiles(this, ${id})">` +
+                '<p class="text-sm text-gray-400">Subir archivos de diseño</p></div>' +
+                `<div id="list_${id}" class="text-[10px] mt-2 space-y-1 text-left"></div></div>` +
+                `<div class="mt-6 pt-4 border-t border-white/5 text-right"><span class="text-2xl font-black text-yellow-400" id="sub_${id}">$0</span></div></div>`;
+            document.getElementById('productosContainer').insertAdjacentHTML('beforeend', html);
+        }
+
+        function updateProds(id) {
+            var cat = document.getElementById('cat_' + id).value;
+            var s = document.getElementById('prod_' + id);
+            s.innerHTML = '<option value="">Producto...</option>';
+            catalogo.forEach(function (p) { if (p.categoria === cat) s.innerHTML += '<option value="' + p.id + '">' + p.producto + '</option>'; });
+        }
+
+        function ajustarInputs(id) {
+            var p = null; var prodVal = document.getElementById('prod_' + id).value;
+            for (var i = 0; i < catalogo.length; i++) { if (catalogo[i].id === prodVal) { p = catalogo[i]; break; } }
+            if (!p) return;
+            var container = document.getElementById('inputs_container_' + id);
+
+            if (p.categoria.toUpperCase().indexOf('POLIFAN') > -1) {
+                container.innerHTML = `<div class="grid grid-cols-2 gap-4"><select id="sup_${id}" class="input-premium" onchange="calc()">${OPCIONES_POLY.map((s, i) => `<option value="${i}">${s.label}</option>`).join('')}</select><input type="number" id="letras_${id}" placeholder="Cant. Letras" class="input-premium" oninput="calc()"><input type="number" id="q_${id}" value="1" class="input-premium md:col-span-2" oninput="calc()"></div>`;
+            } else if (p.unidad === 'm2') {
+                container.innerHTML = `<div class="grid grid-cols-3 gap-4">` +
+                    `<input type="number" id="w_${id}" placeholder="Ancho cm" class="input-premium" oninput="calc()">` +
+                    `<input type="number" id="h_${id}" placeholder="Largo cm" class="input-premium" oninput="calc()">` +
+                    `<input type="number" id="q_${id}" value="1" class="input-premium" oninput="calc()">` +
+                    `<button type="button" onclick="openPlanner(${id})" class="md:col-span-3 bg-blue-500/20 hover:bg-blue-500/40 text-blue-300 font-bold py-2 px-4 rounded-xl border border-blue-500/30 transition-all text-[10px] uppercase tracking-widest"><i class="fa-solid fa-ruler-combined mr-2"></i> Optimizar Layout Visual</button>` +
+                    `<div class="md:col-span-3 flex items-center gap-3 p-3 bg-white/5 rounded-xl border border-white/10 mt-2">` +
+                    `<input type="checkbox" id="dem_${id}" style="width:20px;height:20px;accent-color:#ffd700;" onchange="calc()">` +
+                    `<label for="dem_${id}" class="text-xs text-yellow-400 font-bold uppercase cursor-pointer">Agregar demasía de refilado (+10cm)</label></div></div>`;
+            } else if (p.unidad.indexOf('ml') > -1) {
+                container.innerHTML = `<div class="grid grid-cols-2 gap-4"><input type="number" id="ml_${id}" placeholder="Metros" class="input-premium" oninput="calc()"><input type="number" id="q_${id}" value="1" class="input-premium" oninput="calc()"></div>`;
+            } else {
+                container.innerHTML = `<input type="number" id="q_${id}" value="1" class="input-premium" oninput="calc()">`;
+            }
+            calc();
+        }
+
+        function handleFiles(input, id) {
+            var files = Array.from(input.files);
+            filesByItem['item_' + id] = filesByItem['item_' + id].concat(files);
+            totalBytes = 0; Object.keys(filesByItem).forEach(function (k) { filesByItem[k].forEach(function (f) { totalBytes += f.size; }); });
+            document.getElementById('list_' + id).innerHTML = filesByItem['item_' + id].map(function (f) { return '<div>✅ ' + f.name + '</div>'; }).join('');
+        }
+
+        function calc() {
+            var total = 0;
+            document.querySelectorAll('[id^="card_"]').forEach(function (card) {
+                var id = card.id.replace('card_', '');
+                var p = null; var prodVal = document.getElementById('prod_' + id).value;
+                for (var i = 0; i < catalogo.length; i++) { if (catalogo[i].id === prodVal) { p = catalogo[i]; break; } }
+                if (!p) return;
+                var qInput = document.getElementById('q_' + id);
+                var q = qInput ? (parseInt(qInput.value) || 1) : 1;
+                var warn = document.getElementById('warn_' + id);
+                let sub = 0;
+
+                if (p.categoria.toUpperCase().indexOf('POLIFAN') > -1) {
+                    var idx = document.getElementById('sup_' + id).value;
+                    sub = p.precioGremio * OPCIONES_POLY[idx].factor * q;
+                } else if (p.unidad === 'm2') {
+                    var w = parseFloat(document.getElementById('w_' + id).value) || 0;
+                    var h = parseFloat(document.getElementById('h_' + id).value) || 0;
+                    var demCheck = document.getElementById('dem_' + id).checked;
+                    var wV = demCheck ? (w + 10) : w;
+                    var wCob = wV;
+                    var requiresAcceptance = false;
+
+                    if (p.anchoFijo) {
+                        if (wV > p.anchoFijo) {
+                            wCob = p.anchoFijo;
+                            warn.innerText = `❌ ERROR: Ancho máximo ${p.anchoFijo}cm.`;
+                            warn.style.display = "block"; warn.style.background = "rgba(248, 113, 113, 0.1)"; warn.style.color = "#f87171";
+                        } else {
+                            if (p.anchoFijo - w <= 10) { wCob = w; } else { wCob = p.anchoFijo; }
+                            wCob = Math.max(80, wCob);
+                            if (wCob > w) {
+                                requiresAcceptance = true;
+                                warn.innerText = `⚠️ ANCHO ÚNICO: Se cobrará sobre ${wCob}cm.`;
+                                warn.style.display = "block"; warn.style.background = "rgba(251, 146, 60, 0.1)"; warn.style.color = "#fb923c";
+                            } else {
+                                warn.innerText = `✅ ANCHO ÚNICO: Se cobrará la medida de ${wCob}cm.`;
+                                warn.style.display = "block"; warn.style.background = "rgba(74, 222, 128, 0.1)"; warn.style.color = "#4ade80";
+                            }
+                        }
+                    } else {
+                        var lista = stockPorTipo[p.tipo] || [];
+                        var rollo = lista.find(s => s >= wV);
+                        if (rollo) {
+                            if (rollo - w <= 10) { wCob = w; } else { wCob = rollo; }
+                            wCob = Math.max(80, wCob);
+                            if (wCob > w) {
+                                requiresAcceptance = true;
+                                warn.style.display = "block"; warn.style.background = "rgba(251, 146, 60, 0.1)"; warn.style.color = "#fb923c";
+                                if (w < 80 && wCob === 80) warn.innerText = `⚠️ MÍNIMO DE COBRO: Se cobrará sobre 80cm.`;
+                                else warn.innerText = `⚠️ DESPERDICIO: Se cobrará sobre ${wCob}cm (Usando rollo de ${rollo}cm).`;
+                            } else {
+                                warn.style.display = "block"; warn.style.background = "rgba(74, 222, 128, 0.1)"; warn.style.color = "#4ade80";
+                                warn.innerText = `✅ STOCK OK: Se cobrará la medida de ${wCob}cm.`;
+                            }
+                        } else if (w > 0) {
+                            warn.innerText = "❌ SIN STOCK para este ancho.";
+                            warn.style.display = "block"; warn.style.background = "rgba(248, 113, 113, 0.1)"; warn.style.color = "#f87171";
+                        } else { warn.style.display = "none"; }
+                    }
+
+                    var acceptContainer = document.getElementById('accept_container_' + id);
+                    if (acceptContainer) {
+                        if (requiresAcceptance && w > 0) {
+                            acceptContainer.classList.remove('hidden');
+                            var priceCon = (wCob / 100) * (h / 100) * p.precioGremio * q;
+                            var priceSin = (wV / 100) * (h / 100) * p.precioGremio * q;
+
+                            document.getElementById('w_cob_' + id).innerText = wCob;
+                            document.getElementById('price_con_' + id).innerText = Math.round(priceCon).toLocaleString();
+                            document.getElementById('w_exact_' + id).innerText = wV;
+                            document.getElementById('price_sin_' + id).innerText = Math.round(priceSin).toLocaleString();
+
+                            var choice = document.querySelector(`input[name="desp_choice_${id}"]:checked`);
+                            if (choice && choice.value === 'esperar') {
+                                sub = priceSin;
+                            } else {
+                                sub = priceCon;
+                            }
+                        } else {
+                            acceptContainer.classList.add('hidden');
+                            sub = (wCob / 100) * (h / 100) * p.precioGremio * q;
+                        }
+                    } else {
+                        sub = (wCob / 100) * (h / 100) * p.precioGremio * q;
+                    }
+                } else if (p.unidad.indexOf('ml') > -1) {
+                    sub = (parseFloat(document.getElementById('ml_' + id).value) || 0) * p.precioGremio * q;
+                } else { sub = p.precioGremio * q; }
+                document.getElementById('sub_' + id).innerText = '$' + Math.round(sub).toLocaleString();
+                total += sub;
+            });
+            document.getElementById('totalLabel').innerText = '$' + Math.round(total).toLocaleString();
+        }
+
+        function eliminar(id) { if (document.querySelectorAll('[id^="card_"]').length > 1) { document.getElementById('card_' + id).remove(); calc(); } }
+
+        document.getElementById('cotizadorForm').onsubmit = async (e) => {
+            e.preventDefault();
+            var btn = document.getElementById('btnSubmit');
+
+            if (window.appMode === 'cotizar') {
+                // En modo cotizar, simplemente recargamos la página (reiniciamos)
+                location.reload();
+                return;
+            }
+
+            var canSubmit = true;
+            // No blocks needed as options are preselected
+            canSubmit = true;
+
+            btn.disabled = true; btn.innerHTML = 'ENVIANDO...';
+            var allFiles = []; var details = ""; var totalRaw = 0;
+
+            document.querySelectorAll('[id^="card_"]').forEach(function (card, idx) {
+                var id = card.id.replace('card_', '');
+                var p = null; var prodVal = document.getElementById('prod_' + id).value;
+                for (var i = 0; i < catalogo.length; i++) { if (catalogo[i].id === prodVal) { p = catalogo[i]; break; } }
+                if (!p) return;
+                var q = document.getElementById('q_' + id).value || 1;
+                var note = document.getElementById('note_' + id).value.trim();
+                var subVal = parseInt(document.getElementById('sub_' + id).innerText.replace(/[^0-9]/g, ''));
+                totalRaw += subVal;
+                var dim = "";
+                if (document.getElementById('w_' + id)) dim = "(" + document.getElementById('w_' + id).value + "x" + document.getElementById('h_' + id).value + "cm)";
+                else if (document.getElementById('ml_' + id)) dim = "(" + document.getElementById('ml_' + id).value + "ml)";
+
+                var despChoiceText = "";
+                var choice = document.querySelector(`input[name="desp_choice_${id}"]:checked`);
+                if (choice && document.getElementById('accept_container_' + id) && !document.getElementById('accept_container_' + id).classList.contains('hidden')) {
+                    if (choice.value === 'esperar') {
+                        despChoiceText = " [Espera Agrupación - Sin Desperdicio]";
+                    } else {
+                        despChoiceText = " [Prioritario - Con Desperdicio]";
+                    }
+                }
+
+                details += "ITEM " + (idx + 1) + ": " + p.producto + " " + dim + " x" + q + despChoiceText + (note ? " | " + note : "") + " - $" + subVal.toLocaleString() + "\n";
+                filesByItem['item_' + id].forEach(function (f) { allFiles.push({ filename: 'I' + (idx + 1) + '_' + f.name, mimeType: f.type, base: f }); });
+            });
+
+            var folderId = null;
+            var folderUrl = null;
+
+            try {
+                if (allFiles.length > 0) {
+                    const progressContainer = document.getElementById('uploadProgressContainer');
+                    const statusText = document.getElementById('uploadStatusText');
+                    const progressPercent = document.getElementById('uploadProgressPercent');
+                    const progressBar = document.getElementById('uploadProgressBar');
+
+                    progressContainer.classList.remove('hidden');
+
+                    statusText.innerText = 'CREANDO CARPETA...';
+                    progressPercent.innerText = '0%';
+                    progressBar.style.width = '0%';
+
+                    btn.innerHTML = 'CREANDO CARPETA...';
+                    const folderInfo = await new Promise((resolve, reject) => {
+                        google.script.run
+                            .withSuccessHandler(resolve)
+                            .withFailureHandler(reject)
+                            .createOrderFolder(document.getElementById('nombreGremio').value);
+                    });
+                    folderId = folderInfo.folderId;
+                    folderUrl = folderInfo.folderUrl;
+
+                    for (var k = 0; k < allFiles.length; k++) {
+                        var f = allFiles[k];
+                        statusText.innerText = `PREPARANDO ARCHIVO ${k + 1}/${allFiles.length}...`;
+                        btn.innerHTML = `PREPARANDO ARCHIVO ${k + 1}/${allFiles.length}...`;
+
+                        const uploadUrl = await new Promise((resolve, reject) => {
+                            google.script.run
+                                .withSuccessHandler(resolve)
+                                .withFailureHandler(reject)
+                                .getResumableUploadUrl(folderId, f.filename, f.mimeType);
+                        });
+
+                        const chunkSize = 2 * 1024 * 1024; // 2MB chunks (seguro para el canal de comunicación de GAS)
+                        const fileSize = f.base.size;
+                        let offset = 0;
+
+                        while (offset < fileSize) {
+                            const chunk = f.base.slice(offset, offset + chunkSize);
+                            const chunkLength = chunk.size;
+                            const progress = Math.round(((offset + chunkLength) / fileSize) * 100);
+
+                            statusText.innerText = `SUBIENDO ARCHIVO ${k + 1}/${allFiles.length}`;
+                            progressPercent.innerText = `${progress}%`;
+                            progressBar.style.width = `${progress}%`;
+                            btn.innerHTML = `SUBIENDO ARCHIVO ${k + 1}/${allFiles.length} (${progress}%)...`;
+
+                            // Leer el chunk como base64
+                            const base64Chunk = await new Promise((resolve) => {
+                                const reader = new FileReader();
+                                reader.readAsDataURL(chunk);
+                                reader.onload = () => resolve(reader.result.split(',')[1]);
+                            });
+
+                            // Enviar el chunk al servidor para hacer el PUT y bypassear CORS
+                            const result = await new Promise((resolve, reject) => {
+                                google.script.run
+                                    .withSuccessHandler(resolve)
+                                    .withFailureHandler(reject)
+                                    .uploadChunkToResumableUrl(uploadUrl, base64Chunk, offset, offset + chunkLength - 1, fileSize);
+                            });
+
+                            if (result.status === 308 || result.status === 200 || result.status === 201) {
+                                offset += chunkLength;
+                            } else {
+                                throw new Error(`Subida fallida en bloque: HTTP ${result.status} - ${result.body}`);
+                            }
+                        }
+                    }
+                }
+            } catch (err) {
+                console.error("Error en subida de archivos:", err);
+                alert("Hubo un error subiendo los archivos: " + err.message);
+                document.getElementById('uploadProgressContainer').classList.add('hidden');
+                btn.disabled = false;
+                btn.innerHTML = 'ENVIAR PEDIDO';
+                return;
+            }
+
+            btn.innerHTML = 'ENVIANDO DETALLES...';
+            google.script.run.withSuccessHandler(() => {
+                document.getElementById('mainContent').style.display = "none";
+                document.getElementById('successOverlay').style.display = "flex";
+                setTimeout(() => location.reload(), 4000);
+            }).processOrder(JSON.stringify({
+                gremio: document.getElementById('nombreGremio').value,
+                whatsapp: document.getElementById('whatsapp').value,
+                precio: totalRaw, detalles: details,
+                folderId: folderId,
+                folderUrl: folderUrl,
+                plannerLayouts: window.plannerLayouts || {}
+            }));
+        };
+        window.onload = init;
+    </script>
+    <!-- LÓGICA MODULAR DEL PLANNER -->
+
+</body>
+
+</html>

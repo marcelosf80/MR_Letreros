@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gestión de Precios - MR Letreros</title>
+  <script src="js/auth.js"></script>
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/sidebar-universal.css">
+  
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/maxton-theme.css">
+    <link rel="stylesheet" href="css/precios.css">
+</head>
+
+<body class="bg-light">
+  <!-- Sidebar Universal (se inserta automáticamente) -->
+
+  <div class="main-content">
+    <!-- Top Bar -->
+    <div class="mx-topbar">
+      <h1 class="top-bar-title m-0">💰 Gestión de Precios</h1>
+      <div class="top-bar-actions">
+        <!-- Acciones específicas del módulo -->
+      </div>
+    </div>
+
+
+    <div class="content-container">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">Configurar Precios de Venta</h2>
+          <p class="section-subtitle">Define precios para Gremio y Cliente con análisis de rentabilidad</p>
+        </div>
+        <button class="btn btn-primary" id="btnAddPrice">➕ Configurar Precio</button>
+      </div>
+
+      <!-- Aumento Masivo -->
+      <div class="highlight-box bg-white shadow-sm mb-4" style="border: 1px solid rgba(0,0,0,0.1);">
+        <h4 class="mb-3">📈 Aumento Rápido por Porcentaje</h4>
+        <div class="row align-items-end g-3">
+          <div class="col-md-3">
+            <label class="form-label" style="color: var(--text-primary);">Categoría</label>
+            <select id="bulkCategory" class="form-select">
+              <option value="all">Todas las categorías</option>
+            </select>
+          </div>
+          <div class="col-md-2">
+            <label class="form-label" style="color: var(--text-primary);">Porcentaje (%)</label>
+            <input type="number" id="bulkPercentage" class="form-control" placeholder="Ej: 10" step="0.1">
+          </div>
+          <div class="col-md-7 d-flex gap-2">
+            <button class="btn btn-success flex-grow-1" onclick="applyBulkUpdate('gremio')">⬆️ Gremio</button>
+            <button class="btn btn-info flex-grow-1 text-white" onclick="applyBulkUpdate('cliente')">⬆️ Cliente</button>
+            <button class="btn btn-primary flex-grow-1" onclick="applyBulkUpdate('both')">⬆️ Ambos</button>
+          </div>
+        </div>
+        <small class="text-muted d-block mt-2">
+          * Los precios se redondearán a 2 decimales. La rentabilidad se recalculará automáticamente.
+        </small>
+      </div>
+
+      <!-- Lista de Precios Configurados -->
+      <div id="preciosList" class="products-grid">
+        <p class="empty-state">No hay precios configurados</p>
+      </div>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal" id="priceModal">
+      <div class="modal-content" style="max-width: 900px;">
+        <div class="modal-header">
+          <h2 class="modal-title" id="modalPriceTitle">💰 Configurar Precios</h2>
+          <button class="btn-close" id="btnClosePrice">×</button>
+        </div>
+        <div class="modal-body">
+
+          <!-- Selector de Producto -->
+          <div class="highlight-box" style="margin-bottom: 1.5rem;">
+            <h4>📦 Seleccionar Producto</h4>
+
+            <div class="form-group">
+              <label class="form-label">Categoría *</label>
+              <select id="priceCategory" class="form-select" onchange="loadProductsByCategory()">
+                <option value="">Seleccionar categoría...</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Producto *</label>
+              <select id="priceProduct" class="form-select" onchange="loadProductCost()">
+                <option value="">Primero selecciona categoría...</option>
+              </select>
+            </div>
+
+            <div id="costInfo"
+              style="display: none; margin-top: 1rem; padding: 1.5rem; background: rgba(255, 140, 66, 0.1); border-radius: 10px; border: 1px solid rgba(255, 140, 66, 0.3);">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                  <p style="color: var(--text-secondary); margin-bottom: 0.5rem;">💳 Costo del Material</p>
+                  <p style="font-size: 2rem; font-weight: bold; color: var(--primary-color); margin: 0;" id="costValue">
+                    $0,00</p>
+                </div>
+                <div style="text-align: right;">
+                  <p style="color: var(--text-secondary); font-size: 0.9rem;">Este es tu costo base</p>
+                  <p style="color: var(--text-secondary); font-size: 0.9rem;">para calcular precios</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Precios de Venta -->
+          <div class="highlight-box">
+            <h4>🏷️ Configurar Precios de Venta</h4>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">💚 Precio GREMIO (sin IVA) *</label>
+                <input type="number" id="priceGremio" class="form-input" placeholder="0.00" step="0.01"
+                  oninput="calcularRentabilidad()">
+                <small style="color: var(--text-secondary);">Precio para gremio/revendedores</small>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">💙 Precio CLIENTE (sin IVA) *</label>
+                <input type="number" id="priceCliente" class="form-input" placeholder="0.00" step="0.01"
+                  oninput="calcularRentabilidad()">
+                <small style="color: var(--text-secondary);">Precio público final</small>
+              </div>
+            </div>
+          </div>
+
+          <!-- Análisis de Rentabilidad GREMIO -->
+          <div id="rentabilidadGremioCard" style="display: none;"></div>
+
+          <!-- Análisis de Rentabilidad CLIENTE -->
+          <div id="rentabilidadClienteCard" style="display: none;"></div>
+
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn btn-secondary" id="btnCancelPrice">Cancelar</button>
+          <button class="btn btn-primary" id="btnSavePrice">💾 Guardar Precios</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="js/shared/modal-system.js"></script>
+    <script src="js/shared/data-manager-network.js"></script>
+    <script>
+      // Función de formateo de moneda argentina
+      function formatCurrencyAR(num, decimals = 2) {
+        if (num === null || num === undefined || isNaN(num)) {
+          return '0,00';
+        }
+        return new Intl.NumberFormat('es-AR', {
+          minimumFractionDigits: decimals,
+          maximumFractionDigits: decimals
+        }).format(num);
+      }
+
+      // Helper de fetch con token — reemplaza AUTH.fetch que no existe
+      async function apiFetch(url, opts = {}) {
+        const token = localStorage.getItem('mr_token') || '';
+        const res = await fetch(url, {
+          ...opts,
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token,
+            ...(opts.headers || {})
+          }
+        });
+        return res;
+      }
+
+      let materiales = [];
+      let currentCost = 0; // costo total (ej. precio rollo) o valor bruto
+      let currentArea = 0; // m2 del producto
+      let currentCostPerM2 = 0; // costo por m2
+      let precios = [];
+      let editingId = null; // para modo edición
+
+      document.addEventListener('DOMContentLoaded', async () => {
+        console.log('[PRECIOS] Inicializando...');
+        await loadMateriales();
+        await loadPrecios();
+        document.getElementById('btnSavePrice').addEventListener('click', savePrice);
+        document.getElementById('btnAddPrice').addEventListener('click', openAddPriceModal);
+        document.getElementById('btnClosePrice').addEventListener('click', closePriceModal);
+        document.getElementById('btnCancelPrice').addEventListener('click', closePriceModal);
+      });
+
+      async function loadMateriales() {
+        try {
+          // Cargamos la lista de MATERIALES (Insumos) para poder ponerles precio
+          let response = await apiFetch('/api/materiales');
+          if (!response.ok) {
+            // Fallback si falla materiales
+            response = await apiFetch('/api/precios');
+          }
+          
+          if (response.ok) {
+            const data = await response.json();
+            materiales = Array.isArray(data) ? data : [];
+          }
+
+          // También cargamos precios existentes para tener la lista completa (unión)
+          const respPrecios = await apiFetch('/api/precios');
+          if (respPrecios.ok) {
+            const dataPrecios = await respPrecios.json();
+            if (Array.isArray(dataPrecios)) {
+              dataPrecios.forEach(p => {
+                if (!materiales.find(m => String(m.id) === String(p.id))) {
+                  materiales.push(p);
+                }
+              });
+            }
+          }
+
+          // Cargar categorías globales para complementar
+          let categoriasGlobales = [];
+          if (window.mrDataManager) {
+            categoriasGlobales = await window.mrDataManager.getCategorias();
+          } else {
+            const catResp = await apiFetch('/api/categorias');
+            if (catResp.ok) {
+              categoriasGlobales = await catResp.json();
+            }
+          }
+
+          populateCategorias(categoriasGlobales);
+
+          if (materiales.length === 0 && window.mrDataManager) {
+            const fallback = await window.mrDataManager.getMateriales();
+            if (Array.isArray(fallback) && fallback.length > 0) {
+              materiales = fallback;
+              precios = fallback; // Sincronizar listado base
+            }
+          }
+
+          console.log('[PRECIOS] Materiales cargados:', materiales.length);
+        } catch (error) {
+          console.error('[PRECIOS] Error cargando materiales:', error);
+        }
+      }
+
+      async function loadPrecios() {
+        try {
+          // Use mrDataManager if available to ensure auth headers are sent
+          if (window.mrDataManager) {
+            precios = await window.mrDataManager.getPrecios();
+          } else {
+            // Fallback using AUTH.fetch helper if manager not ready
+            const response = await apiFetch('/api/precios');
+            if (response.ok) {
+              precios = await response.json();
+            }
+          }
+          renderPrecios();
+        } catch (error) {
+          console.error('[PRECIOS] Error cargando precios:', error);
+          precios = [];
+          renderPrecios();
+        }
+      }
+
+      function populateCategorias(globales = []) {
+        const catsDeProductos = materiales.map(m => m.categoria || m.category || '').filter(Boolean);
+        const todas = [...new Set([...globales, ...catsDeProductos])].sort();
+        
+        const select = document.getElementById('priceCategory');
+        select.innerHTML = '<option value="">Seleccionar categoría...</option>' +
+          todas.map(cat => `<option value="${cat}">${cat}</option>`).join('');
+
+        const bulkSelect = document.getElementById('bulkCategory');
+        if (bulkSelect) {
+          bulkSelect.innerHTML = '<option value="all">Todas las categorías</option>' +
+            todas.map(cat => `<option value="${cat}">${cat}</option>`).join('');
+        }
+        console.log('[PRECIOS] Categorías unificadas:', todas);
+      }
+
+      function loadProductsByCategory() {
+        const categoria = document.getElementById('priceCategory').value;
+        const productSelect = document.getElementById('priceProduct');
+
+        if (!categoria) {
+          productSelect.innerHTML = '<option value="">Primero selecciona categoría...</option>';
+          productSelect.disabled = true;
+          document.getElementById('costInfo').style.display = 'none';
+          return;
+        }
+
+        const productos = materiales.filter(m => (m.categoria || m.category) === categoria);
+        productSelect.innerHTML = '<option value="">Seleccionar producto...</option>' +
+          productos.map(p => {
+            // gremio_precios_db usa: p.producto, p.productoId, p.id
+            const name = p.producto || p.productoNombre || p.name || p.productoId || 'Producto';
+            const desc = p.descripcion ? ` (${p.descripcion.substring(0,30)}...)` : '';
+            const id = p.id || p.productoId;
+            return `<option value="${String(id)}">${name}${desc}</option>`;
+          }).join('');
+        productSelect.disabled = false;
+      }
+
+      function loadProductCost() {
+        const productId = document.getElementById('priceProduct').value;
+        if (!productId) {
+          document.getElementById('costInfo').style.display = 'none';
+          return;
+        }
+
+        const producto = materiales.find(m =>
+          String(m.id) === String(productId) || String(m.productoId) === String(productId)
+        );
+        if (producto) {
+          // Soporta campos de gremio_materiales.json (costoPorM2, m2) 
+          // y gremio_precios_db.json (costo, area)
+          currentArea = Number(producto.area || producto.m2 || 1);
+          currentCost = Number(producto.costo || producto.costoPorM2 || producto.precioRollo || 0);
+
+          // Si area > 1 el costo está por rollo → dividir por area para obtener costo/m2
+          // Si es materiales.json, costoPorM2 ya es unitario.
+          if (producto.costoPorM2) {
+            currentCostPerM2 = Number(producto.costoPorM2);
+          } else {
+            currentCostPerM2 = (currentArea > 1 && currentCost > 0)
+              ? currentCost / currentArea
+              : currentCost;
+          }
+
+          const areaLabel = currentArea
+            ? currentArea.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' m²'
+            : 'N/D';
+          const costLabel = '$' + currentCostPerM2.toLocaleString('es-AR', {
+            minimumFractionDigits: 2, maximumFractionDigits: 2
+          }) + ' /m²';
+
+          document.getElementById('costValue').textContent = `${costLabel} (ref: ${areaLabel})`;
+          document.getElementById('costInfo').style.display = 'block';
+
+          // Pre-llenar precios si ya existen en la DB
+          if (producto.precioGremio) document.getElementById('priceGremio').value = producto.precioGremio;
+          if (producto.precioCliente) document.getElementById('priceCliente').value = producto.precioCliente;
+
+          calcularRentabilidad();
+        }
+      }
+
+      function calcularRentabilidad() {
+        const precioGremio = parseFloat(document.getElementById('priceGremio').value) || 0;
+        const precioCliente = parseFloat(document.getElementById('priceCliente').value) || 0;
+
+        if (currentCostPerM2 === 0 || currentArea === 0 || (precioGremio === 0 && precioCliente === 0)) {
+          document.getElementById('rentabilidadGremioCard').style.display = 'none';
+          document.getElementById('rentabilidadClienteCard').style.display = 'none';
+          return;
+        }
+
+        // Interpretemos los precios ingresados como precio por m2.
+        // Ganancia por m2 = precio_por_m2 - costo_por_m2
+        // Ganancia total = ganancia_por_m2 * area
+
+        // Calcular GREMIO
+        if (precioGremio > 0) {
+          const gananciaPorM2G = precioGremio - currentCostPerM2;
+          const gananciaTotalG = gananciaPorM2G * currentArea;
+          const rentabilidadG = currentCostPerM2 > 0 ? ((gananciaPorM2G / currentCostPerM2) * 100).toFixed(2) : '0.00';
+          const semaforoG = getSemaforo(rentabilidadG);
+
+          document.getElementById('rentabilidadGremioCard').innerHTML = `
+          <div class="semaforo-card ${semaforoG.class}">
+            <h3 style="margin: 0 0 1rem 0; color: white;">🟢 ANÁLISIS GREMIO</h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+              <div>
+                <div style="font-size: 0.9rem; opacity: 0.9; color: white;">Ganancia / m²</div>
+                <div style="font-size: 1.4rem; font-weight: bold; color: white;">$${formatCurrencyAR(gananciaPorM2G)}</div>
+              </div>
+              <div>
+                <div style="font-size: 0.9rem; opacity: 0.9; color: white;">Ganancia total</div>
+                <div style="font-size: 1.4rem; font-weight: bold; color: white;">$${formatCurrencyAR(gananciaTotalG)}</div>
+              </div>
+              <div>
+                <div style="font-size: 0.9rem; opacity: 0.9; color: white;">Rentabilidad</div>
+                <div style="font-size: 1.8rem; font-weight: bold; color: white;">${rentabilidadG}%</div>
+              </div>
+            </div>
+            <div style="font-size: 0.9rem; color: white; opacity: 0.9;">
+              Fórmula: (${formatCurrencyAR(precioGremio)} /m²) - (${formatCurrencyAR(currentCostPerM2)} /m²) = $${formatCurrencyAR(gananciaPorM2G)} /m²
+            </div>
+            <div class="consejo-box">
+              <strong>💡 Consejo:</strong> ${semaforoG.consejo}
+            </div>
+          </div>
+        `;
+          document.getElementById('rentabilidadGremioCard').style.display = 'block';
+        }
+
+        // Calcular CLIENTE
+        if (precioCliente > 0) {
+          const gananciaPorM2C = precioCliente - currentCostPerM2;
+          const gananciaTotalC = gananciaPorM2C * currentArea;
+          const rentabilidadC = currentCostPerM2 > 0 ? ((gananciaPorM2C / currentCostPerM2) * 100).toFixed(2) : '0.00';
+          const semaforoC = getSemaforo(rentabilidadC);
+
+          document.getElementById('rentabilidadClienteCard').innerHTML = `
+          <div class="semaforo-card ${semaforoC.class}">
+            <h3 style="margin: 0 0 1rem 0; color: white;">🔵 ANÁLISIS CLIENTE</h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+              <div>
+                <div style="font-size: 0.9rem; opacity: 0.9; color: white;">Ganancia / m²</div>
+                <div style="font-size: 1.4rem; font-weight: bold; color: white;">$${formatCurrencyAR(gananciaPorM2C)}</div>
+              </div>
+              <div>
+                <div style="font-size: 0.9rem; opacity: 0.9; color: white;">Ganancia total</div>
+                <div style="font-size: 1.4rem; font-weight: bold; color: white;">$${formatCurrencyAR(gananciaTotalC)}</div>
+              </div>
+              <div>
+                <div style="font-size: 0.9rem; opacity: 0.9; color: white;">Rentabilidad</div>
+                <div style="font-size: 1.8rem; font-weight: bold; color: white;">${rentabilidadC}%</div>
+              </div>
+            </div>
+            <div style="font-size: 0.9rem; color: white; opacity: 0.9;">
+              Fórmula: (${formatCurrencyAR(precioCliente)} /m²) - (${formatCurrencyAR(currentCostPerM2)} /m²) = $${formatCurrencyAR(gananciaPorM2C)} /m²
+            </div>
+            <div class="consejo-box">
+              <strong>💡 Consejo:</strong> ${semaforoC.consejo}
+            </div>
+          </div>
+        `;
+          document.getElementById('rentabilidadClienteCard').style.display = 'block';
+        }
+      }
+
+      function getSemaforo(rentabilidad) {
+        const r = parseFloat(rentabilidad);
+
+        if (r < 20) {
+          return {
+            class: 'semaforo-rojo',
+            emoji: '🔴',
+            consejo: 'Rentabilidad BAJA. Estás ganando muy poco. Considerá aumentar el precio o buscar materiales más económicos.'
+          };
+        } else if (r < 40) {
+          return {
+            class: 'semaforo-amarillo',
+            emoji: '🟡',
+            consejo: 'Rentabilidad MEDIA. Estás en un rango aceptable, pero podés mejorar. Buscá optimizar costos o ajustar precios.'
+          };
+        } else {
+          return {
+            class: 'semaforo-verde',
+            emoji: '🟢',
+            consejo: 'Rentabilidad EXCELENTE. Estás ganando bien. Mantené esta estrategia de precios.'
+          };
+        }
+      }
+
+      async function savePrice() {
+        const productId = document.getElementById('priceProduct').value;
+        const precioGremio = parseFloat(document.getElementById('priceGremio').value) || 0;
+        const precioCliente = parseFloat(document.getElementById('priceCliente').value) || 0;
+
+        if (!productId || (precioGremio === 0 && precioCliente === 0)) {
+          alert('⚠️ Completa todos los campos obligatorios');
+          return;
+        }
+        const producto = materiales.find(m => String(m.id) === String(productId) || String(m.productoId) === String(productId));
+        const nombreProducto = producto?.producto || producto?.productoNombre || producto?.productoId || 'Producto';
+
+        const priceData = {
+          productoId: productId,
+          categoria: producto?.categoria || '',
+          producto: nombreProducto,
+          // Guardamos costo por m2 y área para futuros cálculos y visualización
+          costo: currentCostPerM2,
+          area: currentArea,
+          precioGremio,
+          precioCliente,
+          rentabilidadGremio: currentCostPerM2 > 0 ? ((precioGremio - currentCostPerM2) / currentCostPerM2 * 100).toFixed(2) : '0.00',
+          rentabilidadCliente: currentCostPerM2 > 0 ? ((precioCliente - currentCostPerM2) / currentCostPerM2 * 100).toFixed(2) : '0.00',
+          createdAt: new Date().toISOString()
+        };
+
+        try {
+          const getResp = await apiFetch('/api/precios');
+          let currentList = [];
+          if (getResp.ok) {
+            const data = await getResp.json();
+            currentList = Array.isArray(data) ? data : [];
+          }
+
+          // Si estamos editando, actualizar el existente
+          if (editingId) {
+            const index = currentList.findIndex(p => String(p.id) === String(editingId));
+            if (index !== -1) {
+              currentList[index] = { ...currentList[index], ...priceData };
+            }
+          } else {
+            // Crear nuevo
+            priceData.id = Date.now().toString();
+            currentList.push(priceData);
+          }
+
+          const response = await apiFetch('/api/precios', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(currentList)
+          });
+
+          if (response.ok) {
+            alert(editingId ? '✅ Precio actualizado correctamente' : '✅ Precios guardados correctamente');
+            closePriceModal();
+            clearForm();
+            await loadPrecios();
+          } else {
+            console.error('[PRECIOS] Error al guardar, response not ok', response);
+            alert('❌ Error al guardar');
+          }
+        } catch (error) {
+          console.error('[PRECIOS] Error:', error);
+          alert('❌ Error al guardar');
+        }
+      }
+
+      window.applyBulkUpdate = async function (type) {
+        const category = document.getElementById('bulkCategory').value;
+        const percentage = parseFloat(document.getElementById('bulkPercentage').value);
+
+        if (isNaN(percentage) || percentage === 0) {
+          alert('⚠️ Ingresa un porcentaje válido');
+          return;
+        }
+
+        if (!confirm(`¿Estás seguro de aumentar los precios en un ${percentage}%?`)) return;
+
+        const factor = 1 + (percentage / 100);
+        let count = 0;
+
+        const updatedPrecios = precios.map(p => {
+          if (category === 'all' || p.categoria === category) {
+            count++;
+            const newPrice = { ...p };
+            if (type === 'gremio' || type === 'both') {
+              newPrice.precioGremio = Number((p.precioGremio * factor).toFixed(2));
+              newPrice.rentabilidadGremio = newPrice.costo > 0 
+                ? ((newPrice.precioGremio - newPrice.costo) / newPrice.costo * 100).toFixed(2) 
+                : '0.00';
+            }
+            if (type === 'cliente' || type === 'both') {
+              newPrice.precioCliente = Number((p.precioCliente * factor).toFixed(2));
+              newPrice.rentabilidadCliente = newPrice.costo > 0 
+                ? ((newPrice.precioCliente - newPrice.costo) / newPrice.costo * 100).toFixed(2) 
+                : '0.00';
+            }
+            return newPrice;
+          }
+          return p;
+        });
+
+        if (count === 0) {
+          alert('⚠️ No se encontraron productos en la categoría seleccionada');
+          return;
+        }
+
+        try {
+          const response = await apiFetch('/api/precios', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updatedPrecios)
+          });
+
+          if (response.ok) {
+            alert(`✅ Se actualizaron ${count} productos correctamente`);
+            document.getElementById('bulkPercentage').value = '';
+            await loadPrecios();
+          } else {
+            alert('❌ Error al actualizar precios de forma masiva');
+          }
+        } catch (error) {
+          console.error('[PRECIOS] Bulk update error:', error);
+          alert('❌ Error de red al actualizar precios');
+        }
+      };
+
+      function clearForm() {
+        document.getElementById('priceCategory').value = '';
+        document.getElementById('priceProduct').value = '';
+        document.getElementById('priceGremio').value = '';
+        document.getElementById('priceCliente').value = '';
+        document.getElementById('costInfo').style.display = 'none';
+        document.getElementById('rentabilidadGremioCard').style.display = 'none';
+        document.getElementById('rentabilidadClienteCard').style.display = 'none';
+        currentCost = 0;
+        currentArea = 0;
+        currentCostPerM2 = 0;
+        editingId = null;
+      }
+
+      function openAddPriceModal() {
+        editingId = null;
+        document.getElementById('modalPriceTitle').textContent = '💰 Agregar Nuevo Precio';
+        clearForm();
+        document.getElementById('priceModal').classList.add('active');
+      }
+
+      function closePriceModal() {
+        document.getElementById('priceModal').classList.remove('active');
+        editingId = null;
+        clearForm();
+      }
+
+      window.editPrice = async function (id) {
+        editingId = id;
+        const precio = precios.find(p => String(p.id) === String(id));
+        if (!precio) return;
+
+        // Llenar el formulario con los datos del precio existente
+        document.getElementById('modalPriceTitle').textContent = '✏️ Editar Precio';
+        document.getElementById('priceModal').classList.add('active');
+
+        // Cargar categoría y producto
+        const categoria = precio.categoria;
+        document.getElementById('priceCategory').value = categoria;
+        loadProductsByCategory();
+
+        // Esperar a que se carguen los productos
+        setTimeout(() => {
+          document.getElementById('priceProduct').value = precio.productoId;
+          loadProductCost();
+
+          // Llenar precios
+          document.getElementById('priceGremio').value = precio.precioGremio || '';
+          document.getElementById('priceCliente').value = precio.precioCliente || '';
+          calcularRentabilidad();
+        }, 100);
+      };
+
+      function renderPrecios() {
+        const container = document.getElementById('preciosList');
+
+        if (!precios || precios.length === 0) {
+          container.innerHTML = '<p class="empty-state">No hay precios configurados</p>';
+          return;
+        }
+        // Hacer render tolerante a distintos esquemas de datos
+        container.innerHTML = precios.map(precio => {
+          try {
+            const costo = Number(precio.costo ?? precio.costoPorM2 ?? precio.pricePerM2 ?? 0) || 0;
+            const area = Number(precio.area ?? precio.m2 ?? precio.area_m2) || 0;
+            const precioGremio = Number(precio.precioGremio ?? precio.priceGremio ?? precio.price_gremio ?? precio.pricePublico ?? precio.pricePublic) || 0;
+            const precioCliente = Number(precio.precioCliente ?? precio.priceCliente ?? precio.price_publico ?? precio.pricePublico ?? precio.pricePublic) || 0;
+
+            const semaforoG = getSemaforo(precio.rentabilidadGremio ?? ((costo > 0) ? (((precioGremio || 0) - costo) / costo * 100) : 0));
+            const semaforoC = getSemaforo(precio.rentabilidadCliente ?? ((costo > 0) ? (((precioCliente || 0) - costo) / costo * 100) : 0));
+
+            const costoLabel = costo ? `$${costo.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} /m²` : 'N/D';
+            const precioGLabel = precioGremio ? `$${precioGremio.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : 'N/D';
+            const precioCLabel = precioCliente ? `$${precioCliente.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : 'N/D';
+            const areaLabel = area ? `${area.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} m²` : 'N/D';
+
+            const rentG = (precio.rentabilidadGremio !== undefined) ? String(precio.rentabilidadGremio) : (costo > 0 ? ((precioGremio - costo) / costo * 100).toFixed(2) : '0.00');
+            const rentC = (precio.rentabilidadCliente !== undefined) ? String(precio.rentabilidadCliente) : (costo > 0 ? ((precioCliente - costo) / costo * 100).toFixed(2) : '0.00');
+
+            return `
+            <div class="product-card">
+              <h3 style="margin-bottom: 0.5rem;">${precio.producto || precio.name || precio.productName || 'Producto'}</h3>
+              <p style="color: var(--text-secondary); margin-bottom: 1rem;">📁 ${precio.categoria || precio.category || ''}</p>
+              <div style="background: rgba(0, 0, 0, 0.3); padding: 1rem; border-radius: 8px; margin-bottom: 0.5rem;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                  <span>💳 Costo:</span>
+                  <strong>${costoLabel}</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                  <span>🟢 Precio Gremio:</span>
+                  <strong style="color: #51CF66;">${precioGLabel}</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                  <span>🔵 Precio Cliente:</span>
+                  <strong style="color: #00D9FF;">${precioCLabel}</strong>
+                </div>
+              </div>
+              <div style="display: flex; gap: 0.5rem; align-items: center; margin-top: 1rem;">
+                <span>Área: ${areaLabel}</span>
+              </div>
+              <div style="display: flex; gap: 0.5rem; align-items: center; margin-top: 1rem;">
+                <span>Gremio: ${semaforoG.emoji} ${rentG}%</span>
+                <span>Cliente: ${semaforoC.emoji} ${rentC}%</span>
+              </div>
+              <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
+                <button class="btn btn-secondary btn-small" onclick="editPrice('${precio.id}')" style="flex: 1;">✏️ Editar</button>
+                <button class="btn btn-danger btn-small" onclick="deletePrice('${precio.id}')" style="flex: 1;">🗑️ Eliminar</button>
+              </div>
+            </div>
+          `;
+          } catch (e) {
+            console.error('Error rendering precio item', e, precio);
+            return '';
+          }
+        }).join('');
+      }
+
+      window.deletePrice = async function (id) {
+        if (!confirm('¿Eliminar este precio?')) return;
+        try {
+          const getResp = await apiFetch('/api/precios');
+          if (!getResp.ok) throw new Error('No se pudo obtener la lista actual (HTTP ' + getResp.status + ')');
+          const data = await getResp.json();
+          const currentList = Array.isArray(data) ? data : [];
+
+          const filtered = currentList.filter(p => String(p.id) !== String(id));
+          const response = await apiFetch('/api/precios', {
+            method: 'POST',
+            body: JSON.stringify(filtered)
+          });
+
+          if (response.ok) {
+            precios = filtered;
+            renderPrecios();
+            alert('✅ Precio eliminado');
+          } else {
+            const err = await response.json().catch(() => ({}));
+            throw new Error(err.error || 'HTTP ' + response.status);
+          }
+        } catch (error) {
+          console.error('Error eliminando precio:', error);
+          alert('❌ Error al eliminar: ' + error.message);
+        }
+      };
+    </script>
+  </div>
+
+  <!-- Sidebar Universal Script -->
+  <script src="js/shared/sidebar-universal.js"></script>
+    <!-- Bootstrap 5 JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Trabajos - MR Letreros</title>
+    <script src="js/auth.js"></script>
+    <link rel="stylesheet" href="css/base.css">
+    <link rel="stylesheet" href="css/sidebar-universal.css">
+
+    <!-- IMPORTANTE: Cargar data-manager PRIMERO -->
+    <script src="js/shared/data-manager-network.js"></script>
+
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/maxton-theme.css">
+    <link rel="stylesheet" href="css/trabajos.css">
+</head>
+
+<body class="bg-light">
+    <!-- Sidebar Universal (se inserta automáticamente) -->
+
+    <div class="main-content">
+        <!-- Top Bar -->
+        <div class="mx-topbar">
+            <h1 class="top-bar-title m-0">🔨 Gestión de Trabajos</h1>
+            <div class="top-bar-actions">
+                <!-- Acciones específicas del módulo -->
+            </div>
+        </div>
+
+
+        <div class="content-container">
+            <!-- Dashboard Stats -->
+            <div class="dashboard-stats">
+                <div class="stat-card mx-card animate-fade-in-up"">
+                    <div class="stat-label">⏳ Trabajos Pendientes</div>
+                    <div class="stat-value" id="countPending">-</div>
+                </div>
+                <div class="stat-card mx-card animate-fade-in-up"">
+                    <div class="stat-label">🔧 En Proceso</div>
+                    <div class="stat-value" id="countInProgress">-</div>
+                </div>
+                <div class="stat-card mx-card animate-fade-in-up"">
+                    <div class="stat-label">✅ Completados</div>
+                    <div class="stat-value" id="countCompleted">-</div>
+                </div>
+                <div class="stat-card mx-card animate-fade-in-up"">
+                    <div class="stat-label">💰 Ingresos (Pagados)</div>
+                    <div class="stat-value" id="totalRevenue">$-</div>
+                </div>
+            </div>
+
+            <!-- Filters -->
+            <div class="filters-bar">
+                <input type="text" id="filterSearch" class="form-input" placeholder="🔍 Buscar por cliente..."
+                    style="flex: 1; min-width: 200px;">
+                <select id="filterStatus" class="form-select" style="width: auto;">
+                    <option value="">📋 Trabajos Activos</option>
+                    <option value="pending">⏳ Pendiente</option>
+                    <option value="in_progress">🔧 En Proceso</option>
+                    <option value="completed">✅ Completado</option>
+                    <option value="delivered">📦 Entregados (Historial)</option>
+                </select>
+                <select id="filterPayment" class="form-select" style="width: auto;">
+                    <option value="">💳 Todos los Pagos</option>
+                    <option value="paid">✅ Pagado</option>
+                    <option value="pending">⏳ Pendiente</option>
+                </select>
+                <select id="filterPriority" class="form-select" style="width: auto;">
+                    <option value="">🎯 Todas las Prioridades</option>
+                    <option value="urgent">🔴 Urgente</option>
+                    <option value="high">🟠 Alta</option>
+                    <option value="normal">🟡 Normal</option>
+                </select>
+                <button class="btn btn-primary" onclick="applyFilters()">Filtrar</button>
+                <button class="btn btn-secondary" onclick="clearFilters()">Limpiar</button>
+            </div>
+
+            <!-- Material Notifier Banner -->
+            <div id="materialNotifierWidget" class="material-notifier-widget animate-fade-in-up" style="display:none; margin-bottom: 1.5rem;">
+                <div class="mx-card p-3 border border-warning-subtle" style="background: rgba(234, 179, 8, 0.05); border: 1px solid rgba(234, 179, 8, 0.2) !important;">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <span style="font-size: 1.2rem;">⚠️</span>
+                        <strong style="color: #facc15; font-size: 0.95rem;">Trabajos Pendientes de Impresión/Producción por Material:</strong>
+                    </div>
+                    <div id="materialBadgesContainer" class="d-flex flex-wrap gap-2"></div>
+                </div>
+            </div>
+
+            <!-- Product Groups Filter Bar -->
+            <div id="productGroupsWidget" class="product-groups-widget animate-fade-in-up" style="display:none; margin-bottom: 2rem;">
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <strong style="color: #ffffff; font-size: 0.95rem;">📂 Agrupar por Producto:</strong>
+                    <span style="font-size: 0.8rem; color: var(--text-secondary);">Selecciona una categoría para filtrar</span>
+                </div>
+                <div id="productGroupsContainer" class="d-flex flex-wrap gap-2"></div>
+            </div>
+
+            <!-- Loading State -->
+            <div id="loadingState" class="loading" style="display: none;">
+                <div class="spinner"></div>
+                <p>Cargando trabajos...</p>
+            </div>
+
+            <!-- Works Grid -->
+            <div id="worksList" class="works-grid"></div>
+        </div>
+
+        <!-- Panel Notificaciones -->
+        <div id="notificationPanel" class="notification-panel">
+            <h3>🔔 Notificaciones</h3>
+            <div id="notificationsList">
+                <div class="empty-state">
+                    <p>No hay notificaciones</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Scripts -->
+        <script src="js/shared/premium-dialog.js"></script>
+        <script src="js/shared/work-manager.js"></script>
+        <script src="js/trabajos/trabajos-main.js"></script>
+    </div>
+
+    <!-- Sidebar Universal Script -->
+    <script src="js/shared/sidebar-universal.js"></script>
+    <!-- Bootstrap 5 JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>

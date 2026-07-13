@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Renderizador de Muestras 3D - MR Letreros</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/renderizador-3d.css">
+    
+    <!-- Three.js and dependencies -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/SVGLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/exporters/STLExporter.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/clipper-lib@1.0.0/clipper.js"></script>
+    <!-- html2canvas for screenshots -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+</head>
+<body class="r3d-body">
+
+    <!-- HEADER -->
+    <header class="r3d-header">
+        <div class="r3d-header-left">
+            <a href="calculador-vectores.html"><i class="fas fa-arrow-left"></i> Volver</a>
+            <div class="r3d-header-divider"></div>
+            <div class="r3d-header-title">RENDERIZADOR DE MUESTRAS 3D</div>
+        </div>
+        <div class="r3d-header-right">
+            <span class="r3d-badge">BETA</span>
+            <span class="r3d-version">v1.0</span>
+        </div>
+    </header>
+
+    <!-- CONTENT -->
+    <main class="r3d-layout">
+        
+        <!-- VIEWPORT -->
+        <section class="r3d-viewport" id="viewportArea">
+            <!-- Capa Dinámica de Fondo -->
+            <div id="bgLayer" style="position: absolute; top:0; left:0; right:0; bottom:0; z-index:0; background-size: cover; background-position: center; transition: filter 0.8s ease;"></div>
+            <!-- Capa de Overlay Nocturno (composición IA) -->
+            <div id="nightOverlay" style="position: absolute; top:0; left:0; right:0; bottom:0; z-index:1; pointer-events: none; opacity: 0; transition: opacity 0.8s ease;"></div>
+            
+            <!-- Drop overlay only active when no model is loaded -->
+            <div class="r3d-drop-overlay active" id="dropZone" style="z-index: 10;">
+                <div class="r3d-drop-icon"><i class="fas fa-cube"></i></div>
+                <h2 class="r3d-drop-title">Carga tu Diseño (SVG)</h2>
+                <p class="r3d-drop-subtitle">Arrastra tu archivo vectorial o selecciona uno de tu PC</p>
+                <button class="r3d-drop-btn" onclick="document.getElementById('fileSVG').click()">
+                    Seleccionar Archivo
+                </button>
+                <p class="r3d-drop-formats">Solo admite formato .SVG</p>
+            </div>
+
+            <!-- Loader -->
+            <div class="r3d-spinner" id="spinner">
+                <div class="r3d-spinner-ring"></div>
+                <div class="r3d-spinner-text">Generando Render 3D...</div>
+            </div>
+
+            <!-- Toolbar -->
+            <div class="r3d-viewport-toolbar" id="viewportToolbar" style="display: none;">
+                <button class="r3d-toolbar-btn" onclick="resetCamera()" title="Centrar Cámara"><i class="fas fa-crosshairs"></i></button>
+                <button class="r3d-toolbar-btn" id="btnToggleRotate" onclick="toggleAutoRotate()"><i class="fas fa-sync"></i> Giro Auto</button>
+            </div>
+
+            <!-- Preset Bar -->
+            <div class="r3d-presets-bar" id="presetsBar">
+                <button class="r3d-preset-btn active" onclick="setPreset('day')"><i class="fas fa-sun"></i> Día</button>
+                <button class="r3d-preset-btn" onclick="setPreset('sunset')"><i class="fas fa-cloud-sun"></i> Atardecer</button>
+                <button class="r3d-preset-btn" onclick="setPreset('night')"><i class="fas fa-moon"></i> Noche</button>
+            </div>
+
+            <!-- 3D Canvas Container -->
+            <div class="r3d-canvas-container" id="container3D"></div>
+        </section>
+
+        <!-- SIDEBAR -->
+        <aside class="r3d-sidebar" id="sidebarControls" style="display: none;">
+            
+            <!-- DISEÑO Y MATERIAL -->
+            <div class="r3d-section">
+                <h3 class="r3d-section-title"><i class="fas fa-layer-group"></i> 1. MATERIAL Y VOLUMEN</h3>
+                
+                <div class="r3d-field">
+                    <label class="r3d-label">Profundidad (Extrusión)</label>
+                    <div class="r3d-range-row">
+                        <input type="range" class="r3d-range" id="inputDepth" min="0.5" max="15" step="0.5" value="3" oninput="updateDepthVal(this.value); scheduleUpdate()">
+                        <span class="r3d-range-value"><span id="valDepth">3</span> cm</span>
+                    </div>
+                </div>
+
+                <div class="r3d-field">
+                    <label class="r3d-label">Aspecto Visual del Material</label>
+                    <div class="r3d-material-chips" id="materialChips">
+                        <div class="r3d-chip active" data-mat="poly">Polifan</div>
+                        <div class="r3d-chip" data-mat="metal">Chapa/Metal</div>
+                        <div class="r3d-chip" data-mat="acrylic">Acrílico</div>
+                        <div class="r3d-chip" data-mat="neon">Neón/Luminoso</div>
+                    </div>
+                </div>
+
+                <div class="r3d-inline-row">
+                    <div class="r3d-field">
+                        <label class="r3d-label">Color de la Cara</label>
+                        <div class="r3d-color-row">
+                            <input type="color" class="r3d-color-input" id="inputFaceColor" value="#eeeeee" onchange="updateColors()">
+                            <span class="r3d-color-hex" id="valFaceColor">#EEEEEE</span>
+                        </div>
+                    </div>
+                    <div class="r3d-field">
+                        <label class="r3d-label">Color del Canto</label>
+                        <div class="r3d-color-row">
+                            <input type="color" class="r3d-color-input" id="inputEdgeColor" value="#d1d5db" onchange="updateColors()">
+                            <span class="r3d-color-hex" id="valEdgeColor">#D1D5DB</span>
+                        </div>
+                    </div>
+                <div class="r3d-field" id="neonIntensityControl" style="display:none; margin-top: 15px; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 15px;">
+                    <label class="r3d-label" style="color: #ff6bcc;"><i class="fas fa-fire"></i> Intensidad Resplandor Frontal Neón</label>
+                    <div class="r3d-range-row">
+                        <input type="range" class="r3d-range" id="inputNeonIntensity" min="0" max="2" step="0.1" value="0.8" oninput="updateNeonIntensity()" style="background: linear-gradient(90deg, #111, #ff6bcc);">
+                        <span class="r3d-range-value"><span id="valNeonIntensity">0.8</span></span>
+                    </div>
+                </div>
+
+                <div class="r3d-toggle-row mt-2" style="border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 12px; margin-top: 12px;">
+                    <span class="r3d-toggle-label">Respetar colores originales (SVG)</span>
+                    <input type="checkbox" class="r3d-toggle" id="checkOriginalColors" checked onchange="scheduleUpdate()">
+                </div>
+
+                <div class="r3d-toggle-row mt-2" style="border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 12px; margin-top: 12px;">
+                    <span class="r3d-toggle-label">Modo Cazoleta (Hueco) <i class="fas fa-info-circle r3d-info" title="Para letras armadas en chapa o corpóreos huecos"></i></span>
+                    <input type="checkbox" class="r3d-toggle" id="checkHollow" onchange="scheduleUpdate()">
+                </div>
+            </div>
+
+            <!-- RETROILUMINACION LED -->
+            <div class="r3d-section">
+                <h3 class="r3d-section-title"><i class="fas fa-lightbulb"></i> 2. RETROILUMINACIÓN LED</h3>
+                
+                <div class="r3d-toggle-row">
+                    <span class="r3d-toggle-label">Habilitar Halo Luminoso</span>
+                    <input type="checkbox" class="r3d-toggle" id="checkLed" onchange="toggleLed()">
+                </div>
+
+                <div id="ledControls" style="display: none;">
+                    <div class="r3d-field" style="margin-top: 10px;">
+                        <label class="r3d-label">Color de Luz (Halo)</label>
+                        <div class="r3d-color-row">
+                            <input type="color" class="r3d-color-input" id="inputLedColor" value="#ffeedd" onchange="updateLed()">
+                            <span class="r3d-color-hex" id="valLedColor">Blanco Cálido</span>
+                        </div>
+                    </div>
+                    <div class="r3d-field">
+                        <label class="r3d-label">Intensidad del Halo</label>
+                        <div class="r3d-range-row">
+                            <input type="range" class="r3d-range" id="inputLedIntensity" min="0" max="3" step="0.1" value="1.5" oninput="updateLed()">
+                            <span class="r3d-range-value">1.5</span>
+                        </div>
+                    </div>
+                    <div class="r3d-led-preview" id="ledPreviewArea">
+                        <div class="r3d-led-glow" id="ledPreviewGlow"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- FONDO Y ESCENA -->
+            <div class="r3d-section">
+                <h3 class="r3d-section-title"><i class="fas fa-image"></i> 3. ENTORNO Y ESCALA</h3>
+                
+                <div class="r3d-field">
+                    <label class="r3d-label">Seleccionar Fachada de Fondo</label>
+                    <div class="r3d-gallery">
+                        <div class="r3d-gallery-item" onclick="setBg('none')">
+                            <div style="width: 100%; height: 100%; background: #1a1a1a; display: flex; align-items: center; justify-content: center; color: #444;">Vacío</div>
+                        </div>
+                        <div class="r3d-gallery-item active" onclick="setBg('facade_day.png')">
+                            <img src="img/facade_day.png" alt="Día" onerror="this.src='https://via.placeholder.com/150/888888/FFFFFF?text=Dia'">
+                            <span class="r3d-gallery-label">Fachada Día</span>
+                        </div>
+                        <div class="r3d-gallery-item" onclick="setBg('facade_night.png')">
+                            <img src="img/facade_night.png" alt="Noche" onerror="this.src='https://via.placeholder.com/150/111111/FFFFFF?text=Noche'">
+                            <span class="r3d-gallery-label">Fachada Noche</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <button class="r3d-action-btn gold mt-2 w-100" onclick="document.getElementById('fileBg').click()">
+                    <i class="fas fa-upload"></i> SUBIR FOTO PROPIA
+                </button>
+
+                <div class="r3d-field" style="margin-top: 15px; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 8px;">
+                    <label class="r3d-label" style="margin-bottom: 8px; display: flex; justify-content: space-between;">Ajuste de Foto <span>(Lupa / X / Y)</span></label>
+                    <div style="display: flex; gap: 6px;">
+                        <input type="range" class="r3d-range" id="bgZoom" min="50" max="300" value="100" oninput="updateBgConfig()" title="Tamaño (Lupa)">
+                        <input type="range" class="r3d-range" id="bgPosX" min="0" max="100" value="50" oninput="updateBgConfig()" title="Mover Izquierda/Derecha">
+                        <input type="range" class="r3d-range" id="bgPosY" min="0" max="100" value="50" oninput="updateBgConfig()" title="Mover Arriba/Abajo">
+                    </div>
+                </div>
+
+                <div class="r3d-field" style="margin-top: 15px;">
+                    <label class="r3d-label">Escala Visual del Letrero</label>
+                    <div class="r3d-range-row">
+                        <input type="range" class="r3d-range" id="inputScale" min="0.1" max="3" step="0.1" value="1" oninput="updateScale(this.value)">
+                        <span class="r3d-range-value"><span id="valScale">100</span>%</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ACCIONES -->
+            <div class="r3d-export-section">
+                <div class="r3d-actions-row">
+                    <button class="r3d-action-btn primary" onclick="exportRender()"><i class="fas fa-camera"></i> CAPTURAR PNG</button>
+                </div>
+                <div class="r3d-watermark-preview mt-2">
+                    SE INCLUIRÁ MARCA DE AGUA "MR LETREROS"
+                </div>
+            </div>
+            
+        </aside>
+    </main>
+
+    <!-- Hidden Inputs -->
+    <input type="file" id="fileSVG" accept=".svg" style="display: none;" onchange="handleSVGUpload(event)">
+    <input type="file" id="fileBg" accept="image/*" style="display: none;" onchange="handleBgUpload(event)">
+
+    <script>
+        // === GLOBAL VARIABLES ===
+        let scene, camera, renderer, controls;
+        let modelGroup = new THREE.Group();
+        let glowGroup = new THREE.Group();
+        let ambientLight, dirLight, pointLight;
+        let originalSVG = null;
+        let updateTimeout = null;
+        let isRotating = false;
+        let currentMaterialType = 'poly';
+        
+        let globalGlowTexture = null;
+        function getGlowTexture() {
+            if (globalGlowTexture) return globalGlowTexture;
+            const canvas = document.createElement('canvas');
+            canvas.width = 128; canvas.height = 128;
+            const ctx = canvas.getContext('2d');
+            const gradient = ctx.createRadialGradient(64,64,0, 64,64,64);
+            gradient.addColorStop(0, 'rgba(255,255,255,1)');
+            gradient.addColorStop(0.2, 'rgba(255,255,255,0.8)');
+            gradient.addColorStop(0.5, 'rgba(255,255,255,0.2)');
+            gradient.addColorStop(1, 'rgba(255,255,255,0)');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0,0,128,128);
+            globalGlowTexture = new THREE.CanvasTexture(canvas);
+            return globalGlowTexture;
+        }
+        
+        let materials = {
+            poly: new THREE.MeshStandardMaterial({ color: 0xeeeeee, roughness: 0.8, metalness: 0.1 }),
+            metal: new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.3, metalness: 0.9 }),
+            acrylic: new THREE.MeshPhysicalMaterial({ 
+                color: 0xffffff, 
+                roughness: 0.15,   // Superficie lisa pero no espejo
+                metalness: 0.0,    // Plástico, no metal 
+                clearcoat: 1.0,    // Capa de lustre brillante encima (como resina pulida)
+                clearcoatRoughness: 0.05, // Lustre casi perfecto
+                reflectivity: 0.5  // Reflexiones sutiles del entorno
+            }),
+            neon: new THREE.MeshLambertMaterial({ color: 0xffffff })
+        };
+
+        let activeMaterialBase = materials.poly;
+
+        // === INITIALIZATION ===
+        function init() {
+            const container = document.getElementById('container3D');
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+
+            // Scene
+            scene = new THREE.Scene();
+
+            // Camera
+            camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 10000);
+            camera.position.set(0, 0, 800);
+
+            // Renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true }); // preserveDrawingBuffer for screenshot
+            renderer.setSize(width, height);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            renderer.toneMappingExposure = 1.0;
+            container.appendChild(renderer.domElement);
+
+            // Controls
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+
+            // Lighting
+            ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambientLight);
+
+            dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
+            dirLight.position.set(200, 300, 400);
+            dirLight.castShadow = true;
+            dirLight.shadow.camera.near = 10;
+            dirLight.shadow.camera.far = 2000;
+            dirLight.shadow.camera.left = -500;
+            dirLight.shadow.camera.right = 500;
+            dirLight.shadow.camera.top = 500;
+            dirLight.shadow.camera.bottom = -500;
+            dirLight.shadow.bias = -0.001;
+            scene.add(dirLight);
+
+            // Halo Catcher Plane for Retroillumination
+            const hcGeom = new THREE.PlaneGeometry(10000, 10000);
+            const hcMat = new THREE.MeshLambertMaterial({
+                color: 0x000000,
+                emissive: 0x000000,
+                blending: THREE.CustomBlending,
+                blendEquation: THREE.AddEquation,
+                blendSrc: THREE.SrcAlphaFactor, // Multiplicar RGB x opacidad
+                blendDst: THREE.OneFactor,      // Sumar al destino
+                blendSrcAlpha: THREE.ZeroFactor, // No inyectar opacidad al canvas (dejarlo transparente)
+                blendDstAlpha: THREE.OneFactor,
+                transparent: true,
+                depthWrite: false
+            });
+            const haloCatcher = new THREE.Mesh(hcGeom, hcMat);
+            haloCatcher.position.z = -5; // Apoyado atrás en la pared imaginaria
+            haloCatcher.layers.set(1); // Capa 1 exclusiva para luces LED
+            scene.add(haloCatcher);
+
+            // Configuration for layers
+            camera.layers.enable(1); // Cámara ve ambas capas
+            ambientLight.layers.enable(0); // Luces de entorno sólo afectan al modelo
+            dirLight.layers.enable(0);
+
+            scene.add(modelGroup);
+
+            // Check if SVG data was passed via session storage
+            const passedSVG = sessionStorage.getItem('mr_vcalc_svg');
+            if (passedSVG) {
+                sessionStorage.removeItem('mr_vcalc_svg');
+                loadSVG(passedSVG);
+            }
+
+            window.addEventListener('resize', onWindowResize);
+            animate();
+            
+            // Setup events
+            setupEvents();
+            
+            // Set initial preset
+            setPreset('day');
+        }
+
+        function setupEvents() {
+            // Dropzone
+            const dropZone = document.getElementById('dropZone');
+            dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+            dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+            dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('dragover');
+                if (e.dataTransfer.files.length > 0) {
+                    handleFileSelection(e.dataTransfer.files[0]);
+                }
+            });
+
+            // Material chips
+            document.querySelectorAll('.r3d-chip').forEach(chip => {
+                chip.addEventListener('click', function() {
+                    document.querySelectorAll('.r3d-chip').forEach(c => c.classList.remove('active'));
+                    this.classList.add('active');
+                    currentMaterialType = this.dataset.mat;
+                    activeMaterialBase = materials[currentMaterialType];
+                    if (currentMaterialType === 'neon') {
+                        document.getElementById('inputFaceColor').value = '#ffffff';
+                        document.getElementById('valFaceColor').textContent = '#FFFFFF';
+                        document.getElementById('neonIntensityControl').style.display = 'block';
+                    } else {
+                        document.getElementById('neonIntensityControl').style.display = 'none';
+                    }
+                    updateColors();
+                });
+            });
+        }
+
+        function handleSVGUpload(e) {
+            if (e.target.files.length > 0) {
+                handleFileSelection(e.target.files[0]);
+            }
+        }
+
+        function handleFileSelection(file) {
+            if (!file.name.toLowerCase().endsWith('.svg')) {
+                alert("Por favor, selecciona un archivo SVG válido.");
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                loadSVG(e.target.result);
+            };
+            reader.readAsText(file);
+        }
+
+        // === 3D PROCESSING ===
+        function loadSVG(svgDataText) {
+            originalSVG = svgDataText;
+            document.getElementById('dropZone').style.display = 'none';
+            document.getElementById('sidebarControls').style.display = 'flex';
+            document.getElementById('viewportToolbar').style.display = 'flex';
+            document.getElementById('presetsBar').classList.add('visible');
+            build3DModel();
+        }
+
+        function build3DModel() {
+            if (!originalSVG) return;
+
+            document.getElementById('spinner').classList.add('visible');
+            
+            // Cleanup previous
+            while(modelGroup.children.length > 0){ 
+                modelGroup.remove(modelGroup.children[0]); 
+            }
+            while(glowGroup.children.length > 0){ 
+                glowGroup.remove(glowGroup.children[0]); 
+            }
+
+            // Let UI update before heavy processing
+            setTimeout(() => {
+                try {
+                    const loader = new THREE.SVGLoader();
+                    const svgData = loader.parse(originalSVG);
+                    
+                    const isHollow = document.getElementById('checkHollow').checked;
+                    const useOriginalColors = document.getElementById('checkOriginalColors').checked;
+                    
+                    const faceColorHex = document.getElementById('inputFaceColor').value;
+                    const edgeColorHex = document.getElementById('inputEdgeColor').value;
+                    
+                    const matFace = activeMaterialBase.clone();
+                    const matEdge = activeMaterialBase.clone();
+                    
+                    if(currentMaterialType === 'neon') {
+                        matFace.color = new THREE.Color(faceColorHex); // Mantenemos el color real
+                        matFace.emissive = new THREE.Color(faceColorHex);
+                        matFace.emissiveIntensity = 1.2; // Brillo suficiente para iluminar sin quemar a blanco
+                        matEdge.color = new THREE.Color(faceColorHex);
+                        matEdge.emissive = new THREE.Color(faceColorHex); 
+                        matEdge.emissiveIntensity = 0.5;
+                    } else {
+                        matFace.color = new THREE.Color(faceColorHex);
+                        matEdge.color = new THREE.Color(edgeColorHex);
+                    }
+
+                    // Create geometry
+                    svgData.paths.forEach((path) => {
+                        const shapes = THREE.SVGLoader.createShapes(path);
+                        
+                        let customFaceMat = matFace.clone();
+                        let customEdgeMat = matEdge.clone();
+                        
+                        // Si respetamos los colores, extraemos el 'color' del path si existe
+                        if (useOriginalColors && path.color) {
+                            if(currentMaterialType === 'neon') {
+                                customFaceMat.color.setHex(0x000000); // El color base se oscurece
+                                customFaceMat.emissive.copy(path.color);
+                                customFaceMat.emissiveIntensity = 2.0; 
+                                customFaceMat.toneMapped = false; // MAGIA: Evita que el color se queme a blanco
+                                
+                                customEdgeMat.color.copy(path.color);
+                                customEdgeMat.emissive.copy(path.color);
+                                customEdgeMat.emissiveIntensity = 0.5;
+                            } else {
+                                customFaceMat.color.copy(path.color);
+                            }
+                        } else if (currentMaterialType === 'neon') {
+                            customFaceMat.toneMapped = false;
+                        }
+                        
+                        shapes.forEach(shape => {
+                            // Configuración de extrusión adaptada al material
+                            const extrudeSettings = {
+                                depth: 1, 
+                                bevelEnabled: (currentMaterialType === 'acrylic'),
+                                bevelThickness: (currentMaterialType === 'acrylic') ? 0.08 : 0,
+                                bevelSize: (currentMaterialType === 'acrylic') ? 0.08 : 0,
+                                bevelSegments: (currentMaterialType === 'acrylic') ? 3 : 1
+                            };
+                            const geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+                            const mesh = new THREE.Mesh(geometry, [customFaceMat, customEdgeMat]);
+                            mesh.castShadow = true;
+                            mesh.receiveShadow = true;
+                            
+                            // Luz LED individual copiando el centroide de esta forma
+                            geometry.computeBoundingBox();
+                            const center = new THREE.Vector3();
+                            geometry.boundingBox.getCenter(center);
+                            
+                            const pLightBack = new THREE.PointLight(0xffffff, 0, 150);
+                            pLightBack.position.set(center.x, center.y, -2);
+                            pLightBack.layers.set(1); // Sólo ilumina el Halo Catcher (Capa 1)
+                            mesh.add(pLightBack);
+                            mesh.userData.backlight = pLightBack;
+                            
+                            // Luz LED Frontal (Efecto Resplandor Neón nativo)
+                            if (currentMaterialType === 'neon') {
+                                // Obtener el color propio de esta letra/forma
+                                const lightColor = (useOriginalColors && path.color) ? path.color : new THREE.Color(faceColorHex);
+                                
+                                // Luz física frontal para lavar el alrededor
+                                const pLightFront = new THREE.PointLight(lightColor, 0.8, 150); 
+                                pLightFront.position.set(center.x, center.y, 4);
+                                pLightFront.layers.set(0); 
+                                mesh.add(pLightFront);
+                                
+                                // Aura de resplandor óptico superpuesto
+                                const auraSize = new THREE.Vector3();
+                                geometry.boundingBox.getSize(auraSize);
+                                
+                                const auraPlaneMat = new THREE.MeshBasicMaterial({
+                                    map: getGlowTexture(),
+                                    color: lightColor,
+                                    transparent: true,
+                                    blending: THREE.AdditiveBlending,
+                                    opacity: 0.8,
+                                    depthWrite: false,
+                                    toneMapped: false
+                                });
+                                const auraPlane = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), auraPlaneMat);
+                                // Escala en base al tamaño estricto de la pieza + un halo físico constante de 30 unidades
+                                const baseScaleX = auraSize.x + 30;
+                                const baseScaleY = auraSize.y + 30;
+                                auraPlane.scale.set(baseScaleX, baseScaleY, 1);
+                                auraPlane.position.set(center.x, center.y, 1.5); 
+                                auraPlane.userData = { baseScaleX, baseScaleY };
+                                mesh.add(auraPlane);
+                                
+                                mesh.userData.frontLight = pLightFront;
+                                mesh.userData.auraPlane = auraPlane;
+                            }
+                            
+                            modelGroup.add(mesh);
+                        });
+                    });
+
+                    // Center Pivot
+                    const box = new THREE.Box3().setFromObject(modelGroup);
+                    const center = new THREE.Vector3();
+                    box.getCenter(center);
+                    // Para que el escalado funcione desde el centro real, movemos las mallas internamente:
+                    modelGroup.children.forEach(mesh => {
+                        mesh.position.x -= center.x;
+                        mesh.position.y -= center.y;
+                        // mesh.position.z -= center.z; // Mantenemos Z en 0 para apoyarlo contra la pared
+                    });
+                    
+                    const size = new THREE.Vector3();
+                    box.getSize(size);
+                    const maxDim = Math.max(size.x, size.y);
+                    const optimalScale = 500 / maxDim; // Fit inside a 500 unit box
+                    
+                    // Guardar para operaciones de transformacion
+                    modelGroup.userData.optimalScale = optimalScale;
+                    modelGroup.userData.nativeMaxDim = maxDim;
+                    
+                    // Aplicar el tamaño visual
+                    applyScaleAndDepth();
+                    
+                    // Asegurar que las luces tienen estado sincrónico
+                    updateLed();
+                    
+                    // Reset Camera
+                    resetCamera();
+                    
+                } catch (e) {
+                    console.error("Error creating 3D model", e);
+                    alert("Hubo un error procesando el SVG.");
+                } finally {
+                    document.getElementById('spinner').classList.remove('visible');
+                }
+            }, 50);
+        }
+
+        // === UI & CONTROLS ===
+        function applyScaleAndDepth() {
+            const uiScale = parseFloat(document.getElementById('inputScale').value) || 1;
+            const optimalScale = modelGroup.userData.optimalScale || 1;
+            const nativeMaxDim = modelGroup.userData.nativeMaxDim || 500;
+            const depthCm = parseFloat(document.getElementById('inputDepth').value) || 3;
+            
+            // Asumimos que la dimensión máxima del diseño corresponde fisicamente a ~100cm 
+            const unitsPerCm = nativeMaxDim / 100;
+            const trueDepthUnits = depthCm * unitsPerCm;
+            
+            const finalScaleXY = optimalScale * uiScale;
+            // Eje Y se invierte (-finalScaleXY) porque el SVG tiene el eje Y hacia abajo
+            const finalScaleZ = trueDepthUnits * finalScaleXY;
+            
+            modelGroup.scale.set(finalScaleXY, -finalScaleXY, finalScaleZ);
+        }
+
+        function updateDepthVal(val) {
+            document.getElementById('valDepth').textContent = val;
+            applyScaleAndDepth();
+        }
+        
+        function updateScale(val) {
+            document.getElementById('valScale').textContent = Math.round(val * 100);
+            applyScaleAndDepth();
+        }
+
+        function updateColors() {
+            document.getElementById('valFaceColor').textContent = document.getElementById('inputFaceColor').value.toUpperCase();
+            document.getElementById('valEdgeColor').textContent = document.getElementById('inputEdgeColor').value.toUpperCase();
+            scheduleUpdate();
+        }
+
+        function toggleLed() {
+            const isLed = document.getElementById('checkLed').checked;
+            document.getElementById('ledControls').style.display = isLed ? 'block' : 'none';
+            if (isLed) setPreset('night'); // Auto switch to night to see LED better
+            updateLed();
+        }
+
+        function updateLed() {
+            const colorHex = document.getElementById('inputLedColor').value;
+            const intensity = parseFloat(document.getElementById('inputLedIntensity').value);
+            const isLedOn = document.getElementById('checkLed').checked;
+            
+            const preview = document.getElementById('ledPreviewArea');
+            document.getElementById('valLedColor').textContent = colorHex.toUpperCase();
+            
+            const color = new THREE.Color(colorHex);
+            const actualIntensity = isLedOn ? intensity * 8 : 0;
+            
+            if (isLedOn) {
+                preview.classList.add('r3d-led-active');
+                document.getElementById('ledPreviewGlow').style.backgroundColor = colorHex;
+                document.getElementById('ledPreviewGlow').style.boxShadow = `0 0 20px ${colorHex}, 0 0 40px ${colorHex}`;
+            } else {
+                preview.classList.remove('r3d-led-active');
+            }
+            
+            modelGroup.traverse((child) => {
+                if (child.userData && child.userData.backlight) {
+                    child.userData.backlight.color = color;
+                    child.userData.backlight.intensity = actualIntensity;
+                    // Escalar la distancia acorde al tamaño del plano principal para que envuelva la pieza correctamente
+                    const optimalScale = modelGroup.userData.optimalScale || 1;
+                    child.userData.backlight.distance = 250 * optimalScale;
+                }
+            });
+        }
+
+        function updateNeonIntensity() {
+            const intensity = parseFloat(document.getElementById('inputNeonIntensity').value);
+            document.getElementById('valNeonIntensity').textContent = intensity.toFixed(1);
+            
+            modelGroup.traverse((child) => {
+                if (child.userData && child.userData.auraPlane) {
+                    child.userData.auraPlane.material.opacity = Math.min(intensity, 1.0);
+                    const scaleMult = 0.5 + (intensity * 0.625); // Si intensity=0.8, mult=1.0
+                    child.userData.auraPlane.scale.set(
+                        child.userData.auraPlane.userData.baseScaleX * scaleMult,
+                        child.userData.auraPlane.userData.baseScaleY * scaleMult,
+                        1
+                    );
+                }
+                if (child.userData && child.userData.frontLight) {
+                    child.userData.frontLight.intensity = intensity;
+                }
+            });
+        }
+
+        function scheduleUpdate() {
+            if (updateTimeout) clearTimeout(updateTimeout);
+            updateTimeout = setTimeout(build3DModel, 300);
+        }
+
+        function resetCamera() {
+            camera.position.set(0, 0, 800);
+            camera.lookAt(0, 0, 0);
+            controls.target.set(0, 0, 0);
+        }
+
+        function toggleAutoRotate() {
+            isRotating = !isRotating;
+            controls.autoRotate = isRotating;
+            const btn = document.getElementById('btnToggleRotate');
+            if (isRotating) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+        }
+
+        // === ENVIRONMENT & LIGHTING ===
+        let currentCustomBg = null;
+
+        function setBg(filename) {
+            const bgLayer = document.getElementById('bgLayer');
+            // Reset active state in gallery
+            document.querySelectorAll('.r3d-gallery-item').forEach(el => el.classList.remove('active'));
+            // Try to find the item
+            const items = document.querySelectorAll('.r3d-gallery-item');
+            for(let i=0; i<items.length; i++) {
+                if(items[i].getAttribute('onclick').includes(filename)) {
+                    items[i].classList.add('active');
+                }
+            }
+
+            if (filename === 'none') {
+                bgLayer.style.backgroundImage = 'none';
+                currentCustomBg = null;
+                return;
+            }
+            
+            if (filename.startsWith('blob:')) {
+                bgLayer.style.backgroundImage = `url('${filename}')`;
+            } else {
+                bgLayer.style.backgroundImage = `url('img/${filename}')`;
+            }
+            // Aseguramos que la configuración actual de los sliders se aplique
+            updateBgConfig();
+        }
+
+        function updateBgConfig() {
+            const bgLayer = document.getElementById('bgLayer');
+            const zoom = document.getElementById('bgZoom').value;
+            const x = document.getElementById('bgPosX').value;
+            const y = document.getElementById('bgPosY').value;
+            
+            bgLayer.style.backgroundSize = `${zoom}%`;
+            bgLayer.style.backgroundPosition = `${x}% ${y}%`;
+        }
+
+        function handleBgUpload(e) {
+            if (e.target.files.length > 0) {
+                const url = URL.createObjectURL(e.target.files[0]);
+                currentCustomBg = url;
+                setBg(url);
+                // Also simulate preset re-trigger to apply filters to new custom photo
+                const activePresetBtn = document.querySelector('.r3d-preset-btn.active');
+                if (activePresetBtn) activePresetBtn.click();
+            }
+        }
+
+        function setPreset(type) {
+            document.querySelectorAll('.r3d-preset-btn').forEach(btn => btn.classList.remove('active'));
+            const targetBtn = Array.from(document.querySelectorAll('.r3d-preset-btn')).find(b => b.getAttribute('onclick').includes(type));
+            if(targetBtn) targetBtn.classList.add('active');
+            
+            const bgLayer = document.getElementById('bgLayer');
+            const nightOverlay = document.getElementById('nightOverlay');
+
+            switch(type) {
+                case 'day':
+                    ambientLight.intensity = 0.8;
+                    ambientLight.color.setHex(0xffffff);
+                    dirLight.intensity = 1.2;
+                    dirLight.color.setHex(0xffffff);
+                    dirLight.position.set(200, 500, 400);
+                    renderer.toneMappingExposure = 1.0;
+                    
+                    bgLayer.style.filter = 'none';
+                    nightOverlay.style.opacity = '0';
+                    if(currentCustomBg) {
+                        bgLayer.style.backgroundImage = `url('${currentCustomBg}')`;
+                    } else {
+                        setBg('facade_day.png');
+                    }
+                    break;
+                case 'sunset':
+                    ambientLight.intensity = 0.4;
+                    ambientLight.color.setHex(0xffaa77);
+                    dirLight.intensity = 1.5;
+                    dirLight.color.setHex(0xff7733);
+                    dirLight.position.set(-400, 100, 400);
+                    renderer.toneMappingExposure = 1.2;
+                    
+                    bgLayer.style.filter = 'sepia(0.5) hue-rotate(-15deg) saturate(1.8) brightness(0.75)';
+                    nightOverlay.style.opacity = '0';
+                    if(currentCustomBg) {
+                        bgLayer.style.backgroundImage = `url('${currentCustomBg}')`;
+                    } else {
+                        setBg('facade_day.png');
+                    }
+                    break;
+                case 'night':
+                    ambientLight.intensity = 0.08;
+                    ambientLight.color.setHex(0x1a2540);
+                    dirLight.intensity = 0.15;
+                    dirLight.color.setHex(0x3355aa);
+                    dirLight.position.set(100, 200, 200);
+                    renderer.toneMappingExposure = 0.7;
+                    
+                    if(currentCustomBg) {
+                        // IA Nocturna multicapa:
+                        // Capa 1: Oscurecemos fuertemente la foto y viramos a tonos fríos
+                        bgLayer.style.filter = 'brightness(0.18) contrast(1.3) saturate(0.4) hue-rotate(10deg)';
+                        bgLayer.style.backgroundImage = `url('${currentCustomBg}')`;
+                        
+                        // Capa 2: Overlay compuesto con degradado de cielo nocturno + neblina ambiental
+                        nightOverlay.style.opacity = '1';
+                        nightOverlay.style.background = `
+                            radial-gradient(ellipse at 50% 80%, rgba(255,200,100,0.06) 0%, transparent 40%),
+                            radial-gradient(ellipse at 20% 85%, rgba(255,180,80,0.04) 0%, transparent 25%),
+                            radial-gradient(ellipse at 80% 85%, rgba(255,180,80,0.04) 0%, transparent 25%),
+                            linear-gradient(to bottom, 
+                                rgba(8,12,30,0.85) 0%, 
+                                rgba(15,25,60,0.7) 20%,
+                                rgba(10,18,45,0.55) 50%,
+                                rgba(20,30,60,0.5) 80%,
+                                rgba(12,20,40,0.6) 100%
+                            )
+                        `;
+                    } else {
+                        bgLayer.style.filter = 'none';
+                        nightOverlay.style.opacity = '0';
+                        setBg('facade_night.png');
+                    }
+                    break;
+            }
+        }
+
+        // === RENDER LOOP ===
+        function onWindowResize() {
+            const container = document.getElementById('container3D');
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+            camera.aspect = width / height;
+            camera.updateProjectionMatrix();
+            renderer.setSize(width, height);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        // === EXPORT ===
+        function exportRender() {
+            if(!originalSVG) return;
+            
+            const btn = document.querySelector('.r3d-action-btn.primary');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> PREPARANDO...';
+            btn.disabled = true;
+
+            const viewport = document.getElementById('viewportArea');
+            
+            // Ensure WebGL is fully drawn
+            renderer.render(scene, camera);
+            
+            html2canvas(viewport, {
+                useCORS: true,
+                allowTaint: true,
+                backgroundColor: null,
+                scale: 2 // High resolution
+            }).then(canvas => {
+                // Determine layout for watermark
+                const ctx = canvas.getContext('2d');
+                ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
+                ctx.font = "bold 24px Arial";
+                ctx.shadowColor = "rgba(0,0,0,0.5)";
+                ctx.shadowBlur = 4;
+                ctx.fillText("Muestra generada con MR Letreros", 30, canvas.height - 30);
+                
+                const link = document.createElement('a');
+                link.download = `render_mr_letreros_${Date.now()}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+                
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }).catch(err => {
+                console.error("Error exporting:", err);
+                alert("Hubo un error al generar la captura. " + err.message);
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            });
+        }
+
+        // Boot
+        init();
+    </script>
+</body>
+</html>

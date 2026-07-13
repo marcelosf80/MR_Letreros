@@ -1,0 +1,74 @@
+[
+  {
+    "id": 1770396321101,
+    "nombre": "Paño 7",
+    "contacto": "3426 13-4040",
+    "servicios": [
+      {
+        "id": 1770396367389,
+        "nombre": "Pegado",
+        "categoria": "Vinilo",
+        "unidad": "m²",
+        "costo": 9500,
+        "precio": 19000,
+        "costoMaterial": 0,
+        "precioMaterial": 0,
+        "margen": 9500,
+        "fecha": "2026-02-06T16:47:49.916Z"
+      }
+    ],
+    "fecha": "2026-02-06T16:45:21.101Z"
+  },
+  {
+    "id": 1770638908681,
+    "nombre": "Peco",
+    "contacto": "",
+    "servicios": [
+      {
+        "id": 1770638976826,
+        "nombre": "Soldadura de lona",
+        "categoria": "Lonas",
+        "unidad": "m",
+        "costo": 3000,
+        "precio": 6000,
+        "costoMaterial": 0,
+        "precioMaterial": 0,
+        "margen": 3000,
+        "fecha": "2026-02-09T12:09:36.826Z"
+      }
+    ],
+    "fecha": "2026-02-09T12:08:28.681Z"
+  },
+  {
+    "id": 1770658622633,
+    "nombre": "Manuel",
+    "contacto": "3424 63-3601",
+    "servicios": [
+      {
+        "id": 1770658659781,
+        "nombre": "Tensado",
+        "categoria": "Lonas",
+        "unidad": "m²",
+        "costo": 7000,
+        "precio": 14000,
+        "costoMaterial": 0,
+        "precioMaterial": 0,
+        "margen": 7000,
+        "fecha": "2026-02-09T17:37:39.781Z"
+      },
+      {
+        "id": 1770658820081,
+        "nombre": "Pantalla Completa",
+        "categoria": "Lonas",
+        "unidad": "m²",
+        "costo": 44500,
+        "precio": 95000,
+        "costoMaterial": 0,
+        "precioMaterial": 0,
+        "margen": 50500,
+        "fecha": "2026-02-09T17:40:32.845Z"
+      }
+    ],
+    "fecha": "2026-02-09T17:37:02.633Z"
+  }
+]

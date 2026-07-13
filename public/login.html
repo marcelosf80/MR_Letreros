@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iniciar Sesión | MR Letreros</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/maxton-theme.css">
+    <link rel="stylesheet" href="css/login.css">
+</head>
+
+<body class="bg-light">
+    <!-- Intro Animada Cartelería -->
+    <div id="introScreen" class="intro-screen">
+        <div class="intro-content">
+            <svg viewBox="0 0 800 200" class="intro-svg">
+                <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" class="intro-text">MR LETREROS</text>
+            </svg>
+            <div class="laser-cutter"></div>
+            <div class="intro-subtitle">DISEÑO & PRODUCCIÓN GRÁFICA</div>
+        </div>
+    </div>
+
+    <!-- Carousel Background -->
+    <div class="carousel-bg">
+        <!-- Imágenes de ejemplo (reemplazar con URLs reales de mrletreros.com.ar) -->
+        <div class="carousel-slide active" style="background-image: url('https://mrletreros.com.ar/wp-content/uploads/2023/01/carteleria-corporea.jpg');"></div>
+        <div class="carousel-slide" style="background-image: url('https://mrletreros.com.ar/wp-content/uploads/2023/01/carteles-luminosos.jpg');"></div>
+        <div class="carousel-slide" style="background-image: url('https://mrletreros.com.ar/wp-content/uploads/2023/01/ploteo-vehicular.jpg');"></div>
+    </div>
+    <div class="bg-overlay"></div>
+
+    <div class="main-wrapper">
+    <div class="login-container">
+        <div class="card mx-card animate-fade-in-up">
+            <div class="logo-wrapper">
+                <img src="img/logo_negro.png" alt="MR Letreros Logo" class="logo-img">
+            </div>
+            <div class="logo">MR Letreros • Acceso</div>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="usuario">Usuario</label>
+                    <input type="text" id="usuario" name="usuario" required autocomplete="off" autofocus>
+                </div>
+                <div class="form-group">
+                    <label for="password">Contraseña</label>
+                    <input type="password" id="password" name="password" required>
+                </div>
+                <button type="submit" id="btnSubmit">Ingresar al Sistema</button>
+                <div class="error-msg" id="errorMsg">Credenciales incorrectas</div>
+            </form>
+        </div>
+    </div>
+    </div>
+
+    <footer class="login-footer">
+        <p>&copy; 2026 MR Letreros. Soluciones gráficas integrales.</p>
+        <p>
+            <a href="https://mrletreros.com.ar/" target="_blank">Visitar Sitio Web</a> • 
+            <a href="https://wa.me/5491112345678" target="_blank">Contacto</a>
+        </p>
+    </footer>
+
+    <script>
+        const API_URL = '/api/auth/login';
+
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const usuario = document.getElementById('usuario').value;
+            const password = document.getElementById('password').value;
+            const btn = document.getElementById('btnSubmit');
+            const errorMsg = document.getElementById('errorMsg');
+
+            errorMsg.style.display = 'none';
+            btn.disabled = true;
+            btn.textContent = 'Verificando...';
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ usuario, password })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    localStorage.setItem('mr_token', data.token);
+                    localStorage.setItem('mr_user', JSON.stringify(data.user));
+                    window.location.href = '/index.html'; // Or main page
+                } else {
+                    const err = await response.json();
+                    throw new Error(err.error || 'Error de acceso');
+                }
+            } catch (error) {
+                errorMsg.textContent = error.message;
+                errorMsg.style.display = 'block';
+                btn.disabled = false;
+                btn.textContent = 'Ingresar al Sistema';
+            }
+        });
+
+        // Check if already logged in
+        if (localStorage.getItem('mr_token')) {
+            // Optional: verify token validity with an API call, but for now redirect
+            window.location.href = '/index.html';
+        }
+
+        // Carousel Logic
+        const slides = document.querySelectorAll('.carousel-slide');
+        let currentSlide = 0;
+        if (slides.length > 0) {
+            setInterval(() => {
+                slides[currentSlide].classList.remove('active');
+                currentSlide = (currentSlide + 1) % slides.length;
+                slides[currentSlide].classList.add('active');
+            }, 5000);
+        }
+
+        // Play Intro Animation
+        document.addEventListener('DOMContentLoaded', () => {
+            const intro = document.getElementById('introScreen');
+            if (intro) {
+                setTimeout(() => {
+                    intro.classList.add('fade-out');
+                    setTimeout(() => {
+                        intro.remove();
+                    }, 1000);
+                }, 4500);
+            }
+        });
+    </script>
+    <!-- Bootstrap 5 JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>

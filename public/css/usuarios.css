@@ -1,0 +1,62 @@
+.users-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .users-table th {
+            text-align: left;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-secondary);
+        }
+
+        .users-table td {
+            padding: 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .users-table tr:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .users-table .actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .role-badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .role-superadmin {
+            background: rgba(167, 139, 250, 0.2);
+            color: #a78bfa;
+        }
+
+        .role-admin {
+            background: rgba(99, 102, 241, 0.2);
+            color: #818cf8;
+        }
+
+        .role-vendedor {
+            background: rgba(74, 222, 128, 0.2);
+            color: #4ade80;
+        }
+
+        .role-produccion {
+            background: rgba(251, 191, 36, 0.2);
+            color: #fbbf24;
+        }
+
+        .role-visor {
+            background: rgba(107, 114, 128, 0.2);
+            color: #9ca3af;
+        }

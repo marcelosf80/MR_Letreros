@@ -1,0 +1,26 @@
+[
+  {
+    "id": "gasto_coti_1770399841103",
+    "tipo": "egreso",
+    "descripcion": "Costo Total - Coti Gremio #841103 (Franco Gremio)",
+    "monto": 8000,
+    "fecha": "2026-02-06T17:44:07.562Z",
+    "categoria": "costo_venta_gremio"
+  },
+  {
+    "id": "ingreso_coti_cli_1770658031945",
+    "tipo": "ingreso",
+    "descripcion": "Anticipo Cliente - Coti #031945 (Carolina GyM)",
+    "monto": 30000,
+    "fecha": "2026-02-09T17:27:27.584Z",
+    "categoria": "venta_cliente"
+  },
+  {
+    "id": "gasto_coti_1770738003296",
+    "tipo": "egreso",
+    "descripcion": "Costo Total - Coti Gremio #003296 (Galvez Gremio)",
+    "monto": 7172.88,
+    "fecha": "2026-02-10T15:40:18.445Z",
+    "categoria": "costo_venta_gremio"
+  }
+]

@@ -1,0 +1,26 @@
+[
+  {
+    "name": "Franco Gremio",
+    "telefono": "3424 05-0011",
+    "email": "",
+    "direccion": "",
+    "id": "gremio_cli_1770399835589",
+    "fechaRegistro": "2026-02-06T17:43:55.589Z"
+  },
+  {
+    "name": "Oso Benaglio Gremio",
+    "telefono": "3425 08-8181",
+    "email": "",
+    "direccion": "",
+    "id": "gremio_cli_1770401282572",
+    "fechaRegistro": "2026-02-06T18:08:02.572Z"
+  },
+  {
+    "name": "Galvez Gremio",
+    "telefono": "3404 41-5678",
+    "email": "graficaleo16@gmail.com",
+    "direccion": "",
+    "id": "gremio_cli_1770737823976",
+    "fechaRegistro": "2026-02-10T15:37:03.976Z"
+  }
+]

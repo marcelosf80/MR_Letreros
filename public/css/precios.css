@@ -1,0 +1,25 @@
+.semaforo-card {
+      padding: 1.5rem;
+      border-radius: 12px;
+      margin-top: 1rem;
+    }
+
+    .semaforo-verde {
+      background: linear-gradient(135deg, #51CF66, #37B24D);
+    }
+
+    .semaforo-amarillo {
+      background: linear-gradient(135deg, #FFC107, #FF9800);
+    }
+
+    .semaforo-rojo {
+      background: linear-gradient(135deg, #FF6B6B, #EE5A52);
+    }
+
+    .consejo-box {
+      margin-top: 1rem;
+      padding: 1rem;
+      border-radius: 8px;
+      background: rgba(0, 0, 0, 0.3);
+      border-left: 4px solid white;
+    }

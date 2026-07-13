@@ -1,0 +1,1578 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Auditoría — Integración Google Sheets | MR Letreros</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@300;400;500&display=swap');
+
+  :root {
+    --bg:       #080d0a;
+    --surface:  #0e1410;
+    --border:   rgba(255,255,255,0.07);
+    --accent:   #34d399;
+    --accent2:  #6ee7b7;
+    --blue:     #60a5fa;
+    --yellow:   #fbbf24;
+    --red:      #f87171;
+    --orange:   #fb923c;
+    --purple:   #a78bfa;
+    --text:     #e8f0ec;
+    --muted:    #6b7a72;
+    --glow:     rgba(52,211,153,0.15);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-weight: 300;
+    line-height: 1.7;
+    min-height: 100vh;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* HEADER */
+  header {
+    position: relative;
+    padding: 4rem 4rem 3rem;
+    border-bottom: 1px solid var(--border);
+    overflow: hidden;
+  }
+
+  header::before {
+    content: '';
+    position: absolute;
+    top: -100px; right: -60px;
+    width: 500px; height: 500px;
+    background: radial-gradient(circle, rgba(52,211,153,0.12) 0%, transparent 65%);
+    pointer-events: none;
+  }
+
+  header::after {
+    content: '';
+    position: absolute;
+    bottom: -80px; left: 30%;
+    width: 300px; height: 300px;
+    background: radial-gradient(circle, rgba(96,165,250,0.08) 0%, transparent 65%);
+    pointer-events: none;
+  }
+
+  .header-eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+  }
+
+  .gs-logo {
+    width: 28px; height: 28px;
+    background: linear-gradient(135deg, #0f9d58, #34a853);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    font-weight: 800;
+    color: white;
+    font-family: 'Syne', sans-serif;
+    flex-shrink: 0;
+  }
+
+  .header-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.2em;
+    color: var(--accent);
+    text-transform: uppercase;
+  }
+
+  h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(2rem, 4vw, 3.2rem);
+    font-weight: 800;
+    line-height: 1.1;
+    background: linear-gradient(135deg, #fff 0%, rgba(52,211,153,0.7) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 1rem;
+  }
+
+  .header-meta {
+    display: flex;
+    gap: 2rem;
+    flex-wrap: wrap;
+    margin-top: 1rem;
+  }
+
+  .meta-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--muted);
+  }
+
+  .meta-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+
+  /* LAYOUT */
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 3rem 4rem;
+    position: relative;
+    z-index: 1;
+  }
+
+  @media (max-width: 768px) {
+    .container { padding: 2rem 1.5rem; }
+    header { padding: 2.5rem 1.5rem 2rem; }
+  }
+
+  .section-number {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--accent);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 0.5rem;
+  }
+
+  .section-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 0.4rem;
+  }
+
+  .section-subtitle {
+    font-size: 0.9rem;
+    color: var(--muted);
+    margin-bottom: 2rem;
+  }
+
+  section { margin-bottom: 4rem; }
+
+  .divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 3rem 0;
+  }
+
+  /* BENEFIT BANNER */
+  .benefit-banner {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem;
+    margin-bottom: 3rem;
+  }
+
+  .benefit-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.25rem 1.5rem;
+    border-left: 3px solid var(--accent);
+    transition: border-color 0.2s, transform 0.2s;
+  }
+
+  .benefit-card:hover { transform: translateY(-2px); border-left-color: var(--accent2); }
+
+  .benefit-icon { font-size: 1.4rem; margin-bottom: 0.5rem; }
+
+  .benefit-card h4 {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 0.3rem;
+  }
+
+  .benefit-card p { font-size: 0.82rem; color: var(--muted); line-height: 1.5; }
+
+  /* SHEETS MAP */
+  .sheets-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.25rem;
+    margin-bottom: 2rem;
+  }
+
+  .sheet-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+    transition: transform 0.2s;
+  }
+
+  .sheet-card:hover { transform: translateY(-3px); }
+
+  .sheet-header {
+    padding: 1rem 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .sheet-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.3rem 0.9rem;
+    border-radius: 6px 6px 0 0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    font-weight: 600;
+  }
+
+  .sheet-name {
+    font-family: 'Syne', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    color: #fff;
+  }
+
+  .sheet-trigger {
+    margin-left: auto;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+  }
+
+  .sheet-cols {
+    padding: 1rem 1.25rem;
+  }
+
+  .col-row {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    padding: 0.3rem 0;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+    font-size: 0.82rem;
+  }
+
+  .col-row:last-child { border-bottom: none; }
+
+  .col-letter {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--accent);
+    width: 20px;
+    flex-shrink: 0;
+  }
+
+  .col-name { color: rgba(255,255,255,0.85); flex: 1; }
+  .col-type { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; color: var(--muted); }
+
+  /* FLOW DIAGRAM */
+  .flow-container {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    overflow-x: auto;
+  }
+
+  .flow {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    min-width: 700px;
+    justify-content: center;
+  }
+
+  .flow-node {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 0.5rem;
+  }
+
+  .flow-box {
+    padding: 0.75rem 1.1rem;
+    border-radius: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border: 1px solid;
+    white-space: nowrap;
+    line-height: 1.4;
+  }
+
+  .flow-box.fe  { background: rgba(96,165,250,0.1);  color: #93c5fd; border-color: rgba(96,165,250,0.3); }
+  .flow-box.be  { background: rgba(52,211,153,0.1);  color: #6ee7b7; border-color: rgba(52,211,153,0.3); }
+  .flow-box.gs  { background: rgba(16,185,129,0.15); color: #34d399; border-color: rgba(16,185,129,0.4); }
+  .flow-box.q   { background: rgba(251,191,36,0.1);  color: #fcd34d; border-color: rgba(251,191,36,0.3); }
+
+  .flow-label { font-size: 0.7rem; color: var(--muted); font-family: 'JetBrains Mono', monospace; }
+
+  .flow-arrow {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0 0.5rem;
+    flex-shrink: 0;
+  }
+
+  .arrow-line {
+    width: 50px;
+    height: 2px;
+    background: linear-gradient(90deg, rgba(52,211,153,0.3), rgba(52,211,153,0.7));
+    position: relative;
+  }
+
+  .arrow-line::after {
+    content: '▶';
+    position: absolute;
+    right: -8px;
+    top: -7px;
+    font-size: 0.6rem;
+    color: var(--accent);
+  }
+
+  .arrow-label { font-size: 0.62rem; color: var(--muted); font-family: 'JetBrains Mono', monospace; white-space: nowrap; }
+
+  /* MODE CARDS */
+  .modes-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
+
+  @media (max-width: 768px) {
+    .modes-grid { grid-template-columns: 1fr; }
+    .arch-grid  { grid-template-columns: 1fr; }
+    .flow { min-width: 500px; }
+  }
+
+  .mode-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 1.75rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .mode-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    border-radius: 14px 14px 0 0;
+  }
+
+  .mode-card.push::before { background: linear-gradient(90deg, var(--accent), var(--blue)); }
+  .mode-card.realtime::before { background: linear-gradient(90deg, var(--purple), var(--accent)); }
+
+  .mode-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.3rem 0.8rem;
+    border-radius: 20px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 0.85rem;
+    border: 1px solid;
+  }
+
+  .mode-card.push .mode-badge     { background: rgba(52,211,153,0.1);  color: var(--accent);  border-color: rgba(52,211,153,0.3); }
+  .mode-card.realtime .mode-badge { background: rgba(167,139,250,0.1); color: var(--purple); border-color: rgba(167,139,250,0.3); }
+
+  .mode-card h4 {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 0.5rem;
+  }
+
+  .mode-card p { font-size: 0.85rem; color: var(--muted); margin-bottom: 1rem; }
+
+  .pros-cons { display: flex; flex-direction: column; gap: 0.3rem; }
+
+  .pro, .con {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    font-size: 0.82rem;
+  }
+
+  .pro { color: rgba(255,255,255,0.8); }
+  .con { color: var(--muted); }
+
+  .pro::before { content: '✓'; color: var(--accent); flex-shrink: 0; }
+  .con::before { content: '△'; color: var(--yellow); flex-shrink: 0; }
+
+  /* RECOMMENDED BADGE */
+  .recommended-badge {
+    position: absolute;
+    top: 1rem; right: 1rem;
+    background: rgba(52,211,153,0.15);
+    color: var(--accent);
+    border: 1px solid rgba(52,211,153,0.3);
+    border-radius: 20px;
+    padding: 0.2rem 0.7rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.62rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  /* CODE BLOCKS */
+  .code-block {
+    background: #050809;
+    border: 1px solid rgba(52,211,153,0.15);
+    border-radius: 10px;
+    padding: 1.25rem 1.5rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    line-height: 1.8;
+    overflow-x: auto;
+    color: #c9d1d9;
+  }
+
+  .code-block .kw  { color: #ff7b72; }
+  .code-block .fn  { color: #79c0ff; }
+  .code-block .str { color: #a5d6ff; }
+  .code-block .cm  { color: #556070; font-style: italic; }
+  .code-block .nm  { color: #ffa657; }
+  .code-block .kv  { color: #d2a8ff; }
+  .code-block .gs  { color: #56d364; }
+
+  /* ARCH GRID */
+  .arch-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .arch-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem;
+  }
+
+  .arch-card h4 {
+    font-family: 'Syne', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  /* STEPS */
+  .steps { display: flex; flex-direction: column; gap: 1.25rem; }
+
+  .step {
+    display: grid;
+    grid-template-columns: 48px 1fr;
+    gap: 1.25rem;
+    align-items: start;
+  }
+
+  .step-num {
+    width: 48px; height: 48px;
+    border-radius: 12px;
+    background: rgba(52,211,153,0.08);
+    border: 1px solid rgba(52,211,153,0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--accent);
+    flex-shrink: 0;
+  }
+
+  .step-content h4 {
+    font-family: 'Syne', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 0.35rem;
+  }
+
+  .step-content p { font-size: 0.875rem; color: var(--muted); margin-bottom: 0.75rem; }
+
+  /* TAGS */
+  .tag {
+    display: inline-block;
+    padding: 0.2rem 0.6rem;
+    border-radius: 6px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    font-weight: 600;
+    margin: 0.15rem;
+    border: 1px solid;
+  }
+
+  .tag-be   { background: rgba(52,211,153,0.1);   color: #6ee7b7;  border-color: rgba(52,211,153,0.25); }
+  .tag-fe   { background: rgba(96,165,250,0.1);   color: #93c5fd;  border-color: rgba(96,165,250,0.25); }
+  .tag-gs   { background: rgba(16,185,129,0.1);   color: #34d399;  border-color: rgba(16,185,129,0.25); }
+  .tag-api  { background: rgba(251,191,36,0.1);   color: #fcd34d;  border-color: rgba(251,191,36,0.25); }
+  .tag-sec  { background: rgba(248,113,113,0.1);  color: #fca5a5;  border-color: rgba(248,113,113,0.25); }
+  .tag-auto { background: rgba(167,139,250,0.1);  color: #c4b5fd;  border-color: rgba(167,139,250,0.25); }
+
+  /* TIMELINE */
+  .timeline { display: flex; flex-direction: column; gap: 0; }
+
+  .tl-item {
+    display: grid;
+    grid-template-columns: 120px 1px 1fr;
+    gap: 0 1.5rem;
+    align-items: start;
+    padding-bottom: 2rem;
+  }
+
+  .tl-week {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    text-align: right;
+    padding-top: 0.15rem;
+  }
+
+  .tl-line { position: relative; background: var(--border); width: 1px; }
+
+  .tl-line::before {
+    content: '';
+    position: absolute;
+    top: 6px; left: -4px;
+    width: 9px; height: 9px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 10px rgba(52,211,153,0.6);
+  }
+
+  .tl-content { padding-left: 0.5rem; }
+
+  .tl-content h4 {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: #fff;
+    margin-bottom: 0.4rem;
+  }
+
+  .tl-content p { font-size: 0.83rem; color: var(--muted); }
+
+  /* RISK */
+  .risk-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1rem;
+  }
+
+  .risk-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.25rem;
+    border-left: 3px solid;
+  }
+
+  .risk-item.high   { border-left-color: var(--red); }
+  .risk-item.medium { border-left-color: var(--yellow); }
+  .risk-item.low    { border-left-color: var(--accent); }
+
+  .risk-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 0.4rem;
+    font-weight: 600;
+  }
+
+  .risk-item.high   .risk-label { color: var(--red); }
+  .risk-item.medium .risk-label { color: var(--yellow); }
+  .risk-item.low    .risk-label { color: var(--accent); }
+
+  .risk-item h4 {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 0.35rem;
+  }
+
+  .risk-item p { font-size: 0.82rem; color: var(--muted); }
+
+  /* SHEETS PREVIEW */
+  .sheet-preview {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+    margin-bottom: 1.5rem;
+  }
+
+  .sheet-preview-header {
+    background: rgba(16,185,129,0.08);
+    border-bottom: 1px solid var(--border);
+    padding: 0.75rem 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .sheet-preview-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--accent);
+    font-weight: 600;
+  }
+
+  .sheet-preview-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 8px var(--accent);
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  .sheet-table { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
+
+  .sheet-table th {
+    background: rgba(52,211,153,0.08);
+    color: var(--accent);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.68rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 0.5rem 0.85rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+
+  .sheet-table td {
+    padding: 0.45rem 0.85rem;
+    color: rgba(255,255,255,0.75);
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    white-space: nowrap;
+  }
+
+  .sheet-table tr:last-child td { border-bottom: none; }
+  .sheet-table tr:hover td { background: rgba(52,211,153,0.04); }
+
+  .pill {
+    display: inline-block;
+    padding: 0.15rem 0.5rem;
+    border-radius: 20px;
+    font-size: 0.65rem;
+    font-weight: 600;
+  }
+
+  .pill.aprobada  { background: rgba(52,211,153,0.15); color: var(--accent); }
+  .pill.pendiente { background: rgba(251,191,36,0.15);  color: var(--yellow); }
+  .pill.ingreso   { background: rgba(96,165,250,0.15);  color: var(--blue); }
+  .pill.egreso    { background: rgba(248,113,113,0.15); color: var(--red); }
+  .pill.entregado { background: rgba(52,211,153,0.15);  color: var(--accent); }
+  .pill.proceso   { background: rgba(251,191,36,0.15);  color: var(--yellow); }
+
+  /* FILES */
+  .files-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+  }
+
+  @media (max-width: 768px) { .files-grid { grid-template-columns: 1fr; } }
+
+  /* FOOTER */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 2rem 4rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .footer-brand { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.9rem; color: rgba(255,255,255,0.3); }
+  .footer-note  { font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: var(--muted); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-eyebrow">
+    <div class="gs-logo">G</div>
+    <div class="header-label">MR Letreros · Integración de Datos</div>
+  </div>
+  <h1>Auditoría: Google Sheets<br>como Capa de Reporting</h1>
+  <div class="header-meta">
+    <div class="meta-item"><div class="meta-dot"></div> Google Sheets API v4</div>
+    <div class="meta-item"><div class="meta-dot"></div> Node.js + googleapis SDK</div>
+    <div class="meta-item"><div class="meta-dot"></div> Sync automático + manual</div>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- BENEFICIOS -->
+  <div class="benefit-banner">
+    <div class="benefit-card">
+      <div class="benefit-icon">📊</div>
+      <h4>Dashboard en tiempo real</h4>
+      <p>Gráficos, tablas dinámicas y KPIs actualizados automáticamente sin necesidad de exportar CSVs.</p>
+    </div>
+    <div class="benefit-card">
+      <div class="benefit-icon">🤝</div>
+      <h4>Acceso para contadores</h4>
+      <p>Compartir la hoja de cálculo con el contador sin darle acceso al sistema interno.</p>
+    </div>
+    <div class="benefit-card">
+      <div class="benefit-icon">🔔</div>
+      <h4>Alertas automáticas</h4>
+      <p>Google Sheets puede enviar emails o notificaciones cuando un valor supera un umbral.</p>
+    </div>
+    <div class="benefit-card">
+      <div class="benefit-icon">📱</div>
+      <h4>Acceso desde cualquier lugar</h4>
+      <p>Ver cotizaciones, ingresos y estado de trabajos desde el celular sin acceder al servidor.</p>
+    </div>
+    <div class="benefit-card">
+      <div class="benefit-icon">🗄️</div>
+      <h4>Backup automático</h4>
+      <p>Google guarda historial de cambios. Ante un error en el servidor, los datos siguen disponibles.</p>
+    </div>
+  </div>
+
+  <!-- SECCIÓN 1: FLUJO -->
+  <section>
+    <div class="section-number">01 · Arquitectura</div>
+    <h2 class="section-title">Flujo de Datos</h2>
+    <p class="section-subtitle">El servidor Node.js actúa como puente entre los datos internos y Google Sheets</p>
+
+    <div class="flow-container">
+      <div class="flow">
+        <div class="flow-node">
+          <div class="flow-box fe">🖥️ gremio.html<br>clientes.html</div>
+          <div class="flow-label">Frontend</div>
+        </div>
+        <div class="flow-arrow">
+          <div class="arrow-line"></div>
+          <div class="arrow-label">saveQuote()</div>
+        </div>
+        <div class="flow-node">
+          <div class="flow-box be">🟢 Node.js<br>/api/cotizaciones</div>
+          <div class="flow-label">Servidor</div>
+        </div>
+        <div class="flow-arrow">
+          <div class="arrow-line"></div>
+          <div class="arrow-label">sheetsSync()</div>
+        </div>
+        <div class="flow-node">
+          <div class="flow-box gs">📡 Google<br>Sheets API v4</div>
+          <div class="flow-label">API Externa</div>
+        </div>
+        <div class="flow-arrow">
+          <div class="arrow-line"></div>
+          <div class="arrow-label">appendRow()</div>
+        </div>
+        <div class="flow-node">
+          <div class="flow-box q">📋 Spreadsheet<br>MR Letreros</div>
+          <div class="flow-label">Google Sheets</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="arch-grid">
+      <div class="arch-card">
+        <h4>🔑 Autenticación con Google</h4>
+        <div class="code-block">
+<span class="cm">// Opción recomendada: Service Account</span>
+<span class="cm">// (no requiere login manual de usuario)</span>
+
+<span class="kw">const</span> { google } = <span class="fn">require</span>(<span class="str">'googleapis'</span>);
+
+<span class="kw">const</span> auth = <span class="kw">new</span> google.<span class="fn">auth</span>.GoogleAuth({
+  <span class="kv">keyFile</span>: <span class="str">'credentials/service-account.json'</span>,
+  <span class="kv">scopes</span>: [<span class="str">'https://www.googleapis.com/auth/spreadsheets'</span>]
+});
+
+<span class="kw">const</span> sheets = google.<span class="fn">sheets</span>({
+  <span class="kv">version</span>: <span class="str">'v4'</span>, auth
+});
+
+<span class="cm">// ID del spreadsheet (de la URL de Google Sheets)</span>
+<span class="kw">const</span> SHEET_ID = process.env.<span class="nm">GOOGLE_SHEET_ID</span>;
+        </div>
+      </div>
+
+      <div class="arch-card">
+        <h4>📤 Función base: escribir fila</h4>
+        <div class="code-block">
+<span class="cm">// utils/sheets-client.js</span>
+<span class="kw">async function</span> <span class="fn">appendRow</span>(sheetName, valores) {
+  <span class="kw">await</span> sheets.spreadsheets.values.<span class="fn">append</span>({
+    <span class="kv">spreadsheetId</span>: SHEET_ID,
+    <span class="kv">range</span>: <span class="str">`${sheetName}!A:Z`</span>,
+    <span class="kv">valueInputOption</span>: <span class="str">'USER_ENTERED'</span>,
+    <span class="kv">insertDataOption</span>: <span class="str">'INSERT_ROWS'</span>,
+    <span class="kv">requestBody</span>: {
+      <span class="kv">values</span>: [valores]
+    }
+  });
+}
+
+<span class="cm">// Uso:</span>
+<span class="kw">await</span> <span class="fn">appendRow</span>(<span class="str">'Cotizaciones'</span>, [
+  <span class="str">'2024-01-20'</span>, <span class="str">'Juan López'</span>, <span class="nm">45000</span>, <span class="str">'aprobada'</span>
+]);
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- SECCIÓN 2: MODOS DE SYNC -->
+  <section>
+    <div class="section-number">02 · Estrategia de Sincronización</div>
+    <h2 class="section-title">Cuándo y Cómo Sincronizar</h2>
+    <p class="section-subtitle">Dos modos complementarios — se usan juntos según el tipo de dato</p>
+
+    <div class="modes-grid">
+      <div class="mode-card push">
+        <div class="recommended-badge">✓ Recomendado</div>
+        <div class="mode-badge">⚡ Push en evento</div>
+        <h4>Sync al guardar / aprobar</h4>
+        <p>Cada vez que ocurre una acción importante en el servidor, se escribe la fila en Sheets inmediatamente. Sin delay, sin polling.</p>
+        <div class="pros-cons">
+          <div class="pro">Datos en Sheets al instante</div>
+          <div class="pro">Sin consumo extra de recursos</div>
+          <div class="pro">Ideal para cotizaciones y pagos</div>
+          <div class="con">Si Sheets falla, la operación local no se revierte</div>
+          <div class="con">Requiere manejo de errores robusto</div>
+        </div>
+      </div>
+
+      <div class="mode-card realtime">
+        <div class="mode-badge">🕐 Batch programado</div>
+        <h4>Resync completo nocturno</h4>
+        <p>Un cron job que corre cada noche limpia las hojas y vuelca todos los datos del día. Actúa como safety net para no perder nada.</p>
+        <div class="pros-cons">
+          <div class="pro">Garantiza consistencia total</div>
+          <div class="pro">Corrige discrepancias acumuladas</div>
+          <div class="pro">Ideal para el resumen financiero mensual</div>
+          <div class="con">Datos en Sheets con hasta 24hs de delay</div>
+          <div class="con">Requiere limpiar y reescribir hojas enteras</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- SECCIÓN 3: HOJAS -->
+  <section>
+    <div class="section-number">03 · Estructura del Spreadsheet</div>
+    <h2 class="section-title">Hojas y Columnas</h2>
+    <p class="section-subtitle">Un spreadsheet principal con 6 hojas — una por tipo de dato</p>
+
+    <!-- PREVIEW VISUAL -->
+    <div class="sheet-preview">
+      <div class="sheet-preview-header">
+        <div class="sheet-preview-dot"></div>
+        <div class="sheet-preview-title">📊 MR Letreros — Hoja: Cotizaciones_Gremio (vista previa)</div>
+      </div>
+      <div style="overflow-x: auto;">
+        <table class="sheet-table">
+          <thead>
+            <tr>
+              <th>A · Fecha</th>
+              <th>B · ID</th>
+              <th>C · Cliente</th>
+              <th>D · Teléfono</th>
+              <th>E · Vendedor</th>
+              <th>F · Subtotal</th>
+              <th>G · IVA</th>
+              <th>H · Total</th>
+              <th>I · Costo</th>
+              <th>J · Ganancia</th>
+              <th>K · Anticipo</th>
+              <th>L · Saldo</th>
+              <th>M · Estado</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>20/01/2024</td>
+              <td>COT-001</td>
+              <td>Imprenta López</td>
+              <td>11 5555-1234</td>
+              <td>María G.</td>
+              <td>$37.190</td>
+              <td>$7.810</td>
+              <td>$45.000</td>
+              <td>$18.500</td>
+              <td>$26.500</td>
+              <td>$15.000</td>
+              <td>$30.000</td>
+              <td><span class="pill aprobada">aprobada</span></td>
+            </tr>
+            <tr>
+              <td>21/01/2024</td>
+              <td>COT-002</td>
+              <td>Gráfica Sur</td>
+              <td>11 6666-4321</td>
+              <td>Carlos R.</td>
+              <td>$24.793</td>
+              <td>$5.207</td>
+              <td>$30.000</td>
+              <td>$12.000</td>
+              <td>$18.000</td>
+              <td>$0</td>
+              <td>$30.000</td>
+              <td><span class="pill pendiente">pendiente</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="sheet-preview">
+      <div class="sheet-preview-header">
+        <div class="sheet-preview-dot"></div>
+        <div class="sheet-preview-title">💰 MR Letreros — Hoja: Movimientos_Financieros (vista previa)</div>
+      </div>
+      <div style="overflow-x: auto;">
+        <table class="sheet-table">
+          <thead>
+            <tr>
+              <th>A · Fecha</th>
+              <th>B · Tipo</th>
+              <th>C · Descripción</th>
+              <th>D · Monto</th>
+              <th>E · Categoría</th>
+              <th>F · Referencia</th>
+              <th>G · Saldo Acum.</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>20/01/2024</td>
+              <td><span class="pill ingreso">ingreso</span></td>
+              <td>Anticipo Gremio - Imprenta López</td>
+              <td>$15.000</td>
+              <td>venta_gremio</td>
+              <td>COT-001</td>
+              <td>$15.000</td>
+            </tr>
+            <tr>
+              <td>20/01/2024</td>
+              <td><span class="pill egreso">egreso</span></td>
+              <td>Costo materiales - COT-001</td>
+              <td>$18.500</td>
+              <td>costo_venta_gremio</td>
+              <td>COT-001</td>
+              <td>-$3.500</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="sheet-preview">
+      <div class="sheet-preview-header">
+        <div class="sheet-preview-dot"></div>
+        <div class="sheet-preview-title">🔨 MR Letreros — Hoja: Trabajos (vista previa)</div>
+      </div>
+      <div style="overflow-x: auto;">
+        <table class="sheet-table">
+          <thead>
+            <tr>
+              <th>A · Fecha Inicio</th>
+              <th>B · Cliente</th>
+              <th>C · Teléfono</th>
+              <th>D · Total</th>
+              <th>E · Pagado</th>
+              <th>F · Saldo</th>
+              <th>G · Estado Pago</th>
+              <th>H · Estado Prod.</th>
+              <th>I · Fecha Entrega</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>20/01/2024</td>
+              <td>Imprenta López</td>
+              <td>11 5555-1234</td>
+              <td>$45.000</td>
+              <td>$15.000</td>
+              <td>$30.000</td>
+              <td><span class="pill pendiente">pendiente</span></td>
+              <td><span class="pill proceso">en proceso</span></td>
+              <td>25/01/2024</td>
+            </tr>
+            <tr>
+              <td>18/01/2024</td>
+              <td>Gráfica Norte</td>
+              <td>11 7777-8888</td>
+              <td>$28.000</td>
+              <td>$28.000</td>
+              <td>$0</td>
+              <td><span class="pill aprobada">pago total</span></td>
+              <td><span class="pill entregado">entregado</span></td>
+              <td>22/01/2024</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- MAPA COMPLETO DE HOJAS -->
+    <div class="sheets-grid">
+
+      <div class="sheet-card">
+        <div class="sheet-header">
+          <div class="sheet-tab" style="background:rgba(52,211,153,0.15); color:#34d399; border:1px solid rgba(52,211,153,0.3);">🟢 Cotizaciones_Gremio</div>
+          <div class="sheet-trigger">push + nightly</div>
+        </div>
+        <div class="sheet-cols">
+          <div class="col-row"><span class="col-letter">A</span><span class="col-name">Fecha</span><span class="col-type">DATE</span></div>
+          <div class="col-row"><span class="col-letter">B</span><span class="col-name">ID Cotización</span><span class="col-type">TEXT</span></div>
+          <div class="col-row"><span class="col-letter">C</span><span class="col-name">Cliente</span><span class="col-type">TEXT</span></div>
+          <div class="col-row"><span class="col-letter">D</span><span class="col-name">Teléfono</span><span class="col-type">TEXT</span></div>
+          <div class="col-row"><span class="col-letter">E</span><span class="col-name">Vendedor</span><span class="col-type">TEXT</span></div>
+          <div class="col-row"><span class="col-letter">F-H</span><span class="col-name">Subtotal / IVA / Total</span><span class="col-type">CURRENCY</span></div>
+          <div class="col-row"><span class="col-letter">I-J</span><span class="col-name">Costo / Ganancia</span><span class="col-type">CURRENCY</span></div>
+          <div class="col-row"><span class="col-letter">K-L</span><span class="col-name">Anticipo / Saldo</span><span class="col-type">CURRENCY</span></div>
+          <div class="col-row"><span class="col-letter">M</span><span class="col-name">Estado</span><span class="col-type">TEXT</span></div>
+          <div class="col-row"><span class="col-letter">N</span><span class="col-name">Productos (resumen)</span><span class="col-type">TEXT</span></div>
+        </div>
+      </div>
+
+      <div class="sheet-card">
+        <div class="sheet-header">
+          <div class="sheet-tab" style="background:rgba(96,165,250,0.15); color:#60a5fa; border:1px solid rgba(96,165,250,0.3);">🔵 Cotizaciones_Clientes</div>
+          <div class="sheet-trigger">push + nightly</div>
+        </div>
+        <div class="sheet-cols">
+          <div class="col-row"><span class="col-letter">A</span><span class="col-name">Fecha</span><span class="col-type">DATE</span></div>
+          <div class="col-row"><span class="col-letter">B</span><span class="col-name">ID Cotización</span><span class="col-type">TEXT</span></div>
+          <div class="col-row"><span class="col-letter">C</span><span class="col-name">Cliente</span><span class="col-type">TEXT</span></div>
+          <div class="col-row"><span class="col-letter">D</span><span class="col-name">Teléfono / Email</span><span class="col-type">TEXT</span></div>
+          <div class="col-row"><span class="col-letter">E</span><span class="col-name">Vendedor</span><span class="col-type">TEXT</span></div>
+          <div class="col-row"><span class="col-letter">F-H</span><span class="col-name">Subtotal / IVA / Total</span><span class="col-type">CURRENCY</span></div>
+          <div class="col-row"><span class="col-letter">I-J</span><span class="col-name">Costo / Ganancia</span><span class="col-type">CURRENCY</span></div>
+          <div class="col-row"><span class="col-letter">K-L</span><span class="col-name">Anticipo / Saldo</span><span class="col-type">CURRENCY</span></div>
+          <div class="col-row"><span class="col-letter">M</span><span class="col-name">Estado</span><span class="col-type">TEXT</span></div>
+        </div>
+      </div>
+
+      <div class="sheet-card">
+        <div class="sheet-header">
+          <div class="sheet-tab" style="background:rgba(251,191,36,0.15); color:#fbbf24; border:1px solid rgba(251,191,36,0.3);">💰 Movimientos_Financieros</div>
+          <div class="sheet-trigger">push inmediato</div>
+        </div>
+        <div class="sheet-cols">
+          <div class="col-row"><span class="col-letter">A</span><span class="col-name">Fecha</span><span class="col-type">DATE</span></div>
+          <div class="col-row"><span class="col-letter">B</span><span class="col-name">Tipo (ingreso/egreso)</span><span class="col-type">TEXT</span></div>
+          <div class="col-row"><span class="col-letter">C</span><span class="col-name">Descripción</span><span class="col-type">TEXT</span></div>
+          <div class="col-row"><span class="col-letter">D</span><span class="col-name">Monto</span><span class="col-type">CURRENCY</span></div>
+          <div class="col-row"><span class="col-letter">E</span><span class="col-name">Categoría</span><span class="col-type">TEXT</span></div>
+          <div class="col-row"><span class="col-letter">F</span><span class="col-name">Referencia (ID coti)</span><span class="col-type">TEXT</span></div>
+          <div class="col-row"><span class="col-letter">G</span><span class="col-name">Saldo Acumulado</span><span class="col-type">FORMULA</span></div>
+        </div>
+      </div>
+
+      <div class="sheet-card">
+        <div class="sheet-header">
+          <div class="sheet-tab" style="background:rgba(251,113,133,0.15); color:#fb7185; border:1px solid rgba(251,113,133,0.3);">🔨 Trabajos</div>
+          <div class="sheet-trigger">push en estado</div>
+        </div>
+        <div class="sheet-cols">
+          <div class="col-row"><span class="col-letter">A</span><span class="col-name">Fecha Inicio</span><span class="col-type">DATE</span></div>
+          <div class="col-row"><span class="col-letter">B-C</span><span class="col-name">Cliente / Teléfono</span><span class="col-type">TEXT</span></div>
+          <div class="col-row"><span class="col-letter">D-F</span><span class="col-name">Total / Pagado / Saldo</span><span class="col-type">CURRENCY</span></div>
+          <div class="col-row"><span class="col-letter">G</span><span class="col-name">Estado de Pago</span><span class="col-type">TEXT</span></div>
+          <div class="col-row"><span class="col-letter">H</span><span class="col-name">Estado de Producción</span><span class="col-type">TEXT</span></div>
+          <div class="col-row"><span class="col-letter">I</span><span class="col-name">Prioridad</span><span class="col-type">TEXT</span></div>
+          <div class="col-row"><span class="col-letter">J</span><span class="col-name">Fecha Entrega</span><span class="col-type">DATE</span></div>
+          <div class="col-row"><span class="col-letter">K</span><span class="col-name">Último cambio</span><span class="col-type">DATETIME</span></div>
+        </div>
+      </div>
+
+      <div class="sheet-card">
+        <div class="sheet-header">
+          <div class="sheet-tab" style="background:rgba(167,139,250,0.15); color:#a78bfa; border:1px solid rgba(167,139,250,0.3);">👥 Clientes</div>
+          <div class="sheet-trigger">nightly</div>
+        </div>
+        <div class="sheet-cols">
+          <div class="col-row"><span class="col-letter">A</span><span class="col-name">ID</span><span class="col-type">TEXT</span></div>
+          <div class="col-row"><span class="col-letter">B</span><span class="col-name">Nombre / Razón Social</span><span class="col-type">TEXT</span></div>
+          <div class="col-row"><span class="col-letter">C</span><span class="col-name">Tipo (gremio/cliente)</span><span class="col-type">TEXT</span></div>
+          <div class="col-row"><span class="col-letter">D-E</span><span class="col-name">Teléfono / Email</span><span class="col-type">TEXT</span></div>
+          <div class="col-row"><span class="col-letter">F</span><span class="col-name">CUIT/DNI</span><span class="col-type">TEXT</span></div>
+          <div class="col-row"><span class="col-letter">G</span><span class="col-name">Descuento %</span><span class="col-type">PERCENT</span></div>
+          <div class="col-row"><span class="col-letter">H</span><span class="col-name">Total Facturado</span><span class="col-type">CURRENCY</span></div>
+          <div class="col-row"><span class="col-letter">I</span><span class="col-name">Cant. Trabajos</span><span class="col-type">NUMBER</span></div>
+          <div class="col-row"><span class="col-letter">J</span><span class="col-name">Estado</span><span class="col-type">TEXT</span></div>
+        </div>
+      </div>
+
+      <div class="sheet-card">
+        <div class="sheet-header">
+          <div class="sheet-tab" style="background:rgba(52,211,153,0.15); color:#34d399; border:1px solid rgba(52,211,153,0.3);">📈 Resumen_Mensual</div>
+          <div class="sheet-trigger">nightly / fórmulas</div>
+        </div>
+        <div class="sheet-cols">
+          <div class="col-row"><span class="col-letter">—</span><span class="col-name">Generada con fórmulas de Google Sheets que consolidan las otras hojas automáticamente</span><span class="col-type"></span></div>
+          <div class="col-row"><span class="col-letter">A</span><span class="col-name">Mes/Año</span><span class="col-type">DATE</span></div>
+          <div class="col-row"><span class="col-letter">B</span><span class="col-name">Total Facturado</span><span class="col-type">FORMULA</span></div>
+          <div class="col-row"><span class="col-letter">C</span><span class="col-name">Total Costos</span><span class="col-type">FORMULA</span></div>
+          <div class="col-row"><span class="col-letter">D</span><span class="col-name">Ganancia Neta</span><span class="col-type">FORMULA</span></div>
+          <div class="col-row"><span class="col-letter">E</span><span class="col-name">Coti. Aprobadas</span><span class="col-type">FORMULA</span></div>
+          <div class="col-row"><span class="col-letter">F</span><span class="col-name">Ticket Promedio</span><span class="col-type">FORMULA</span></div>
+          <div class="col-row"><span class="col-letter">G</span><span class="col-name">Margen %</span><span class="col-type">FORMULA</span></div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- SECCIÓN 4: CÓDIGO -->
+  <section>
+    <div class="section-number">04 · Implementación</div>
+    <h2 class="section-title">Código del Módulo de Sync</h2>
+    <p class="section-subtitle">Módulo desacoplado que se engancha a los endpoints existentes</p>
+
+    <div class="arch-card" style="margin-bottom: 1.5rem;">
+      <h4>📦 utils/sheets-sync.js — Módulo completo</h4>
+      <div class="code-block">
+<span class="kw">const</span> { google } = <span class="fn">require</span>(<span class="str">'googleapis'</span>);
+
+<span class="cm">// ── Configuración ────────────────────────────────────────────────</span>
+<span class="kw">const</span> SHEET_ID = process.env.<span class="nm">GOOGLE_SHEET_ID</span>;
+
+<span class="kw">const</span> auth = <span class="kw">new</span> google.auth.<span class="fn">GoogleAuth</span>({
+  <span class="kv">keyFile</span>: <span class="str">'credentials/google-service-account.json'</span>,
+  <span class="kv">scopes</span>: [<span class="str">'https://www.googleapis.com/auth/spreadsheets'</span>]
+});
+
+<span class="kw">const</span> sheets = google.<span class="fn">sheets</span>({ <span class="kv">version</span>: <span class="str">'v4'</span>, auth });
+
+<span class="cm">// ── Función base ─────────────────────────────────────────────────</span>
+<span class="kw">async function</span> <span class="fn">appendRow</span>(sheetName, row) {
+  <span class="kw">try</span> {
+    <span class="kw">await</span> sheets.spreadsheets.values.<span class="fn">append</span>({
+      <span class="kv">spreadsheetId</span>: SHEET_ID,
+      <span class="kv">range</span>: <span class="str">`${sheetName}!A:Z`</span>,
+      <span class="kv">valueInputOption</span>: <span class="str">'USER_ENTERED'</span>,
+      <span class="kv">insertDataOption</span>: <span class="str">'INSERT_ROWS'</span>,
+      <span class="kv">requestBody</span>: { <span class="kv">values</span>: [row] }
+    });
+    console.<span class="fn">log</span>(<span class="str">`[SHEETS] ✅ Fila agregada en "${sheetName}"`</span>);
+  } <span class="kw">catch</span> (err) {
+    <span class="cm">// NO propagar el error: el fallo de Sheets no debe frenar la operación local</span>
+    console.<span class="fn">error</span>(<span class="str">`[SHEETS] ❌ Error en "${sheetName}":`, err.message</span>);
+  }
+}
+
+<span class="cm">// ── Formatters por módulo ────────────────────────────────────────</span>
+<span class="kw">const</span> SheetsSync = {
+
+  <span class="cm">/** Llamar después de aprobar cotización de Gremio */</span>
+  <span class="kw">async</span> <span class="fn">cotizacionGremio</span>(cot, vendedorNombre) {
+    <span class="kw">const</span> fecha = <span class="kw">new</span> <span class="fn">Date</span>(cot.fecha).<span class="fn">toLocaleDateString</span>(<span class="str">'es-AR'</span>);
+    <span class="kw">const</span> productos = (cot.productos || [])
+      .<span class="fn">map</span>(p => p.producto || p.categoria).<span class="fn">join</span>(<span class="str">' | '</span>) || <span class="str">'Varios'</span>;
+
+    <span class="kw">await</span> <span class="fn">appendRow</span>(<span class="str">'Cotizaciones_Gremio'</span>, [
+      fecha,
+      <span class="str">`COT-${cot.id.slice(-6).toUpperCase()}`</span>,
+      cot.cliente?.nombre || cot.cliente?.name || <span class="str">''</span>,
+      cot.cliente?.telefono || <span class="str">''</span>,
+      vendedorNombre || <span class="str">'Sistema'</span>,
+      cot.subtotal || <span class="nm">0</span>,
+      cot.iva || <span class="nm">0</span>,
+      cot.totalCliente || <span class="nm">0</span>,
+      cot.costoTotal || <span class="nm">0</span>,
+      cot.ganancia || <span class="nm">0</span>,
+      cot.anticipo || <span class="nm">0</span>,
+      cot.saldo || <span class="nm">0</span>,
+      cot.estado || <span class="str">'pendiente'</span>,
+      productos
+    ]);
+  },
+
+  <span class="cm">/** Llamar después de aprobar cotización de Clientes */</span>
+  <span class="kw">async</span> <span class="fn">cotizacionCliente</span>(cot, vendedorNombre) {
+    <span class="kw">const</span> fecha = <span class="kw">new</span> <span class="fn">Date</span>(cot.fecha).<span class="fn">toLocaleDateString</span>(<span class="str">'es-AR'</span>);
+    <span class="kw">await</span> <span class="fn">appendRow</span>(<span class="str">'Cotizaciones_Clientes'</span>, [
+      fecha, <span class="str">`COT-${cot.id.slice(-6).toUpperCase()}`</span>,
+      cot.cliente?.nombre || <span class="str">''</span>, cot.cliente?.telefono || <span class="str">''</span>,
+      vendedorNombre || <span class="str">'Sistema'</span>,
+      cot.subtotal || <span class="nm">0</span>, cot.iva || <span class="nm">0</span>, cot.totalCliente || <span class="nm">0</span>,
+      cot.costoTotal || <span class="nm">0</span>, cot.ganancia || <span class="nm">0</span>,
+      cot.anticipo || <span class="nm">0</span>, cot.saldo || <span class="nm">0</span>, cot.estado || <span class="str">'pendiente'</span>
+    ]);
+  },
+
+  <span class="cm">/** Llamar al registrar gasto o ingreso */</span>
+  <span class="kw">async</span> <span class="fn">movimientoFinanciero</span>(mov) {
+    <span class="kw">const</span> fecha = <span class="kw">new</span> <span class="fn">Date</span>(mov.fecha).<span class="fn">toLocaleDateString</span>(<span class="str">'es-AR'</span>);
+    <span class="kw">await</span> <span class="fn">appendRow</span>(<span class="str">'Movimientos_Financieros'</span>, [
+      fecha, mov.tipo, mov.descripcion, mov.monto,
+      mov.categoria || <span class="str">''</span>, mov.referencia || <span class="str">''</span>
+    ]);
+  },
+
+  <span class="cm">/** Llamar al crear o actualizar trabajo */</span>
+  <span class="kw">async</span> <span class="fn">trabajo</span>(work) {
+    <span class="kw">const</span> fecha = <span class="kw">new</span> <span class="fn">Date</span>(work.createdAt).<span class="fn">toLocaleDateString</span>(<span class="str">'es-AR'</span>);
+    <span class="kw">await</span> <span class="fn">appendRow</span>(<span class="str">'Trabajos'</span>, [
+      fecha, work.clientName || <span class="str">''</span>, work.clientPhone || <span class="str">''</span>,
+      work.total || <span class="nm">0</span>, work.paidAmount || <span class="nm">0</span>, work.balance || <span class="nm">0</span>,
+      work.paymentStatus || <span class="str">'pending'</span>, work.status || <span class="str">'pending'</span>,
+      work.priority || <span class="str">'normal'</span>, work.deliveryDate || <span class="str">''</span>,
+      <span class="kw">new</span> <span class="fn">Date</span>().<span class="fn">toLocaleString</span>(<span class="str">'es-AR'</span>)
+    ]);
+  }
+};
+
+module.exports = SheetsSync;
+      </div>
+    </div>
+
+    <div class="arch-grid">
+      <div class="arch-card">
+        <h4>🔗 Integración en server.js existente</h4>
+        <div class="code-block">
+<span class="kw">const</span> SheetsSync = <span class="fn">require</span>(<span class="str">'./utils/sheets-sync'</span>);
+
+<span class="cm">// En el endpoint de aprobar cotización de Gremio:</span>
+app.<span class="fn">post</span>(<span class="str">'/api/gremio/cotizaciones/:id/aprobar'</span>, <span class="kw">async</span> (req, res) => {
+  <span class="cm">// ... lógica existente de aprobación ...</span>
+  <span class="kw">const</span> success = <span class="kw">await</span> <span class="fn">guardarCotizacion</span>(cotizacion);
+
+  <span class="kw">if</span> (success) {
+    <span class="cm">// Sync a Sheets en background — no bloquea la respuesta</span>
+    SheetsSync.<span class="fn">cotizacionGremio</span>(cotizacion, req.user?.nombre)
+      .<span class="fn">catch</span>(e => console.<span class="fn">error</span>(<span class="str">'[SHEETS] Sync failed silently'</span>, e));
+
+    <span class="cm">// Registrar movimientos financieros</span>
+    <span class="kw">if</span> (cotizacion.anticipo > <span class="nm">0</span>) {
+      SheetsSync.<span class="fn">movimientoFinanciero</span>({
+        <span class="kv">tipo</span>: <span class="str">'ingreso'</span>,
+        <span class="kv">descripcion</span>: <span class="str">`Anticipo - ${cotizacion.cliente.nombre}`</span>,
+        <span class="kv">monto</span>: cotizacion.anticipo,
+        <span class="kv">categoria</span>: <span class="str">'venta_gremio'</span>,
+        <span class="kv">referencia</span>: cotizacion.id,
+        <span class="kv">fecha</span>: <span class="kw">new</span> <span class="fn">Date</span>().<span class="fn">toISOString</span>()
+      });
+    }
+
+    res.<span class="fn">json</span>({ <span class="kv">success</span>: <span class="kw">true</span> });
+  }
+});
+        </div>
+      </div>
+
+      <div class="arch-card">
+        <h4>⏰ Cron job de resync nocturno</h4>
+        <div class="code-block">
+<span class="kw">const</span> cron = <span class="fn">require</span>(<span class="str">'node-cron'</span>);
+<span class="kw">const</span> SheetsResync = <span class="fn">require</span>(<span class="str">'./utils/sheets-resync'</span>);
+
+<span class="cm">// Todos los días a las 3:00 AM</span>
+cron.<span class="fn">schedule</span>(<span class="str">'0 3 * * *'</span>, <span class="kw">async</span> () => {
+  console.<span class="fn">log</span>(<span class="str">'[SHEETS] 🌙 Iniciando resync nocturno...'</span>);
+  <span class="kw">try</span> {
+    <span class="kw">await</span> SheetsResync.<span class="fn">clearAndRefillAll</span>();
+    console.<span class="fn">log</span>(<span class="str">'[SHEETS] ✅ Resync nocturno completado'</span>);
+  } <span class="kw">catch</span> (e) {
+    console.<span class="fn">error</span>(<span class="str">'[SHEETS] ❌ Error en resync nocturno:', e</span>);
+  }
+});
+
+<span class="cm">// sheets-resync.js — limpia y reescribe la hoja entera</span>
+<span class="kw">async function</span> <span class="fn">clearAndRefillAll</span>() {
+  <span class="kw">const</span> [cotizaciones, gastos, trabajos] = <span class="kw">await</span> Promise.<span class="fn">all</span>([
+    <span class="fn">loadJSON</span>(<span class="str">'data/gremio_cotizaciones.json'</span>),
+    <span class="fn">loadJSON</span>(<span class="str">'data/gastos.json'</span>),
+    <span class="fn">fetchTrabajos</span>()
+  ]);
+
+  <span class="kw">await</span> <span class="fn">clearSheet</span>(<span class="str">'Cotizaciones_Gremio'</span>);
+  <span class="kw">await</span> <span class="fn">batchWrite</span>(<span class="str">'Cotizaciones_Gremio'</span>,
+    cotizaciones.<span class="fn">map</span>(<span class="fn">formatCotizacion</span>)
+  );
+  <span class="cm">// ídem para otras hojas...</span>
+}
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- SECCIÓN 5: SETUP -->
+  <section>
+    <div class="section-number">05 · Pasos de Configuración</div>
+    <h2 class="section-title">Setup Paso a Paso</h2>
+    <p class="section-subtitle">Proceso completo desde cero — incluye la consola de Google Cloud</p>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">01</div>
+        <div class="step-content">
+          <h4>Crear proyecto en Google Cloud Console</h4>
+          <p>Ir a <code>console.cloud.google.com</code> → Crear proyecto "MR Letreros". Habilitar la API: buscar "Google Sheets API" y activarla. Sin este paso, no hay acceso programático.</p>
+          <div><span class="tag tag-api">Google Cloud</span><span class="tag tag-sec">API</span></div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">02</div>
+        <div class="step-content">
+          <h4>Crear Service Account y descargar credenciales</h4>
+          <p>En Google Cloud: IAM → Service Accounts → Crear cuenta. Rol: "Editor". Generar clave JSON. Guardar como <code>credentials/google-service-account.json</code> en el servidor. Agregar al <code>.gitignore</code> — nunca subir al repositorio.</p>
+          <div><span class="tag tag-api">Google Cloud</span><span class="tag tag-sec">Credenciales</span></div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">03</div>
+        <div class="step-content">
+          <h4>Crear el Spreadsheet y compartirlo con la Service Account</h4>
+          <p>Crear un nuevo Google Sheets. Compartir con el email de la Service Account (termina en <code>@...iam.gserviceaccount.com</code>) con rol "Editor". Copiar el ID del spreadsheet desde la URL y pegarlo como variable de entorno <code>GOOGLE_SHEET_ID</code>.</p>
+          <div><span class="tag tag-gs">Google Sheets</span><span class="tag tag-sec">Permisos</span></div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">04</div>
+        <div class="step-content">
+          <h4>Crear las 6 hojas con encabezados</h4>
+          <p>En el spreadsheet crear las pestañas: <code>Cotizaciones_Gremio</code>, <code>Cotizaciones_Clientes</code>, <code>Movimientos_Financieros</code>, <code>Trabajos</code>, <code>Clientes</code>, <code>Resumen_Mensual</code>. Agregar la fila de encabezados en cada una y formatear como texto/moneda.</p>
+          <div><span class="tag tag-gs">Google Sheets</span></div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">05</div>
+        <div class="step-content">
+          <h4>Instalar dependencias en el servidor</h4>
+          <p>Instalar el SDK oficial de Google y el cron runner. Agregar <code>GOOGLE_SHEET_ID</code> al archivo <code>.env</code>.</p>
+          <div class="code-block" style="margin-top: 0.5rem;">npm install googleapis node-cron</div>
+          <div style="margin-top: 0.5rem;"><span class="tag tag-be">Node.js</span><span class="tag tag-api">SDK</span></div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">06</div>
+        <div class="step-content">
+          <h4>Crear utils/sheets-sync.js e integrarlo en server.js</h4>
+          <p>Copiar el módulo de la sección anterior. En <code>server.js</code>, importarlo y llamar los métodos correspondientes después de cada operación de guardado o aprobación. El patrón <code>.catch()</code> garantiza que un fallo en Sheets no rompe la operación interna.</p>
+          <div><span class="tag tag-be">Backend</span><span class="tag tag-auto">Automático</span></div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">07</div>
+        <div class="step-content">
+          <h4>Configurar el cron de resync nocturno</h4>
+          <p>Crear <code>utils/sheets-resync.js</code> con la lógica de borrado y reescritura completa. Iniciar el cron en <code>server.js</code>. Probar manualmente con <code>node utils/sheets-resync.js</code> antes de activar el cron.</p>
+          <div><span class="tag tag-be">Backend</span><span class="tag tag-auto">Cron</span></div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">08</div>
+        <div class="step-content">
+          <h4>Agregar botón "Sync Manual" en el panel de admin</h4>
+          <p>En la futura página <code>usuarios.html</code> (o en el top-bar del sistema), agregar un botón que llame a <code>POST /api/admin/sheets/resync</code>. Permite forzar una sincronización completa sin esperar el cron nocturno.</p>
+          <div><span class="tag tag-fe">Frontend</span><span class="tag tag-be">Backend</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- SECCIÓN 6: RIESGOS -->
+  <section>
+    <div class="section-number">06 · Riesgos y Limitaciones</div>
+    <h2 class="section-title">Qué Tener en Cuenta</h2>
+
+    <div class="risk-grid">
+      <div class="risk-item high">
+        <div class="risk-label">🔴 Crítico</div>
+        <h4>Credenciales en el servidor</h4>
+        <p>El archivo <code>service-account.json</code> da acceso total a la hoja. Nunca subirlo a Git. Usar variables de entorno o un secret manager. Rotar las credenciales si hay una brecha.</p>
+      </div>
+      <div class="risk-item high">
+        <div class="risk-label">🔴 Crítico</div>
+        <h4>Sheets NO es la fuente de verdad</h4>
+        <p>Los datos del sistema viven en los JSON del servidor. Google Sheets es solo lectura/reporte. Nunca editar directamente en Sheets y esperar que se actualice el servidor.</p>
+      </div>
+      <div class="risk-item medium">
+        <div class="risk-label">🟡 Importante</div>
+        <h4>Cuota de la API: 300 req/min</h4>
+        <p>Con muchas cotizaciones simultáneas se puede llegar al límite. El módulo de resync nocturno usa <code>batchUpdate</code> en lugar de múltiples <code>append</code> para minimizar requests.</p>
+      </div>
+      <div class="risk-item medium">
+        <div class="risk-label">🟡 Importante</div>
+        <h4>Datos sensibles en Sheets</h4>
+        <p>Los márgenes de ganancia y costos van a la hoja. Configurar permisos de visualización en Sheets de forma granular — la hoja de Resumen_Mensual puede compartirse con el contador sin que vea la de Cotizaciones completa.</p>
+      </div>
+      <div class="risk-item low">
+        <div class="risk-label">🟢 Menor</div>
+        <h4>Fallo de Google no bloquea el sistema</h4>
+        <p>Por diseño, el sync es asíncrono y usa <code>.catch()</code> silencioso. Si Google Sheets falla, el sistema interno sigue funcionando normalmente. El resync nocturno recuperará los datos faltantes.</p>
+      </div>
+      <div class="risk-item low">
+        <div class="risk-label">🟢 Menor</div>
+        <h4>Límite de 10M celdas por Spreadsheet</h4>
+        <p>Para el volumen de MR Letreros es prácticamente imposible alcanzarlo. Si el historial crece mucho, se puede archivar un Spreadsheet anual y crear uno nuevo por año.</p>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- SECCIÓN 7: CRONOGRAMA -->
+  <section>
+    <div class="section-number">07 · Cronograma</div>
+    <h2 class="section-title">Timeline de Implementación</h2>
+
+    <div class="timeline">
+      <div class="tl-item">
+        <div class="tl-week">Día 1–2</div>
+        <div class="tl-line"></div>
+        <div class="tl-content">
+          <h4>Setup Google Cloud + Spreadsheet</h4>
+          <p>Crear proyecto, Service Account, descargar credenciales, crear el Spreadsheet con las 6 hojas y encabezados. Sin código aún — solo configuración de Google.</p>
+        </div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-week">Día 3–4</div>
+        <div class="tl-line"></div>
+        <div class="tl-content">
+          <h4>sheets-sync.js + integración en endpoints</h4>
+          <p>Crear el módulo de sync, instalar <code>googleapis</code>, integrarlo en los endpoints de aprobar cotización y guardar gastos. Probar con datos reales de desarrollo.</p>
+        </div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-week">Día 5</div>
+        <div class="tl-line"></div>
+        <div class="tl-content">
+          <h4>Cron nocturno + botón de resync manual</h4>
+          <p>Configurar <code>node-cron</code>, crear <code>sheets-resync.js</code>, agregar endpoint <code>POST /api/admin/sheets/resync</code> y botón en el panel admin.</p>
+        </div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-week">Día 6</div>
+        <div class="tl-line"></div>
+        <div class="tl-content">
+          <h4>Fórmulas de Resumen_Mensual + permisos de Sheets</h4>
+          <p>Configurar las fórmulas <code>SUMIFS</code>, <code>COUNTIFS</code> y gráficos en la hoja de resumen. Configurar quién tiene acceso a cada hoja dentro de Google Sheets.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- SECCIÓN 8: ARCHIVOS -->
+  <section>
+    <div class="section-number">08 · Mapa de Cambios</div>
+    <h2 class="section-title">Archivos a Crear / Modificar</h2>
+
+    <div class="files-grid">
+      <div class="arch-card">
+        <h4 style="color: var(--accent)">✨ Archivos Nuevos</h4>
+        <div class="code-block">
+<span class="gs">credentials/</span>
+  google-service-account.json  <span class="cm">← NO subir a git</span>
+
+<span class="gs">utils/</span>
+  sheets-sync.js    <span class="cm">← push por evento</span>
+  sheets-resync.js  <span class="cm">← resync nocturno completo</span>
+
+<span class="gs">.env</span>  <span class="cm">← agregar GOOGLE_SHEET_ID</span>
+<span class="gs">.gitignore</span>  <span class="cm">← agregar credentials/</span>
+        </div>
+      </div>
+
+      <div class="arch-card">
+        <h4 style="color: var(--yellow)">🔧 Archivos a Modificar</h4>
+        <div class="code-block">
+<span class="nm">server.js</span>
+  <span class="cm">← require('./utils/sheets-sync')
+  ← SheetsSync.cotizacionGremio() en /aprobar
+  ← SheetsSync.trabajo() en /api/trabajos POST
+  ← SheetsSync.movimientoFinanciero() en gastos
+  ← iniciar cron de resync
+  ← endpoint POST /api/admin/sheets/resync</span>
+
+<span class="nm">package.json</span>
+  <span class="cm">← agregar googleapis y node-cron</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<footer>
+  <div class="footer-brand">MR Letreros · Sistema Interno</div>
+  <div class="footer-note">Auditoría de Integración Google Sheets · v1.0 — Google Sheets API v4</div>
+</footer>
+
+</body>
+</html>

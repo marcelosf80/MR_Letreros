@@ -1,0 +1,43 @@
+[
+  {
+    "id": "1770216384659",
+    "clientId": "gremio_cli_1770212292946",
+    "cliente": {
+      "nombre": "Mister Jackson",
+      "telefono": "3424 05-0026",
+      "email": "",
+      "direccion": ""
+    },
+    "productos": [
+      {
+        "id": "1770216328243",
+        "tipo": "material",
+        "categoria": "Vinilo",
+        "producto": "Microperforado",
+        "ancho": 102,
+        "alto": 1400,
+        "cantidad": 1,
+        "m2PorUnidad": 14.28,
+        "m2Totales": 14.28,
+        "costoMaterial": 4240,
+        "costoUnitario": 60547.2,
+        "costoTotal": 60547.2,
+        "precioGremio": 13000,
+        "precioUnitario": 185640,
+        "total": 185640
+      }
+    ],
+    "terceros": [],
+    "costoTotal": 60547.2,
+    "subtotal": 185640,
+    "iva": 0,
+    "totalCliente": 185640,
+    "ganancia": 125092.8,
+    "anticipo": 0,
+    "saldo": 185640,
+    "fecha": "2026-02-04T14:46:24.659Z",
+    "estado": "aprobada",
+    "approved": true,
+    "fechaAprobacion": "2026-02-04T14:46:29.702Z"
+  }
+]

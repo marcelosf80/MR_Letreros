@@ -1,0 +1,1397 @@
+<!DOCTYPE html>
+<html lang="es" class="chat-page">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Asistente IA — MR Letreros</title>
+  <script src="js/auth.js"></script>
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/sidebar-universal.css">
+  <link
+    href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Syne:wght@400;600;700;800&display=swap"
+    rel="stylesheet">
+
+
+  <!-- Bootstrap 5 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="css/maxton-theme.css">
+  <link rel="stylesheet" href="css/asistente.css">
+</head>
+
+<body class="bg-light">
+  <div class="main-content">
+
+    <!-- Top Bar -->
+    <div class="mx-topbar">
+      <h1 class="top-bar-title m-0">
+        🤖 Asistente IA
+        <span class="ai-badge" id="aiBadge">Groq · LLaMA 3.3</span>
+      </h1>
+      <div style="display:flex; align-items:center; gap:16px;">
+        <div class="status-indicator">
+          <div class="status-dot" id="statusDot"></div>
+          <span id="statusText">Conectado</span>
+        </div>
+        <button class="clear-btn" onclick="clearChat()">🗑 Limpiar chat</button>
+      </div>
+    </div>
+
+    <!-- Chat Layout -->
+    <div class="chat-wrapper">
+
+      <!-- History Sidebar -->
+      <div class="history-sidebar">
+        <div class="history-header">
+          <button class="new-chat-btn" onclick="createNewChat()"><span>+</span> Nuevo Chat</button>
+        </div>
+        <div class="history-list" id="historyList"></div>
+      </div>
+
+      <!-- Main Chat -->
+      <div class="chat-main">
+        <div class="messages-container" id="messagesContainer">
+          <!-- Welcome state -->
+          <div class="welcome-state" id="welcomeState">
+            <div class="welcome-logo">🤖</div>
+            <div>
+              <div class="welcome-title">Hola, soy tu <span>Asistente General</span><br>de MR Letreros</div>
+              <p class="welcome-subtitle" style="margin-top:10px;">
+                Estoy vigilando la estructura. Puedo agendar pedidos, reclamar a morosos por WhatsApp, cotizar trabajos
+                complejos y recordarte entregas.
+              </p>
+            </div>
+            <div class="quick-actions">
+              <button class="quick-btn" onclick="sendQuick('¿Qué trabajos tengo pendientes para hoy?')">
+                <span class="qb-icon">📋</span>
+                <span class="qb-text">Trabajos pendientes</span>
+                <span class="qb-desc">Ver entregas y estados</span>
+              </button>
+              <button class="quick-btn" onclick="sendQuick('Mostrame los clientes con saldo pendiente')">
+                <span class="qb-icon">💰</span>
+                <span class="qb-text">Clientes morosos</span>
+                <span class="qb-desc">Saldos y deudas</span>
+              </button>
+              <button class="quick-btn" onclick="sendQuick('Quiero hacer una cotización nueva')">
+                <span class="qb-icon">📝</span>
+                <span class="qb-text">Nueva cotización</span>
+                <span class="qb-desc">Calcular precio de trabajo</span>
+              </button>
+              <button class="quick-btn" onclick="sendQuick('Dame un resumen del día')">
+                <span class="qb-icon">📊</span>
+                <span class="qb-text">Resumen del día</span>
+                <span class="qb-desc">Estado general del negocio</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Input -->
+        <div class="input-area">
+          <div class="input-row">
+            <textarea id="chatInput" rows="1"
+              placeholder="Escribí tu instrucción... ej: 'Guardá cliente Juan Pérez, tel 1155556666' o 'Cotizame un cartel de lona 300x100cm'"
+              onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+            <button class="send-btn" id="sendBtn" onclick="sendMessage()">➤</button>
+          </div>
+          <div class="input-hint">Enter para enviar · Shift+Enter para nueva línea</div>
+        </div>
+      </div>
+
+      <!-- Context Panel -->
+      <div class="context-panel">
+        <div class="panel-header">📡 Contexto del sistema</div>
+        <div class="panel-scroll">
+
+          <div class="panel-section">
+            <div class="panel-section-title">Estado actual</div>
+            <div class="context-item">
+              <span class="ci-label">Trabajos activos</span>
+              <span class="ci-value orange" id="ctxTrabajos">—</span>
+            </div>
+            <div class="context-item">
+              <span class="ci-label">Cotizaciones pend.</span>
+              <span class="ci-value orange" id="ctxCotizaciones">—</span>
+            </div>
+            <div class="context-item">
+              <span class="ci-label">Clientes total</span>
+              <span class="ci-value green" id="ctxClientes">—</span>
+            </div>
+            <div class="context-item">
+              <span class="ci-label">Con saldo pend.</span>
+              <span class="ci-value red" id="ctxMorosos">—</span>
+            </div>
+            <div class="context-item">
+              <span class="ci-label">Precios cargados</span>
+              <div style="display:flex; align-items:center; gap:6px;">
+                <span class="ci-value green" id="ctxPrecios">—</span>
+                <button onclick="loadSystemData()"
+                  style="background:none; border:none; color:var(--ai-accent); cursor:pointer; font-size:0.9em; padding:0;"
+                  title="Recargar datos">↻</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel-section">
+            <div class="panel-section-title">Sugerencias</div>
+            <button class="suggestion-chip" onclick="sendQuick('¿Qué trabajos vencen en los próximos 3 días?')">
+              📅 Entregas próximas 3 días
+            </button>
+            <button class="suggestion-chip"
+              onclick="sendQuick('Mostrame las cotizaciones que no tuvieron respuesta en las últimas 48 horas')">
+              ⏰ Cotizaciones sin respuesta
+            </button>
+            <button class="suggestion-chip" onclick="sendQuick('¿Cuánto facturamos este mes?')">
+              📈 Facturación del mes
+            </button>
+            <button class="suggestion-chip" onclick="sendQuick('Actualizar estado de trabajo a completado')">
+              ✅ Marcar trabajo completado
+            </button>
+            <button class="suggestion-chip" onclick="sendQuick('Guardar cliente nuevo')">
+              👤 Agregar cliente
+            </button>
+            <button class="suggestion-chip"
+              onclick="sendQuick('Mostrame todos los productos terminados con sus precios')">
+              🏷 Ver lista de precios
+            </button>
+            <button class="suggestion-chip" onclick="sendQuick('Revisar alertas de entrega y pagos pendientes')">
+              🚨 Revisar alertas del sistema
+            </button>
+          </div>
+
+          <div class="panel-section">
+            <div class="panel-section-title">Capacidades</div>
+            <div style="font-size:0.76rem; color:var(--ai-muted); line-height:1.8;">
+              ✅ Guardar clientes<br>
+              ✅ Crear cotizaciones<br>
+              ✅ Consultar trabajos<br>
+              ✅ Ver morosos<br>
+              ✅ Actualizar estados<br>
+              ✅ Calcular precios<br>
+              ✅ Resumen del negocio<br>
+              ✅ Enviar WhatsApps<br>
+              ✅ Agendar Pedidos
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div><!-- /chat-wrapper -->
+  </div><!-- /main-content -->
+
+  <!-- Scripts del sistema -->
+  <script src="js/shared/sidebar-universal.js"></script>
+
+  <script>
+    // ═══════════════════════════════════════════════════════════════
+    // ASISTENTE IA — MR LETREROS
+    // Chat del operador con servidor como agente ejecutor
+    // ═══════════════════════════════════════════════════════════════
+
+    const API_BASE = '/api';
+    let conversationHistory = [];
+    let isThinking = false;
+
+    // ── HELPERS DE API ───────────────────────────────────────────
+    async function apiGet(endpoint) {
+      const token = localStorage.getItem('mr_token') || '';
+      const res = await fetch(API_BASE + endpoint, {
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+      if (!res.ok) throw new Error(`GET ${endpoint} → ${res.status}`);
+      return res.json();
+    }
+
+    async function apiPost(endpoint, body) {
+      const token = localStorage.getItem('mr_token') || '';
+      const res = await fetch(API_BASE + endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + token
+        },
+        body: JSON.stringify(body)
+      });
+      if (!res.ok) throw new Error(`POST ${endpoint} → ${res.status}`);
+      return res.json();
+    }
+
+    // ── GESTIÓN DE CHATS MÚLTIPLES ───────────────────────────────
+    let chats = [];
+    let currentChatId = null;
+
+    function initChats() {
+      const raw = localStorage.getItem('ai_chats_v2');
+      if (raw) {
+        try { chats = JSON.parse(raw); } catch (e) { chats = []; }
+      } else {
+        // Migrar historial antiguo si existe
+        const old = localStorage.getItem('ai_chat_history');
+        if (old) {
+          try {
+            const oldHistory = JSON.parse(old);
+            if (oldHistory.length > 0) {
+              chats.push({
+                id: Date.now().toString(),
+                title: 'Chat recuperado',
+                messages: oldHistory,
+                timestamp: new Date().toISOString()
+              });
+            }
+          } catch (e) { }
+        }
+      }
+
+      if (chats.length === 0) {
+        createNewChat();
+      } else {
+        // Cargar el último chat activo o el primero
+        const lastId = localStorage.getItem('ai_last_chat_id');
+        const target = chats.find(c => c.id === lastId) ? lastId : chats[0].id;
+        loadChat(target);
+      }
+      renderChatList();
+    }
+
+    function createNewChat() {
+      const id = Date.now().toString();
+      const newChat = {
+        id: id,
+        title: 'Nuevo Chat',
+        messages: [],
+        timestamp: new Date().toISOString()
+      };
+      chats.unshift(newChat);
+      loadChat(id);
+      saveChats();
+    }
+
+    function loadChat(id) {
+      currentChatId = id;
+      const chat = chats.find(c => c.id === id);
+      conversationHistory = chat ? chat.messages : [];
+      localStorage.setItem('ai_last_chat_id', id);
+
+      // Renderizar mensajes
+      const container = document.getElementById('messagesContainer');
+      container.innerHTML = '';
+
+      if (conversationHistory.length === 0) {
+        renderWelcomeState();
+      } else {
+        conversationHistory.forEach(msg => addMessage(msg.role, msg.content));
+      }
+      renderChatList();
+    }
+
+    function saveChats() {
+      const index = chats.findIndex(c => c.id === currentChatId);
+      if (index !== -1) {
+        chats[index].messages = conversationHistory;
+        chats[index].timestamp = new Date().toISOString();
+
+        // Auto-título con el primer mensaje del usuario
+        if (chats[index].title === 'Nuevo Chat' && conversationHistory.length > 0) {
+          const firstUserMsg = conversationHistory.find(m => m.role === 'user');
+          if (firstUserMsg) {
+            let title = firstUserMsg.content.substring(0, 25);
+            if (firstUserMsg.content.length > 25) title += '...';
+            chats[index].title = title;
+          }
+        }
+      }
+      localStorage.setItem('ai_chats_v2', JSON.stringify(chats));
+      renderChatList();
+    }
+
+    function deleteChat(id, e) {
+      if (e) e.stopPropagation();
+      if (!confirm('¿Borrar este chat?')) return;
+
+      chats = chats.filter(c => c.id !== id);
+      if (chats.length === 0) createNewChat();
+      else if (currentChatId === id) loadChat(chats[0].id);
+
+      saveChats();
+    }
+
+    function renderChatList() {
+      const list = document.getElementById('historyList');
+      list.innerHTML = chats.map(c => `
+      <div class="history-item ${c.id === currentChatId ? 'active' : ''}" onclick="loadChat('${c.id}')">
+        <span>${c.title}</span>
+        <button class="delete-chat" onclick="deleteChat('${c.id}', event)">×</button>
+      </div>
+    `).join('');
+    }
+
+    function renderWelcomeState() {
+      const container = document.getElementById('messagesContainer');
+      container.innerHTML = `
+      <div class="welcome-state" id="welcomeState">
+        <div class="welcome-logo">🤖</div>
+        <div>
+          <div class="welcome-title">Hola, soy tu <span>Asistente General</span><br>de MR Letreros</div>
+          <p class="welcome-subtitle" style="margin-top:10px;">
+            Estoy vigilando la estructura. Puedo agendar pedidos, reclamar a morosos por WhatsApp, cotizar trabajos complejos y recordarte entregas.
+          </p>
+        </div>
+        <div class="quick-actions">
+          <button class="quick-btn" onclick="sendQuick('¿Qué trabajos tengo pendientes para hoy?')">
+            <span class="qb-icon">📋</span>
+            <span class="qb-text">Trabajos pendientes</span>
+            <span class="qb-desc">Ver entregas y estados</span>
+          </button>
+          <button class="quick-btn" onclick="sendQuick('Mostrame los clientes con saldo pendiente')">
+            <span class="qb-icon">💰</span>
+            <span class="qb-text">Clientes morosos</span>
+            <span class="qb-desc">Saldos y deudas</span>
+          </button>
+          <button class="quick-btn" onclick="sendQuick('Quiero hacer una cotización nueva')">
+            <span class="qb-icon">📝</span>
+            <span class="qb-text">Nueva cotización</span>
+            <span class="qb-desc">Calcular precio de trabajo</span>
+          </button>
+          <button class="quick-btn" onclick="sendQuick('Dame un resumen del día')">
+            <span class="qb-icon">📊</span>
+            <span class="qb-text">Resumen del día</span>
+            <span class="qb-desc">Estado general del negocio</span>
+          </button>
+        </div>
+      </div>
+    `;
+    }
+
+    // Token de autenticación del sistema existente
+    function getAuthToken() {
+      try {
+        return localStorage.getItem('mr_token') || '';
+      } catch (e) { return ''; }
+    }
+
+    // ── CARGAR DATOS DEL SISTEMA AL INICIAR ──────────────────────
+    let systemData = {
+      trabajos: [],
+      cotizaciones: [],
+      clientes: [],
+      precios_finales: [],
+      precios_base: [],
+      materiales: [],
+      terceros: []
+    };
+
+    async function loadSystemData() {
+      try {
+        const [trabajos, cots, clientes, preciosFinales, materiales, terceros, cotsGremio, clientesGremio, preciosBase] = await Promise.allSettled([
+          apiGet('/trabajos'),
+          apiGet('/clientes/data'),
+          apiGet('/clientes'),
+          apiGet('/precios-finales'),
+          apiGet('/materiales'),
+          apiGet('/terceros'),
+          apiGet('/gremio/data'),
+          apiGet('/gremio/clientes'),
+          apiGet('/precios')
+        ]);
+
+        // Loguear fallos por endpoint para facilitar debugging
+        const resultsMap = { trabajos, cots, clientes, preciosFinales, materiales, terceros, cotsGremio, clientesGremio, preciosBase };
+        Object.entries(resultsMap).forEach(([k, v]) => {
+          if (v && v.status && v.status !== 'fulfilled') {
+            console.warn(`loadSystemData: fallo en ${k} ->`, v.reason || v);
+          }
+        });
+
+        if (trabajos.status === 'fulfilled') {
+          systemData.trabajos = trabajos.value?.works || trabajos.value || [];
+        }
+        if (cots.status === 'fulfilled') {
+          const d = cots.value;
+          systemData.cotizaciones = Array.isArray(d) ? d : (d?.cotizaciones || []);
+        }
+        if (cotsGremio && cotsGremio.status === 'fulfilled') {
+          const dg = cotsGremio.value;
+          const cgs = Array.isArray(dg) ? dg : (dg?.cotizaciones || []);
+          systemData.cotizaciones = (systemData.cotizaciones || []).concat(cgs);
+        }
+        if (clientes.status === 'fulfilled') {
+          const d = clientes.value;
+          systemData.clientes = Array.isArray(d) ? d : (d?.clientes || []);
+        }
+        if (clientesGremio && clientesGremio.status === 'fulfilled') {
+          const dg = clientesGremio.value;
+          const cgs = Array.isArray(dg) ? dg : [];
+          systemData.clientes = (systemData.clientes || []).concat(cgs);
+        }
+        // Normalizar objetos de cliente: asegurar compatibilidad entre 'name' y 'nombre'
+        if (Array.isArray(systemData.clientes)) {
+          systemData.clientes = systemData.clientes.map(c => {
+            const nombre = c.nombre || c.name || '';
+            const telefono = c.telefono || c.phone || c.phoneNumber || '';
+            return { ...c, nombre, name: nombre, telefono };
+          });
+        }
+        if (preciosFinales.status === 'fulfilled') {
+          systemData.precios_finales = Array.isArray(preciosFinales.value) ? preciosFinales.value : [];
+        }
+        if (materiales.status === 'fulfilled') {
+          systemData.materiales = Array.isArray(materiales.value) ? materiales.value : [];
+        }
+        if (terceros.status === 'fulfilled') {
+          systemData.terceros = Array.isArray(terceros.value) ? terceros.value : [];
+        }
+        if (preciosBase && preciosBase.status === 'fulfilled') {
+          systemData.precios_base = Array.isArray(preciosBase.value) ? preciosBase.value : [];
+        }
+
+        updateContextPanel();
+        // Devolver el estado cargado para permitir inspección desde consola
+        return systemData;
+      } catch (e) {
+        console.error('Error cargando datos:', e);
+        // Retornar systemData aunque esté incompleto para facilitar inspecciones desde consola
+        return systemData;
+      }
+    }
+
+    function updateContextPanel() {
+      const pending = systemData.trabajos.filter(t => t.status === 'pending' || t.status === 'in_progress');
+      const cotsPend = systemData.cotizaciones.filter(c => c.estado === 'pendiente' || !c.estado);
+      const morosos = systemData.clientes.filter(c => c.saldo > 0 || c.balance > 0);
+
+      document.getElementById('ctxTrabajos').textContent = pending.length;
+      document.getElementById('ctxCotizaciones').textContent = cotsPend.length;
+      document.getElementById('ctxClientes').textContent = systemData.clientes.length;
+      document.getElementById('ctxMorosos').textContent = morosos.length;
+      document.getElementById('ctxPrecios').textContent = (systemData.precios_base.length + systemData.precios_finales.length);
+    }
+
+    // ── HERRAMIENTAS QUE LA IA PUEDE EJECUTAR ────────────────────
+    const tools = [
+      {
+        type: 'function',
+        function: {
+          name: 'enviar_whatsapp',
+          description: 'Envía un mensaje de WhatsApp real a un cliente o número específico.',
+          parameters: {
+            type: 'object',
+            properties: {
+              telefono: { type: 'string', description: 'Número de teléfono (con código de país si es posible)' },
+              mensaje: { type: 'string', description: 'El contenido del mensaje a enviar' }
+            },
+            required: ['telefono', 'mensaje']
+          }
+        }
+      },
+      {
+        type: 'function',
+        function: {
+          name: 'crear_trabajo_pedido',
+          description: 'Convierte una cotización o solicitud en un Trabajo/Pedido confirmado en el sistema.',
+          parameters: {
+            type: 'object',
+            properties: {
+              cliente_nombre: { type: 'string' },
+              descripcion: { type: 'string' },
+              total: { type: 'number' },
+              a_cuenta: { type: 'number', description: 'Monto entregado como anticipo' },
+              fecha_entrega: { type: 'string', description: 'Fecha formato YYYY-MM-DD' }
+            },
+            required: ['cliente_nombre', 'total']
+          }
+        }
+      },
+      {
+        type: 'function',
+        function: {
+          name: 'consultar_trabajos',
+          description: 'Consulta los trabajos del sistema filtrados por estado. Devuelve nombre del cliente, total, estado de pago, fecha de entrega.',
+          parameters: {
+            type: 'object',
+            properties: {
+              estado: { type: 'string', enum: ['pending', 'in_progress', 'completed', 'todos'], description: 'Estado a filtrar' },
+              dias_entrega: { type: 'number', description: 'Filtrar trabajos con entrega en los próximos N días (opcional)' }
+            },
+            required: ['estado']
+          }
+        }
+      },
+      {
+        type: 'function',
+        function: {
+          name: 'consultar_clientes_morosos',
+          description: 'Devuelve lista de clientes con saldo pendiente de pago',
+          parameters: { type: 'object', properties: {} }
+        }
+      },
+      {
+        type: 'function',
+        function: {
+          name: 'buscar_cliente',
+          description: 'Busca un cliente por nombre o teléfono en la base de datos',
+          parameters: {
+            type: 'object',
+            properties: { query: { type: 'string', description: 'Nombre o teléfono a buscar' } },
+            required: ['query']
+          }
+        }
+      },
+      {
+        type: 'function',
+        function: {
+          name: 'guardar_cliente',
+          description: 'Registra un nuevo cliente en el sistema',
+          parameters: {
+            type: 'object',
+            properties: {
+              nombre: { type: 'string' },
+              telefono: { type: 'string' },
+              email: { type: 'string' },
+              direccion: { type: 'string' }
+            },
+            required: ['nombre']
+          }
+        }
+      },
+      {
+        type: 'function',
+        function: {
+          name: 'cotizar_trabajo',
+          description: 'Calcula el precio de un trabajo. Busca primero en productos terminados con precio fijo, luego arma por componentes si no encuentra.',
+          parameters: {
+            type: 'object',
+            properties: {
+              descripcion: { type: 'string', description: 'Descripción del trabajo ej: cartel lona front, banner rollup, vinilo esmerilado' },
+              ancho_cm: { type: 'number', description: 'Ancho en centímetros' },
+              alto_cm: { type: 'number', description: 'Alto en centímetros' },
+              cantidad: { type: 'number', description: 'Cantidad de unidades, default 1' }
+            },
+            required: ['descripcion']
+          }
+        }
+      },
+      {
+        type: 'function',
+        function: {
+          name: 'guardar_cotizacion',
+          description: 'Guarda una cotización en el sistema como pendiente',
+          parameters: {
+            type: 'object',
+            properties: {
+              nombre_cliente: { type: 'string' },
+              telefono_cliente: { type: 'string' },
+              descripcion_trabajo: { type: 'string' },
+              total: { type: 'number' },
+              con_iva: { type: 'boolean' }
+            },
+            required: ['nombre_cliente', 'descripcion_trabajo', 'total']
+          }
+        }
+      },
+      {
+        type: 'function',
+        function: {
+          name: 'actualizar_trabajo',
+          description: 'Actualiza el estado de un trabajo existente',
+          parameters: {
+            type: 'object',
+            properties: {
+              cliente_nombre: { type: 'string', description: 'Nombre del cliente para identificar el trabajo' },
+              nuevo_estado: { type: 'string', enum: ['pending', 'in_progress', 'completed'], description: 'Nuevo estado' },
+              nota: { type: 'string', description: 'Nota opcional' }
+            },
+            required: ['cliente_nombre', 'nuevo_estado']
+          }
+        }
+      },
+      {
+        type: 'function',
+        function: {
+          name: 'resumen_negocio',
+          description: 'Genera un resumen completo del estado actual del negocio: facturación, trabajos, morosos',
+          parameters: { type: 'object', properties: {} }
+        }
+      },
+      {
+        type: 'function',
+        function: {
+          name: 'listar_precios',
+          description: 'Muestra la lista de precios disponibles (productos terminados y materiales)',
+          parameters: { type: 'object', properties: {} }
+        }
+      },
+      {
+        type: 'function',
+        function: {
+          name: 'guardar_insumo',
+          description: 'Guarda un nuevo insumo/material base en la base de datos de precios gremio',
+          parameters: {
+            type: 'object',
+            properties: {
+              producto: { type: 'string', description: 'Nombre del insumo' },
+              categoria: { type: 'string', description: 'Categoría (ej: Lonas, Vinilos, Estructuras)' },
+              costo: { type: 'number', description: 'Costo base' },
+              precioGremio: { type: 'number', description: 'Precio para gremio' },
+              precioCliente: { type: 'number', description: 'Precio para cliente final' }
+            },
+            required: ['producto', 'categoria', 'costo']
+          }
+        }
+      },
+      {
+        type: 'function',
+        function: {
+          name: 'guardar_producto_terminado',
+          description: 'Guarda un nuevo producto con precio final fijo',
+          parameters: {
+            type: 'object',
+            properties: {
+              nombre: { type: 'string', description: 'Nombre del producto' },
+              precio: { type: 'number', description: 'Precio final fijo' },
+              unidad: { type: 'string', description: 'Unidad (unidad, m2, etc)' },
+              descripcion: { type: 'string', description: 'Descripción opcional' }
+            },
+            required: ['nombre', 'precio']
+          }
+        }
+      }
+    ];
+
+    // ── EJECUTAR HERRAMIENTAS ─────────────────────────────────────
+    async function executeTool(name, args) {
+      switch (name) {
+
+        case 'enviar_whatsapp': {
+          try {
+            const res = await apiPost('/bot/send', {
+              phone: args.telefono,
+              message: args.mensaje
+            });
+            if (res.error) throw new Error(res.error);
+            return { exito: true, mensaje: `Mensaje enviado a ${args.telefono}` };
+          } catch (e) {
+            return { exito: false, error: `No se pudo enviar el WhatsApp: ${e.message}` };
+          }
+        }
+
+        case 'crear_trabajo_pedido': {
+          try {
+            // 1. Crear estructura de trabajo
+            const nuevoTrabajo = {
+              id: `work_${Date.now()}`,
+              clientName: args.cliente_nombre,
+              description: args.descripcion || 'Pedido generado por Asistente IA',
+              total: args.total,
+              paidAmount: args.a_cuenta || 0,
+              balance: args.total - (args.a_cuenta || 0),
+              status: 'pending',
+              paymentStatus: (args.a_cuenta >= args.total) ? 'paid' : (args.a_cuenta > 0 ? 'partial' : 'pending'),
+              deliveryDate: args.fecha_entrega || new Date(Date.now() + 3 * 86400000).toISOString().split('T')[0], // Default 3 días
+              createdAt: new Date().toISOString(),
+              priority: 'normal',
+              notes: [{ text: 'Creado automáticamente por Asistente IA', date: new Date().toISOString() }]
+            };
+
+            // 2. Obtener lista actual y guardar (usando endpoint de trabajos)
+            const currentData = await apiGet('/trabajos');
+            const works = currentData.works || [];
+            works.push(nuevoTrabajo);
+
+            await apiPost('/trabajos', { works: works, notifications: currentData.notifications || [] });
+            await loadSystemData(); // Recargar contexto
+            return { exito: true, id_trabajo: nuevoTrabajo.id, mensaje: 'Pedido agendado correctamente en Trabajos.' };
+          } catch (e) {
+            return { exito: false, error: e.message };
+          }
+        }
+
+        case 'consultar_trabajos': {
+          let trabajos = [...systemData.trabajos];
+          if (args.estado !== 'todos') {
+            trabajos = trabajos.filter(t => t.status === args.estado);
+          }
+          if (args.dias_entrega) {
+            const limite = new Date();
+            limite.setDate(limite.getDate() + args.dias_entrega);
+            trabajos = trabajos.filter(t => t.deliveryDate && new Date(t.deliveryDate) <= limite);
+          }
+          return {
+            total: trabajos.length,
+            trabajos: trabajos.map(t => ({
+              cliente: t.clientName,
+              total: t.total,
+              pagado: t.paidAmount || 0,
+              saldo: t.balance || 0,
+              estado: t.status,
+              estado_pago: t.paymentStatus,
+              entrega: t.deliveryDate || t.actualDeliveryDate || 'no definida',
+              prioridad: t.priority
+            }))
+          };
+        }
+
+        case 'consultar_clientes_morosos': {
+          // Buscar en trabajos con balance > 0
+          const morosos = systemData.trabajos.filter(t => (t.balance || 0) > 0);
+          return {
+            total: morosos.length,
+            clientes: morosos.map(t => ({
+              cliente: t.clientName,
+              telefono: t.clientPhone,
+              saldo_pendiente: t.balance,
+              total_trabajo: t.total,
+              estado: t.status
+            }))
+          };
+        }
+
+        case 'buscar_cliente': {
+          const q = args.query.toLowerCase();
+          const found = systemData.clientes.filter(c =>
+            (c.nombre || c.name || '').toLowerCase().includes(q) ||
+            (c.telefono || c.phone || '').includes(args.query)
+          );
+          return { encontrados: found.length, clientes: found.slice(0, 5) };
+        }
+
+        case 'guardar_cliente': {
+          try {
+            const tipo = (args.tipoCliente || args.tipo || '').toLowerCase() === 'gremio' ? 'gremio' : 'cliente';
+            const prefix = tipo === 'gremio' ? 'gremio_cli_' : 'cliente_cli_';
+            const nuevo = {
+              id: prefix + Date.now(),
+              name: args.nombre,
+              telefono: args.telefono || '',
+              email: args.email || '',
+              direccion: args.direccion || '',
+              fechaRegistro: new Date().toISOString(),
+              origen: 'asistente_ui'
+            };
+            const endpoint = tipo === 'gremio' ? '/gremio/clientes' : '/clientes';
+            const result = await apiPost(endpoint, nuevo);
+            await loadSystemData();
+            return { exito: true, mensaje: `Cliente "${args.nombre}" guardado con ID ${result.data?.id || nuevo.id}` };
+          } catch (e) {
+            return { exito: false, error: e.message };
+          }
+        }
+
+        case 'cotizar_trabajo': {
+          const desc = (args.descripcion || '').toLowerCase();
+          const ancho = args.ancho_cm || 0;
+          const alto = args.alto_cm || 0;
+          const cant = args.cantidad || 1;
+          const m2 = ancho > 0 && alto > 0 ? (ancho / 100) * (alto / 100) * cant : null;
+          const fmt = n => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(n);
+
+          // Buscar primero en productos terminados
+          const terminados = systemData.precios_finales;
+          let match = null;
+
+          const keywords = {
+            'cartel completo': ['cartel completo', 'lona front completo', 'cartel lona front', 'lona + estructura'],
+            'backlight': ['backlight', 'back light', 'caja de luz'],
+            'cambio de lona': ['cambio de lona', 'solo tensado', 'recambio lona'],
+            'banner dos velas': ['banner dos velas', 'banner vela', 'dos velas'],
+            'rollup': ['rollup', 'roll up', 'roll-up'],
+            'fly banner': ['fly banner', 'fly banners']
+          };
+
+          for (const [key, kws] of Object.entries(keywords)) {
+            if (kws.some(kw => desc.includes(kw))) {
+              match = terminados.find(p =>
+                p.nombre.toLowerCase().includes(key) ||
+                kws.some(kw => p.nombre.toLowerCase().includes(kw.split(' ')[0]))
+              );
+              if (match) break;
+            }
+          }
+
+          if (!match) {
+            match = terminados.find(p => {
+              const pn = p.nombre.toLowerCase();
+              return desc.split(' ').some(word => word.length > 3 && pn.includes(word));
+            });
+          }
+
+          if (match) {
+            if (match.unidad === 'm2' && m2) {
+              const total = match.precio * m2;
+              const anticipo = total * 0.6;
+              const totalIVA = total * 1.21;
+              return {
+                fuente: 'precio_fijo',
+                producto: match.nombre,
+                precio_base: fmt(match.precio),
+                m2_calculado: m2.toFixed(2),
+                dimensiones: `${ancho}×${alto} cm × ${cant} unidad(es)`,
+                total_sin_iva: fmt(total),
+                total_con_iva: fmt(totalIVA),
+                anticipo_60: fmt(anticipo),
+                descripcion: match.descripcion || ''
+              };
+            } else if (match.unidad === 'unidad') {
+              const total = match.precio * cant;
+              return {
+                fuente: 'precio_fijo',
+                producto: match.nombre,
+                precio_unitario: fmt(match.precio),
+                cantidad: cant,
+                total_sin_iva: fmt(total),
+                total_con_iva: fmt(total * 1.21),
+                anticipo_60: fmt(total * 0.6),
+                descripcion: match.descripcion || ''
+              };
+            }
+          }
+
+          // Si no tiene precio fijo → armar por componentes
+          if (m2) {
+            const mats = systemData.materiales;
+            const terceros = systemData.terceros;
+            let componentes = [];
+            let totalComponentes = 0;
+
+            // Detectar material base
+            const detectarMaterial = () => {
+              if (desc.includes('esmerilado')) return mats.find(m => m.productoNombre?.toLowerCase().includes('esmerilado'));
+              if (desc.includes('microperf')) return mats.find(m => m.productoNombre?.toLowerCase().includes('microperf'));
+              if (desc.includes('clear')) return mats.find(m => m.productoNombre?.toLowerCase().includes('clear'));
+              if (desc.includes('base gris') || desc.includes('vinilo')) return mats.find(m => m.productoNombre?.toLowerCase().includes('base gris'));
+              if (desc.includes('backlight') || desc.includes('back light')) return mats.find(m => m.productoNombre?.toLowerCase().includes('back light'));
+              if (desc.includes('lona') || desc.includes('front')) return mats.find(m => m.productoNombre?.toLowerCase().includes('front'));
+              return null;
+            };
+
+            const matBase = detectarMaterial();
+            if (matBase && matBase.costoPorM2) {
+              // Lógica simplificada para IA: Costo * 3 (margen estándar)
+              const precioEstimado = (matBase.costoPorM2 * 3) * m2;
+              return {
+                fuente: 'estimacion_ia',
+                producto_base: matBase.productoNombre || 'Material',
+                total_estimado: fmt(precioEstimado),
+                nota: 'Precio calculado en base al costo del material x3. Confirmar en módulo de cotización.'
+              };
+            }
+
+            return {
+              fuente: 'componentes',
+              nota: 'No se encontró un precio fijo para este trabajo. Se necesitan más detalles para cotizar por componentes.',
+              dimensiones: `${ancho}×${alto} cm`,
+              m2: m2.toFixed(2),
+              sugerencia: 'Podés ir al módulo de clientes para hacer una cotización detallada con todos los componentes.'
+            };
+          }
+
+          return {
+            fuente: 'sin_datos',
+            nota: 'Para cotizar necesito el tipo de trabajo y las medidas (ancho y alto en cm).',
+            productos_disponibles: terminados.map(p => `${p.nombre} — ${p.precio > 0 ? new Intl.NumberFormat('es-AR').format(p.precio) : 'consultar'}/${p.unidad}`)
+          };
+        }
+
+        case 'guardar_cotizacion': {
+          try {
+            // Buscar o crear cliente
+            let clienteId = null;
+            const clienteEncontrado = systemData.clientes.find(c =>
+              (c.nombre || '').toLowerCase().includes(args.nombre_cliente.toLowerCase())
+            );
+            if (clienteEncontrado) {
+              clienteId = clienteEncontrado.id;
+            } else {
+              const nuevoCliente = await apiPost('/clientes', {
+                nombre: args.nombre_cliente,
+                telefono: args.telefono_cliente || ''
+              });
+              clienteId = nuevoCliente.id;
+            }
+
+            const totalFinal = args.con_iva ? args.total * 1.21 : args.total;
+            const cotizacion = {
+              clientId: clienteId,
+              cliente: { nombre: args.nombre_cliente, telefono: args.telefono_cliente || '' },
+              descripcion: args.descripcion_trabajo,
+              subtotal: args.total,
+              iva: args.con_iva ? args.total * 0.21 : 0,
+              totalCliente: totalFinal,
+              anticipo: totalFinal * 0.6,
+              saldo: totalFinal,
+              estado: 'pendiente',
+              fecha: new Date().toISOString(),
+              fuente: 'asistente_ia'
+            };
+
+            // Guardar la cotización en el endpoint correcto según tipo de cliente
+            const tipo = (args.tipoCliente || '').toLowerCase() === 'gremio' ? 'gremio' : 'cliente';
+            const endpoint = tipo === 'gremio' ? '/gremio/data' : '/clientes/data';
+            cotizacion.id = String(Date.now());
+            cotizacion.tipoCliente = tipo;
+            const result = await apiPost(endpoint, cotizacion).catch(() => ({ id: cotizacion.id, saved: true }));
+
+            await loadSystemData();
+            return {
+              exito: true,
+              cotizacion_id: result.id || cotizacion.id,
+              cliente: args.nombre_cliente,
+              total: new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(totalFinal),
+              anticipo: new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(totalFinal * 0.6)
+            };
+          } catch (e) {
+            return { exito: false, error: e.message };
+          }
+        }
+
+        case 'aprobar_cotizacion': {
+          try {
+            // Buscar cotización por id o por nombre de cliente
+            const cotId = args.cotizacion_id || '';
+            const clienteNombre = (args.cliente_nombre || '').toLowerCase();
+            let cot = null;
+            if (cotId) cot = (systemData.cotizaciones || []).find(c => String(c.id) === String(cotId));
+            if (!cot && clienteNombre) cot = (systemData.cotizaciones || []).find(c => (c.cliente?.nombre || '').toLowerCase().includes(clienteNombre) || (c.clientId || '').toLowerCase().includes(clienteNombre));
+            if (!cot) return { exito: false, error: 'No se encontró la cotización solicitada.' };
+
+            // Marcar aprobada
+            cot.approved = true;
+            cot.estado = 'aprobada';
+
+            const tipo = (cot.tipoCliente || '').toLowerCase() === 'gremio' ? 'gremio' : 'cliente';
+            const endpoint = tipo === 'gremio' ? '/gremio/data' : '/clientes/data';
+
+            // Obtener lista actual, reemplazar la cotización y guardar la lista completa
+            const lista = await apiGet(endpoint);
+            const arr = Array.isArray(lista) ? lista : (lista.cotizaciones || []);
+            const nuevoArr = arr.map(item => (String(item.id) === String(cot.id) ? cot : item));
+            await apiPost(endpoint, nuevoArr);
+
+            // Crear trabajo en producción a partir de la cotización
+            const nuevoTrabajo = {
+              id: `work_${Date.now()}`,
+              quoteId: cot.id || null,
+              clientName: cot.cliente?.nombre || cot.clientName || 'Cliente',
+              clientPhone: cot.cliente?.telefono || cot.clientPhone || '',
+              clientEmail: cot.cliente?.email || '',
+              clientAddress: cot.cliente?.direccion || '',
+              total: cot.totalCliente || cot.total || 0,
+              totalCost: cot.totalCost || 0,
+              profit: (cot.totalCliente || 0) - (cot.totalCost || 0),
+              paidAmount: cot.anticipo || 0,
+              balance: (cot.totalCliente || 0) - (cot.anticipo || 0),
+              status: 'pending',
+              paymentStatus: (cot.anticipo && cot.anticipo >= (cot.totalCliente || 0)) ? 'paid' : (cot.anticipo && cot.anticipo > 0) ? 'partial' : 'unpaid',
+              priority: 'normal',
+              tipoCliente: tipo,
+              createdAt: new Date().toISOString(),
+              deliveryDate: cot.deliveryDate || null,
+              timeline: [{ type: 'approved', description: 'Cotización aprobada y trabajo creado', timestamp: new Date().toISOString() }],
+              notes: [],
+              deliveryStatus: 'pending',
+              descripcion: cot.descripcion || ''
+            };
+
+            const currentData = await apiGet('/trabajos');
+            const works = currentData.works || [];
+            works.push(nuevoTrabajo);
+            await apiPost('/trabajos', { works: works, notifications: currentData.notifications || [] });
+
+            await loadSystemData();
+            return { exito: true, trabajo_id: nuevoTrabajo.id, mensaje: 'Cotización aprobada y trabajo creado.' };
+          } catch (e) {
+            return { exito: false, error: e.message };
+          }
+        }
+
+        case 'actualizar_trabajo': {
+          const trabajo = systemData.trabajos.find(t =>
+            (t.clientName || '').toLowerCase().includes(args.cliente_nombre.toLowerCase())
+          );
+          if (!trabajo) {
+            return { exito: false, error: `No se encontró trabajo para cliente "${args.cliente_nombre}"` };
+          }
+          try {
+            await apiPut(`/trabajos/${trabajo.id}`, {
+              status: args.nuevo_estado,
+              nota: args.nota || `Estado actualizado por Asistente IA`
+            });
+            await loadSystemData();
+            return { exito: true, trabajo_id: trabajo.id, cliente: trabajo.clientName, nuevo_estado: args.nuevo_estado };
+          } catch (e) {
+            return { exito: false, error: e.message };
+          }
+        }
+
+        case 'resumen_negocio': {
+          const fmt = n => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(n);
+          const hoy = new Date();
+          const mesActual = hoy.getMonth();
+
+          const trabajosActivos = systemData.trabajos.filter(t => t.status !== 'completed');
+          const trabajosMes = systemData.trabajos.filter(t => {
+            const d = new Date(t.createdAt);
+            return d.getMonth() === mesActual;
+          });
+          const facturacionMes = trabajosMes.reduce((s, t) => s + (t.paidAmount || 0), 0);
+          const morosos = systemData.trabajos.filter(t => (t.balance || 0) > 0);
+          const saldoPendiente = morosos.reduce((s, t) => s + (t.balance || 0), 0);
+          const entregas3dias = systemData.trabajos.filter(t => {
+            if (!t.deliveryDate) return false;
+            const diff = (new Date(t.deliveryDate) - hoy) / 86400000;
+            return diff >= 0 && diff <= 3;
+          });
+
+          return {
+            fecha: hoy.toLocaleDateString('es-AR'),
+            trabajos_activos: trabajosActivos.length,
+            facturacion_mes: fmt(facturacionMes),
+            clientes_morosos: morosos.length,
+            saldo_pendiente_total: fmt(saldoPendiente),
+            entregas_proximas_3_dias: entregas3dias.length,
+            total_clientes: systemData.clientes.length
+          };
+        }
+
+        case 'listar_precios': {
+          const fmt = n => '$' + new Intl.NumberFormat('es-AR', { maximumFractionDigits: 0 }).format(n || 0);
+
+          // Agrupar insumos por categoría para mejor lectura
+          const insumosPorCat = {};
+          (systemData.precios_base || []).forEach(p => {
+            const cat = p.categoria || 'General';
+            if (!insumosPorCat[cat]) insumosPorCat[cat] = [];
+            insumosPorCat[cat].push({
+              producto: p.producto || p.nombre,
+              precioGremio: fmt(p.precioGremio),
+              precioCliente: fmt(p.precioCliente || p.precio || 0),
+              costo: fmt(p.costo || 0),
+              unidad: p.unidad || 'm2',
+              descripcion: p.descripcion || ''
+            });
+          });
+
+          return {
+            productos_terminados: (systemData.precios_finales || []).map(p => ({
+              nombre: p.nombre,
+              precio_gremio: fmt(p.precioGremio || p.precio),
+              precio_cliente: fmt(p.precioCliente || p.precio),
+              unidad: p.unidad,
+              descripcion: p.descripcion || ''
+            })),
+            insumos_por_categoria: insumosPorCat,
+            total_productos: (systemData.precios_finales || []).length,
+            total_insumos: (systemData.precios_base || []).length,
+            nota: 'Precios SIN IVA. Si piden factura: +21%. precioGremio = precio mayorista, precioCliente = precio público.'
+          };
+        }
+
+        case 'guardar_insumo': {
+          try {
+            const nuevoInsumo = {
+              id: Date.now().toString(),
+              productoId: Date.now().toString(),
+              producto: args.producto,
+              categoria: args.categoria || 'General',
+              costo: args.costo || 0,
+              area: args.area || 1,
+              unidad: args.unidad || 'm2',
+              precioGremio: args.precioGremio || (args.costo * 2.5),
+              precioCliente: args.precioCliente || (args.costo * 4),
+              createdAt: new Date().toISOString()
+            };
+            
+            // Rentabilidad
+            if (nuevoInsumo.costo > 0) {
+              nuevoInsumo.rentabilidadGremio = (((nuevoInsumo.precioGremio - nuevoInsumo.costo) / nuevoInsumo.costo) * 100).toFixed(2);
+              nuevoInsumo.rentabilidadCliente = (((nuevoInsumo.precioCliente - nuevoInsumo.costo) / nuevoInsumo.costo) * 100).toFixed(2);
+            }
+
+            const currentData = await apiGet('/precios');
+            const lista = Array.isArray(currentData) ? currentData : [];
+            lista.push(nuevoInsumo);
+
+            await apiPost('/precios', lista);
+            await loadSystemData();
+            return { exito: true, mensaje: `Insumo "${args.producto}" guardado exitosamente.` };
+          } catch (e) {
+            return { exito: false, error: `Error al guardar el insumo: ${e.message}` };
+          }
+        }
+
+        case 'guardar_producto_terminado': {
+          try {
+            const nuevoProd = {
+              nombre: args.nombre,
+              precio: args.precio,
+              unidad: args.unidad || 'unidad',
+              descripcion: args.descripcion || ''
+            };
+            const currentData = await apiGet('/api/precios-finales');
+            const lista = Array.isArray(currentData) ? currentData : [];
+            lista.push(nuevoProd);
+            await apiPost('/api/precios/cliente', lista);
+            await loadSystemData();
+            return { exito: true, mensaje: `Producto "${args.nombre}" guardado.` };
+          } catch (e) {
+            return { exito: false, error: e.message };
+          }
+        }
+
+        default:
+          return { error: `Herramienta "${name}" no reconocida` };
+      }
+    }
+
+    // ── LLAMADA AL SERVIDOR LOCAL (Groq via server.js) ──────────
+    async function processAIResponse(userMessage) {
+      // Armar mensajes para enviar al servidor
+      const messages = [
+        ...conversationHistory,
+        { role: 'user', content: userMessage }
+      ];
+
+      const token = getAuthToken();
+      const response = await fetch(`${API_BASE}/ai/chat`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          messages
+        })
+      });
+
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.error || `Error del servidor (${response.status})`);
+      }
+
+      const data = await response.json();
+      const finalText = data.content || 'No pude generar una respuesta.';
+      const provider = data.provider_used || 'groq';
+
+      // Actualizar historial
+      conversationHistory.push({ role: 'user', content: userMessage });
+      conversationHistory.push({ role: 'assistant', content: finalText });
+
+      // Mantener historial manejable (últimos 40 mensajes)
+      if (conversationHistory.length > 40) {
+        conversationHistory = conversationHistory.slice(-40);
+      }
+
+      return { text: finalText, provider };
+    }
+
+    // ── CARGAR DATOS DEL PANEL LATERAL (solo lectura, para estadísticas) ──────────–
+    async function loadContextPanel() {
+      try {
+        const [trabRes, cliRes] = await Promise.all([
+          fetch(`${API_BASE}/trabajos`, { headers: { 'Authorization': 'Bearer ' + getAuthToken() } }),
+          fetch(`${API_BASE}/clientes`, { headers: { 'Authorization': 'Bearer ' + getAuthToken() } })
+        ]);
+        const { works = [] } = await trabRes.json();
+        const clientes = await cliRes.json();
+        document.getElementById('ctxTrabajos').textContent = works.filter(w => w.status !== 'completed').length;
+        document.getElementById('ctxClientes').textContent = clientes.length;
+        document.getElementById('ctxMorosos').textContent = works.filter(w => (w.balance || 0) > 0).length;
+      } catch (e) { console.warn('Panel lateral:', e.message); }
+    }
+
+    function addMessage(role, content) {
+      const container = document.getElementById('messagesContainer');
+
+      // Ocultar welcome state si existe
+      const welcome = document.getElementById('welcomeState');
+      if (welcome) welcome.style.display = 'none';
+
+      const div = document.createElement('div');
+      div.className = `message ${role}`;
+
+      const avatar = role === 'user' ? '👤' : '🤖';
+      const formattedContent = formatMessage(content);
+
+      div.innerHTML = `
+      <div class="msg-avatar">${avatar}</div>
+      <div class="msg-bubble">${formattedContent}</div>
+    `;
+
+      container.appendChild(div);
+      scrollToBottom();
+      return div;
+    }
+
+    function formatMessage(text) {
+      // Escapar HTML básico
+      let escaped = text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+
+      // Tablas markdown → HTML
+      escaped = escaped.replace(/(\|.+\|\n?)+/g, (match) => {
+        const rows = match.trim().split('\n').filter(r => r.includes('|'));
+        const isHeader = rows[1]?.match(/^[\s\|:-]+$/);
+        let html = '<table>';
+        rows.forEach((row, i) => {
+          if (isHeader && i === 1) return;
+          const cells = row.split('|').filter(c => c.trim() !== '');
+          const tag = (i === 0 && isHeader) ? 'th' : 'td';
+          html += '<tr>' + cells.map(c => `<${tag}>${c.trim()}</${tag}>`).join('') + '</tr>';
+        });
+        return html + '</table>';
+      });
+
+      // Negrita **texto**
+      escaped = escaped.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+
+      // Code inline `texto`
+      escaped = escaped.replace(/`(.+?)`/g, '<code style="font-family:JetBrains Mono,monospace;background:rgba(0,0,0,0.3);padding:2px 6px;border-radius:4px;font-size:0.85em;">$1</code>');
+
+      // Saltos de línea
+      escaped = escaped.replace(/\n/g, '<br>');
+
+      // Tags de estado
+      escaped = escaped.replace(/✅(.+?)(?=<br>|$)/g, '<span class="msg-tag tag-success">✅$1</span>');
+      escaped = escaped.replace(/⚠️(.+?)(?=<br>|$)/g, '<span class="msg-tag tag-warn">⚠️$1</span>');
+      escaped = escaped.replace(/❌(.+?)(?=<br>|$)/g, '<span class="msg-tag tag-error">❌$1</span>');
+
+      return escaped;
+    }
+
+    function showThinking() {
+      const container = document.getElementById('messagesContainer');
+      const welcome = document.getElementById('welcomeState');
+      if (welcome) welcome.style.display = 'none';
+
+      const div = document.createElement('div');
+      div.className = 'message bot';
+      div.id = 'thinkingMsg';
+      div.innerHTML = `
+      <div class="msg-avatar">🤖</div>
+      <div class="thinking-dots">
+        <span></span><span></span><span></span>
+      </div>
+    `;
+      container.appendChild(div);
+      scrollToBottom();
+      return div;
+    }
+
+    function removeThinking() {
+      const t = document.getElementById('thinkingMsg');
+      if (t) t.remove();
+    }
+
+    function scrollToBottom() {
+      const container = document.getElementById('messagesContainer');
+      // Doble timeout: primero espera el render, después scroll
+      requestAnimationFrame(() => {
+        container.scrollTop = container.scrollHeight;
+        // Segundo intento por si el contenido tardó en renderizar (markdown, código)
+        setTimeout(() => {
+          container.scrollTop = container.scrollHeight;
+        }, 80);
+      });
+    }
+
+    function setStatus(ok, provider) {
+      const dot = document.getElementById('statusDot');
+      const txt = document.getElementById('statusText');
+      const badge = document.getElementById('aiBadge');
+
+      dot.style.background = ok ? 'var(--status-green)' : 'var(--status-red)';
+      dot.style.boxShadow = `0 0 8px ${ok ? 'var(--status-green)' : 'var(--status-red)'}`;
+      txt.textContent = ok ? 'Conectado' : 'Error de conexión';
+
+      if (ok && provider) {
+        const isLocal = provider === 'ollama';
+        badge.textContent = isLocal ? '🤖 Ollama · Local' : '⚡ Groq · LLaMA 3.3';
+        badge.className = isLocal ? 'ai-badge ai-badge-local' : 'ai-badge ai-badge-online';
+        badge.title = isLocal
+          ? 'Usando Ollama local (sin internet)'
+          : 'Usando Groq online (llama-3.3-70b)';
+      } else if (!ok) {
+        badge.textContent = '❌ Sin conexión';
+        badge.className = 'ai-badge ai-badge-error';
+        badge.title = 'No se pudo conectar a ninguna IA';
+      }
+    }
+
+    // ── SEND ──────────────────────────────────────────────────────
+    async function sendMessage() {
+      const input = document.getElementById('chatInput');
+      const text = input.value.trim();
+      if (!text || isThinking) return;
+
+      input.value = '';
+      input.style.height = 'auto';
+      isThinking = true;
+      document.getElementById('sendBtn').disabled = true;
+
+      addMessage('user', text);
+      const thinkingEl = showThinking();
+
+      try {
+        const { text: response, provider } = await processAIResponse(text);
+        removeThinking();
+        addMessage('bot', response);
+        setStatus(true, provider);
+        saveChats(); // Guardar después de respuesta
+      } catch (err) {
+        removeThinking();
+        console.error('Error IA:', err);
+        addMessage('bot', `❌ **Error:** ${err.message}\n\nVerificá la conexión al servidor.`);
+        setStatus(false);
+      }
+
+      isThinking = false;
+      document.getElementById('sendBtn').disabled = false;
+      input.focus();
+    }
+
+    function sendQuick(text) {
+      document.getElementById('chatInput').value = text;
+      sendMessage();
+    }
+
+    function handleKey(e) {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    }
+
+    function autoResize(el) {
+      el.style.height = 'auto';
+      el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+    }
+
+    function clearChat() {
+      if (!confirm('¿Limpiar este chat?')) return;
+      conversationHistory = [];
+      saveChats();
+      renderWelcomeState();
+    }
+
+    // ── INIT ──────────────────────────────────────────────────────
+    document.addEventListener('DOMContentLoaded', async () => {
+      loadContextPanel();
+      initChats(); // Iniciar sistema de chats múltiples
+      document.getElementById('chatInput').focus();
+
+      // Cargar datos de precios y sistema para herramientas del asistente
+      try {
+        await loadSystemData();
+        console.log(`✅ Datos cargados: ${systemData.precios_base.length} insumos, ${systemData.precios_finales.length} productos terminados, ${systemData.clientes.length} clientes`);
+      } catch (e) {
+        console.warn('⚠️ loadSystemData falló:', e.message);
+      }
+    });
+  </script>
+  <!-- Bootstrap 5 JS Bundle -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>

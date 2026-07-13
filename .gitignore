@@ -1,0 +1,47 @@
+# Dependencias
+node_modules/
+.venv/
+lib/
+bin/
+
+# Logs
+*.log
+error.log
+logs/*.log
+
+# Sesiones de WhatsApp
+.wwebjs_auth/
+.wwebjs_auth_gemini/
+.wwebjs_cache/
+
+# Archivos Temporales y Caché
+__pycache__/
+*.pyc
+.DS_Store
+Thumbs.db
+uploads/temp/
+uploads/output/
+
+# Cuarentena de Mantenimiento (Archivos huérfanos)
+_MANTENIMIENTO_OLD/
+public/_MANTENIMIENTO_JS_OLD/
+
+# Configuración local / Secretos
+.env
+config/local_settings.json
+
+# Base de datos local JSON
+datos_mr_letreros/**/*.json
+datos_mr_letreros/*.json
+
+# Bases de datos SQLite
+datos_mr_letreros/*.db
+datos_mr_letreros/*.db-shm
+datos_mr_letreros/*.db-wal
+
+# Modelos y pesos de IA
+models/*.pth
+
+# Directorio de build C++
+mr_letreros_cpp/build/
+

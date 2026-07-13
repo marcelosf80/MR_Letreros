@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cotizador Gremio - MR Letreros</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="js/auth.js"></script>
+    <link rel="stylesheet" href="css/base.css">
+    <link rel="stylesheet" href="css/sidebar-universal.css">
+    <link rel="stylesheet" href="css/maxton-theme.css">
+    <style>
+        body {
+            /* Now handled by maxton-theme.css and base.css */
+        }
+        :root[data-theme="light"] .text-gray-300,
+        :root[data-theme="light"] .text-gray-400 {
+            color: var(--txt-2) !important;
+        }
+        :root[data-theme="light"] .bg-\\[\\#333\\] {
+            background-color: var(--bg-surface) !important;
+            color: var(--txt) !important;
+            border-color: var(--glass-border) !important;
+        }
+        .glass-card {
+            background: var(--bg-surface, rgba(40, 40, 40, 0.8));
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border, rgba(255, 215, 0, 0.2));
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+            border-radius: 12px;
+            color: var(--txt, #f1f1f1);
+        }
+        .input-premium {
+            background: rgba(0, 0, 0, 0.1);
+            border: 1px solid var(--glass-border, #444);
+            color: var(--txt, white);
+            transition: all 0.3s ease;
+        }
+        .input-premium:focus {
+            outline: none;
+            border-color: #ffd700;
+            box-shadow: 0 0 0 2px rgba(255, 215, 0, 0.2);
+            background: var(--bg-surface, rgba(20,20,20,0.8));
+        }
+        .btn-premium {
+            background: linear-gradient(135deg, #ffd700 0%, #ff8c00 100%);
+            color: #111;
+            transition: all 0.3s ease;
+            font-weight: bold;
+        }
+        .btn-premium:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px -10px rgba(255, 215, 0, 0.6);
+        }
+        .file-drop-zone {
+            border: 2px dashed #666;
+            transition: all 0.3s ease;
+        }
+        .file-drop-zone.dragover {
+            border-color: #ffd700;
+            background: rgba(255, 215, 0, 0.05);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased">
+    <div class="main-content">
+        <header class="glass-card sticky top-0 z-50 px-6 py-4 mx-4 mt-4 border-b-4 border-yellow-400">
+            <div class="max-w-4xl mx-auto flex justify-between items-center">
+                <h1 class="text-3xl font-black text-yellow-400 tracking-tighter italic">MR <span class="text-txt text-xl uppercase not-italic font-bold tracking-normal" style="color:var(--txt);">Letreros</span></h1>
+                <span class="text-sm text-yellow-400 font-bold px-3 py-1 bg-yellow-400/10 rounded-full border border-yellow-400/30">GREMIO</span>
+            </div>
+        </header>
+
+    <main class="flex-grow p-4 sm:p-6 flex justify-center pb-20">
+        <div class="w-full max-w-4xl space-y-6">
+            <div class="bg-yellow-400 text-black px-4 py-2 rounded-lg font-bold text-center shadow-lg animate-pulse">
+                🔥 Por + DE 10M2 en cualquier impresión 10% DE DESCUENTO
+            </div>
+
+            <form id="cotizadorForm" class="space-y-6">
+                <!-- Datos del Gremio -->
+                <div class="glass-card p-6">
+                    <h3 class="text-lg font-bold text-yellow-400 mb-4"><i class="fa-solid fa-address-card mr-2"></i>Tus Datos</h3>
+                    <div class="space-y-2">
+                        <label class="text-sm font-medium text-gray-300">Nombre del Gremio / Empresa *</label>
+                        <input type="text" id="nombreGremio" class="w-full input-premium rounded-xl px-4 py-3" placeholder="Ej: Gráfica San Martín" required>
+                    </div>
+                </div>
+
+                <!-- Contenedor de Productos -->
+                <div id="productosContainer" class="space-y-6">
+                    <!-- Los productos se inyectan acá -->
+                </div>
+
+                <!-- Botón Agregar Producto -->
+                <div class="text-center">
+                    <button type="button" onclick="agregarProducto()" class="bg-[#333] hover:bg-[#444] text-white font-bold py-3 px-6 rounded-xl border border-dashed border-gray-500 transition-all">
+                        <i class="fa-solid fa-plus mr-2"></i> Agregar Otro Producto
+                    </button>
+                </div>
+
+                <!-- Resultado y Envío -->
+                <div class="glass-card p-6 mt-8 flex flex-col md:flex-row items-center justify-between gap-6 border-t-4 border-yellow-400">
+                    <div class="text-center md:text-left">
+                        <p class="text-gray-400 text-sm">Total Estimado Final</p>
+                        <div class="text-4xl font-black text-yellow-400" id="precioTotalGlobalDisplay">$0</div>
+                        <p class="text-xs text-gray-400 mt-1" id="resumenCantidades">0 Productos</p>
+                    </div>
+                    
+                    <button type="submit" class="w-full md:w-auto btn-premium py-4 px-8 rounded-xl shadow-lg flex items-center justify-center gap-3 text-lg" id="btnSubmit">
+                        <span>Enviar y Subir a Drive</span>
+                        <i class="fa-solid fa-paper-plane"></i>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </main>
+    </div> <!-- /main-content -->
+
+    <script src="js/shared/sidebar-universal.js"></script>
+    <script>
+        // Reemplazar URL por el script de Google Apps
+        // EL USUARIO DEBE PONER EL LINK QUE LE DEVOLVAMOS ACÁ:
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxOUJLvINt8w82W6yl-r3mJocZNlcKr82JE7Z_uEV6ZnrHGziHGfYId0I5GkMReR6Nu/exec"; 
+
+        let catalogo = {
+            "impresion": [],
+            "varios": [],
+            "polifan": []
+        };
+
+        // --- NUEVO: CARGAR CATÁLOGO DINÁMICO ---
+        async function cargarCatalogoDinamico() {
+            try {
+                const response = await fetch('/api/precios');
+                if (!response.ok) throw new Error("No se pudo cargar el catálogo");
+                const data = await response.json();
+                
+                // Limpiar categorías
+                const nuevoCatalogo = {
+                    "impresion": [],
+                    "varios": [],
+                    "polifan": []
+                };
+
+                data.forEach(item => {
+                    const mappedItem = {
+                        id: item.id || item.productoId,
+                        nombre: item.producto,
+                        precio: item.precioGremio,
+                        unidad: item.unidad || "m2"
+                    };
+
+                    const cat = (item.categoria || "").toLowerCase();
+                    if (cat.includes('vinilo') || cat.includes('lona')) {
+                        nuevoCatalogo.impresion.push(mappedItem);
+                    } else if (cat.includes('polifan')) {
+                        nuevoCatalogo.polifan.push(mappedItem);
+                    } else {
+                        nuevoCatalogo.varios.push(mappedItem);
+                    }
+                });
+
+                catalogo = nuevoCatalogo;
+                console.log("✅ Catálogo sincronizado:", catalogo);
+                actualizarEstadoConexion(true);
+            } catch (err) {
+                console.error("❌ Error cargando catálogo:", err);
+                actualizarEstadoConexion(false);
+                // Fallback a catálogo básico si falla la red
+            }
+        }
+
+        function actualizarEstadoConexion(ok) {
+            const header = document.querySelector('header .max-w-4xl');
+            let status = document.getElementById('status-conexion');
+            if (!status) {
+                status = document.createElement('div');
+                status.id = 'status-conexion';
+                status.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full border';
+                header.appendChild(status);
+            }
+            
+            if (ok) {
+                status.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full border border-green-500/50 text-green-500 bg-green-500/10';
+                status.innerHTML = '<i class="fa-solid fa-link mr-1"></i> SISTEMA LOCAL: CONECTADO';
+            } else {
+                status.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full border border-red-500/50 text-red-500 bg-red-500/10';
+                status.innerHTML = '<i class="fa-solid fa-link-slash mr-1"></i> SISTEMA LOCAL: OFFLINE';
+            }
+        }
+
+        // Llamar al inicio
+        window.addEventListener('DOMContentLoaded', () => {
+            cargarCatalogoDinamico().then(() => {
+                if (itemsCount === 0) agregarProducto();
+            });
+        });
+
+        let itemsCount = 0;
+        let filesByItem = {}; // { 'item_1': [file1, file2] }
+
+        function agregarProducto() {
+            itemsCount++;
+            const id = itemsCount;
+            filesByItem[`item_${id}`] = [];
+
+            const html = `
+                <div class="glass-card p-6 relative group" id="card_item_${id}">
+                    ${id > 1 ? `<button type="button" onclick="eliminarProducto(${id})" class="absolute top-4 right-4 text-red-500 hover:text-red-400"><i class="fa-solid fa-trash text-xl"></i></button>` : ''}
+                    
+                    <h3 class="text-lg font-bold text-yellow-400 mb-4"><i class="fa-solid fa-box mr-2"></i>Producto #${id}</h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="text-sm font-medium text-gray-300">Categoría</label>
+                            <select id="cat_${id}" class="w-full input-premium rounded-xl px-4 py-3" required onchange="actualizarProductos(${id})">
+                                <option value="" disabled selected>Seleccionar...</option>
+                                <option value="impresion">Impresión</option>
+                                <option value="varios">Varios</option>
+                                <option value="polifan">Polifan</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-sm font-medium text-gray-300">Producto</label>
+                            <select id="prod_${id}" class="w-full input-premium rounded-xl px-4 py-3" disabled required onchange="seleccionarProducto(${id})">
+                                <option value="" disabled selected>Primero seleccioná categoría</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div id="msg_${id}" class="text-sm text-gray-400 hidden mb-4"></div>
+
+                    <div id="medidas_${id}" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4 hidden">
+                        <div>
+                            <label class="text-sm font-medium text-gray-300">Ancho (cm) *</label>
+                            <input type="number" id="ancho_${id}" min="1" step="0.1" class="w-full input-premium rounded-xl px-4 py-3" oninput="calcularTodo()">
+                        </div>
+                        <div>
+                            <label class="text-sm font-medium text-gray-300">Alto (cm) *</label>
+                            <input type="number" id="alto_${id}" min="1" step="0.1" class="w-full input-premium rounded-xl px-4 py-3" oninput="calcularTodo()">
+                        </div>
+                        <div class="col-span-2 md:col-span-2">
+                            <label class="text-sm font-medium text-gray-300">Cantidad *</label>
+                            <input type="number" id="cant_${id}" min="1" value="1" class="w-full input-premium rounded-xl px-4 py-3" oninput="calcularTodo()">
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="text-sm font-medium text-gray-300">Detalles Adicionales</label>
+                        <textarea id="detalles_${id}" rows="2" class="w-full input-premium rounded-xl px-4 py-3" placeholder="Ej: Lleva ojales, diseño listo..."></textarea>
+                    </div>
+
+                    <div>
+                        <label class="text-sm font-medium text-gray-300 mb-2 block">Archivos de Diseño para este Producto</label>
+                        <div class="file-drop-zone rounded-xl p-6 text-center cursor-pointer relative" id="drop_${id}">
+                            <input type="file" id="file_${id}" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" multiple onchange="handleFiles(this, ${id})">
+                            <i class="fa-solid fa-cloud-arrow-up text-3xl text-gray-500 mb-2"></i>
+                            <p class="text-white font-medium text-sm">Hacé clic o arrastrá acá</p>
+                            <div id="list_${id}" class="w-full mt-4 text-left space-y-2 hidden relative z-20"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4 text-right">
+                        <p class="text-gray-400 text-xs">Subtotal P#${id}</p>
+                        <div class="text-2xl font-bold text-yellow-400" id="subtotal_${id}">$0</div>
+                        <p class="text-xs text-green-400 mt-1 hidden" id="desc_${id}">10% dto. aplicado</p>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('productosContainer').insertAdjacentHTML('beforeend', html);
+            setupDropZone(id);
+        }
+
+        function eliminarProducto(id) {
+            document.getElementById(`card_item_${id}`).remove();
+            delete filesByItem[`item_${id}`];
+            calcularTodo();
+        }
+
+        function actualizarProductos(id) {
+            const cat = document.getElementById(`cat_${id}`).value;
+            const prodSelect = document.getElementById(`prod_${id}`);
+            prodSelect.innerHTML = '<option value="" disabled selected>Seleccionar producto...</option>';
+            catalogo[cat].forEach(p => {
+                prodSelect.innerHTML += `<option value="${p.id}">${p.nombre}</option>`;
+            });
+            prodSelect.disabled = false;
+            document.getElementById(`medidas_${id}`).classList.add('hidden');
+            document.getElementById(`subtotal_${id}`).textContent = "$0";
+            calcularTodo();
+        }
+
+        function seleccionarProducto(id) {
+            const cat = document.getElementById(`cat_${id}`).value;
+            const val = document.getElementById(`prod_${id}`).value;
+            const prod = catalogo[cat].find(p => p.id === val);
+            
+            const msgBox = document.getElementById(`msg_${id}`);
+            msgBox.classList.remove('hidden');
+
+            if (prod.precio === "consultar" || prod.precio === "consultar_archivo") {
+                document.getElementById(`medidas_${id}`).classList.add('hidden');
+                msgBox.innerHTML = '<span class="text-yellow-400"><i class="fa-solid fa-circle-info"></i> A cotizar según archivo.</span>';
+                document.getElementById(`subtotal_${id}`).textContent = "A cotizar";
+            } else {
+                document.getElementById(`medidas_${id}`).classList.remove('hidden');
+                msgBox.innerHTML = `Precio Gremio: <strong>$${prod.precio} / ${prod.unidad}</strong>`;
+            }
+            calcularTodo();
+        }
+
+        function calcularTodo() {
+            let totalGlobal = 0;
+            let totalItemsStr = 0;
+
+            const cards = document.querySelectorAll('[id^="card_item_"]');
+            
+            cards.forEach(card => {
+                totalItemsStr++;
+                const idStr = card.id.replace('card_item_', '');
+                const id = parseInt(idStr);
+                
+                const cat = document.getElementById(`cat_${id}`).value;
+                const prodVal = document.getElementById(`prod_${id}`).value;
+                if (!cat || !prodVal) return;
+                
+                const prod = catalogo[cat].find(p => p.id === prodVal);
+                if (!prod || typeof prod.precio !== 'number') return;
+                
+                const ancho = parseFloat(document.getElementById(`ancho_${id}`).value) || 0;
+                const alto = parseFloat(document.getElementById(`alto_${id}`).value) || 0;
+                const cant = parseInt(document.getElementById(`cant_${id}`).value) || 1;
+                
+                if (ancho > 0 && alto > 0) {
+                    let m2 = (ancho / 100) * (alto / 100);
+                    let totalMetros = m2 * cant;
+                    let subtotal = 0;
+                    
+                    if (prod.unidad === "ml") {
+                        subtotal = (alto / 100) * prod.precio * cant;
+                    } else {
+                        subtotal = totalMetros * prod.precio;
+                    }
+
+                    if (cat === 'impresion' && totalMetros > 10) {
+                        subtotal = subtotal * 0.90;
+                        document.getElementById(`desc_${id}`).classList.remove('hidden');
+                    } else {
+                        document.getElementById(`desc_${id}`).classList.add('hidden');
+                    }
+
+                    document.getElementById(`subtotal_${id}`).textContent = `$${Math.round(subtotal).toLocaleString()}`;
+                    totalGlobal += subtotal;
+                }
+            });
+
+            document.getElementById('precioTotalGlobalDisplay').textContent = `$${Math.round(totalGlobal).toLocaleString()}`;
+            document.getElementById('resumenCantidades').textContent = `${totalItemsStr} Producto(s)`;
+        }
+
+        // --- Drag and Drop Logic ---
+        function setupDropZone(id) {
+            const dropZone = document.getElementById(`drop_${id}`);
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(evt => {
+                dropZone.addEventListener(evt, e => { e.preventDefault(); e.stopPropagation(); });
+            });
+            ['dragenter', 'dragover'].forEach(evt => {
+                dropZone.addEventListener(evt, () => dropZone.classList.add('dragover'));
+            });
+            ['dragleave', 'drop'].forEach(evt => {
+                dropZone.addEventListener(evt, () => dropZone.classList.remove('dragover'));
+            });
+            dropZone.addEventListener('drop', e => {
+                handleFiles({ files: e.dataTransfer.files }, id);
+            });
+        }
+
+        function handleFiles(inputElement, id) {
+            const files = Array.from(inputElement.files);
+            filesByItem[`item_${id}`] = [...filesByItem[`item_${id}`], ...files];
+            renderFiles(id);
+        }
+
+        function removeFile(itemId, fileIndex) {
+            filesByItem[`item_${itemId}`].splice(fileIndex, 1);
+            renderFiles(itemId);
+        }
+
+        function renderFiles(id) {
+            const list = document.getElementById(`list_${id}`);
+            const arr = filesByItem[`item_${id}`];
+            if (arr.length > 0) {
+                list.classList.remove('hidden');
+                list.innerHTML = arr.map((f, i) => `
+                    <div class="flex justify-between items-center bg-[#222] p-2 rounded border border-gray-700">
+                        <span class="text-xs truncate mr-2 text-gray-300">${f.name}</span>
+                        <button type="button" class="text-red-500 hover:text-red-400 px-2 z-30 relative" onclick="removeFile(${id}, ${i})"><i class="fa-solid fa-trash"></i></button>
+                    </div>
+                `).join('');
+            } else {
+                list.classList.add('hidden');
+            }
+        }
+
+        const getResumableUploadUrl = async (file, folderId = "") => {
+            const payload = {
+                action: 'getUploadUrl',
+                fileName: file.name,
+                mimeType: file.type || 'application/octet-stream',
+                folderId: folderId
+            };
+
+            const res = await fetch(GOOGLE_SCRIPT_URL, {
+                method: 'POST',
+                body: JSON.stringify(payload),
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+            });
+            const result = await res.json();
+            if (result.status === 'success') return result.url;
+            throw new Error(result.message || 'Error obteniendo URL de subida');
+        };
+
+        const uploadFileDirectly = (file, uploadUrl, onProgress) => {
+            return new Promise((resolve, reject) => {
+                const xhr = new XMLHttpRequest();
+                xhr.open('PUT', uploadUrl, true);
+                
+                xhr.upload.onprogress = (e) => {
+                    if (e.lengthComputable && onProgress) {
+                        const percent = Math.round((e.loaded / e.total) * 100);
+                        onProgress(percent);
+                    }
+                };
+
+                xhr.onload = () => {
+                    if (xhr.status === 200 || xhr.status === 201) {
+                        const response = JSON.parse(xhr.responseText);
+                        resolve(`https://drive.google.com/open?id=${response.id}`);
+                    } else {
+                        reject(new Error('Error en la subida directa: ' + xhr.status));
+                    }
+                };
+
+                xhr.onerror = () => reject(new Error('Error de red al subir archivo.'));
+                xhr.send(file);
+            });
+        };
+
+        document.getElementById('cotizadorForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('btnSubmit');
+            const originalBtnHtml = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Preparando subida...';
+
+            // Crear barra de progreso global si no existe
+            let progressContainer = document.getElementById('global-progress');
+            if (!progressContainer) {
+                progressContainer = document.createElement('div');
+                progressContainer.id = 'global-progress';
+                progressContainer.className = 'fixed bottom-0 left-0 w-full bg-black/80 p-4 z-[110] border-t-2 border-yellow-400';
+                progressContainer.innerHTML = `
+                    <div class="max-w-4xl mx-auto">
+                        <div class="flex justify-between mb-2">
+                            <span class="text-xs font-bold text-yellow-400 uppercase tracking-widest" id="progress-text">Subiendo archivos...</span>
+                            <span class="text-xs font-bold text-white" id="progress-percent">0%</span>
+                        </div>
+                        <div class="w-full bg-gray-700 rounded-full h-2">
+                            <div class="bg-yellow-400 h-2 rounded-full transition-all duration-300" id="progress-bar" style="width: 0%"></div>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(progressContainer);
+            }
+            progressContainer.classList.remove('hidden');
+
+            try {
+                const gremio = document.getElementById('nombreGremio').value.trim();
+                let docContent = "";
+                let driveLinks = [];
+
+                const cards = document.querySelectorAll('[id^="card_item_"]');
+                
+                // 1. Recolectar todos los archivos a subir
+                let totalFiles = 0;
+                let filesToUpload = [];
+                for (let card of cards) {
+                    const id = parseInt(card.id.replace('card_item_', ''));
+                    const files = filesByItem[`item_${id}`];
+                    files.forEach(f => {
+                        filesToUpload.push({ file: f, itemId: id });
+                    });
+                }
+                totalFiles = filesToUpload.length;
+
+                if (totalFiles === 0) {
+                    alert('Debes subir al menos un archivo en alguno de los productos.');
+                    btn.disabled = false;
+                    btn.innerHTML = originalBtnHtml;
+                    progressContainer.classList.add('hidden');
+                    return;
+                }
+
+                // 2. Subir archivos uno por uno
+                for (let i = 0; i < filesToUpload.length; i++) {
+                    const item = filesToUpload[i];
+                    document.getElementById('progress-text').textContent = `Subiendo archivo ${i+1} de ${totalFiles}: ${item.file.name}`;
+                    
+                    // Obtener URL de subida para este archivo
+                    const uploadUrl = await getResumableUploadUrl(item.file);
+                    
+                    // Subir archivo
+                    const driveLink = await uploadFileDirectly(item.file, uploadUrl, (p) => {
+                        const globalP = Math.round(((i / totalFiles) * 100) + (p / totalFiles));
+                        document.getElementById('progress-bar').style.width = `${globalP}%`;
+                        document.getElementById('progress-percent').textContent = `${globalP}%`;
+                    });
+
+                    driveLinks.push({ itemId: item.itemId, link: driveLink, name: item.file.name });
+                }
+
+                // 3. Construir el detalle final del pedido con los links
+                for (let i = 0; i < cards.length; i++) {
+                    const card = cards[i];
+                    const id = parseInt(card.id.replace('card_item_', ''));
+                    const cat = document.getElementById(`cat_${id}`).value;
+                    if(!cat) continue;
+                    
+                    const prodName = document.getElementById(`prod_${id}`).options[document.getElementById(`prod_${id}`).selectedIndex].text;
+                    const ancho = document.getElementById(`ancho_${id}`).value;
+                    const alto = document.getElementById(`alto_${id}`).value;
+                    const cant = document.getElementById(`cant_${id}`).value;
+                    const detalles = document.getElementById(`detalles_${id}`).value;
+                    const subtotal = document.getElementById(`subtotal_${id}`).textContent;
+
+                    docContent += `-----------------------------------\n`;
+                    docContent += `PRODUCTO #${i+1}: ${prodName}\n`;
+                    docContent += `MEDIDAS: ${ancho}x${alto} cm | CANTIDAD: ${cant}\n`;
+                    docContent += `SUBTOTAL: ${subtotal}\n`;
+                    docContent += `DETALLES: ${detalles}\n`;
+                    
+                    const myLinks = driveLinks.filter(l => l.itemId === id);
+                    docContent += `ARCHIVOS:\n${myLinks.map(l => ` - ${l.name}: ${l.link}`).join('\n')}\n`;
+                }
+
+                const totalStr = document.getElementById('precioTotalGlobalDisplay').textContent;
+                const payload = {
+                    action: 'submitOrder',
+                    gremio: gremio,
+                    total: totalStr,
+                    detalle: docContent,
+                    whatsapp: (window.mr_user && window.mr_user.telefono) || "" // Opcional
+                };
+
+                const res = await fetch(GOOGLE_SCRIPT_URL, {
+                    method: 'POST',
+                    body: JSON.stringify(payload),
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+                });
+
+                const result = await res.json();
+                progressContainer.classList.add('hidden');
+                
+                if(result.status === 'success') {
+                    // Notificar al sistema local
+                    try {
+                        const totalGlobalVal = parseFloat(totalStr.replace('$', '').replace(/\./g, '').replace(',', '.'));
+                        const workData = {
+                            id: 'work_web_' + Date.now(),
+                            clientName: gremio,
+                            total: totalGlobalVal,
+                            balance: totalGlobalVal,
+                            status: 'pending',
+                            createdAt: new Date().toISOString(),
+                            descripcion: "Pedido recibido desde Portal Web (Archivos Grandes)",
+                            notes: [{ text: docContent, author: "Sistema", date: new Date().toISOString() }]
+                        };
+
+                        await fetch('/api/public/trabajo', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(workData)
+                        });
+                    } catch (localErr) { console.warn("Error local sync"); }
+
+                    mostrarExitoOverlay(gremio);
+                } else {
+                    throw new Error(result.message);
+                }
+
+            } catch (err) {
+                console.error(err);
+                alert("Error: " + err.message);
+                btn.disabled = false;
+                btn.innerHTML = originalBtnHtml;
+                if (progressContainer) progressContainer.classList.add('hidden');
+            }
+        });
+
+        function mostrarExitoOverlay(gremio) {
+            const overlay = document.createElement('div');
+            overlay.className = 'fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-xl animate-in fade-in duration-500';
+            overlay.innerHTML = `
+                <div class="glass-card max-w-md w-full p-8 text-center space-y-6 border-2 border-yellow-400/50 transform animate-in zoom-in-95 duration-500 delay-200">
+                    <div class="w-20 h-20 bg-yellow-400 rounded-full flex items-center justify-center mx-auto shadow-[0_0_30px_rgba(255,215,0,0.4)]">
+                        <i class="fa-solid fa-check text-4xl text-black"></i>
+                    </div>
+                    
+                    <div class="space-y-2">
+                        <h2 class="text-3xl font-black text-white tracking-tight">¡PEDIDO RECIBIDO!</h2>
+                        <p class="text-yellow-400 font-bold text-lg">${gremio}</p>
+                    </div>
+
+                    <p class="text-gray-300 text-sm leading-relaxed">
+                        Tu pedido ha sido procesado correctamente y ya se encuentra en nuestra base de datos. Recibirás una confirmación por WhatsApp en breve.
+                    </p>
+
+                    <div class="pt-4 border-t border-white/10">
+                        <p class="text-xs text-gray-500 uppercase tracking-widest font-bold">Reiniciando portal en</p>
+                        <div class="text-2xl font-mono text-white mt-1" id="countdown">5 seg</div>
+                    </div>
+
+                    <button onclick="window.location.reload()" class="w-full py-3 text-xs font-bold text-gray-400 hover:text-white transition-colors uppercase tracking-widest">
+                        Omitir y recargar ahora
+                    </button>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+
+            let timeLeft = 5;
+            const timer = setInterval(() => {
+                timeLeft--;
+                const counter = document.getElementById('countdown');
+                if (counter) counter.textContent = `${timeLeft} seg`;
+                
+                if (timeLeft <= 0) {
+                    clearInterval(timer);
+                    window.location.reload();
+                }
+            }, 1000);
+        }
+
+        // Iniciar con un producto vacío
+        agregarProducto();
+    </script>
+</body>
+</html>

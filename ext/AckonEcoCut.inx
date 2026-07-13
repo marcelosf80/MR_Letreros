@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--- Un comentario de una sola línea -->
+
+
+<inkscape-extension xmlns="http://www.inkscape.org/namespace/inkscape/extension">
+    <_name>AckonEcoCut</_name>
+    <id>www.ackon.com.ar</id>
+    <dependency type="executable" location="extensions">AckonEcoCut.py</dependency>
+    <dependency type="executable" location="extensions">inkex.py</dependency>
+    <dependency type="executable" location="extensions">simplepath.py</dependency>
+    <dependency type="executable" location="extensions">simpletransform.py</dependency>
+    <dependency type="executable" location="extensions">cspsubdiv.py</dependency>
+    <dependency type="executable" location="extensions">cubicsuperpath.py</dependency>
+
+    <param name='active-tab' type="notebook">
+        
+        <page name="setup" _gui-text="Ingrese Datos del Corte :  ">
+
+            <_param name="desc_dir" type="description" appearance="header">Nombre y Directorio:</_param>
+
+
+            <param name="filename" type="string" _gui-text="Nombre del archivo">Nombre
+
+            </param>
+
+
+            <param name="directoriocla" type="string" _gui-text="Directorio:">directorio</param> 
+
+            <_param name="fullhelp" type="description">Ejemplo: c:/corte 
+
+            </_param>
+
+            <_param name="desc_dir" type="description" appearance="header">Velocidad:</_param>
+
+            <param name="speed" type="int" min="300" max="500" _gui-text="Velocidad del corte (mm/min) :">300
+
+            </param>
+            <_param name="fullhelp" type="description">Velocidad Normal: 300  Rápida: 500 
+
+            </_param>
+
+
+            <_param name="desc_dir" type="description" appearance="header">Temperatura:</_param>
+
+            <param name="temperatura" type="int" min="0" max="1000" _gui-text="Temperatura del Alambre :">1000 
+
+            </param>
+
+            <_param name="fullhelp" type="description">Valor de 1 a 1000
+
+
+            </_param>
+
+
+            <_param name="fullhelp" type="description">No tildar "Vista en Directo" 
+
+            </_param>
+
+            </page>
+
+
+
+<!--- 
+	<page name="advanced" _gui-text="Advanced">
+	    <param name="flatness" type="float" min="0.001" max="1000.0" precision="3" _gui-text="Flatness (Flatten Beziers)">0.1</param>
+	    <param name="square" type="boolean" _gui-text="Cut along margin at the end">False</param>
+	    <param name="margin" type="float" min="0.0" max="10000.0" precision="1" _gui-text="Margin thickness around path in mm">0.0</param>
+	    <param name="draw-toolpath" type="boolean" _gui-text="Draw the path of the tool">True</param>
+	    <param name="auto-close-path" type="boolean" _gui-text="Automatically close open paths by joining start with end">True</param>
+	</page>
+
+
+<param name="speed" type="float" min="300" max="500" precision="0" _gui-text="Velocidad del corte (mm/min) :">300
+
+            </param>
+
+
+-->
+
+
+
+        <page name="usage" _gui-text="    Ayuda    ">
+            <_param name="use1" type="description" xml:space="preserve">Uso:
+
+- Nombre de Archivo: 
+El nombre que le desee poner al archivo de corte, sin extensión; se agrega automaticamente un numero de 3 cifras y la extensión .nc.
+
+- Directorio: 
+La ruta de la carpeta donde se va a grabar el archivo de corte, por ejemplo c:\corte (cree una carpeta en el la raiz del disco c:)  ó C:\Users\nombre_de_usuario\Desktop\corte (cree una carpeta en el escritorio y ponga el nombre de usuario de windows en la ruta).
+
+- Velocidad de Corte: 
+Un número entre 300 y 500 (300 milimetros por minuto es la velocidad normal de corte y 500 milimetros por minuto es la rápida).
+
+- Temperatura del Alambre : 
+Un número entre 1 y 1000 Por ejemplo Polyfan (XPS / Depron) de 20mm de espesor poner en 600, de 50mm poner en 800. Para materiales de baja densidad como el telgopor (EPS) de 20 mm poner en 350, de 50mm poner en 400. Estos son valores aproximados.
+
+NOTA: No usar "Vista en Directo" 
+
+            </_param>
+        </page>
+    </param>
+    <effect>
+        <object-type>all</object-type>
+        <effects-menu>
+            <submenu _name="AckonEcoCut"/>
+        </effects-menu>
+    </effect>
+    <script>
+        <command reldir="extensions" interpreter="python">AckonEcoCut.py</command>
+    </script>
+</inkscape-extension>

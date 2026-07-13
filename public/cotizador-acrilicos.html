@@ -1,0 +1,1245 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cotizador de Acrílicos y Placas - MR Letreros</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="js/auth.js"></script>
+    <link rel="stylesheet" href="css/base.css">
+    <link rel="stylesheet" href="css/sidebar-universal.css">
+    <link rel="stylesheet" href="css/maxton-theme.css">
+    
+    <!-- Fabric.js and DxfParser -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dxf-parser@1.1.2/dist/dxf-parser.min.js"></script>
+    
+    <style>
+        :root {
+            --neon-gold: #ffd700;
+            --neon-gold-glow: rgba(255, 215, 0, 0.35);
+            --bg-glass: rgba(15, 23, 42, 0.75);
+            --border-glass: rgba(255, 215, 0, 0.15);
+        }
+
+        body {
+            background-color: #030712;
+            color: #f3f4f6;
+            font-family: 'Outfit', 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background-image: radial-gradient(circle at 80% 10%, #1e1b4b 0%, #030712 60%);
+            background-attachment: fixed;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Sobreescribir o adaptar para que coincida con el dashboard nativo */
+        .content-container {
+            padding: 24px;
+            max-width: 100%;
+            margin: 0 auto;
+        }
+
+        .glass-card {
+            background: var(--bg-glass);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border-glass);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+            border-radius: 16px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .glass-card:hover {
+            border-color: rgba(255, 215, 0, 0.3);
+            box-shadow: 0 10px 40px -10px var(--neon-gold-glow);
+        }
+
+        .input-premium {
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            transition: all 0.2s ease;
+        }
+
+        .input-premium:focus {
+            outline: none;
+            border-color: var(--neon-gold);
+            box-shadow: 0 0 10px var(--neon-gold-glow);
+            background: rgba(0, 0, 0, 0.7);
+        }
+
+        .btn-premium {
+            background: linear-gradient(135deg, #ffd700 0%, #d4af37 50%, #b8860b 100%);
+            color: #030712;
+            font-weight: 800;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 20px rgba(255, 215, 0, 0.2);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .btn-premium:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 25px var(--neon-gold-glow);
+        }
+
+        .btn-premium:disabled {
+            background: #4b5563;
+            color: #9ca3af;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        .file-drop-zone {
+            border: 2px dashed rgba(255, 215, 0, 0.3);
+            background: rgba(255, 215, 0, 0.02);
+            transition: all 0.2s ease;
+        }
+
+        .file-drop-zone:hover {
+            border-color: var(--neon-gold);
+            background: rgba(255, 215, 0, 0.05);
+        }
+
+        .file-drop-zone.dragover {
+            border-color: var(--neon-gold);
+            background: rgba(255, 215, 0, 0.1);
+            box-shadow: inset 0 0 20px var(--neon-gold-glow);
+        }
+
+        /* Estilos de topbar nativos de MR Letreros */
+        .mx-topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 18px 30px;
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            margin-bottom: 10px;
+        }
+
+        .btn-back-custom {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #a1a1aa;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 0.9rem;
+            transition: color 0.2s ease;
+        }
+
+        .btn-back-custom:hover {
+            color: var(--neon-gold);
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(255, 215, 0, 0.3);
+            border-radius: 3px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: var(--neon-gold);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased">
+    <!-- El Sidebar Universal se inyectará aquí -->
+    <div class="main-content flex-grow flex flex-col min-h-screen">
+        
+        <!-- Cabecera Nativa y Alineada -->
+        <div class="mx-topbar">
+            <div class="flex items-center gap-4">
+                <a href="/" class="btn-back-custom">
+                    <i class="fas fa-chevron-left"></i> Panel
+                </a>
+                <div class="h-6 w-px bg-slate-800"></div>
+                <h1 class="top-bar-title m-0 text-xl font-black text-yellow-400 italic flex items-center gap-2">
+                    <i class="fa-solid fa-gem text-yellow-500"></i> COTIZADOR ACRÍLICOS Y PLACAS
+                </h1>
+            </div>
+            <div class="flex items-center gap-3">
+                <span class="text-xs font-bold px-3 py-1 bg-yellow-400/10 rounded-full border border-yellow-400/30 text-yellow-400">MR LETREROS v3.0</span>
+            </div>
+        </div>
+
+        <!-- Contenedor del Cotizador (Grid Reorganizado) -->
+        <div class="content-container flex-grow">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                
+                <!-- SECTOR 1: Entrada y Carga de Vector (Col de 4) -->
+                <div class="lg:col-span-4 space-y-6">
+                    <div class="glass-card p-5">
+                        <h2 class="text-sm font-black text-yellow-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+                            <i class="fa-solid fa-file-arrow-up"></i> 1. Cargar Vector o Medidas
+                        </h2>
+                        
+                        <div class="space-y-4">
+                            <!-- Drag & Drop -->
+                            <div id="dropZone" class="file-drop-zone rounded-xl p-5 flex flex-col items-center justify-center text-center cursor-pointer relative min-h-[140px]">
+                                <input type="file" id="fileInput" accept=".svg,.dxf" class="hidden">
+                                <div class="bg-yellow-400/10 p-3 rounded-full border border-yellow-400/20 mb-2">
+                                    <i class="fa-solid fa-cloud-arrow-up text-2xl text-yellow-400"></i>
+                                </div>
+                                <span class="font-bold text-xs">Arrastrá SVG o DXF aquí</span>
+                                <span class="text-[10px] text-gray-400 mt-0.5">O clic para explorar</span>
+                                <div id="uploadStatus" class="absolute inset-0 bg-slate-950/95 rounded-xl flex items-center justify-center font-bold text-yellow-400 text-xs gap-2" style="display: none;">
+                                    <i class="fa-solid fa-circle-notch animate-spin"></i> Procesando vectores...
+                                </div>
+                            </div>
+
+                            <!-- Medidas Manuales -->
+                            <div class="space-y-3 pt-2">
+                                <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest block">Dimensiones de la Pieza</span>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label class="text-[11px] text-gray-400 block mb-1">Ancho (cm)</label>
+                                        <div class="relative">
+                                            <input type="number" id="inputWidth" class="input-premium w-full rounded-lg px-3 py-1.5 text-xs font-semibold" placeholder="Ej: 50" step="0.1">
+                                            <span class="absolute right-2.5 top-1.5 text-[10px] text-gray-500 font-bold">cm</span>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label class="text-[11px] text-gray-400 block mb-1">Alto (cm)</label>
+                                        <div class="relative">
+                                            <input type="number" id="inputHeight" class="input-premium w-full rounded-lg px-3 py-1.5 text-xs font-semibold" placeholder="Ej: 30" step="0.1">
+                                            <span class="absolute right-2.5 top-1.5 text-[10px] text-gray-500 font-bold">cm</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label class="text-[11px] text-gray-400 block mb-1">Perímetro de Corte (cm lineales)</label>
+                                    <div class="relative">
+                                        <input type="number" id="inputPerimeter" class="input-premium w-full rounded-lg px-3 py-1.5 text-xs font-semibold" placeholder="Automático o manual">
+                                        <span class="absolute right-2.5 top-1.5 text-[10px] text-gray-500 font-bold">cm</span>
+                                    </div>
+                                    <small class="text-[9px] text-yellow-500/70 mt-1 block leading-tight">
+                                        * Si es vector se calcula solo, podés sobreescribir si necesitás.
+                                    </small>
+                                </div>
+
+                                <!-- Selector unidades DXF -->
+                                <div id="dxfUnitsRow" class="hidden pt-2 border-t border-slate-800/60">
+                                    <label class="text-[10px] text-orange-400 font-black block mb-1">⚠️ Unidades del archivo DXF</label>
+                                    <select id="selectDxfUnit" class="input-premium w-full rounded-lg px-3 py-1.5 text-xs font-semibold cursor-pointer" onchange="recalcDxfUnits()">
+                                        <option value="mm">Milímetros (mm) — más común</option>
+                                        <option value="cm">Centímetros (cm)</option>
+                                        <option value="in">Pulgadas (in)</option>
+                                        <option value="px">Sin unidad / Píxeles</option>
+                                    </select>
+                                    <small class="text-[9px] text-orange-400/60 mt-1 block">Si los valores se ven 10x más grandes o chicos, cambiá la unidad.</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SECTOR 2: Selección de Material y Cantidad -->
+                    <div class="glass-card p-5">
+                        <h2 class="text-sm font-black text-yellow-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+                            <i class="fa-solid fa-layer-group"></i> 2. Material y Cantidad
+                        </h2>
+                        
+                        <div class="space-y-4">
+                            <div>
+                                <label class="text-[11px] text-gray-400 block mb-1">Elegir Placa / Espesor</label>
+                                <select id="selectMaterial" class="input-premium w-full rounded-lg px-3 py-2 text-xs font-semibold cursor-pointer" onchange="onMaterialChange()">
+                                    <option value="">Seleccione un material...</option>
+                                    <!-- Cargado por JS -->
+                                </select>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="text-[11px] text-gray-400 block mb-1">Cantidad Piezas</label>
+                                    <input type="number" id="inputQuantity" class="input-premium w-full rounded-lg px-3 py-1.5 text-xs font-bold text-center" value="1" min="1">
+                                </div>
+                                <div>
+                                    <label class="text-[11px] text-gray-400 block mb-1">Margen (cm)</label>
+                                    <div class="relative">
+                                        <input type="number" id="inputMargin" class="input-premium w-full rounded-lg px-3 py-1.5 text-xs font-bold text-center" value="5" min="0" step="0.5">
+                                        <span class="absolute right-2.5 top-1.5 text-[10px] text-gray-500 font-bold">cm</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECTOR 3: Previsualización de Corte y Distribución (Col de 5) -->
+                <div class="lg:col-span-5 space-y-6">
+                    <div class="glass-card p-5 relative overflow-hidden">
+                        <div class="flex justify-between items-center mb-4">
+                            <h2 class="text-sm font-black text-yellow-400 uppercase tracking-wider flex items-center gap-2">
+                                <i class="fa-solid fa-shapes"></i> 3. Previsualización
+                            </h2>
+                            <div class="flex gap-1.5">
+                                <button type="button" id="btnTabVector" class="px-3 py-1 bg-yellow-400 text-black text-[10px] font-extrabold rounded-md transition-all" onclick="setViewerTab('vector')">Vector</button>
+                                <button type="button" id="btnTabDistribucion" class="px-3 py-1 bg-slate-800 text-gray-300 text-[10px] font-extrabold rounded-md transition-all" onclick="setViewerTab('distribucion')">Distribución</button>
+                            </div>
+                        </div>
+
+                        <!-- Visor de Vector -->
+                        <div id="viewerVector" class="w-full bg-slate-950/70 border border-slate-900 rounded-xl flex items-center justify-center p-3 min-h-[300px]">
+                            <div id="noVectorMsg" class="text-center text-gray-500 p-6">
+                                <i class="fa-solid fa-vector-square text-3xl mb-2 text-gray-700"></i>
+                                <p class="text-xs font-semibold">Sin diseño vectorial.</p>
+                                <p class="text-[10px] text-gray-600 mt-1">Se calculará usando el rectángulo estimado.</p>
+                            </div>
+                            <div id="canvasContainer" class="hidden w-full h-[300px] relative">
+                                <canvas id="vectorCanvas"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- Visor de Distribución -->
+                        <div id="viewerDistribucion" class="hidden w-full bg-slate-950/70 border border-slate-900 rounded-xl flex flex-col items-center justify-center p-3 min-h-[300px]">
+                            <div id="noDistribucionMsg" class="text-center text-gray-500 p-6">
+                                <i class="fa-solid fa-grip text-3xl mb-2 text-gray-700"></i>
+                                <p class="text-xs font-semibold">Configurá material y cantidad para ver la distribución.</p>
+                            </div>
+                            <div id="distribucionContainer" class="hidden flex flex-col items-center w-full">
+                                <div id="distribucionInfo" class="text-[10px] font-bold text-yellow-400 bg-yellow-400/5 px-3 py-1.5 border border-yellow-400/10 rounded-lg mb-2 w-full text-center"></div>
+                                <div class="bg-white p-3 rounded-lg border border-slate-900 shadow-2xl">
+                                    <canvas id="layoutCanvas"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECTOR 4: Costos, Márgenes y Totales (Col de 3) -->
+                <div class="lg:col-span-3 space-y-6">
+                    <!-- Márgenes y MO -->
+                    <div class="glass-card p-5">
+                        <h2 class="text-sm font-black text-yellow-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+                            <i class="fa-solid fa-sliders"></i> 4. Márgenes & Venta
+                        </h2>
+                        
+                        <div class="space-y-4">
+                            <!-- Markup Placa -->
+                            <div class="space-y-1">
+                                <div class="flex justify-between text-[11px] text-gray-400">
+                                    <span>Ganancia Placa</span>
+                                    <span id="labelMarkupPlaca" class="text-yellow-400 font-bold">2.5x</span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <input type="range" id="inputMarkupPlaca" min="1.0" max="5.0" step="0.1" value="2.5" class="w-full accent-yellow-400" oninput="updateCoefLabels(); updateCalculations();">
+                                    <input type="number" id="inputMarkupPlacaManual" min="1.0" step="0.1" value="2.5" class="input-premium w-12 text-center text-[10px] font-bold rounded-md py-1" oninput="syncMarkupRange('placa'); updateCalculations();">
+                                </div>
+                            </div>
+
+                            <!-- Markup Corte -->
+                            <div class="space-y-1">
+                                <div class="flex justify-between text-[11px] text-gray-400">
+                                    <span>Ganancia Corte</span>
+                                    <span id="labelMarkupCorte" class="text-yellow-400 font-bold">2.0x</span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <input type="range" id="inputMarkupCorte" min="1.0" max="5.0" step="0.1" value="2.0" class="w-full accent-yellow-400" oninput="updateCoefLabels(); updateCalculations();">
+                                    <input type="number" id="inputMarkupCorteManual" min="1.0" step="0.1" value="2.0" class="input-premium w-12 text-center text-[10px] font-bold rounded-md py-1" oninput="syncMarkupRange('corte'); updateCalculations();">
+                                </div>
+                            </div>
+
+                            <hr class="border-slate-800/80 my-2">
+
+                            <!-- Mano de Obra -->
+                            <div class="space-y-2">
+                                <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest block">Mano de Obra (Unitario)</span>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <div>
+                                        <span class="text-[9px] text-gray-500 block mb-0.5">Costo ($)</span>
+                                        <input type="number" id="inputMoCost" class="input-premium w-full rounded-md px-2 py-1 text-xs font-semibold text-center" value="0" min="0">
+                                    </div>
+                                    <div>
+                                        <span class="text-[9px] text-gray-500 block mb-0.5">Venta ($)</span>
+                                        <input type="number" id="inputMoPrice" class="input-premium w-full rounded-md px-2 py-1 text-xs font-semibold text-center" value="0" min="0">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Panel Resumen de Precios -->
+                    <div class="glass-card p-5 bg-gradient-to-br from-slate-900 via-slate-950 to-indigo-950 border border-yellow-500/20 relative overflow-hidden">
+                        <div class="absolute -top-10 -right-10 w-24 h-24 bg-yellow-400/5 blur-2xl pointer-events-none"></div>
+                        
+                        <h2 class="text-xs font-black text-yellow-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                            <i class="fa-solid fa-calculator text-yellow-500"></i> Resumen de Cotización
+                        </h2>
+
+                        <!-- Desglose de m2 -->
+                        <div class="space-y-1.5 mb-4 text-[10px] bg-slate-950/60 p-2.5 rounded-lg border border-slate-900">
+                            <div class="flex justify-between">
+                                <span class="text-gray-400">Área Neta:</span>
+                                <strong id="resAreaNet">0.00 m²</strong>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-400">Área Cobro:</span>
+                                <strong id="resAreaGross">0.00 m²</strong>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-400">Cm Lineales:</span>
+                                <strong id="resPerimeter">0 cm</strong>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-400">Planchas:</span>
+                                <strong id="resSheetCount" class="text-yellow-400">0</strong>
+                            </div>
+                        </div>
+
+                        <!-- Costo vs Venta -->
+                        <div class="space-y-3 mb-4">
+                            <div class="bg-red-500/5 border border-red-500/10 p-2.5 rounded-lg text-center">
+                                <span class="text-[9px] text-red-400 uppercase font-black tracking-wider block">Costo Interno</span>
+                                <div id="priceCostTotal" class="text-base font-black text-red-300 mt-0.5">$0</div>
+                                <span id="priceCostBreakdown" class="text-[8px] text-gray-500 block leading-tight mt-0.5">Placa: $0 + Corte: $0</span>
+                            </div>
+
+                            <div class="bg-green-500/5 border border-green-500/10 p-2.5 rounded-lg text-center">
+                                <span class="text-[9px] text-green-400 uppercase font-black tracking-wider block">Venta Sugerida</span>
+                                <div id="priceSaleTotal" class="text-base font-black text-green-300 mt-0.5">$0</div>
+                                <span id="priceSaleBreakdown" class="text-[8px] text-gray-500 block leading-tight mt-0.5">Placa: $0 + Corte: $0</span>
+                            </div>
+                        </div>
+
+                        <!-- Ganancia -->
+                        <div class="bg-gradient-to-r from-emerald-500/10 to-teal-500/10 border border-emerald-500/20 p-3 rounded-lg mb-4 flex justify-between items-center">
+                            <div>
+                                <span class="text-[9px] text-emerald-400 font-extrabold uppercase tracking-wider block">Ganancia Neta</span>
+                                <span id="resProfit" class="text-base font-black text-emerald-400">$0</span>
+                            </div>
+                            <span id="resProfitPercent" class="text-[10px] font-bold text-emerald-400 bg-emerald-500/20 px-2 py-0.5 rounded-full">0%</span>
+                        </div>
+
+                        <button type="button" id="btnAddToBudget" class="btn-premium w-full py-3 px-4 rounded-xl flex items-center justify-center gap-2 text-xs" onclick="sendToBudget()" disabled>
+                            <i class="fa-solid fa-file-invoice-dollar text-sm"></i> Agregar a Presupuesto
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECCIÓN INFERIOR: Tabla de Referencia -->
+        <div class="content-container pt-0">
+            <div class="glass-card p-5">
+                <div class="flex justify-between items-center mb-3 cursor-pointer" onclick="toggleReferenceTable()">
+                    <h2 class="text-sm font-black text-yellow-400 uppercase tracking-wider flex items-center gap-2">
+                        <i class="fa-solid fa-table-list"></i> Tabla de Referencia de Precios (Costo)
+                    </h2>
+                    <span id="tableCollapseIcon" class="text-gray-400"><i class="fas fa-chevron-down"></i></span>
+                </div>
+
+                <div id="referenceTableContainer" class="overflow-x-auto custom-scrollbar" style="display: none;">
+                    <table class="w-full text-left border-collapse text-[11px]">
+                        <thead>
+                            <tr class="border-b border-slate-800 text-gray-400">
+                                <th class="py-2.5 px-3">Artículo / Descripción</th>
+                                <th class="py-2.5 px-3 text-center">Dimensiones Placa</th>
+                                <th class="py-2.5 px-3 text-right">Costo Placa</th>
+                                <th class="py-2.5 px-3 text-right">Costo Corte</th>
+                                <th class="py-2.5 px-3 text-right">Costo Placa + Corte</th>
+                                <th class="py-2.5 px-3 text-right">Costo 1/2 Placa + Corte</th>
+                                <th class="py-2.5 px-3 text-center">Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="materialsTableBody" class="divide-y divide-slate-900 text-slate-300">
+                            <!-- Filas inyectadas por JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts y Lógica -->
+    <script src="js/shared/sidebar-universal.js"></script>
+    <script>
+        // Base de Datos de Referencia (Precios de Costo)
+        const REFERENCIA_MATERIALES = [
+            { id: "abs_bicapa", nombre: "Placa ABS bicapa 0.6x1.2", ancho: 60, largo: 120, espesor: "1.2mm", precioPlaca: 30531.00, corte: 11742.69, placaCorte: 42273.69, mediaPlacaCorte: 21136.85 },
+            { id: "acrilico_2mm", nombre: "Placa de acrilico c/ film 1.22x2.44 - 2mm", ancho: 122, largo: 244, espesor: "2mm", precioPlaca: 120505.00, corte: 46348.08, placaCorte: 166853.08, mediaPlacaCorte: 83426.54 },
+            { id: "acrilico_blanco_2mm", nombre: "Placa de acrilico BLANCO c/ film 1.22x2.44 - 2mm", ancho: 122, largo: 244, espesor: "2mm", precioPlaca: 127714.00, corte: 49120.77, placaCorte: 176834.77, mediaPlacaCorte: 88417.38 },
+            { id: "acrilico_espejo_3mm", nombre: "Placa de acrilico ESPEJO Oro/Plata c/ film 1.22x2.44 - 3mm", ancho: 122, largo: 244, espesor: "3mm", precioPlaca: 202312.00, corte: 77812.31, placaCorte: 280124.31, mediaPlacaCorte: 140062.15 },
+            { id: "acrilico_fluo_2mm", nombre: "Placa de acrilico FLUO c/ film 1.22x2.44 - 2mm", ancho: 122, largo: 244, espesor: "2mm", precioPlaca: 217762.00, corte: 83754.62, placaCorte: 301516.62, mediaPlacaCorte: 150758.31 },
+            { id: "acrilico_cristal_3mm", nombre: "Placa de acrilico cristal c/ film 1.22x2.44 - 3mm", ancho: 122, largo: 244, espesor: "3mm", precioPlaca: 179985.00, corte: 69225.00, placaCorte: 249210.00, mediaPlacaCorte: 124605.00 },
+            { id: "acrilico_blanco_3mm", nombre: "Placa de acrilico BLANCO c/ film 1.22x2.44 - 3mm", ancho: 122, largo: 244, espesor: "3mm", precioPlaca: 187967.00, corte: 72295.00, placaCorte: 260262.00, mediaPlacaCorte: 130131.00 },
+            { id: "acrilico_color_3mm", nombre: "Placa de acrilico COLOR c/ film 1.22x2.44 - 3mm", ancho: 122, largo: 244, espesor: "3mm", precioPlaca: 187967.00, corte: 72295.00, placaCorte: 260262.00, mediaPlacaCorte: 130131.00 },
+            { id: "acrilico_cristal_5mm", nombre: "Placa de acrilico cristal c/ film 1.22x2.44 - 5mm", ancho: 122, largo: 244, espesor: "5mm", precioPlaca: 298687.00, corte: 114879.62, placaCorte: 413566.62, mediaPlacaCorte: 206783.31 },
+            { id: "acrilico_blanco_5mm", nombre: "Placa de acrilico BLANCO c/ film 1.22x2.44 - 5mm", ancho: 122, largo: 244, espesor: "5mm", precioPlaca: 312592.00, corte: 120227.69, placaCorte: 432819.69, mediaPlacaCorte: 216409.85 },
+            { id: "acrilico_cristal_8mm", nombre: "Placa de acrilico cristal c/ film 1.22x2.44 - 8mm", ancho: 122, largo: 244, espesor: "8mm", precioPlaca: 469870.00, corte: 180719.23, placaCorte: 650589.23, mediaPlacaCorte: 325294.62 },
+            { id: "alto_impacto_bicapa_1mm", nombre: "Alto impacto BICAPA 1mm 1.22 x 2.44 Blanco", ancho: 122, largo: 244, espesor: "1mm", precioPlaca: 41389.00, corte: 15918.85, placaCorte: 57307.85, mediaPlacaCorte: 28653.92 },
+            { id: "alto_impacto_bicapa_2mm", nombre: "Alto impacto BICAPA 2mm 1.22 x 2.44 Blanco", ancho: 122, largo: 244, espesor: "2mm", precioPlaca: 82764.00, corte: 31832.31, placaCorte: 114596.31, mediaPlacaCorte: 57298.15 },
+            { id: "alto_impacto_bca_0.5mm", nombre: "Placa Alto impacto bca 2.00 x 1.00 - 0.5mm", ancho: 100, largo: 200, espesor: "0.5mm", precioPlaca: 15450.00, corte: 5942.31, placaCorte: 21392.31, mediaPlacaCorte: 10696.15 },
+            { id: "alto_impacto_bca_1mm", nombre: "Placa Alto impacto bca 2.00 x 1.00 - 1mm", ancho: 100, largo: 200, espesor: "1mm", precioPlaca: 33109.00, corte: 12734.23, placaCorte: 45843.23, mediaPlacaCorte: 22921.62 },
+            { id: "alto_impacto_bca_2mm", nombre: "Placa Alto impacto bca 2.00 x 1.00 - 2mm", ancho: 100, largo: 200, espesor: "2mm", precioPlaca: 60697.00, corte: 23345.00, placaCorte: 84042.00, mediaPlacaCorte: 42021.00 },
+            { id: "alto_impacto_bca_3mm", nombre: "Placa Alto impacto bca 2.00 x 1.00 - 3mm", ancho: 100, largo: 200, espesor: "3mm", precioPlaca: 88282.00, corte: 33954.62, placaCorte: 122236.62, mediaPlacaCorte: 61118.31 },
+            { id: "mdf_3mm", nombre: "PLACA MDF 3MM 1.80x2.60", ancho: 180, largo: 260, espesor: "3mm", precioPlaca: 44000.00, corte: 16923.08, placaCorte: 60923.08, mediaPlacaCorte: 30461.54 },
+            { id: "mdf_5mm", nombre: "PLACA MDF 5MM 1.80x2.60", ancho: 180, largo: 260, espesor: "5mm", precioPlaca: 57750.00, corte: 22211.54, placaCorte: 79961.54, mediaPlacaCorte: 44423.08 }
+        ];
+
+        let canvas;
+        let scaleFactor = 1; // px a cm
+        let currentGroup = null;
+        let originalSVG = null;
+        let activeTab = 'vector';
+        let layoutCanvas = null;
+        let lastCalculatedSalePrice = 0;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initSelectorsAndGrids();
+            initCanvas();
+            initFileUpload();
+            setupEventListeners();
+        });
+
+        // Configura el selector y la tabla de referencia
+        function initSelectorsAndGrids() {
+            const selectMat = document.getElementById('selectMaterial');
+            const tbody = document.getElementById('materialsTableBody');
+            
+            // Selector HTML
+            let selectHtml = '<option value="">Seleccione un material...</option>';
+            // Agrupar por acrilico / alto impacto / mdf
+            const groups = {
+                "Acrílicos": REFERENCIA_MATERIALES.filter(m => m.nombre.toLowerCase().includes('acrilico') || m.nombre.toLowerCase().includes('abs')),
+                "Alto Impacto": REFERENCIA_MATERIALES.filter(m => m.nombre.toLowerCase().includes('alto impacto')),
+                "MDF": REFERENCIA_MATERIALES.filter(m => m.nombre.toLowerCase().includes('mdf'))
+            };
+
+            for (const [groupName, items] of Object.entries(groups)) {
+                selectHtml += `<optgroup label="${groupName}">`;
+                items.forEach(m => {
+                    selectHtml += `<option value="${m.id}">${m.nombre} (Placa: $${Math.round(m.precioPlaca).toLocaleString()})</option>`;
+                });
+                selectHtml += `</optgroup>`;
+            }
+            selectMat.innerHTML = selectHtml;
+
+            // Tabla de Referencia
+            let tbodyHtml = '';
+            REFERENCIA_MATERIALES.forEach(m => {
+                tbodyHtml += `
+                    <tr id="row_${m.id}" class="hover:bg-slate-900/60 transition-colors border-b border-slate-900 cursor-pointer" onclick="selectMaterialFromTable('${m.id}')">
+                        <td class="py-2.5 px-3 font-bold text-slate-200">${m.nombre}</td>
+                        <td class="py-2.5 px-3 text-center text-slate-400">${m.ancho} x ${m.largo} cm</td>
+                        <td class="py-2.5 px-3 text-right font-semibold text-slate-300">${formatARS(m.precioPlaca)}</td>
+                        <td class="py-2.5 px-3 text-right text-slate-400">${formatARS(m.corte)}</td>
+                        <td class="py-2.5 px-3 text-right font-bold text-yellow-400/80">${formatARS(m.placaCorte)}</td>
+                        <td class="py-2.5 px-3 text-right font-bold text-indigo-400/80">${formatARS(m.mediaPlacaCorte)}</td>
+                        <td class="py-2.5 px-3 text-center">
+                            <button type="button" class="px-2 py-0.5 bg-yellow-400/10 hover:bg-yellow-400 hover:text-black rounded text-[9px] font-bold text-yellow-400 transition-colors">Seleccionar</button>
+                        </td>
+                    </tr>
+                `;
+            });
+            tbody.innerHTML = tbodyHtml;
+        }
+
+        function initCanvas() {
+            canvas = new fabric.Canvas('vectorCanvas', {
+                backgroundColor: 'transparent',
+                width: 500,
+                height: 300
+            });
+
+            // Zoom y Pan
+            canvas.on('mouse:wheel', function(opt) {
+                const delta = opt.e.deltaY;
+                let zoom = canvas.getZoom();
+                zoom *= 0.999 ** delta;
+                if (zoom > 20) zoom = 20;
+                if (zoom < 0.05) zoom = 0.05;
+                canvas.zoomToPoint({ x: opt.e.offsetX, y: opt.e.offsetY }, zoom);
+                opt.e.preventDefault();
+                opt.e.stopPropagation();
+            });
+
+            canvas.on('mouse:down', function(opt) {
+                if (opt.e.altKey) {
+                    this.isDragging = true;
+                    this.selection = false;
+                    this.lastPosX = opt.e.clientX;
+                    this.lastPosY = opt.e.clientY;
+                }
+            });
+            canvas.on('mouse:move', function(opt) {
+                if (this.isDragging) {
+                    const vpt = this.viewportTransform;
+                    vpt[4] += opt.e.clientX - this.lastPosX;
+                    vpt[5] += opt.e.clientY - this.lastPosY;
+                    this.requestRenderAll();
+                    this.lastPosX = opt.e.clientX;
+                    this.lastPosY = opt.e.clientY;
+                }
+            });
+            canvas.on('mouse:up', function() {
+                this.setViewportTransform(this.viewportTransform);
+                this.isDragging = false;
+                this.selection = true;
+            });
+        }
+
+        function initFileUpload() {
+            const dropZone = document.getElementById('dropZone');
+            const fileInput = document.getElementById('fileInput');
+
+            dropZone.addEventListener('click', () => fileInput.click());
+            dropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropZone.classList.add('dragover');
+            });
+            dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+            dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('dragover');
+                if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+            });
+
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files.length) handleFile(e.target.files[0]);
+            });
+        }
+
+        function handleFile(file) {
+            const fileName = file.name.toLowerCase();
+            const status = document.getElementById('uploadStatus');
+            status.style.display = 'flex';
+
+            const reader = new FileReader();
+
+            if (fileName.endsWith('.dxf')) {
+                reader.onload = (e) => {
+                    loadDXF(e.target.result);
+                    status.style.display = 'none';
+                };
+                reader.readAsText(file);
+            } else if (fileName.endsWith('.svg')) {
+                reader.onload = (e) => {
+                    originalSVG = e.target.result;
+                    loadSVG(e.target.result);
+                    status.style.display = 'none';
+                };
+                reader.readAsText(file);
+            } else {
+                alert("Formato no soportado. Sube un archivo .SVG o .DXF");
+                status.style.display = 'none';
+            }
+        }
+
+        function loadSVG(svgText) {
+            try {
+                fabric.loadSVGFromString(svgText, (objects, options) => {
+                    if (!objects || objects.length === 0) {
+                        alert("El archivo SVG no tiene vectores válidos.");
+                        return;
+                    }
+
+                    if (currentGroup) canvas.remove(currentGroup);
+                    canvas.clear();
+
+                    objects.forEach(obj => {
+                        const fill = obj.fill ? obj.fill.toString().toLowerCase() : "";
+                        if (!obj.fill || fill === 'white' || fill === '#ffffff' || fill === 'transparent') {
+                            obj.set({
+                                stroke: '#ffd700',
+                                strokeWidth: 1.5,
+                                strokeUniform: true,
+                                fill: 'transparent'
+                            });
+                        }
+                    });
+
+                    const group = fabric.util.groupSVGElements(objects, options);
+                    group.set({
+                        originX: 'center',
+                        originY: 'center',
+                        selectable: true,
+                        strokeUniform: true
+                    });
+
+                    const physical = parsePhysicalUnits(svgText);
+                    if (physical && physical.height > 0) {
+                        scaleFactor = group.height / physical.height;
+                        document.getElementById('inputHeight').value = physical.height.toFixed(1);
+                        document.getElementById('inputWidth').value = physical.width.toFixed(1);
+                    } else {
+                        scaleFactor = group.height / 50;
+                        document.getElementById('inputHeight').value = 50;
+                        document.getElementById('inputWidth').value = Math.round(group.width / scaleFactor);
+                    }
+
+                    canvas.add(group);
+                    canvas.centerObject(group);
+                    canvas.setActiveObject(group);
+                    currentGroup = group;
+                    canvas.renderAll();
+
+                    document.getElementById('noVectorMsg').style.display = 'none';
+                    document.getElementById('canvasContainer').style.display = 'block';
+
+                    resizeCanvas();
+                    updateCalculations();
+                });
+            } catch (e) {
+                console.error("SVG Error:", e);
+                alert("Error leyendo SVG: " + e.message);
+            }
+        }
+
+        function loadDXF(dxfText) {
+            try {
+                const parser = new DxfParser();
+                const dxf = parser.parseSync(dxfText);
+                
+                const fabricObjects = [];
+
+                // Detectar unidades del header DXF
+                const insUnits = dxf.header ? dxf.header.$INSUNITS : 0;
+                // Mapeo INSUNITS → cm por unidad de coordenada:
+                // 0=sin declarar, 4=mm, 5=cm, 1=pulgadas, 6=m
+                const insUnitsToCm = { 0: 0.1, 1: 2.54, 4: 0.1, 5: 1.0, 6: 100.0 };
+                let detectedUnitScale = insUnitsToCm[insUnits] ?? 0.1;
+
+                // Si hay selector manual lo usamos (el usuario puede sobreescribir)
+                const selectDxfUnit = document.getElementById('selectDxfUnit');
+                const manualUnitMap = { mm: 0.1, cm: 1.0, 'in': 2.54, px: 1.0 };
+                const manualUnit = selectDxfUnit ? selectDxfUnit.value : 'mm';
+
+                // Guardar los datos crudos del DXF para recalcular si el usuario cambia la unidad
+                window._lastDxfGroup = null;
+                let unitScale = manualUnitMap[manualUnit] ?? detectedUnitScale;
+
+                // Mostrar el selector y preseleccionar la unidad detectada
+                if (selectDxfUnit) {
+                    document.getElementById('dxfUnitsRow').classList.remove('hidden');
+                    const detectedKey = Object.entries(manualUnitMap).find(([k,v]) => v === detectedUnitScale)?.[0] || 'mm';
+                    selectDxfUnit.value = detectedKey;
+                    unitScale = manualUnitMap[detectedKey];
+                }
+
+                dxf.entities.forEach(entity => {
+                    let pathData = "";
+                    if (entity.type === 'LINE') {
+                        pathData = `M ${entity.vertices[0].x} ${-entity.vertices[0].y} L ${entity.vertices[1].x} ${-entity.vertices[1].y}`;
+                    } else if (entity.type === 'LWPOLYLINE' || entity.type === 'POLYLINE') {
+                        entity.vertices.forEach((v, i) => {
+                            pathData += (i === 0 ? "M " : "L ") + `${v.x} ${-v.y} `;
+                        });
+                        if (entity.shape) pathData += "Z";
+                    } else if (entity.type === 'CIRCLE') {
+                        const r = entity.radius;
+                        pathData = `M ${entity.center.x - r} ${-entity.center.y} A ${r} ${r} 0 1 0 ${entity.center.x + r} ${-entity.center.y} A ${r} ${r} 0 1 0 ${entity.center.x - r} ${-entity.center.y}`;
+                    } else if (entity.type === 'ARC') {
+                        const r = entity.radius;
+                        const startX = entity.center.x + r * Math.cos(entity.startAngle);
+                        const startY = entity.center.y + r * Math.sin(entity.startAngle);
+                        const endX = entity.center.x + r * Math.cos(entity.endAngle);
+                        const endY = entity.center.y + r * Math.sin(entity.endAngle);
+                        const largeArc = (entity.endAngle - entity.startAngle + 2 * Math.PI) % (2 * Math.PI) > Math.PI ? 1 : 0;
+                        pathData = `M ${startX} ${-startY} A ${r} ${r} 0 ${largeArc} 0 ${endX} ${-endY}`;
+                    }
+
+                    if (pathData) {
+                        fabricObjects.push(new fabric.Path(pathData, {
+                            fill: 'transparent',
+                            stroke: '#ffd700',
+                            strokeWidth: 1,
+                            strokeUniform: true
+                        }));
+                    }
+                });
+
+                if (fabricObjects.length === 0) throw new Error("No se encontraron entidades vectoriales.");
+
+                if (currentGroup) canvas.remove(currentGroup);
+                canvas.clear();
+
+                const group = new fabric.Group(fabricObjects);
+                group.set({
+                    originX: 'center',
+                    originY: 'center',
+                    selectable: true,
+                    strokeUniform: true
+                });
+
+                // scaleFactor: px por cm (cuántos px del canvas = 1 cm real)
+                // unitScale: cm reales por 1 unidad de coordenada DXF
+                // physicalCm = group.height (px = DXF units) * unitScale (cm/unit)
+                scaleFactor = 1 / unitScale;  // px por cm
+                const physicalH = group.height * unitScale;
+                const physicalW = group.width * unitScale;
+
+                // Guardar referencia para recalcular si el usuario cambia la unidad
+                window._lastDxfGroup = { group, insUnitsToCm, insUnits };
+
+                document.getElementById('inputHeight').value = physicalH.toFixed(2);
+                document.getElementById('inputWidth').value = physicalW.toFixed(2);
+
+                canvas.add(group);
+                canvas.centerObject(group);
+                canvas.setActiveObject(group);
+                currentGroup = group;
+                canvas.renderAll();
+
+                document.getElementById('noVectorMsg').style.display = 'none';
+                document.getElementById('canvasContainer').style.display = 'block';
+
+                resizeCanvas();
+                updateCalculations();
+
+            } catch (err) {
+                console.error("DXF Error:", err);
+                alert("Error al cargar DXF: " + err.message);
+            }
+        }
+
+        function parsePhysicalUnits(svgText) {
+            try {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(svgText, "image/svg+xml");
+                const svgTag = doc.querySelector('svg');
+                if (!svgTag) return null;
+                const rawW = svgTag.getAttribute('width') || "";
+                const rawH = svgTag.getAttribute('height') || "";
+                const toCm = (val) => {
+                    if (!val) return null;
+                    const num = parseFloat(val);
+                    if (val.includes('mm')) return num / 10;
+                    if (val.includes('cm')) return num;
+                    if (val.includes('in')) return num * 2.54;
+                    if (val.includes('pt')) return num * 0.03527;
+                    return null;
+                };
+                const h = toCm(rawH);
+                const w = toCm(rawW);
+                if (h && w) return { width: w, height: h };
+                return null;
+            } catch (e) {
+                return null;
+            }
+        }
+
+        // Recalcula dimensiones cuando el usuario cambia la unidad del DXF manualmente
+        function recalcDxfUnits() {
+            if (!window._lastDxfGroup) return;
+            const { group } = window._lastDxfGroup;
+            const manualUnitMap = { mm: 0.1, cm: 1.0, 'in': 2.54, px: 1.0 };
+            const unit = document.getElementById('selectDxfUnit').value;
+            const unitScale = manualUnitMap[unit] ?? 0.1;
+            scaleFactor = 1 / unitScale;  // px por cm
+            const physicalH = group.height * unitScale;
+            const physicalW = group.width * unitScale;
+            document.getElementById('inputHeight').value = physicalH.toFixed(2);
+            document.getElementById('inputWidth').value = physicalW.toFixed(2);
+            document.getElementById('inputPerimeter').value = '';
+            document.getElementById('inputPerimeter').dataset.autoVal = '';
+            updateCalculations();
+        }
+
+        // Formateador de moneda consistente (separador de miles con punto, sin decimales)
+        function formatARS(num) {
+            const rounded = Math.round(num);
+            return '$' + rounded.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+        }
+
+        function resizeCanvas() {
+            const container = document.getElementById('canvasContainer');
+            if (canvas && container) {
+                canvas.setWidth(container.clientWidth);
+                canvas.setHeight(300);
+                canvas.renderAll();
+            }
+        }
+
+        function setupEventListeners() {
+            ['inputWidth', 'inputHeight', 'inputPerimeter', 'inputQuantity', 'inputMargin', 'inputMoCost', 'inputMoPrice'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.addEventListener('input', () => {
+                    if (id === 'inputWidth' || id === 'inputHeight') {
+                        if (currentGroup) {
+                            const val = parseFloat(el.value) || 0;
+                            if (val > 0) {
+                                // scaleFactor = px/cm; physicalCm = canvasPx * (1/scaleFactor)
+                                if (id === 'inputHeight') {
+                                    scaleFactor = currentGroup.height / val;
+                                    document.getElementById('inputWidth').value = (currentGroup.width / scaleFactor).toFixed(2);
+                                } else {
+                                    scaleFactor = currentGroup.width / val;
+                                    document.getElementById('inputHeight').value = (currentGroup.height / scaleFactor).toFixed(2);
+                                }
+                            }
+                        }
+                    }
+                    updateCalculations();
+                });
+            });
+
+            window.addEventListener('resize', () => {
+                resizeCanvas();
+            });
+        }
+
+        function selectMaterialFromTable(matId) {
+            const select = document.getElementById('selectMaterial');
+            select.value = matId;
+            onMaterialChange();
+            
+            document.querySelectorAll('#materialsTableBody tr').forEach(r => r.classList.remove('bg-yellow-400/10'));
+            const activeRow = document.getElementById(`row_${matId}`);
+            if (activeRow) {
+                activeRow.classList.add('bg-yellow-400/10');
+                activeRow.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+        }
+
+        function onMaterialChange() {
+            const matId = document.getElementById('selectMaterial').value;
+            const mat = REFERENCIA_MATERIALES.find(m => m.id === matId);
+            
+            document.querySelectorAll('#materialsTableBody tr').forEach(r => r.classList.remove('bg-yellow-400/10'));
+            if (mat) {
+                const activeRow = document.getElementById(`row_${mat.id}`);
+                if (activeRow) activeRow.classList.add('bg-yellow-400/10');
+            }
+
+            updateCalculations();
+        }
+
+        function syncMarkupRange(type) {
+            if (type === 'placa') {
+                const val = parseFloat(document.getElementById('inputMarkupPlacaManual').value) || 1.0;
+                document.getElementById('inputMarkupPlaca').value = val;
+            } else {
+                const val = parseFloat(document.getElementById('inputMarkupCorteManual').value) || 1.0;
+                document.getElementById('inputMarkupCorte').value = val;
+            }
+            updateCoefLabels();
+            updateCalculations();
+        }
+
+        function updateCoefLabels() {
+            const mPlaca = parseFloat(document.getElementById('inputMarkupPlaca').value) || 2.5;
+            const mCorte = parseFloat(document.getElementById('inputMarkupCorte').value) || 2.0;
+            
+            document.getElementById('labelMarkupPlaca').innerText = mPlaca.toFixed(1) + 'x';
+            document.getElementById('labelMarkupCorte').innerText = mCorte.toFixed(1) + 'x';
+            
+            document.getElementById('inputMarkupPlacaManual').value = mPlaca.toFixed(1);
+            document.getElementById('inputMarkupCorteManual').value = mCorte.toFixed(1);
+        }
+
+        function updateCalculations() {
+            const matId = document.getElementById('selectMaterial').value;
+            const mat = REFERENCIA_MATERIALES.find(m => m.id === matId);
+            
+            let w = parseFloat(document.getElementById('inputWidth').value) || 0;
+            let h = parseFloat(document.getElementById('inputHeight').value) || 0;
+            let margin = parseFloat(document.getElementById('inputMargin').value) || 0;
+            const quantity = parseInt(document.getElementById('inputQuantity').value) || 1;
+
+            if (currentGroup && !w && !h) {
+                h = currentGroup.height / scaleFactor;
+                w = currentGroup.width / scaleFactor;
+                document.getElementById('inputHeight').value = h.toFixed(1);
+                document.getElementById('inputWidth').value = w.toFixed(1);
+            }
+
+            let totalPathLengthPx = 0;
+            if (currentGroup) {
+                function getRecursivePerimeter(objs) {
+                    objs.forEach(obj => {
+                        if (obj.type === 'path' && obj.path) {
+                            totalPathLengthPx += getPathLength(obj) * Math.min(obj.scaleX, obj.scaleY);
+                        } else if (obj.getObjects) {
+                            getRecursivePerimeter(obj.getObjects());
+                        } else if (obj._objects) {
+                            getRecursivePerimeter(obj._objects);
+                        }
+                    });
+                }
+                const topObjs = currentGroup._objects || [currentGroup];
+                getRecursivePerimeter(topObjs);
+                totalPathLengthPx *= currentGroup.scaleX;
+                
+                const calculatedCm = Math.round(totalPathLengthPx / scaleFactor);
+                const inputPeri = document.getElementById('inputPerimeter');
+                if (!inputPeri.value || inputPeri.dataset.autoVal == inputPeri.value || inputPeri.value == 0) {
+                    inputPeri.value = calculatedCm;
+                    inputPeri.dataset.autoVal = calculatedCm;
+                }
+            }
+
+            let perimeter = parseFloat(document.getElementById('inputPerimeter').value) || 0;
+
+            const areaNetM2 = (w / 100) * (h / 100);
+            const grossW = w + margin;
+            const grossH = h + margin;
+            const areaGrossM2 = (grossW / 100) * (grossH / 100);
+
+            document.getElementById('resAreaNet').innerText = areaNetM2.toFixed(3) + ' m²';
+            document.getElementById('resAreaGross').innerText = areaGrossM2.toFixed(3) + ' m²';
+            document.getElementById('resPerimeter').innerText = Math.round(perimeter) + ' cm';
+
+            if (!mat) {
+                document.getElementById('resSheetCount').innerText = "0 (Elegí Material)";
+                document.getElementById('priceCostTotal').innerText = "$0";
+                document.getElementById('priceSaleTotal').innerText = "$0";
+                document.getElementById('resProfit').innerText = "$0";
+                document.getElementById('resProfitPercent').innerText = "0%";
+                document.getElementById('btnAddToBudget').disabled = true;
+                
+                document.getElementById('noDistribucionMsg').style.display = 'block';
+                document.getElementById('distribucionContainer').style.display = 'none';
+                return;
+            }
+
+            document.getElementById('btnAddToBudget').disabled = false;
+
+            const sheetW = mat.ancho;
+            const sheetH = mat.largo;
+            const grossItemW = grossW;
+            const grossItemH = grossH;
+
+            const colsNormal = Math.floor(sheetW / grossItemW);
+            const rowsNormal = Math.floor(sheetH / grossItemH);
+            const qtyNormal = colsNormal * rowsNormal;
+
+            const colsRotated = Math.floor(sheetW / grossItemH);
+            const rowsRotated = Math.floor(sheetH / grossItemW);
+            const qtyRotated = colsRotated * rowsRotated;
+
+            const bestQtyPerSheet = Math.max(qtyNormal, qtyRotated);
+            const isRotatedBest = qtyRotated > qtyNormal;
+
+            let sheetNeededText = "";
+            let numSheets = 0;
+            let useHalfSheet = false;
+
+            if (bestQtyPerSheet === 0) {
+                sheetNeededText = "⚠️ No cabe en plancha";
+                document.getElementById('resSheetCount').innerText = sheetNeededText;
+                document.getElementById('priceCostTotal').innerText = "$0";
+                document.getElementById('priceSaleTotal').innerText = "$0";
+                document.getElementById('btnAddToBudget').disabled = true;
+                return;
+            }
+
+            const halfSheetW = sheetW;
+            const halfSheetH = sheetH / 2;
+            const halfColsNormal = Math.floor(halfSheetW / grossItemW) * Math.floor(halfSheetH / grossItemH);
+            const halfColsRotated = Math.floor(halfSheetW / grossItemH) * Math.floor(halfSheetH / grossItemW);
+            const bestQtyPerHalfSheet = Math.max(halfColsNormal, halfColsRotated);
+
+            if (quantity <= bestQtyPerHalfSheet) {
+                useHalfSheet = true;
+                numSheets = 0.5;
+                sheetNeededText = "1/2 Plancha";
+            } else {
+                numSheets = Math.ceil(quantity / bestQtyPerSheet);
+                sheetNeededText = numSheets + " Plancha(s)";
+            }
+
+            document.getElementById('resSheetCount').innerText = sheetNeededText;
+
+            let matCostTotal = 0;
+            let matSaleTotal = 0;
+            let cutCostTotal = 0;
+            let cutSaleTotal = 0;
+
+            const mPlaca = parseFloat(document.getElementById('inputMarkupPlaca').value) || 2.5;
+            const mCorte = parseFloat(document.getElementById('inputMarkupCorte').value) || 2.0;
+            const moCost = parseFloat(document.getElementById('inputMoCost').value) || 0;
+            const moPrice = parseFloat(document.getElementById('inputMoPrice').value) || 0;
+
+            // Usar los valores exactos de la tabla de referencia como costo
+            // (columna "Placa + Corte" o "½ Placa + Corte")
+            const refTotal    = useHalfSheet ? mat.mediaPlacaCorte : mat.placaCorte * numSheets;
+            const refHalfBase = useHalfSheet ? mat.precioPlaca / 2  : mat.precioPlaca * numSheets;
+            const refCutBase  = useHalfSheet ? mat.corte / 2        : mat.corte * numSheets;
+
+            matCostTotal = refHalfBase;
+            cutCostTotal = refCutBase;
+
+            // Verificar coherencia: el total de referencia debe cuadrar
+            // (puede haber decimales distintos en el origen; forzamos que coincida)
+            const diff = refTotal - (matCostTotal + cutCostTotal);
+            matCostTotal += diff; // absorber diferencia en placa
+
+            matSaleTotal = matCostTotal * mPlaca;
+            cutSaleTotal = cutCostTotal * mCorte;
+
+            const totalMoCost = moCost * quantity;
+            const totalMoPrice = moPrice * quantity;
+
+            const finalCost = matCostTotal + cutCostTotal + totalMoCost;
+            const finalSale = matSaleTotal + cutSaleTotal + totalMoPrice;
+            const finalProfit = finalSale - finalCost;
+            const profitPercent = finalSale > 0 ? (finalProfit / finalSale) * 100 : 0;
+
+            lastCalculatedSalePrice = finalSale;
+
+            document.getElementById('priceCostTotal').innerText = formatARS(finalCost);
+            document.getElementById('priceCostBreakdown').innerText = `Mat: ${formatARS(matCostTotal)} | Corte: ${formatARS(cutCostTotal)} | MO: ${formatARS(totalMoCost)}`;
+
+            document.getElementById('priceSaleTotal').innerText = formatARS(finalSale);
+            document.getElementById('priceSaleBreakdown').innerText = `Mat: ${formatARS(matSaleTotal)} | Corte: ${formatARS(cutSaleTotal)} | MO: ${formatARS(totalMoPrice)}`;
+
+            document.getElementById('resProfit').innerText = formatARS(finalProfit);
+            document.getElementById('resProfitPercent').innerText = Math.round(profitPercent) + "%";
+
+            renderDistribution(sheetW, sheetH, grossItemW, grossItemH, isRotatedBest, quantity, useHalfSheet);
+        }
+
+        function getPathLength(pathObj) {
+            if (!pathObj.path) return 0;
+            const pathData = pathObj.path.map(c => c.join(' ')).join(' ');
+            const tempPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            tempPath.setAttribute('d', pathData);
+            return tempPath.getTotalLength();
+        }
+
+        function renderDistribution(sheetW, sheetH, itemW, itemH, rotate, quantity, isHalf) {
+            document.getElementById('noDistribucionMsg').style.display = 'none';
+            document.getElementById('distribucionContainer').style.display = 'flex';
+
+            const canvasLayout = document.getElementById('layoutCanvas');
+            const ctx = canvasLayout.getContext('2d');
+
+            const scale = Math.min(380 / sheetW, 200 / sheetH);
+            canvasLayout.width = sheetW * scale + 20;
+            canvasLayout.height = sheetH * scale + 20;
+
+            ctx.fillStyle = "#ffffff";
+            ctx.fillRect(0, 0, canvasLayout.width, canvasLayout.height);
+
+            ctx.strokeStyle = "#94a3b8";
+            ctx.setLineDash([4, 4]);
+            ctx.strokeRect(10, 10, sheetW * scale, sheetH * scale);
+            ctx.setLineDash([]);
+
+            if (isHalf) {
+                ctx.fillStyle = "rgba(226, 232, 240, 0.95)";
+                ctx.fillRect(10, 10, sheetW * scale, (sheetH / 2) * scale);
+                ctx.strokeStyle = "#3b82f6";
+                ctx.lineWidth = 1.5;
+                ctx.strokeRect(10, 10, sheetW * scale, (sheetH / 2) * scale);
+                
+                ctx.strokeStyle = "#ef4444";
+                ctx.beginPath();
+                ctx.moveTo(10, 10 + (sheetH / 2) * scale);
+                ctx.lineTo(10 + sheetW * scale, 10 + (sheetH / 2) * scale);
+                ctx.stroke();
+            }
+
+            const activeW = rotate ? itemH : itemW;
+            const activeH = rotate ? itemW : itemH;
+
+            const cols = Math.floor(sheetW / activeW);
+            const rows = Math.floor((isHalf ? sheetH / 2 : sheetH) / activeH);
+            const perSheet = cols * rows;
+
+            let drawn = 0;
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    if (drawn >= quantity) break;
+                    const x = c * activeW * scale + 10;
+                    const y = r * activeH * scale + 10;
+
+                    ctx.fillStyle = "rgba(234, 179, 8, 0.2)";
+                    ctx.fillRect(x, y, activeW * scale, activeH * scale);
+
+                    ctx.strokeStyle = "#eab308";
+                    ctx.lineWidth = 1;
+                    ctx.strokeRect(x, y, activeW * scale, activeH * scale);
+
+                    ctx.font = "8px Outfit, sans-serif";
+                    ctx.fillStyle = "#a16207";
+                    ctx.fillText(`#${drawn + 1}`, x + 4, y + 12);
+
+                    drawn++;
+                }
+            }
+
+            document.getElementById('distribucionInfo').innerText = 
+                `Plancha: ${sheetW}x${sheetH}cm | Piezas: ${itemW.toFixed(1)}x${itemH.toFixed(1)}cm | Entran: ${perSheet} en el área de cobro.`;
+        }
+
+        function setViewerTab(tab) {
+            activeTab = tab;
+            const btnVec = document.getElementById('btnTabVector');
+            const btnDist = document.getElementById('btnTabDistribucion');
+            const divVec = document.getElementById('viewerVector');
+            const divDist = document.getElementById('viewerDistribucion');
+
+            if (tab === 'vector') {
+                btnVec.classList.replace('bg-slate-800', 'bg-yellow-400');
+                btnVec.classList.replace('text-gray-300', 'text-black');
+                btnDist.classList.replace('bg-yellow-400', 'bg-slate-800');
+                btnDist.classList.replace('text-black', 'text-gray-300');
+                divVec.classList.remove('hidden');
+                divDist.classList.add('hidden');
+                resizeCanvas();
+            } else {
+                btnDist.classList.replace('bg-slate-800', 'bg-yellow-400');
+                btnDist.classList.replace('text-gray-300', 'text-black');
+                btnVec.classList.replace('bg-yellow-400', 'bg-slate-800');
+                btnVec.classList.replace('text-black', 'text-gray-300');
+                divDist.classList.remove('hidden');
+                divVec.classList.add('hidden');
+            }
+        }
+
+        function toggleReferenceTable() {
+            const container = document.getElementById('referenceTableContainer');
+            const icon = document.getElementById('tableCollapseIcon');
+            if (container.style.display === 'none') {
+                container.style.display = 'block';
+                icon.innerHTML = '<i class="fas fa-chevron-up"></i>';
+            } else {
+                container.style.display = 'none';
+                icon.innerHTML = '<i class="fas fa-chevron-down"></i>';
+            }
+        }
+
+        function sendToBudget() {
+            if (!lastCalculatedSalePrice) return;
+
+            const qty = parseInt(document.getElementById('inputQuantity').value) || 1;
+            const singlePrice = lastCalculatedSalePrice / qty;
+            
+            const matSelect = document.getElementById('selectMaterial');
+            const materialName = matSelect.options[matSelect.selectedIndex]?.text || '';
+            const netW = parseFloat(document.getElementById('inputWidth').value) || 0;
+            const netH = parseFloat(document.getElementById('inputHeight').value) || 0;
+            
+            const cleanMaterial = materialName.replace(/\s*\([^)]*\)/g, '').trim();
+            const desc = `Trabajo en placa de ${cleanMaterial}.\nDimensiones pieza: ${netW} x ${netH} cm.`;
+
+            const item = {
+                id: Date.now(),
+                description: desc,
+                qty: qty,
+                price: Math.round(singlePrice),
+                isAutoAssigned: true
+            };
+
+            const existingList = JSON.parse(localStorage.getItem('mr_pending_budget_items') || '[]');
+            existingList.push(item);
+            localStorage.setItem('mr_pending_budget_items', JSON.stringify(existingList));
+            
+            window.location.href = 'presupuesto-gen.html';
+        }
+    </script>
+</body>
+</html>

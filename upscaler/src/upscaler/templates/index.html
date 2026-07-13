@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="AI-powered image upscaling using Real-ESRGAN with a web interface" />
+    <meta name="theme-color" content="#4caf50" />
+    <title>Pandas Image Upscaler</title>
+    
+    <!-- Favicons -->
+    <link rel="icon" type="image/x-icon" href="/static/logo/favicon.ico" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/static/logo/favicon-16x16.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/logo/favicon-32x32.png" />
+    
+    <!-- Apple Touch Icons -->
+    <link rel="apple-touch-icon" sizes="180x180" href="/static/logo/apple-touch-icon.png" />
+    
+    <!-- Android Chrome Icons -->
+    <link rel="icon" type="image/png" sizes="192x192" href="/static/logo/panda-logo-192.png" />
+    <link rel="icon" type="image/png" sizes="512x512" href="/static/logo/panda-logo-512.png" />
+    
+    <!-- Web App Manifest -->
+    <link rel="manifest" href="/static/site.webmanifest" />
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="/static/css/style.css" />
+  </head>
+  <body>
+    <div class="container">
+      <h1>🐼 Pandas Image Upscaler</h1>
+      <p class="subtitle">Upload an image and specify target dimensions for AI-powered upscaling</p>
+
+      <form id="uploadForm">
+        <div class="form-group">
+          <label for="image">Select or Drop Image:</label>
+          <div id="dropArea" class="drop-area">
+            <div class="drop-icon">📁</div>
+            <div class="drop-text">Drag & drop an image here</div>
+            <div class="drop-subtext">or click to browse</div>
+          </div>
+          <input type="file" id="image" name="image" accept="image/*" />
+        </div>
+
+        <div class="mode-toggle">
+          <button type="button" id="pixelModeBtn" class="active" onclick="switchMode('pixel')">
+            Pixels (px)
+          </button>
+          <button type="button" id="cmModeBtn" onclick="switchMode('cm')">Centimeters + DPI</button>
+        </div>
+
+        <!-- Pixel Mode -->
+        <div id="pixelMode" class="dimension-mode active">
+          <div class="dimension-inputs">
+            <div class="form-group">
+              <label for="width">Target Width (px):</label>
+              <input
+                type="number"
+                id="width"
+                name="width"
+                min="1"
+                max="10000"
+                value="1024"
+                step="1"
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="height">Target Height (px):</label>
+              <input
+                type="number"
+                id="height"
+                name="height"
+                min="1"
+                max="10000"
+                value="1024"
+                step="1"
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- CM + DPI Mode -->
+        <div id="cmMode" class="dimension-mode">
+          <div class="dimension-inputs">
+            <div class="form-group">
+              <label for="widthCm">Width (cm):</label>
+              <input
+                type="number"
+                id="widthCm"
+                name="widthCm"
+                min="0.1"
+                max="400"
+                value="10"
+                step="0.1"
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="heightCm">Height (cm):</label>
+              <input
+                type="number"
+                id="heightCm"
+                name="heightCm"
+                min="0.1"
+                max="400"
+                value="10"
+                step="0.1"
+              />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="dpi">DPI (Resolution):</label>
+            <input type="number" id="dpi" name="dpi" min="10" max="1200" value="300" step="1" />
+          </div>
+        </div>
+
+        <button type="submit" id="submitBtn">Upscale Image</button>
+      </form>
+
+      <div id="status"></div>
+
+      <!-- Images container -->
+      <div class="images-container">
+        <div class="image-preview" id="originalPreview" style="display: none">
+          <h3>Original Image</h3>
+          <div class="image-wrapper">
+            <img id="originalImg" src="" alt="Original image" />
+          </div>
+          <div class="image-info">
+            <div>
+              <span class="image-info-label">Dimensions:</span>
+              <span id="originalDimensions">-</span>
+            </div>
+            <div>
+              <span class="image-info-label">DPI:</span>
+              <span id="originalDpi">-</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="image-preview" id="upscaledPreview" style="display: none">
+          <h3>Upscaled Image</h3>
+          <div class="image-wrapper">
+            <img id="upscaledImg" src="" alt="Upscaled image" />
+          </div>
+          <div class="image-info">
+            <div>
+              <span class="image-info-label">Dimensions:</span>
+              <span id="upscaledDimensions">-</span>
+            </div>
+            <div>
+              <span class="image-info-label">DPI:</span>
+              <span id="upscaledDpi">-</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="download-btn-container" style="display: none">
+        <button id="downloadBtn" onclick="downloadImage()">Download Upscaled Image</button>
+      </div>
+    </div>
+
+    <footer>
+      Made with ❤️ by <a href="https://github.com/robertsLando" target="_blank">robertsLando</a>
+    </footer>
+
+    <script src="/static/js/app.js"></script>
+  </body>
+</html>

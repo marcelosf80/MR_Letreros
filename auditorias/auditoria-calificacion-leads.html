@@ -1,0 +1,1521 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Auditoría — Sistema de Calificación de Leads | MR Letreros</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@300;400;500&display=swap');
+
+  :root {
+    --bg:       #0a0a12;
+    --surface:  #12121d;
+    --border:   rgba(255,255,255,0.07);
+    --accent:   #10b981;
+    --accent2:  #34d399;
+    --hot:      #ef4444;
+    --warm:     #f59e0b;
+    --cold:     #3b82f6;
+    --text:     #e5e7eb;
+    --muted:    #6b7280;
+    --purple:   #a78bfa;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-weight: 300;
+    line-height: 1.7;
+    min-height: 100vh;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 250 250' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ── HEADER ── */
+  header {
+    position: relative;
+    padding: 4rem 4rem 3rem;
+    border-bottom: 1px solid var(--border);
+    overflow: hidden;
+  }
+
+  header::before {
+    content: '';
+    position: absolute;
+    top: -100px; left: -60px;
+    width: 450px; height: 450px;
+    background: radial-gradient(circle, rgba(16,185,129,0.15) 0%, transparent 65%);
+    pointer-events: none;
+  }
+
+  .header-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.2em;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 0.85rem;
+  }
+
+  h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(2rem, 4vw, 3.2rem);
+    font-weight: 800;
+    line-height: 1.1;
+    background: linear-gradient(135deg, #fff 0%, rgba(16,185,129,0.7) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 1rem;
+  }
+
+  .header-meta {
+    display: flex;
+    gap: 2rem;
+    flex-wrap: wrap;
+  }
+
+  .meta-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--muted);
+  }
+
+  .meta-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+
+  /* ── LAYOUT ── */
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 3rem 4rem;
+    position: relative;
+    z-index: 1;
+  }
+
+  @media (max-width: 768px) {
+    .container { padding: 2rem 1.5rem; }
+    header { padding: 2.5rem 1.5rem; }
+  }
+
+  .section-number {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--accent);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 0.5rem;
+  }
+
+  .section-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 0.4rem;
+  }
+
+  .section-subtitle {
+    font-size: 0.9rem;
+    color: var(--muted);
+    margin-bottom: 2rem;
+  }
+
+  section { margin-bottom: 4rem; }
+
+  .divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 3rem 0;
+  }
+
+  /* ── PROBLEM BANNER ── */
+  .problem-banner {
+    background: linear-gradient(135deg, rgba(239,68,68,0.1), rgba(245,158,11,0.08));
+    border: 1px solid rgba(239,68,68,0.25);
+    border-radius: 14px;
+    padding: 1.75rem 2rem;
+    margin-bottom: 3rem;
+    display: flex;
+    align-items: flex-start;
+    gap: 1.25rem;
+  }
+
+  .problem-icon { font-size: 2rem; flex-shrink: 0; margin-top: 2px; }
+
+  .problem-text h3 {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--hot);
+    margin-bottom: 0.5rem;
+  }
+
+  .problem-text p { font-size: 0.88rem; color: rgba(255,255,255,0.8); line-height: 1.6; }
+
+  /* ── STATS GRID ── */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.25rem;
+    margin-bottom: 2.5rem;
+  }
+
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem;
+    text-align: center;
+    transition: transform 0.2s;
+  }
+
+  .stat-card:hover { transform: translateY(-3px); }
+
+  .stat-icon { font-size: 2rem; margin-bottom: 0.5rem; }
+
+  .stat-value {
+    font-family: 'Syne', sans-serif;
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--accent);
+    line-height: 1;
+    margin-bottom: 0.3rem;
+  }
+
+  .stat-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+  }
+
+  /* ── LEAD TIERS ── */
+  .tiers-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .tier-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 1.75rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .tier-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 4px;
+    border-radius: 14px 14px 0 0;
+  }
+
+  .tier-card.hot::before   { background: linear-gradient(90deg, var(--hot), #dc2626); }
+  .tier-card.warm::before  { background: linear-gradient(90deg, var(--warm), #eab308); }
+  .tier-card.cold::before  { background: linear-gradient(90deg, var(--cold), #60a5fa); }
+
+  .tier-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.3rem 0.8rem;
+    border-radius: 20px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 0.85rem;
+    border: 1px solid;
+  }
+
+  .tier-card.hot .tier-badge   { background: rgba(239,68,68,0.15);  color: var(--hot);  border-color: rgba(239,68,68,0.3); }
+  .tier-card.warm .tier-badge  { background: rgba(245,158,11,0.15); color: var(--warm); border-color: rgba(245,158,11,0.3); }
+  .tier-card.cold .tier-badge  { background: rgba(59,130,246,0.15); color: var(--cold); border-color: rgba(59,130,246,0.3); }
+
+  .tier-card h3 {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 0.5rem;
+  }
+
+  .tier-card p { font-size: 0.85rem; color: var(--muted); margin-bottom: 1rem; line-height: 1.6; }
+
+  .tier-criteria {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+  }
+
+  .tier-criteria div {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    font-size: 0.82rem;
+    color: rgba(255,255,255,0.75);
+  }
+
+  .tier-criteria div::before {
+    content: '▸';
+    color: var(--accent);
+    flex-shrink: 0;
+    font-weight: 700;
+  }
+
+  .tier-action {
+    margin-top: 1rem;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border: 1px solid;
+  }
+
+  .tier-card.hot .tier-action   { background: rgba(239,68,68,0.1);  color: var(--hot);  border-color: rgba(239,68,68,0.25); }
+  .tier-card.warm .tier-action  { background: rgba(245,158,11,0.1); color: var(--warm); border-color: rgba(245,158,11,0.25); }
+  .tier-card.cold .tier-action  { background: rgba(59,130,246,0.1); color: var(--cold); border-color: rgba(59,130,246,0.25); }
+
+  /* ── QUESTIONNAIRE ── */
+  .questionnaire {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+  }
+
+  .question-block {
+    margin-bottom: 2rem;
+    padding-bottom: 2rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .question-block:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+
+  .question-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .question-num {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    background: rgba(16,185,129,0.1);
+    border: 1px solid rgba(16,185,129,0.25);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--accent);
+    flex-shrink: 0;
+  }
+
+  .question-text {
+    font-family: 'Syne', sans-serif;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #fff;
+  }
+
+  .question-options {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-left: 48px;
+  }
+
+  .option-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.65rem 1rem;
+    border-radius: 8px;
+    background: rgba(255,255,255,0.02);
+    border: 1px solid var(--border);
+    transition: all 0.2s;
+    cursor: pointer;
+  }
+
+  .option-row:hover { background: rgba(16,185,129,0.05); border-color: rgba(16,185,129,0.3); }
+
+  .option-label { font-size: 0.85rem; color: rgba(255,255,255,0.85); }
+
+  .option-score {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 0.2rem 0.6rem;
+    border-radius: 6px;
+  }
+
+  .option-score.high   { background: rgba(239,68,68,0.15);  color: var(--hot);  border: 1px solid rgba(239,68,68,0.25); }
+  .option-score.medium { background: rgba(245,158,11,0.15); color: var(--warm); border: 1px solid rgba(245,158,11,0.25); }
+  .option-score.low    { background: rgba(59,130,246,0.15); color: var(--cold); border: 1px solid rgba(59,130,246,0.25); }
+  .option-score.none   { background: rgba(100,116,139,0.1); color: var(--muted); border: 1px solid rgba(100,116,139,0.2); }
+
+  /* ── FLOW DIAGRAM ── */
+  .flow-container {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    overflow-x: auto;
+  }
+
+  .flow {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    min-width: 800px;
+  }
+
+  .flow-node {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    text-align: center;
+  }
+
+  .flow-box {
+    padding: 0.85rem 1.25rem;
+    border-radius: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border: 1px solid;
+    white-space: nowrap;
+    line-height: 1.5;
+  }
+
+  .flow-box.start  { background: rgba(16,185,129,0.1);  color: var(--accent); border-color: rgba(16,185,129,0.3); }
+  .flow-box.bot    { background: rgba(167,139,250,0.1); color: var(--purple); border-color: rgba(167,139,250,0.3); }
+  .flow-box.eval   { background: rgba(245,158,11,0.1);  color: var(--warm);   border-color: rgba(245,158,11,0.3); }
+  .flow-box.action { background: rgba(59,130,246,0.1);  color: var(--cold);   border-color: rgba(59,130,246,0.3); }
+
+  .flow-label { font-size: 0.68rem; color: var(--muted); font-family: 'JetBrains Mono', monospace; }
+
+  .flow-arrow {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0 0.75rem;
+  }
+
+  .arrow-line {
+    width: 60px;
+    height: 2px;
+    background: linear-gradient(90deg, rgba(16,185,129,0.3), rgba(16,185,129,0.7));
+    position: relative;
+  }
+
+  .arrow-line::after {
+    content: '▶';
+    position: absolute;
+    right: -8px;
+    top: -7px;
+    font-size: 0.55rem;
+    color: var(--accent);
+  }
+
+  .arrow-caption { font-size: 0.62rem; color: var(--muted); font-family: 'JetBrains Mono', monospace; white-space: nowrap; }
+
+  /* ── CODE BLOCKS ── */
+  .code-block {
+    background: #070810;
+    border: 1px solid rgba(16,185,129,0.15);
+    border-radius: 10px;
+    padding: 1.25rem 1.5rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    line-height: 1.8;
+    overflow-x: auto;
+    color: #c9d1d9;
+  }
+
+  .code-block .kw  { color: #ff7b72; }
+  .code-block .fn  { color: #79c0ff; }
+  .code-block .str { color: #a5d6ff; }
+  .code-block .cm  { color: #4d5f70; font-style: italic; }
+  .code-block .nm  { color: #ffa657; }
+  .code-block .kv  { color: #d2a8ff; }
+  .code-block .gs  { color: #56d364; }
+
+  /* ── ARCH GRID ── */
+  .arch-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  @media (max-width: 768px) { .arch-grid { grid-template-columns: 1fr; } }
+
+  .arch-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem;
+  }
+
+  .arch-card h4 {
+    font-family: 'Syne', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  /* ── STEPS ── */
+  .steps { display: flex; flex-direction: column; gap: 1.25rem; }
+
+  .step {
+    display: grid;
+    grid-template-columns: 48px 1fr;
+    gap: 1.25rem;
+    align-items: start;
+  }
+
+  .step-num {
+    width: 48px; height: 48px;
+    border-radius: 12px;
+    background: rgba(16,185,129,0.08);
+    border: 1px solid rgba(16,185,129,0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--accent);
+    flex-shrink: 0;
+  }
+
+  .step-content h4 {
+    font-family: 'Syne', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 0.35rem;
+  }
+
+  .step-content p { font-size: 0.875rem; color: var(--muted); margin-bottom: 0.75rem; line-height: 1.6; }
+
+  /* ── TAGS ── */
+  .tag {
+    display: inline-block;
+    padding: 0.2rem 0.6rem;
+    border-radius: 6px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    font-weight: 600;
+    margin: 0.15rem;
+    border: 1px solid;
+  }
+
+  .tag-bot  { background: rgba(167,139,250,0.1); color: var(--purple); border-color: rgba(167,139,250,0.25); }
+  .tag-api  { background: rgba(16,185,129,0.1);  color: var(--accent); border-color: rgba(16,185,129,0.25); }
+  .tag-fe   { background: rgba(59,130,246,0.1);  color: var(--cold);   border-color: rgba(59,130,246,0.25); }
+  .tag-be   { background: rgba(245,158,11,0.1);  color: var(--warm);   border-color: rgba(245,158,11,0.25); }
+  .tag-auto { background: rgba(16,185,129,0.1);  color: var(--accent); border-color: rgba(16,185,129,0.25); }
+
+  /* ── INTEGRATION CARDS ── */
+  .integration-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1.25rem;
+    margin-bottom: 2rem;
+  }
+
+  .integration-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem;
+    transition: transform 0.2s;
+  }
+
+  .integration-card:hover { transform: translateY(-3px); }
+
+  .integration-icon {
+    width: 48px; height: 48px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    margin-bottom: 0.85rem;
+  }
+
+  .integration-icon.whatsapp { background: linear-gradient(135deg, #25d366, #128c7e); }
+  .integration-icon.telegram { background: linear-gradient(135deg, #0088cc, #229ed9); }
+  .integration-icon.web      { background: linear-gradient(135deg, var(--accent), var(--accent2)); }
+  .integration-icon.email    { background: linear-gradient(135deg, var(--cold), #60a5fa); }
+
+  .integration-card h4 {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 0.4rem;
+  }
+
+  .integration-card p { font-size: 0.82rem; color: var(--muted); margin-bottom: 0.75rem; }
+
+  .integration-status {
+    display: inline-block;
+    padding: 0.2rem 0.6rem;
+    border-radius: 6px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.68rem;
+    font-weight: 600;
+    border: 1px solid;
+  }
+
+  .status-easy   { background: rgba(16,185,129,0.1);  color: var(--accent); border-color: rgba(16,185,129,0.25); }
+  .status-medium { background: rgba(245,158,11,0.1);  color: var(--warm);   border-color: rgba(245,158,11,0.25); }
+  .status-hard   { background: rgba(239,68,68,0.1);   color: var(--hot);    border-color: rgba(239,68,68,0.25); }
+
+  /* ── TIMELINE ── */
+  .timeline { display: flex; flex-direction: column; }
+
+  .tl-item {
+    display: grid;
+    grid-template-columns: 110px 1px 1fr;
+    gap: 0 1.5rem;
+    align-items: start;
+    padding-bottom: 2rem;
+  }
+
+  .tl-week {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    text-align: right;
+    padding-top: 0.15rem;
+  }
+
+  .tl-line { position: relative; background: var(--border); width: 1px; }
+
+  .tl-line::before {
+    content: '';
+    position: absolute;
+    top: 6px; left: -4px;
+    width: 9px; height: 9px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 10px rgba(16,185,129,0.6);
+  }
+
+  .tl-content { padding-left: 0.5rem; }
+
+  .tl-content h4 { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.95rem; color: #fff; margin-bottom: 0.4rem; }
+  .tl-content p  { font-size: 0.83rem; color: var(--muted); line-height: 1.6; }
+
+  /* ── COMPARISON TABLE ── */
+  .compare-wrapper {
+    overflow-x: auto;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    margin-bottom: 2rem;
+  }
+
+  table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+
+  thead th {
+    background: rgba(255,255,255,0.03);
+    padding: 0.85rem 1.1rem;
+    text-align: left;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.68rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    border-bottom: 1px solid var(--border);
+  }
+
+  tbody tr { border-bottom: 1px solid rgba(255,255,255,0.04); }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: rgba(255,255,255,0.02); }
+
+  tbody td { padding: 0.7rem 1.1rem; color: rgba(255,255,255,0.75); }
+  tbody td:first-child { color: rgba(255,255,255,0.9); font-weight: 500; }
+
+  /* ── FOOTER ── */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 2rem 4rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .footer-brand { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.9rem; color: rgba(255,255,255,0.3); }
+  .footer-note  { font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: var(--muted); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-label">MR Letreros · Calificación Automática de Clientes</div>
+  <h1>Auditoría: Sistema de<br>Filtrado de Leads</h1>
+  <div class="header-meta">
+    <div class="meta-item"><div class="meta-dot"></div> Chatbot inteligente</div>
+    <div class="meta-item"><div class="meta-dot"></div> Scoring automático</div>
+    <div class="meta-item"><div class="meta-dot"></div> Integración WhatsApp/Web</div>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- PROBLEMA -->
+  <div class="problem-banner">
+    <div class="problem-icon">⚠️</div>
+    <div class="problem-text">
+      <h3>Problema actual: Pérdida de tiempo en consultas de bajo valor</h3>
+      <p>Un vendedor invierte 15–30 minutos atendiendo cada consulta que llega por WhatsApp o web. El 60–70% de esas consultas son de personas que "solo están mirando", que piden presupuestos fuera del rango de precios, o que nunca responden. Resultado: <strong>horas de trabajo desperdiciadas en leads fríos</strong> mientras los clientes reales esperan.</p>
+    </div>
+  </div>
+
+  <!-- ESTADÍSTICAS -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-icon">📊</div>
+      <div class="stat-value">60%</div>
+      <div class="stat-label">Consultas sin valor</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">⏱️</div>
+      <div class="stat-value">20min</div>
+      <div class="stat-label">Tiempo promedio por lead</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">💸</div>
+      <div class="stat-value">$0</div>
+      <div class="stat-label">ROI de leads fríos</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">🎯</div>
+      <div class="stat-value">3x</div>
+      <div class="stat-label">Conversión con filtrado</div>
+    </div>
+  </div>
+
+  <!-- SECCIÓN 1: TIERS -->
+  <section>
+    <div class="section-number">01 · Sistema de Clasificación</div>
+    <h2 class="section-title">Los 3 Niveles de Leads</h2>
+    <p class="section-subtitle">Cada consulta se clasifica automáticamente según sus respuestas</p>
+
+    <div class="tiers-grid">
+
+      <div class="tier-card hot">
+        <div class="tier-badge">🔥 CALIENTE</div>
+        <h3>Lead Caliente (Tier A)</h3>
+        <p>Cliente con alta probabilidad de compra. Necesita contacto humano inmediato — vale la pena invertir tiempo del vendedor.</p>
+        <div class="tier-criteria">
+          <div>Presupuesto definido y realista ($20K+)</div>
+          <div>Urgencia: necesita en días/semanas</div>
+          <div>Proyecto específico y claro</div>
+          <div>Ya sabe qué quiere (no "estoy viendo")</div>
+          <div>Es para negocio/empresa (B2B)</div>
+        </div>
+        <div class="tier-action">
+          ⚡ ACCIÓN: Asignar a vendedor senior inmediatamente vía WhatsApp
+        </div>
+      </div>
+
+      <div class="tier-card warm">
+        <div class="tier-badge">🟡 TIBIO</div>
+        <h3>Lead Tibio (Tier B)</h3>
+        <p>Cliente potencial pero sin urgencia. Requiere seguimiento automatizado primero, contacto humano después.</p>
+        <div class="tier-criteria">
+          <div>Presupuesto indefinido o moderado</div>
+          <div>Urgencia: en 1–2 meses</div>
+          <div>Proyecto vago ("quiero ver opciones")</div>
+          <div>Necesita más información para decidir</div>
+          <div>Puede ser B2C o B2B chico</div>
+        </div>
+        <div class="tier-action">
+          📧 ACCIÓN: Enviar catálogo + email de seguimiento + contacto en 48hs
+        </div>
+      </div>
+
+      <div class="tier-card cold">
+        <div class="tier-badge">❄️ FRÍO</div>
+        <h3>Lead Frío (Tier C)</h3>
+        <p>Poco potencial de venta inmediata. Automatizar completamente — no gastar tiempo del vendedor.</p>
+        <div class="tier-criteria">
+          <div>Sin presupuesto definido</div>
+          <div>Sin urgencia ("solo pregunto")</div>
+          <div>Proyecto hipotético o lejano</div>
+          <div>Busca precio sin compromiso</div>
+          <div>Usuario final sin decisión de compra</div>
+        </div>
+        <div class="tier-action">
+          🤖 ACCIÓN: Respuesta automática con PDF + agregar a lista de newsletter
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- SECCIÓN 2: CUESTIONARIO -->
+  <section>
+    <div class="section-number">02 · Cuestionario de Calificación</div>
+    <h2 class="section-title">Las 7 Preguntas Clave</h2>
+    <p class="section-subtitle">Sistema de scoring: cada respuesta suma puntos — el total define el tier</p>
+
+    <div class="questionnaire">
+
+      <div class="question-block">
+        <div class="question-header">
+          <div class="question-num">01</div>
+          <div class="question-text">¿Qué necesitas?</div>
+        </div>
+        <div class="question-options">
+          <div class="option-row">
+            <div class="option-label">Letreros corporales / luminosos / vinilos de gran formato</div>
+            <div class="option-score high">+20</div>
+          </div>
+          <div class="option-row">
+            <div class="option-label">Señalética / Stands / Merchandising</div>
+            <div class="option-score high">+15</div>
+          </div>
+          <div class="option-row">
+            <div class="option-label">Diseño gráfico / Impresión simple</div>
+            <div class="option-score medium">+5</div>
+          </div>
+          <div class="option-row">
+            <div class="option-label">No estoy seguro / Estoy viendo opciones</div>
+            <div class="option-score none">0</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="question-block">
+        <div class="question-header">
+          <div class="question-num">02</div>
+          <div class="question-text">¿Cuándo lo necesitas?</div>
+        </div>
+        <div class="question-options">
+          <div class="option-row">
+            <div class="option-label">Esta semana / Urgente</div>
+            <div class="option-score high">+25</div>
+          </div>
+          <div class="option-row">
+            <div class="option-label">En las próximas 2–4 semanas</div>
+            <div class="option-score high">+15</div>
+          </div>
+          <div class="option-row">
+            <div class="option-label">En 1–2 meses</div>
+            <div class="option-score medium">+5</div>
+          </div>
+          <div class="option-row">
+            <div class="option-label">No tengo apuro / Solo pregunto</div>
+            <div class="option-score none">0</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="question-block">
+        <div class="question-header">
+          <div class="question-num">03</div>
+          <div class="question-text">¿Para quién es?</div>
+        </div>
+        <div class="question-options">
+          <div class="option-row">
+            <div class="option-label">Mi empresa / negocio</div>
+            <div class="option-score high">+20</div>
+          </div>
+          <div class="option-row">
+            <div class="option-label">Soy proveedor / agencia que revende</div>
+            <div class="option-score high">+15</div>
+          </div>
+          <div class="option-row">
+            <div class="option-label">Uso personal / familiar</div>
+            <div class="option-score low">+3</div>
+          </div>
+          <div class="option-row">
+            <div class="option-label">Pregunto para alguien más</div>
+            <div class="option-score none">0</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="question-block">
+        <div class="question-header">
+          <div class="question-num">04</div>
+          <div class="question-text">¿Tienes presupuesto definido?</div>
+        </div>
+        <div class="question-options">
+          <div class="option-row">
+            <div class="option-label">Sí, más de $50.000</div>
+            <div class="option-score high">+25</div>
+          </div>
+          <div class="option-row">
+            <div class="option-label">Sí, entre $20.000 y $50.000</div>
+            <div class="option-score high">+15</div>
+          </div>
+          <div class="option-row">
+            <div class="option-label">Menos de $20.000</div>
+            <div class="option-score medium">+5</div>
+          </div>
+          <div class="option-row">
+            <div class="option-label">No sé / Depende del precio que me den</div>
+            <div class="option-score none">0</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="question-block">
+        <div class="question-header">
+          <div class="question-num">05</div>
+          <div class="question-text">¿Ya cotizaste con otros proveedores?</div>
+        </div>
+        <div class="question-options">
+          <div class="option-row">
+            <div class="option-label">Sí, y no me convencieron (busco mejor opción)</div>
+            <div class="option-score high">+15</div>
+          </div>
+          <div class="option-row">
+            <div class="option-label">Sí, estoy comparando precios</div>
+            <div class="option-score medium">+8</div>
+          </div>
+          <div class="option-row">
+            <div class="option-label">No, ustedes son los primeros</div>
+            <div class="option-score medium">+5</div>
+          </div>
+          <div class="option-row">
+            <div class="option-label">No, solo estoy mirando</div>
+            <div class="option-score none">0</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="question-block">
+        <div class="question-header">
+          <div class="question-num">06</div>
+          <div class="question-text">¿Cómo nos conociste?</div>
+        </div>
+        <div class="question-options">
+          <div class="option-row">
+            <div class="option-label">Referencia / Recomendación</div>
+            <div class="option-score high">+10</div>
+          </div>
+          <div class="option-row">
+            <div class="option-label">Cliente anterior / Ya trabajé con ustedes</div>
+            <div class="option-score high">+20</div>
+          </div>
+          <div class="option-row">
+            <div class="option-label">Google / Redes sociales</div>
+            <div class="option-score medium">+5</div>
+          </div>
+          <div class="option-row">
+            <div class="option-label">Publicidad / Pasaba por ahí</div>
+            <div class="option-score low">+3</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="question-block">
+        <div class="question-header">
+          <div class="question-num">07</div>
+          <div class="question-text">¿Qué necesitas de nosotros ahora?</div>
+        </div>
+        <div class="question-options">
+          <div class="option-row">
+            <div class="option-label">Presupuesto formal para aprobar ya</div>
+            <div class="option-score high">+20</div>
+          </div>
+          <div class="option-row">
+            <div class="option-label">Cotización detallada + asesoramiento</div>
+            <div class="option-score high">+15</div>
+          </div>
+          <div class="option-row">
+            <div class="option-label">Solo quiero saber precios aproximados</div>
+            <div class="option-score medium">+5</div>
+          </div>
+          <div class="option-row">
+            <div class="option-label">Info general / Catálogo</div>
+            <div class="option-score none">0</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="arch-card">
+      <h4>🧮 Tabla de Scoring Final</h4>
+      <div class="compare-wrapper" style="margin-top: 1rem;">
+        <table>
+          <thead>
+            <tr>
+              <th>Puntaje Total</th>
+              <th>Clasificación</th>
+              <th>Acción Inmediata</th>
+              <th>Tiempo de Respuesta</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="background: rgba(239,68,68,0.08);">
+              <td style="color: var(--hot); font-weight: 700;">80–140 puntos</td>
+              <td>🔥 CALIENTE (Tier A)</td>
+              <td>Asignar vendedor + llamar en 5 min</td>
+              <td>&lt; 15 minutos</td>
+            </tr>
+            <tr style="background: rgba(245,158,11,0.08);">
+              <td style="color: var(--warm); font-weight: 700;">40–79 puntos</td>
+              <td>🟡 TIBIO (Tier B)</td>
+              <td>Email automático + seguimiento en 48hs</td>
+              <td>&lt; 24 horas</td>
+            </tr>
+            <tr style="background: rgba(59,130,246,0.08);">
+              <td style="color: var(--cold); font-weight: 700;">0–39 puntos</td>
+              <td>❄️ FRÍO (Tier C)</td>
+              <td>Respuesta bot + PDF catálogo</td>
+              <td>Inmediato (automatizado)</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- SECCIÓN 3: FLUJO -->
+  <section>
+    <div class="section-number">03 · Flujo del Sistema</div>
+    <h2 class="section-title">Cómo Funciona en la Práctica</h2>
+    <p class="section-subtitle">Desde que el cliente escribe por WhatsApp hasta la asignación al vendedor</p>
+
+    <div class="flow-container">
+      <div class="flow">
+        <div class="flow-node">
+          <div class="flow-box start">💬 Cliente<br>escribe</div>
+          <div class="flow-label">WhatsApp/Web</div>
+        </div>
+        <div class="flow-arrow">
+          <div class="arrow-line"></div>
+          <div class="arrow-caption">mensaje</div>
+        </div>
+        <div class="flow-node">
+          <div class="flow-box bot">🤖 Bot saluda<br>+ pregunta 1</div>
+          <div class="flow-label">Chatbot</div>
+        </div>
+        <div class="flow-arrow">
+          <div class="arrow-line"></div>
+          <div class="arrow-caption">7 preguntas</div>
+        </div>
+        <div class="flow-node">
+          <div class="flow-box eval">🧮 Calcula<br>scoring</div>
+          <div class="flow-label">Backend</div>
+        </div>
+        <div class="flow-arrow">
+          <div class="arrow-line"></div>
+          <div class="arrow-caption">tier A/B/C</div>
+        </div>
+        <div class="flow-node">
+          <div class="flow-box action">🎯 Acción<br>según tier</div>
+          <div class="flow-label">Automático</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="arch-grid">
+      <div class="arch-card">
+        <h4>🔥 Si es Tier A (Caliente)</h4>
+        <div class="code-block">
+<span class="cm"># Acciones inmediatas en paralelo:</span>
+
+1. <span class="gs">Notificación urgente al vendedor</span>
+   → WhatsApp: "🔥 Lead caliente: [nombre]"
+   → SMS si no responde en 3 min
+
+2. <span class="gs">Crear registro en CRM</span>
+   → Status: "hot_pending_contact"
+   → Asignar vendedor automáticamente
+
+3. <span class="gs">Respuesta al cliente:</span>
+   "✅ Perfecto, [Vendedor] te contacta
+   en menos de 15 minutos para darte
+   toda la info que necesitas."
+
+4. <span class="gs">Agendar follow-up automático</span>
+   → Si vendedor no responde en 20min
+   → Reasignar a otro vendedor
+        </div>
+      </div>
+
+      <div class="arch-card">
+        <h4>🟡 Si es Tier B (Tibio)</h4>
+        <div class="code-block">
+<span class="cm"># Automatización + follow-up diferido:</span>
+
+1. <span class="gs">Email automático con info</span>
+   → Catálogo PDF adjunto
+   → Casos de éxito similares
+   → Link a calculadora de precios
+
+2. <span class="gs">Agregar a lista de nurturing</span>
+   → 3 emails espaciados en 7 días
+   → Contenido educativo
+
+3. <span class="gs">Respuesta al cliente:</span>
+   "📧 Te enviamos info completa por email.
+   Un vendedor te contacta en 48hs
+   para resolver dudas."
+
+4. <span class="gs">Agendar contacto humano</span>
+   → Vendedor lo llama en 48hs
+   → Si no responde: 2 intentos más
+        </div>
+      </div>
+    </div>
+
+    <div class="arch-card">
+      <h4>❄️ Si es Tier C (Frío) — Completamente Automatizado</h4>
+      <div class="code-block">
+<span class="cm"># Sin intervención humana — todo por bot:</span>
+
+1. <span class="gs">Respuesta automática completa</span>
+   "👋 Gracias por tu consulta. Te compartimos nuestro catálogo con precios
+   de referencia: [link]. Si tienes un proyecto concreto, volvé a escribirnos
+   con las medidas y te cotizamos al toque."
+
+2. <span class="gs">Enviar PDF por WhatsApp</span>
+   → Catálogo de productos
+   → Guía de precios aproximados
+   → Casos de éxito
+
+3. <span class="gs">Agregar a lista de newsletter</span>
+   → Email semanal con ofertas
+   → Contenido de blog
+
+4. <span class="gs">NO asignar vendedor</span>
+   → Ahorrar tiempo del equipo
+   → Si el cliente responde con interés real → reclasificar
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- SECCIÓN 4: INTEGRACIÓN WHATSAPP -->
+  <section>
+    <div class="section-number">04 · Canales de Integración</div>
+    <h2 class="section-title">Dónde Funciona el Sistema</h2>
+    <p class="section-subtitle">Multi-canal: el mismo bot funciona en todos los puntos de contacto</p>
+
+    <div class="integration-grid">
+
+      <div class="integration-card">
+        <div class="integration-icon whatsapp">💬</div>
+        <h4>WhatsApp Business API</h4>
+        <p>El canal más importante. El bot contesta automáticamente en WhatsApp y deriva al vendedor si es Tier A.</p>
+        <span class="integration-status status-medium">Setup medio</span>
+      </div>
+
+      <div class="integration-card">
+        <div class="integration-icon web">🌐</div>
+        <h4>Formulario Web</h4>
+        <p>Widget en mrletreros.com con las 7 preguntas. Se integra al mismo sistema de scoring y notificaciones.</p>
+        <span class="integration-status status-easy">Fácil</span>
+      </div>
+
+      <div class="integration-card">
+        <div class="integration-icon telegram">✈️</div>
+        <h4>Telegram (Opcional)</h4>
+        <p>Mismo chatbot adaptado a Telegram. Útil si tienen clientes B2B que prefieren esta plataforma.</p>
+        <span class="integration-status status-easy">Fácil</span>
+      </div>
+
+      <div class="integration-card">
+        <div class="integration-icon email">📧</div>
+        <h4>Email Parsing</h4>
+        <p>Analizar emails que llegan a info@mrletreros.com y extraer la intención del cliente automáticamente.</p>
+        <span class="integration-status status-hard">Avanzado</span>
+      </div>
+
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- SECCIÓN 5: ARQUITECTURA -->
+  <section>
+    <div class="section-number">05 · Implementación Técnica</div>
+    <h2 class="section-title">Stack Tecnológico</h2>
+    <p class="section-subtitle">Basado en tu servidor Node.js existente + APIs externas</p>
+
+    <div class="arch-grid">
+      <div class="arch-card">
+        <h4>🤖 Motor del Chatbot</h4>
+        <div class="code-block">
+<span class="cm">// utils/chatbot-engine.js</span>
+<span class="kw">const</span> questions = [
+  {
+    <span class="kv">id</span>: <span class="str">'Q1'</span>,
+    <span class="kv">text</span>: <span class="str">'¿Qué necesitas?'</span>,
+    <span class="kv">options</span>: [
+      { <span class="kv">text</span>: <span class="str">'Letreros corporales...'</span>, <span class="kv">score</span>: <span class="nm">20</span> },
+      { <span class="kv">text</span>: <span class="str">'Señalética...'</span>, <span class="kv">score</span>: <span class="nm">15</span> },
+      <span class="cm">// ...</span>
+    ]
+  },
+  <span class="cm">// Q2–Q7...</span>
+];
+
+<span class="kw">function</span> <span class="fn">calculateScore</span>(answers) {
+  <span class="kw">const</span> total = answers.<span class="fn">reduce</span>(
+    (sum, a) => sum + a.score, <span class="nm">0</span>
+  );
+  <span class="kw">if</span> (total >= <span class="nm">80</span>) <span class="kw">return</span> <span class="str">'hot'</span>;
+  <span class="kw">if</span> (total >= <span class="nm">40</span>) <span class="kw">return</span> <span class="str">'warm'</span>;
+  <span class="kw">return</span> <span class="str">'cold'</span>;
+}
+
+<span class="kw">async function</span> <span class="fn">triggerAction</span>(tier, leadData) {
+  <span class="kw">if</span> (tier === <span class="str">'hot'</span>) {
+    <span class="kw">await</span> <span class="fn">notifyVendedor</span>(leadData);
+    <span class="kw">await</span> <span class="fn">createCRMRecord</span>(leadData, <span class="str">'urgent'</span>);
+  } <span class="kw">else if</span> (tier === <span class="str">'warm'</span>) {
+    <span class="kw">await</span> <span class="fn">sendEmail</span>(leadData, <span class="str">'nurturing'</span>);
+    <span class="kw">await</span> <span class="fn">scheduleFollowup</span>(leadData, <span class="nm">48</span>);
+  } <span class="kw">else</span> {
+    <span class="kw">await</span> <span class="fn">sendAutomatedResponse</span>(leadData);
+  }
+}
+        </div>
+      </div>
+
+      <div class="arch-card">
+        <h4>💬 Integración WhatsApp (Twilio/360Dialog)</h4>
+        <div class="code-block">
+<span class="cm">// routes/whatsapp.js</span>
+<span class="kw">const</span> twilio = <span class="fn">require</span>(<span class="str">'twilio'</span>);
+
+app.<span class="fn">post</span>(<span class="str">'/webhook/whatsapp'</span>, <span class="kw">async</span> (req, res) => {
+  <span class="kw">const</span> { From, Body } = req.body;
+  
+  <span class="cm">// 1. Obtener conversación actual del usuario</span>
+  <span class="kw">let</span> conversation = <span class="kw">await</span> <span class="fn">getConversation</span>(From);
+  
+  <span class="cm">// 2. Procesar respuesta</span>
+  <span class="kw">const</span> nextQuestion = <span class="kw">await</span> <span class="fn">processAnswer</span>(
+    conversation, Body
+  );
+  
+  <span class="cm">// 3. Si terminó el cuestionario → scoring</span>
+  <span class="kw">if</span> (nextQuestion === <span class="kw">null</span>) {
+    <span class="kw">const</span> tier = <span class="fn">calculateScore</span>(conversation.answers);
+    <span class="kw">await</span> <span class="fn">triggerAction</span>(tier, {
+      phone: From,
+      answers: conversation.answers
+    });
+  } <span class="kw">else</span> {
+    <span class="cm">// Enviar siguiente pregunta</span>
+    <span class="kw">await</span> <span class="fn">sendWhatsAppMessage</span>(From, nextQuestion.text);
+  }
+  
+  res.<span class="fn">sendStatus</span>(<span class="nm">200</span>);
+});
+        </div>
+      </div>
+    </div>
+
+    <div class="arch-card">
+      <h4>📊 Persistencia de Conversaciones</h4>
+      <div class="code-block">
+<span class="cm">// data/conversations.json — estado de cada conversación</span>
+{
+  <span class="str">"+5491112345678"</span>: {
+    <span class="kv">"currentQuestion"</span>: <span class="str">"Q3"</span>,
+    <span class="kv">"answers"</span>: [
+      { <span class="kv">"questionId"</span>: <span class="str">"Q1"</span>, <span class="kv">"answer"</span>: <span class="str">"Letreros corporales"</span>, <span class="kv">"score"</span>: <span class="nm">20</span> },
+      { <span class="kv">"questionId"</span>: <span class="str">"Q2"</span>, <span class="kv">"answer"</span>: <span class="str">"Esta semana"</span>, <span class="kv">"score"</span>: <span class="nm">25</span> }
+    ],
+    <span class="kv">"startedAt"</span>: <span class="str">"2024-02-19T14:30:00Z"</span>,
+    <span class="kv">"lastMessageAt"</span>: <span class="str">"2024-02-19T14:31:15Z"</span>
+  }
+}
+
+<span class="cm">// Al terminar el cuestionario, se guarda en:</span>
+<span class="cm">// data/leads_hot.json  → Tier A</span>
+<span class="cm">// data/leads_warm.json → Tier B</span>
+<span class="cm">// data/leads_cold.json → Tier C</span>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- SECCIÓN 6: IMPLEMENTACIÓN -->
+  <section>
+    <div class="section-number">06 · Plan de Implementación</div>
+    <h2 class="section-title">Pasos para Poner en Marcha</h2>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">01</div>
+        <div class="step-content">
+          <h4>Definir preguntas y scoring final</h4>
+          <p>Ajustar las 7 preguntas propuestas según la realidad de MR Letreros. Validar con el equipo de ventas qué criterios son más importantes. Probar con 10–20 clientes reales para calibrar el scoring.</p>
+          <div><span class="tag tag-be">Estrategia</span></div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">02</div>
+        <div class="step-content">
+          <h4>Crear módulo chatbot-engine.js</h4>
+          <p>Desarrollar el motor del chatbot en Node.js. Incluye lógica de preguntas, cálculo de score, y persistencia de conversaciones en JSON. Sin integrar WhatsApp aún — probar con endpoints REST.</p>
+          <div><span class="tag tag-be">Backend</span><span class="tag tag-api">Node.js</span></div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">03</div>
+        <div class="step-content">
+          <h4>Contratar WhatsApp Business API</h4>
+          <p>Registrarse en Twilio (más fácil) o 360dialog (más barato). Verificar el número de WhatsApp del negocio. Configurar el webhook que apunte al servidor Node.js. Costo: ~$5–15 USD/mes según volumen.</p>
+          <div><span class="tag tag-api">Twilio/360Dialog</span><span class="tag tag-bot">WhatsApp</span></div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">04</div>
+        <div class="step-content">
+          <h4>Conectar chatbot + WhatsApp webhook</h4>
+          <p>Crear endpoint <code>POST /webhook/whatsapp</code> que recibe mensajes entrantes, busca la conversación activa, procesa la respuesta y envía la siguiente pregunta. Probar el flujo completo end-to-end.</p>
+          <div><span class="tag tag-be">Backend</span><span class="tag tag-bot">Chatbot</span></div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">05</div>
+        <div class="step-content">
+          <h4>Implementar acciones por tier</h4>
+          <p>Desarrollar <code>triggerAction()</code>: notificar vendedor (Twilio SMS o WhatsApp directo), enviar email con Nodemailer, crear registro en CRM interno (clientes.json), agendar follow-ups con <code>node-cron</code>.</p>
+          <div><span class="tag tag-be">Backend</span><span class="tag tag-auto">Automatización</span></div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">06</div>
+        <div class="step-content">
+          <h4>Crear formulario web (opcional)</h4>
+          <p>Widget HTML/JS en mrletreros.com que consume el mismo backend. Las respuestas se envían a <code>POST /api/lead-qualify</code> y disparan las mismas acciones que WhatsApp. Permite captar leads que prefieren web.</p>
+          <div><span class="tag tag-fe">Frontend</span><span class="tag tag-api">API</span></div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">07</div>
+        <div class="step-content">
+          <h4>Dashboard de leads en el sistema interno</h4>
+          <p>Agregar página <code>leads.html</code> donde el equipo puede ver todos los leads clasificados, filtrar por tier, reasignar vendedores, y marcar como "contactado". Vista similar a la de trabajos pero para leads.</p>
+          <div><span class="tag tag-fe">Frontend</span><span class="tag tag-be">Backend</span></div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">08</div>
+        <div class="step-content">
+          <h4>Piloto de 2 semanas + ajuste de scoring</h4>
+          <p>Activar el bot solo para nuevos clientes (no interrumpir conversaciones existentes). Medir: % de leads por tier, tasa de conversión de Tier A, tiempo ahorrado. Ajustar preguntas y puntajes según resultados.</p>
+          <div><span class="tag tag-auto">Testing</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- SECCIÓN 7: TIMELINE -->
+  <section>
+    <div class="section-number">07 · Cronograma</div>
+    <h2 class="section-title">Timeline de Desarrollo</h2>
+
+    <div class="timeline">
+      <div class="tl-item">
+        <div class="tl-week">Semana 1</div>
+        <div class="tl-line"></div>
+        <div class="tl-content">
+          <h4>Motor del chatbot + lógica de scoring</h4>
+          <p>Crear <code>chatbot-engine.js</code> con las 7 preguntas, cálculo de score, y persistencia en JSON. Probar con endpoints REST. Sin integración de WhatsApp todavía.</p>
+        </div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-week">Semana 2</div>
+        <div class="tl-line"></div>
+        <div class="tl-content">
+          <h4>Integración WhatsApp Business API</h4>
+          <p>Registrar cuenta en Twilio, configurar webhook, conectar el motor del chatbot. Probar flujo completo: cliente escribe → bot pregunta → calcula tier → acción correspondiente.</p>
+        </div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-week">Semana 3</div>
+        <div class="tl-line"></div>
+        <div class="tl-content">
+          <h4>Acciones automatizadas + dashboard de leads</h4>
+          <p>Implementar notificaciones a vendedores, emails automáticos, follow-ups programados. Crear página <code>leads.html</code> para gestionar y visualizar todos los leads capturados.</p>
+        </div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-week">Semana 4</div>
+        <div class="tl-line"></div>
+        <div class="tl-content">
+          <h4>Piloto + ajuste de scoring</h4>
+          <p>Activar en producción con clientes reales. Medir resultados. Ajustar preguntas, puntajes y acciones según feedback del equipo de ventas. Documentar para escalar a otros canales.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- SECCIÓN 8: ARCHIVOS -->
+  <section>
+    <div class="section-number">08 · Archivos a Crear</div>
+    <h2 class="section-title">Estructura del Código</h2>
+
+    <div class="arch-grid">
+      <div class="arch-card">
+        <h4 style="color: var(--accent)">✨ Nuevos Archivos</h4>
+        <div class="code-block">
+<span class="gs">utils/</span>
+  chatbot-engine.js    <span class="cm">← motor del cuestionario</span>
+  lead-scorer.js       <span class="cm">← cálculo de tier</span>
+  lead-actions.js      <span class="cm">← notificaciones y emails</span>
+
+<span class="gs">routes/</span>
+  whatsapp.routes.js   <span class="cm">← webhook de WhatsApp</span>
+  leads.routes.js      <span class="cm">← API REST para leads</span>
+
+<span class="gs">data/</span>
+  conversations.json   <span class="cm">← conversaciones activas</span>
+  leads_hot.json       <span class="cm">← Tier A</span>
+  leads_warm.json      <span class="cm">← Tier B</span>
+  leads_cold.json      <span class="cm">← Tier C</span>
+
+<span class="gs">public/</span>
+  leads.html           <span class="cm">← dashboard de leads</span>
+  js/leads-main.js     <span class="cm">← frontend del dashboard</span>
+        </div>
+      </div>
+
+      <div class="arch-card">
+        <h4 style="color: var(--warm)">🔧 Archivos a Modificar</h4>
+        <div class="code-block">
+<span class="nm">server.js</span>
+  <span class="cm">← montar routes/whatsapp.routes.js
+  ← montar routes/leads.routes.js</span>
+
+<span class="nm">sidebar-universal.js</span>
+  <span class="cm">← agregar link a Leads
+    (entre Trabajos y Clientes)</span>
+
+<span class="nm">package.json</span>
+  <span class="cm">← agregar twilio, nodemailer, node-cron</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="arch-card">
+      <h4>📦 Dependencias a Instalar</h4>
+      <div class="code-block">
+npm install twilio        <span class="cm"># WhatsApp Business API</span>
+npm install nodemailer    <span class="cm"># Envío de emails</span>
+npm install node-cron     <span class="cm"># Follow-ups programados</span>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- SECCIÓN 9: ROI -->
+  <section>
+    <div class="section-number">09 · Retorno de Inversión</div>
+    <h2 class="section-title">Impacto Esperado</h2>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon">⏱️</div>
+        <div class="stat-value">70%</div>
+        <div class="stat-label">Reducción de tiempo en leads fríos</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">🎯</div>
+        <div class="stat-value">3x</div>
+        <div class="stat-label">Más conversiones (foco en Tier A)</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">💰</div>
+        <div class="stat-value">$20/mes</div>
+        <div class="stat-label">Costo de operación (WhatsApp API)</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">📈</div>
+        <div class="stat-value">+40%</div>
+        <div class="stat-label">Aumento en productividad de ventas</div>
+      </div>
+    </div>
+
+    <div class="arch-card" style="margin-top: 2rem;">
+      <h4>💡 Ejemplo Real de Ahorro</h4>
+      <p style="font-size: 0.88rem; color: var(--muted); margin-bottom: 1rem; line-height: 1.7;">
+        <strong style="color: #fff;">Antes:</strong> Un vendedor atiende 20 consultas/día. De esas 20, solo 6 se convierten en cotizaciones reales. Las otras 14 son tiempo perdido (≈4 horas/día).<br><br>
+        <strong style="color: #fff;">Después:</strong> El bot filtra automáticamente. El vendedor recibe solo 8 leads por día (6 Tier A + 2 Tier B). Cierra 5 de ellos. Ahorra 3 horas diarias que invierte en seguimiento de clientes calientes. Conversión sube del 30% al 62%.
+      </p>
+    </div>
+  </section>
+
+</div>
+
+<footer>
+  <div class="footer-brand">MR Letreros · Sistema Interno</div>
+  <div class="footer-note">Auditoría de Sistema de Calificación de Leads · v1.0 — Chatbot + WhatsApp API</div>
+</footer>
+
+</body>
+</html>

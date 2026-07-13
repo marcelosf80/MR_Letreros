@@ -1,0 +1,34 @@
+[
+  {
+    "name": "test",
+    "telefono": "03425276549",
+    "email": "marcelojmaidana@gmail.com",
+    "direccion": "Ruperto Godoy 3362",
+    "id": "cliente_cli_1769813040434",
+    "fechaRegistro": "2026-01-30T22:44:00.434Z"
+  },
+  {
+    "name": "test",
+    "telefono": "03425276549",
+    "email": "marcelojmaidana@gmail.com",
+    "direccion": "Ruperto Godoy 3362",
+    "id": "cliente_cli_1769813044530",
+    "fechaRegistro": "2026-01-30T22:44:04.530Z"
+  },
+  {
+    "name": "Cartel de alquiler",
+    "telefono": "",
+    "email": "",
+    "direccion": "",
+    "id": "cliente_cli_1770213776896",
+    "fechaRegistro": "2026-02-04T14:02:56.896Z"
+  },
+  {
+    "name": "lona de escenario",
+    "telefono": "",
+    "email": "",
+    "direccion": "",
+    "id": "cliente_cli_1770223826666",
+    "fechaRegistro": "2026-02-04T16:50:26.666Z"
+  }
+]

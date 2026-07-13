@@ -1,0 +1,89 @@
+# ENDPOINTS A AGREGAR EN server.js
+
+Agrega estos endpoints en tu server.js para el módulo de Precios:
+
+```javascript
+// ==================== PRECIOS GREMIO ====================
+
+app.get('/api/precios/gremio', (req, res) => {
+  const filePath = path.join(datosDir, 'precios-gremio.json');
+  if (!fs.existsSync(filePath)) {
+    fs.writeFileSync(filePath, JSON.stringify([], null, 2));
+  }
+  const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+  res.json(data);
+});
+
+app.post('/api/precios/gremio', (req, res) => {
+  const filePath = path.join(datosDir, 'precios-gremio.json');
+  let data = [];
+  if (fs.existsSync(filePath)) {
+    data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+  }
+  
+  const newPrecio = {
+    id: Date.now().toString(),
+    ...req.body,
+    createdAt: new Date().toISOString()
+  };
+  
+  data.push(newPrecio);
+  fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
+  res.json({ success: true, data: newPrecio });
+});
+
+app.delete('/api/precios/gremio/:id', (req, res) => {
+  const filePath = path.join(datosDir, 'precios-gremio.json');
+  if (!fs.existsSync(filePath)) {
+    return res.status(404).json({ error: 'No encontrado' });
+  }
+  
+  let data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+  data = data.filter(p => p.id !== req.params.id);
+  fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
+  res.json({ success: true });
+});
+
+// ==================== PRECIOS CLIENTE ====================
+
+app.get('/api/precios/cliente', (req, res) => {
+  const filePath = path.join(datosDir, 'precios-cliente.json');
+  if (!fs.existsSync(filePath)) {
+    fs.writeFileSync(filePath, JSON.stringify([], null, 2));
+  }
+  const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+  res.json(data);
+});
+
+app.post('/api/precios/cliente', (req, res) => {
+  const filePath = path.join(datosDir, 'precios-cliente.json');
+  let data = [];
+  if (fs.existsSync(filePath)) {
+    data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+  }
+  
+  const newPrecio = {
+    id: Date.now().toString(),
+    ...req.body,
+    createdAt: new Date().toISOString()
+  };
+  
+  data.push(newPrecio);
+  fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
+  res.json({ success: true, data: newPrecio });
+});
+
+app.delete('/api/precios/cliente/:id', (req, res) => {
+  const filePath = path.join(datosDir, 'precios-cliente.json');
+  if (!fs.existsSync(filePath)) {
+    return res.status(404).json({ error: 'No encontrado' });
+  }
+  
+  let data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+  data = data.filter(p => p.id !== req.params.id);
+  fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
+  res.json({ success: true });
+});
+```
+
+Agrega estos endpoints justo después de los endpoints existentes en tu server.js

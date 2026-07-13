@@ -1,0 +1,17 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../RestoGest"
+		},
+		{
+			"path": "../marketing"
+		},
+		{
+			"path": "../TVLOCAL"
+		}
+	],
+	"settings": {}
+}

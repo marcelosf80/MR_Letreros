@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard & Rendimientos - MR Letreros</title>
+  <script src="js/auth.js"></script>
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/sidebar-universal.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/maxton-theme.css">
+    <link rel="stylesheet" href="css/rendimientos.css">
+</head>
+
+<body class="bg-light">
+  <!-- Sidebar Universal (se inserta automáticamente) -->
+
+  <div class="main-content">
+    <!-- Top Bar -->
+    <div class="mx-topbar">
+      <h1 class="top-bar-title m-0">📊 Dashboard & Rendimientos</h1>
+      <div class="top-bar-actions">
+        <div id="googleSyncStatus" class="sync-status" style="display:none;">
+            <span id="googleSyncDot" class="status-dot"></span>
+            <span id="googleSyncText">Desconectado</span>
+        </div>
+        <button class="btn btn-secondary btn-small" id="btnSyncGoogle" style="margin-right: 10px;">🔄 Sync Sheets</button>
+        <button class="btn btn-dark btn-small" id="btnExportPDF" style="margin-right: 10px;">📄 Descargar PDF</button>
+        <button class="btn btn-primary btn-small" id="btnStrategy">✨ Informe de Estrategia</button>
+      </div>
+    </div>
+
+    <div class="content-container">
+      <!-- 1. DASHBOARD OPERATIVO (Lo que estaba en index) -->
+      <div class="dashboard-grid">
+        <div class="stat-card mx-card animate-fade-in-up"">
+          <div class="stat-label">⭐ Clientes VIP</div>
+          <div class="stat-value" id="statVipClients">0</div>
+          <div style="font-size: 0.8rem; color: #FFD700;">Clientes destacados</div>
+        </div>
+        <div class="stat-card mx-card animate-fade-in-up"">
+          <div class="stat-label">🔨 Trabajos Activos</div>
+          <div class="stat-value" id="statActiveWorks">0</div>
+          <div style="font-size: 0.8rem; color: #2196F3;">En proceso</div>
+        </div>
+        <div class="stat-card mx-card animate-fade-in-up"">
+          <div class="stat-label">✅ Para Entrega</div>
+          <div class="stat-value" id="statReadyDelivery">0</div>
+          <div style="font-size: 0.8rem; color: #9C27B0;">Listos para entregar</div>
+        </div>
+        <div class="stat-card mx-card animate-fade-in-up"">
+          <div class="stat-label">💵 Pendiente de Cobro</div>
+          <div class="stat-value" id="statPendingPayment">$0</div>
+          <div style="font-size: 0.8rem; color: #FF9800;">Saldo a cobrar</div>
+        </div>
+      </div>
+
+      <!-- 2. ANÁLISIS INTELIGENTE (Lo que estaba en index) -->
+      <div class="ai-section">
+        <div class="ai-card">
+          <div class="ai-title"><span>📈</span> Tendencia de Ganancias</div>
+          <div style="height: 300px;"><canvas id="profitChart"></canvas></div>
+        </div>
+        <div class="ai-card">
+          <div class="ai-title"><span>🤖</span> Asistente Inteligente</div>
+          <div class="ai-tips-list" id="aiTipsList">
+            <div class="ai-tip">📊 Analizando datos del sistema...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. RENDIMIENTOS FINANCIEROS (Lo que estaba en rendimientos) -->
+      <h2 style="margin: 2rem 0 1rem 0; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.5rem;">💰
+        Finanzas</h2>
+      <div class="dashboard-grid">
+        <div class="stat-card mx-card animate-fade-in-up"">
+          <div class="stat-label">Total Ingresos</div>
+          <div class="stat-value" id="totalIngresos">$0</div>
+        </div>
+        <div class="stat-card mx-card animate-fade-in-up"">
+          <div class="stat-label">Total Gastos</div>
+          <div class="stat-value" id="totalGastos" style="color: #FF5252;">$0</div>
+        </div>
+        <div class="stat-card mx-card animate-fade-in-up"">
+          <div class="stat-label">Ganancia Neta</div>
+          <div class="stat-value" id="ganancia">$0</div>
+        </div>
+        <div class="stat-card mx-card animate-fade-in-up"">
+          <div class="stat-label">Margen %</div>
+          <div class="stat-value" id="margen">0%</div>
+        </div>
+      </div>
+
+      <!-- Gráficos Financieros -->
+      <div class="charts-grid">
+        <div class="card mx-card animate-fade-in-up">
+          <div class="card-header">
+            <h2 class="card-title">💹 Flujo de Caja</h2>
+          </div>
+          <div class="chart-container"><canvas id="chartBarras"></canvas></div>
+        </div>
+        <div class="card mx-card animate-fade-in-up">
+          <div class="card-header">
+            <h2 class="card-title">🍰 Distribución de Gastos</h2>
+          </div>
+          <div class="chart-container"><canvas id="chartPie"></canvas></div>
+        </div>
+      </div>
+
+      <!-- Gestión de Finanzas -->
+      <div class="row g-4 mb-4">
+        <!-- Ingresos -->
+        <div class="col-12 col-md-6">
+          <div class="card mx-card animate-fade-in-up">
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <h2 class="card-title m-0">📥 Ingresos del Período</h2>
+              <button class="btn btn-success btn-sm" onclick="openGastoModal('ingreso')">➕ Agregar Ingreso</button>
+            </div>
+            <div id="ingresosList" class="financial-list">
+              <p class="empty-state">No hay ingresos registrados</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Gastos -->
+        <div class="col-12 col-md-6">
+          <div class="card mx-card animate-fade-in-up">
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <h2 class="card-title m-0">💸 Gastos del Período</h2>
+              <button class="btn btn-danger btn-sm" onclick="openGastoModal('egreso')">➕ Agregar Gasto</button>
+            </div>
+            <div id="gastList" class="financial-list">
+              <p class="empty-state">No hay gastos registrados</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Modal Agregar Gasto -->
+  <div class="modal" id="gastoModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title">💸 Agregar Gasto</h2>
+        <button class="btn-close" id="btnCloseGasto">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Concepto *</label>
+          <input type="text" id="gastoDesc" placeholder="Ej: Alquiler" class="form-input">
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Monto *</label>
+            <input type="number" id="gastoMonto" placeholder="0.00" step="0.01" class="form-input">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Fecha *</label>
+            <input type="date" id="gastoFecha" class="form-input">
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="btnCancelGasto" onclick="closeGastoModal()">Cancelar</button>
+        <button class="btn btn-primary" id="btnSaveGasto" onclick="saveGasto()">💾 Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Informe de Estrategia -->
+  <div class="modal" id="strategyModal">
+    <div class="modal-content" style="max-width: 600px;">
+      <div class="modal-header" style="background: linear-gradient(135deg, #6366f1, #8b5cf6);">
+        <h2 class="modal-title">🧠 Informe de Estrategia IA</h2>
+        <button class="btn-close"
+          onclick="document.getElementById('strategyModal').classList.remove('active')">×</button>
+      </div>
+      <div class="modal-body" id="strategyContent">
+        <!-- Contenido dinámico -->
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary"
+          onclick="document.getElementById('strategyModal').classList.remove('active')">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CHAT WIDGET -->
+  <button class="chat-fab" id="chatFab" onclick="toggleChat()">✨</button>
+
+  <div id="aiChatWidget" class="chat-widget">
+    <div class="chat-header">
+      <div class="chat-title">✨ Asistente IA</div>
+      <button class="chat-close" onclick="toggleChat()">×</button>
+    </div>
+    <div class="chat-messages" id="chatMessages">
+      <!-- Mensajes dinámicos -->
+    </div>
+    <div class="chat-input-area">
+      <input type="text" id="chatInput" placeholder="Escribe aquí..." onkeypress="handleChatKey(event)">
+      <button class="chat-send" onclick="sendMessage()">➤</button>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="js/shared/modal-system.js"></script>
+  <script src="js/shared/data-manager-network.js"></script>
+  <script src="js/shared/sidebar-universal.js"></script>
+  <script src="js/shared/pdf-generator.js"></script>
+  <script src="js/dashboard/ai-chat.js"></script>
+  <script src="js/rendimientos/rendimientos-main.js"></script>
+    <!-- Bootstrap 5 JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>

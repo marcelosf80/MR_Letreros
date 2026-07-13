@@ -1,0 +1,22 @@
+.mat-grid { display:grid; grid-template-columns: minmax(240px, 280px) 1fr; gap:1.5rem; align-items:start; }
+    .categoria-item { display:flex; justify-content:space-between; align-items:center; padding:0.65rem 0.9rem; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); border-radius:8px; margin-bottom:0.4rem; transition:background 0.2s; }
+    .categoria-item:hover { background:rgba(255,140,66,0.08); }
+    .cat-del-btn { background:none; border:none; cursor:pointer; opacity:0.3; padding:2px 6px; border-radius:4px; color:#FF6B6B; font-size:1rem; transition:opacity 0.2s; }
+    .cat-del-btn:hover { opacity:1; }
+    .categoria-section { margin-bottom:2rem; }
+    .categoria-title { color:#51CF66; font-size:1rem; font-weight:600; border-bottom:2px solid rgba(81,207,102,0.2); padding-bottom:0.4rem; margin-bottom:1rem; }
+    .material-card { background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.07); border-radius:10px; padding:1rem 1.2rem; margin-bottom:0.8rem; display:grid; grid-template-columns:1fr auto; gap:0.5rem; align-items:center; }
+    .material-card:hover { border-color:rgba(255,140,66,0.3); }
+    .mat-name { font-weight:600; margin-bottom:0.3rem; }
+    .mat-info { font-size:0.85rem; color:rgba(255,255,255,0.55); }
+    .mat-cost { font-size:1.1rem; font-weight:bold; color:#FF8C42; }
+    .btn-sm { padding:0.3rem 0.7rem; border-radius:6px; border:none; cursor:pointer; font-size:0.8rem; transition:all 0.2s; }
+    .btn-edit { background:rgba(255,140,66,0.15); color:#FF8C42; }
+    .btn-edit:hover { background:rgba(255,140,66,0.3); }
+    .btn-del { background:rgba(255,107,107,0.15); color:#FF6B6B; }
+    .btn-del:hover { background:rgba(255,107,107,0.3); }
+    .empty-msg { text-align:center; color:rgba(255,255,255,0.4); padding:3rem; font-style:italic; }
+    .form-row { display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
+    .costo-preview { margin-top:0.8rem; padding:0.9rem 1.1rem; background:rgba(255,140,66,0.08); border:1px solid rgba(255,140,66,0.25); border-radius:8px; }
+    .costo-preview .big { font-size:1.4rem; font-weight:bold; color:#FF8C42; }
+    @media(max-width:900px){ .mat-grid{grid-template-columns:1fr;} .form-row{grid-template-columns:1fr;} }

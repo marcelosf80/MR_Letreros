@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Materiales - MR Letreros</title>
+  <script src="js/auth.js"></script>
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/sidebar-universal.css">
+  
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/maxton-theme.css">
+    <link rel="stylesheet" href="css/materiales.css">
+</head>
+<body class="bg-light">
+  <div class="main-content">
+    <div class="mx-topbar">
+      <h1 class="top-bar-title m-0">📦 Gestión de Materiales</h1>
+    </div>
+    <div class="content-container">
+      <div class="mat-grid">
+        <!-- IZQUIERDA -->
+        <div>
+          <div class="card mx-card animate-fade-in-up" style="margin-bottom:1.5rem;">
+            <h3 style="margin-bottom:1rem;">⚙️ Acciones</h3>
+            <div style="display:flex;flex-direction:column;gap:0.7rem;">
+              <button class="btn btn-primary" onclick="abrirModalMaterial()">➕ Agregar Material</button>
+              <button class="btn btn-secondary" onclick="abrirModalCategoria()">📁 Nueva Categoría</button>
+            </div>
+          </div>
+          <div class="card mx-card animate-fade-in-up" style="margin-bottom:1.5rem;">
+            <h3 style="margin-bottom:1rem; color: #FFD43B;">📈 Aumento Masivo</h3>
+            <div class="form-group mb-2">
+              <label class="form-label" style="font-size: 0.8rem; opacity: 0.8;">Categoría</label>
+              <select id="bulkMatCategory" class="form-select form-select-sm">
+                <option value="all">Todas</option>
+              </select>
+            </div>
+            <div class="form-group mb-3">
+              <label class="form-label" style="font-size: 0.8rem; opacity: 0.8;">Porcentaje (%)</label>
+              <input type="number" id="bulkMatPercentage" class="form-control form-control-sm" placeholder="Ej: 10" step="0.1">
+            </div>
+            <button class="btn btn-warning btn-sm w-100" onclick="applyBulkUpdateCost()">⬆️ Aplicar Aumento</button>
+            <small style="color:rgba(255,255,255,0.4); font-size: 0.7rem; margin-top: 0.5rem; display: block;">
+              * Afecta al precio comercial/rollo.
+            </small>
+          </div>
+          <div class="card mx-card animate-fade-in-up">
+            <h3 style="margin-bottom:1rem;color:#51CF66;">📁 Categorías</h3>
+            <div id="listaCategorias"><p style="color:rgba(255,255,255,0.4);font-size:0.85rem;">Cargando...</p></div>
+          </div>
+        </div>
+        <!-- DERECHA -->
+        <div class="card mx-card animate-fade-in-up" style="min-height:60vh;">
+          <h2 class="card-title" style="margin-bottom:1.5rem;">📦 Inventario de Materiales</h2>
+          <div id="listaMateriales"><p class="empty-msg">Cargando...</p></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL MATERIAL -->
+    <div class="modal" id="modalMaterial">
+      <div class="modal-content" style="max-width:600px;">
+        <div class="modal-header">
+          <h2 class="modal-title" id="tituloModalMaterial">📦 Agregar Material</h2>
+          <button class="btn-close" onclick="cerrarModalMaterial()">×</button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label">Categoría *</label>
+            <select id="matCategoria" class="form-select"><option value="">Seleccionar categoría...</option></select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Nombre del Material *</label>
+            <input type="text" id="matNombre" class="form-input" placeholder="Ej: Lona Front 13oz, Vinilo Brillante...">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Unidad de Medida *</label>
+            <select id="matUnidad" class="form-select" onchange="actualizarFormulario()">
+              <option value="m2">Metro Cuadrado (m²)</option>
+              <option value="ml">Metro Lineal (ml)</option>
+              <option value="unidad">Unidad</option>
+            </select>
+          </div>
+          <div class="highlight-box">
+            <h4>📏 Datos del Rollo / Pieza</h4>
+            <div class="form-row">
+              <div class="form-group" id="grupoAncho">
+                <label class="form-label">Ancho (metros) *</label>
+                <input type="number" id="matAncho" class="form-input" placeholder="1.00" step="0.01" min="0.01" oninput="calcularPreview()">
+                <small style="color:rgba(255,255,255,0.4);">Ej: 1, 1.52, 0.90</small>
+              </div>
+              <div class="form-group">
+                <label class="form-label" id="labelLargo">Largo (metros) *</label>
+                <input type="number" id="matLargo" class="form-input" placeholder="50" step="0.1" min="0.01" oninput="calcularPreview()">
+                <small style="color:rgba(255,255,255,0.4);">Ej: 50, 100</small>
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Precio total del rollo ($) *</label>
+              <input type="number" id="matPrecio" class="form-input" placeholder="400000" step="1" min="1" oninput="calcularPreview()">
+              <small style="color:rgba(255,255,255,0.4);">Lo que pagaste en total por este rollo</small>
+            </div>
+          </div>
+          <div class="costo-preview" id="costoPreview" style="display:none;">
+            <div style="color:rgba(255,255,255,0.6);margin-bottom:0.3rem;font-size:0.85rem;">Costo calculado automáticamente:</div>
+            <div class="big" id="previewCostM2">$0/m²</div>
+            <div style="margin-top:0.2rem;font-size:0.8rem;color:rgba(255,255,255,0.4);" id="previewDetalle"></div>
+          </div>
+          <input type="hidden" id="matEditId">
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" onclick="cerrarModalMaterial()">Cancelar</button>
+          <button class="btn btn-primary" id="btnGuardarMaterial" onclick="guardarMaterial()">💾 Guardar Material</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL CATEGORÍA -->
+    <div class="modal" id="modalCategoria">
+      <div class="modal-content" style="max-width:460px;">
+        <div class="modal-header">
+          <h2 class="modal-title">📁 Nueva Categoría</h2>
+          <button class="btn-close" onclick="cerrarModalCategoria()">×</button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label">Nombre *</label>
+            <input type="text" id="catNombre" class="form-input" placeholder="Ej: Lonas, Vinilo, Tintas..." oninput="validarNombreCat()">
+            <small id="catNombreHelp" style="color:rgba(255,255,255,0.4);">Ingresá un nombre único</small>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" onclick="cerrarModalCategoria()">Cancelar</button>
+          <button class="btn btn-primary" id="btnGuardarCat" onclick="guardarCategoria()" disabled>💾 Crear Categoría</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/shared/sidebar-universal.js"></script>
+  <script>
+  const FMT = n => '$' + new Intl.NumberFormat('es-AR', {maximumFractionDigits:0}).format(n||0);
+
+  function getToken() { return localStorage.getItem('mr_token') || ''; }
+
+  async function api(url, opts={}) {
+    const res = await fetch(url, {
+      ...opts,
+      headers: { 'Content-Type':'application/json', 'Authorization':'Bearer '+getToken(), ...(opts.headers||{}) }
+    });
+    if (!res.ok) {
+      const e = await res.json().catch(()=>({}));
+      throw new Error(e.error || 'Error HTTP ' + res.status);
+    }
+    return res.json();
+  }
+
+  let categorias = [];
+  let materiales = [];
+
+  document.addEventListener('DOMContentLoaded', async () => {
+    await Promise.all([cargarCategorias(), cargarMateriales()]);
+    renderCategorias();
+    renderMateriales();
+    document.getElementById('catNombre').addEventListener('keypress', e => {
+      if (e.key==='Enter' && !document.getElementById('btnGuardarCat').disabled) guardarCategoria();
+    });
+  });
+
+  async function cargarCategorias() {
+    try { categorias = (await api('/api/categorias') || []).sort(); } catch(e) { categorias=[]; }
+  }
+
+  async function cargarMateriales() {
+    try { const d = await api('/api/materiales'); materiales = Array.isArray(d)?d:[]; } catch(e) { materiales=[]; }
+  }
+
+  function renderCategorias() {
+    const c = document.getElementById('listaCategorias');
+    if (!categorias.length) { c.innerHTML='<p style="color:rgba(255,255,255,0.4);font-size:0.85rem;">No hay categorías. Creá la primera.</p>'; return; }
+    c.innerHTML = categorias.map(cat => {
+      const n = materiales.filter(m=>m.categoria===cat).length;
+      return `<div class="categoria-item">
+        <span>📁 <strong>${cat}</strong> <span style="font-size:0.8rem;color:rgba(255,255,255,0.4);">(${n})</span></span>
+        <button class="cat-del-btn" onclick="eliminarCategoria('${cat}')">🗑️</button>
+      </div>`;
+    }).join('');
+
+    const bulkSelect = document.getElementById('bulkMatCategory');
+    if (bulkSelect) {
+      bulkSelect.innerHTML = '<option value="all">Todas</option>' +
+        categorias.map(cat => `<option value="${cat}">${cat}</option>`).join('');
+    }
+  }
+
+  function renderMateriales() {
+    const c = document.getElementById('listaMateriales');
+    if (!materiales.length) { c.innerHTML='<p class="empty-msg">No hay materiales. Agregá el primero.</p>'; return; }
+    const porCat = {};
+    materiales.forEach(m => { const cat=m.categoria||'Sin Categoría'; if(!porCat[cat])porCat[cat]=[]; porCat[cat].push(m); });
+    c.innerHTML = Object.keys(porCat).sort().map(cat => `
+      <div class="categoria-section">
+        <div class="categoria-title">📁 ${cat}</div>
+        ${porCat[cat].map(m => {
+          const ancho=m.ancho||1, largo=m.largo||0;
+          const m2=m.m2||(ancho*largo);
+          const cpm2=m.costoPorM2||(m2>0?m.precioRollo/m2:0);
+          const u=m.unidad||'m2';
+          const info = u==='m2' ? `${ancho}m × ${largo}m = ${m2.toFixed(2)}m² · Rollo: ${FMT(m.precioRollo)}`
+                      : u==='ml' ? `${largo}m lineales · Rollo: ${FMT(m.precioRollo)}`
+                      : `${largo} unidades · Total: ${FMT(m.precioRollo)}`;
+          const label = u==='ml' ? '/m lineal' : u==='unidad' ? '/unidad' : '/m²';
+          return `<div class="material-card">
+            <div>
+              <div class="mat-name">${m.productoNombre||m.producto||'Sin nombre'}</div>
+              <div class="mat-info">${info}</div>
+            </div>
+            <div style="text-align:right;">
+              <div class="mat-cost">${FMT(cpm2)}${label}</div>
+              <div style="display:flex;gap:0.4rem;margin-top:0.5rem;justify-content:flex-end;">
+                <button class="btn-sm btn-edit" onclick="editarMaterial('${m.id}')">✏️ Editar</button>
+                <button class="btn-sm btn-del" onclick="eliminarMaterial('${m.id}')">🗑️</button>
+              </div>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>`).join('');
+  }
+
+  function poblarSelectorCat(current='') {
+    const s=document.getElementById('matCategoria');
+    s.innerHTML='<option value="">Seleccionar categoría...</option>'+categorias.map(c=>`<option value="${c}"${c===current?' selected':''}>${c}</option>`).join('');
+  }
+
+  function abrirModalMaterial() {
+    document.getElementById('tituloModalMaterial').textContent='📦 Agregar Material';
+    document.getElementById('btnGuardarMaterial').textContent='💾 Guardar Material';
+    limpiarForm();
+    poblarSelectorCat();
+    document.getElementById('modalMaterial').classList.add('active');
+  }
+
+  function cerrarModalMaterial() { document.getElementById('modalMaterial').classList.remove('active'); }
+
+  function limpiarForm() {
+    ['matCategoria','matNombre','matAncho','matLargo','matPrecio','matEditId'].forEach(id=>{ const e=document.getElementById(id); if(e)e.value=''; });
+    document.getElementById('matUnidad').value='m2';
+    document.getElementById('costoPreview').style.display='none';
+    actualizarFormulario();
+  }
+
+  function actualizarFormulario() {
+    const u=document.getElementById('matUnidad').value;
+    document.getElementById('grupoAncho').style.display=u==='m2'?'block':'none';
+    document.getElementById('labelLargo').textContent=u==='m2'?'Largo (metros) *':u==='ml'?'Largo (metros) *':'Cantidad (unidades) *';
+    calcularPreview();
+  }
+
+  function calcularPreview() {
+    const u=document.getElementById('matUnidad').value;
+    const ancho=parseFloat(document.getElementById('matAncho').value)||1;
+    const largo=parseFloat(document.getElementById('matLargo').value)||0;
+    const precio=parseFloat(document.getElementById('matPrecio').value)||0;
+    const prev=document.getElementById('costoPreview');
+    if(largo>0&&precio>0){
+      let costo, detalle, label;
+      if(u==='m2'){ const m2=ancho*largo; costo=precio/m2; detalle=`${ancho}m × ${largo}m = ${m2.toFixed(2)} m² · Rollo: ${FMT(precio)}`; label='/m²'; }
+      else if(u==='ml'){ costo=precio/largo; detalle=`${largo}m lineales · Rollo: ${FMT(precio)}`; label='/m lineal'; }
+      else { costo=precio/largo; detalle=`${largo} unidades · Total: ${FMT(precio)}`; label='/unidad'; }
+      document.getElementById('previewCostM2').textContent=FMT(costo)+label;
+      document.getElementById('previewDetalle').textContent=detalle;
+      prev.style.display='block';
+    } else { prev.style.display='none'; }
+  }
+
+  async function guardarMaterial() {
+    const categoria=document.getElementById('matCategoria').value.trim();
+    const nombre=document.getElementById('matNombre').value.trim();
+    const unidad=document.getElementById('matUnidad').value;
+    const ancho=parseFloat(document.getElementById('matAncho').value)||1;
+    const largo=parseFloat(document.getElementById('matLargo').value)||0;
+    const precio=parseFloat(document.getElementById('matPrecio').value)||0;
+    const editId=document.getElementById('matEditId').value;
+
+    if(!categoria) return alert('⚠️ Seleccioná una categoría.');
+    if(!nombre) return alert('⚠️ Ingresá el nombre del material.');
+    if(largo<=0) return alert('⚠️ El largo/cantidad debe ser mayor a 0.\nEjemplo: para un rollo de 50 metros → ingresá 50');
+    if(precio<=0) return alert('⚠️ El precio debe ser mayor a 0.');
+
+    const m2=unidad==='m2'?ancho*largo:largo;
+    const costoPorM2=precio/m2;
+    const id=editId||Date.now().toString();
+
+    const registro = { id, categoria, productoId:id, productoNombre:nombre, producto:nombre, unidad, ancho:unidad==='m2'?ancho:1, largo, m2, precioRollo:precio, costoPorM2, fecha:new Date().toISOString() };
+
+    const btn=document.getElementById('btnGuardarMaterial');
+    try {
+      btn.disabled=true; btn.textContent='⏳ Guardando...';
+      let lista = await api('/api/materiales').catch(()=>[]);
+      if(!Array.isArray(lista)) lista=[];
+      if(editId){ const idx=lista.findIndex(m=>String(m.id)===String(editId)); if(idx!==-1) lista[idx]=registro; else lista.push(registro); }
+      else lista.push(registro);
+      await api('/api/materiales',{method:'POST',body:JSON.stringify(lista)});
+      materiales=lista;
+      cerrarModalMaterial();
+      renderMateriales();
+      renderCategorias();
+      alert(editId?'✅ Material actualizado.':'✅ Material guardado correctamente.');
+    } catch(e) {
+      console.error(e);
+      alert('❌ Error al guardar: '+e.message);
+    } finally {
+      btn.disabled=false; btn.textContent='💾 Guardar Material';
+    }
+  }
+
+  function editarMaterial(id) {
+    const m=materiales.find(x=>String(x.id)===String(id));
+    if(!m) return;
+    document.getElementById('tituloModalMaterial').textContent='✏️ Editar Material';
+    document.getElementById('btnGuardarMaterial').textContent='💾 Actualizar Material';
+    poblarSelectorCat(m.categoria||'');
+    document.getElementById('matEditId').value=m.id;
+    document.getElementById('matNombre').value=m.productoNombre||m.producto||'';
+    document.getElementById('matUnidad').value=m.unidad||'m2';
+    document.getElementById('matAncho').value=m.ancho||1;
+    document.getElementById('matLargo').value=m.largo||'';
+    document.getElementById('matPrecio').value=m.precioRollo||'';
+    actualizarFormulario();
+    document.getElementById('modalMaterial').classList.add('active');
+  }
+
+  async function eliminarMaterial(id) {
+    const m=materiales.find(x=>String(x.id)===String(id));
+    if(!m||!confirm(`¿Eliminar "${m.productoNombre||m.producto}"?`)) return;
+    try {
+      const lista=materiales.filter(x=>String(x.id)!==String(id));
+      await api('/api/materiales',{method:'POST',body:JSON.stringify(lista)});
+      materiales=lista;
+      renderMateriales(); renderCategorias();
+    } catch(e) { alert('❌ Error: '+e.message); }
+  }
+
+  // === CATEGORÍAS ===
+  function abrirModalCategoria() {
+    document.getElementById('catNombre').value='';
+    document.getElementById('catNombreHelp').textContent='Ingresá un nombre único';
+    document.getElementById('catNombreHelp').style.color='rgba(255,255,255,0.4)';
+    document.getElementById('btnGuardarCat').disabled=true;
+    document.getElementById('modalCategoria').classList.add('active');
+    setTimeout(()=>document.getElementById('catNombre').focus(),100);
+  }
+
+  function cerrarModalCategoria() { document.getElementById('modalCategoria').classList.remove('active'); }
+
+  function validarNombreCat() {
+    const n=document.getElementById('catNombre').value.trim();
+    const h=document.getElementById('catNombreHelp');
+    const b=document.getElementById('btnGuardarCat');
+    if(!n){ h.textContent='Ingresá un nombre único'; h.style.color='rgba(255,255,255,0.4)'; b.disabled=true; }
+    else if(categorias.map(c=>c.toLowerCase()).includes(n.toLowerCase())){ h.textContent='❌ Ya existe'; h.style.color='#FF6B6B'; b.disabled=true; }
+    else { h.textContent='✅ Disponible'; h.style.color='#51CF66'; b.disabled=false; }
+  }
+
+  async function guardarCategoria() {
+    const nombre=document.getElementById('catNombre').value.trim();
+    if(!nombre) return;
+    const btn=document.getElementById('btnGuardarCat');
+    try {
+      btn.disabled=true; btn.textContent='⏳ Guardando...';
+      const res=await api('/api/categorias',{method:'POST',body:JSON.stringify({categoria:nombre})});
+      if(res.success===false) throw new Error('El servidor no pudo guardar la categoría');
+      // Recargar desde servidor para estar seguros
+      await cargarCategorias();
+      cerrarModalCategoria(); renderCategorias();
+      alert(`✅ Categoría "${nombre}" creada.`);
+    } catch(e) {
+      console.error('Error creando categoría:', e);
+      alert('❌ Error al crear categoría: '+e.message);
+    } finally {
+      btn.disabled=false; btn.textContent='💾 Crear Categoría';
+      validarNombreCat();
+    }
+  }
+
+  async function eliminarCategoria(cat) {
+    const n=materiales.filter(m=>m.categoria===cat).length;
+    if(n>0) return alert(`⚠️ No podés eliminar "${cat}" — tiene ${n} material${n!==1?'es':''}.\nPrimero eliminá sus materiales.`);
+    if(!confirm(`¿Eliminar la categoría "${cat}"?`)) return;
+    try {
+      await api(`/api/categorias/${encodeURIComponent(cat)}`,{method:'DELETE'});
+      categorias=categorias.filter(c=>c!==cat);
+      renderCategorias();
+    } catch(e) { alert('❌ Error: '+e.message); }
+  }
+
+  window.applyBulkUpdateCost = async function() {
+    const category = document.getElementById('bulkMatCategory').value;
+    const percentage = parseFloat(document.getElementById('bulkMatPercentage').value);
+
+    if (isNaN(percentage) || percentage === 0) {
+      alert('⚠️ Ingresá un porcentaje válido');
+      return;
+    }
+
+    if (!confirm(`¿Aumentar costos en un ${percentage}% para ${category==='all'?'todos los materiales':'la categoría '+category}?`)) return;
+
+    const factor = 1 + (percentage/100);
+    let count = 0;
+
+    const updatedMateriales = materiales.map(m => {
+      if (category === 'all' || m.categoria === category) {
+        count++;
+        const newPrecioRollo = Number((m.precioRollo * factor).toFixed(2));
+        const ancho = m.ancho || 1;
+        const largo = m.largo || 1;
+        const m2 = m.unidad === 'm2' ? ancho * largo : largo;
+        const costoPorM2 = newPrecioRollo / m2;
+
+        return {
+          ...m,
+          precioRollo: newPrecioRollo,
+          costoPorM2: costoPorM2
+        };
+      }
+      return m;
+    });
+
+    if (count === 0) return alert('⚠️ No hay materiales para actualizar.');
+
+    try {
+      await api('/api/materiales', { method:'POST', body:JSON.stringify(updatedMateriales) });
+      materiales = updatedMateriales;
+      renderMateriales();
+      renderCategorias();
+      document.getElementById('bulkMatPercentage').value = '';
+      alert(`✅ Se actualizaron ${count} materiales correctamente.`);
+    } catch(e) {
+      alert('❌ Error al actualizar masivamente: ' + e.message);
+    }
+  };
+  </script>
+    <!-- Bootstrap 5 JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

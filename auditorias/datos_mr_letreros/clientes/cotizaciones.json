@@ -1,0 +1,185 @@
+[
+  {
+    "id": "1770658031945",
+    "clientId": "cliente_cli_1770657857352",
+    "cliente": {
+      "nombre": "Carolina GyM",
+      "telefono": "2915 07-8802",
+      "email": "",
+      "direccion": ""
+    },
+    "fechaEntrega": "",
+    "productos": [],
+    "terceros": [],
+    "multiCategories": {
+      "categories": [
+        {
+          "id": "cat_1770657761551_1s71uasfq",
+          "name": "Front 13 Oz",
+          "costPerM2": 0,
+          "pricePerM2": 37000,
+          "totalCost": 0,
+          "totalPrice": 42735,
+          "margin": 42735,
+          "m2": 1.155
+        },
+        {
+          "id": "tercero_1770657871929",
+          "name": "🔧 Soldadura de lona (Peco)",
+          "costPerM2": 0,
+          "pricePerM2": 6000,
+          "totalCost": 0,
+          "totalPrice": 6930,
+          "margin": 6930,
+          "m2": 1.155
+        }
+      ],
+      "sharedDimensions": {
+        "width": 1.54,
+        "height": 0.75,
+        "totalM2": 1.155
+      },
+      "inkPriceEnabled": true,
+      "inkPricePerM2": 1500
+    },
+    "costoTotal": 0,
+    "subtotal": 51397.5,
+    "iva": 0,
+    "totalCliente": 51397.5,
+    "ganancia": 51397.5,
+    "anticipo": 30000,
+    "saldo": 21397.5,
+    "fecha": "2026-02-09T17:27:11.945Z",
+    "estado": "aprobada",
+    "approved": true,
+    "fechaAprobacion": "2026-02-09T17:27:27.578Z"
+  },
+  {
+    "id": "1770659078470",
+    "clientId": "cliente_cli_1770639220346",
+    "cliente": {
+      "nombre": "Lisso Profesional",
+      "telefono": "3425 39-7585",
+      "email": "",
+      "direccion": ""
+    },
+    "fechaEntrega": "",
+    "productos": [],
+    "terceros": [],
+    "multiCategories": {
+      "categories": [
+        {
+          "id": "cat_1770658993484_zx7icpqfc",
+          "name": "Base Gris",
+          "costPerM2": 0,
+          "pricePerM2": 32000,
+          "totalCost": 0,
+          "totalPrice": 31971.2,
+          "margin": 31971.2,
+          "m2": 0.9991
+        },
+        {
+          "id": "cat_1770659021644_oiuzezeyc",
+          "name": "Base Gris",
+          "costPerM2": 0,
+          "pricePerM2": 32000,
+          "totalCost": 0,
+          "totalPrice": 31971.2,
+          "margin": 31971.2,
+          "m2": 0.9991
+        },
+        {
+          "id": "cat_1770659043080_3uf07vi6m",
+          "name": "Base Gris",
+          "costPerM2": 0,
+          "pricePerM2": 32000,
+          "totalCost": 0,
+          "totalPrice": 31971.2,
+          "margin": 31971.2,
+          "m2": 0.9991
+        },
+        {
+          "id": "cat_1770659063098_m2rscplkv",
+          "name": "Base Gris",
+          "costPerM2": 0,
+          "pricePerM2": 32000,
+          "totalCost": 0,
+          "totalPrice": 31971.2,
+          "margin": 31971.2,
+          "m2": 0.9991
+        }
+      ],
+      "sharedDimensions": {
+        "width": 1.03,
+        "height": 0.97,
+        "totalM2": 0.9991
+      },
+      "inkPriceEnabled": true,
+      "inkPricePerM2": 1500
+    },
+    "costoTotal": 0,
+    "subtotal": 129383.45,
+    "iva": 0,
+    "totalCliente": 129383.45,
+    "ganancia": 129383.45,
+    "anticipo": 0,
+    "saldo": 129383.45,
+    "fecha": "2026-02-09T17:44:38.470Z",
+    "estado": "aprobada",
+    "approved": true,
+    "fechaAprobacion": "2026-02-09T17:45:24.688Z"
+  },
+  {
+    "id": "1770989812891",
+    "clientId": "cliente_cli_1770989806107",
+    "cliente": {
+      "nombre": "Kiosco escolar",
+      "telefono": "3425 12-6234",
+      "email": "",
+      "direccion": ""
+    },
+    "fechaEntrega": "",
+    "productos": [],
+    "terceros": [],
+    "multiCategories": {
+      "categories": [
+        {
+          "id": "cat_1770989661747_eqlk6jlqz",
+          "name": "Front 13 Oz",
+          "costPerM2": 0,
+          "pricePerM2": 37000,
+          "totalCost": 0,
+          "totalPrice": 35520,
+          "margin": 35520,
+          "m2": 0.96
+        },
+        {
+          "id": "cat_1770989673697_i3ckc8evc",
+          "name": "Laca",
+          "costPerM2": 0,
+          "pricePerM2": 6200,
+          "totalCost": 0,
+          "totalPrice": 5952,
+          "margin": 5952,
+          "m2": 0.96
+        }
+      ],
+      "sharedDimensions": {
+        "width": 1.2,
+        "height": 0.8,
+        "totalM2": 0.96
+      },
+      "inkPriceEnabled": true,
+      "inkPricePerM2": 1500
+    },
+    "costoTotal": 0,
+    "subtotal": 42912,
+    "iva": 0,
+    "totalCliente": 42912,
+    "ganancia": 42912,
+    "anticipo": 0,
+    "saldo": 42912,
+    "fecha": "2026-02-13T13:36:52.891Z",
+    "estado": "pendiente"
+  }
+]

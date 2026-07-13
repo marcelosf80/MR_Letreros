@@ -1,0 +1,379 @@
+/* SYSTEM THEME VARIABLES (DARK NEON GRAPHS) */
+:root {
+    --primary: #00f0ff;
+    --primary-hover: #ff007f;
+    --bg: #09090b;
+    --surface: rgba(24, 24, 27, 0.75);
+    --text: #f4f4f5;
+    --text-muted: #a1a1aa;
+    --border: rgba(255, 255, 255, 0.08);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: var(--bg);
+    background-image: radial-gradient(circle at 50% 50%, rgba(0, 240, 255, 0.05) 0%, transparent 60%);
+    color: var(--text);
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.login-container {
+    width: 100%;
+    max-width: 400px;
+    padding: 2rem;
+}
+
+.main-wrapper {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    position: relative;
+    z-index: 1;
+}
+
+/* Dark Glassmorphic Login Card with Entrance Animation */
+.card {
+    background: var(--surface);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    padding: 2.5rem; 
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+    opacity: 0;
+    transform: translateY(30px);
+    animation: cardEntrance 0.8s cubic-bezier(0.25, 1, 0.5, 1) 4.3s forwards;
+}
+
+@keyframes cardEntrance {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.logo {
+    text-align: center;
+    margin-bottom: 2rem;
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: var(--text);
+    letter-spacing: -0.025em;
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
+}
+
+.logo-wrapper {
+    text-align: center;
+    margin-bottom: 0.5rem;
+}
+
+/* Pulsing Neon Glow logo matching the plotter intro */
+.logo-img {
+    max-width: 185px;
+    height: auto;
+    margin-bottom: 1rem;
+    filter: drop-shadow(0 0 5px rgba(0, 240, 255, 0.4)) invert(1) brightness(2);
+    animation: logoNeonPulse 4s infinite ease-in-out;
+}
+
+@keyframes logoNeonPulse {
+    0%, 100% {
+        filter: drop-shadow(0 0 5px rgba(0, 240, 255, 0.4)) drop-shadow(0 0 15px rgba(255, 0, 127, 0.15)) invert(1) brightness(2);
+        transform: scale(1);
+    }
+    50% {
+        filter: drop-shadow(0 0 12px rgba(0, 240, 255, 0.75)) drop-shadow(0 0 25px rgba(255, 0, 127, 0.35)) invert(1) brightness(2);
+        transform: scale(1.04);
+    }
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+    text-align: left;
+}
+
+label {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.5rem;
+    color: var(--text-muted);
+}
+
+input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    background: rgba(9, 9, 11, 0.6);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: #ffffff;
+    font-family: inherit;
+    transition: all 0.25s;
+}
+
+input:focus {
+    outline: none;
+    border-color: var(--primary);
+    background: rgba(9, 9, 11, 0.85);
+    box-shadow: 0 0 0 4px rgba(0, 240, 255, 0.15);
+}
+
+/* Gradient Neon Button */
+button {
+    width: 100%;
+    padding: 0.75rem;
+    background: linear-gradient(135deg, #00f0ff 0%, #ff007f 100%);
+    color: #ffffff;
+    border: none;
+    border-radius: 8px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(0, 240, 255, 0.25);
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+button:hover {
+    background: linear-gradient(135deg, #ff007f 0%, #00f0ff 100%);
+    box-shadow: 0 6px 20px rgba(255, 0, 127, 0.35);
+    transform: translateY(-2px);
+}
+
+button:active {
+    transform: scale(0.97);
+}
+
+.error-msg {
+    color: #ef4444;
+    font-size: 0.875rem;
+    margin-top: 1rem;
+    text-align: center;
+    display: none;
+    text-shadow: 0 0 5px rgba(239, 68, 68, 0.3);
+}
+
+/* Carousel Background (Dark) */
+.carousel-bg {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -2;
+}
+
+.carousel-slide {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-size: cover;
+    background-position: center;
+    opacity: 0;
+    transition: opacity 1.5s ease-in-out;
+}
+
+.carousel-slide.active {
+    opacity: 1;
+}
+
+.bg-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(9, 9, 11, 0.82); /* Overlay oscuro */
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    z-index: -1;
+}
+
+/* Footer (Dark) */
+.login-footer {
+    width: 100%;
+    padding: 1rem;
+    text-align: center;
+    font-size: 0.85rem;
+    color: #71717a;
+    background: rgba(9, 9, 11, 0.8);
+    border-top: 1px solid var(--border);
+    z-index: 1;
+}
+
+.login-footer a {
+    color: var(--primary);
+    text-decoration: none;
+    font-weight: 600;
+    transition: color 0.2s;
+}
+
+.login-footer a:hover {
+    color: var(--primary-hover);
+}
+
+/* --- INTRO ANIMADA CARTELERIA --- */
+.intro-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: #09090b;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.8s ease-in-out, transform 0.8s cubic-bezier(0.85, 0, 0.15, 1);
+}
+
+.intro-screen.fade-out {
+    opacity: 0;
+    transform: translateY(-100%);
+    pointer-events: none;
+}
+
+.intro-content {
+    position: relative;
+    width: 90%;
+    max-width: 800px;
+    text-align: center;
+}
+
+.intro-svg {
+    width: 100%;
+    height: auto;
+    overflow: visible;
+}
+
+.intro-text {
+    font-family: 'Space Mono', monospace, sans-serif;
+    font-weight: 800;
+    font-size: 80px;
+    letter-spacing: 4px;
+    fill: transparent;
+    stroke: rgba(255, 255, 255, 0.9);
+    stroke-width: 1.5px;
+    stroke-dasharray: 800;
+    stroke-dashoffset: 800;
+    animation: drawText 2.5s cubic-bezier(0.25, 1, 0.5, 1) forwards,
+               neonFlicker 1.8s ease-in-out 2.5s forwards;
+}
+
+.laser-cutter {
+    position: absolute;
+    top: 15%;
+    left: 0;
+    width: 6px;
+    height: 70%;
+    background: linear-gradient(180deg, transparent, #00f0ff, #ff007f, transparent);
+    box-shadow: 0 0 10px #00f0ff, 0 0 20px #ff007f, 0 0 40px #00f0ff;
+    border-radius: 50%;
+    opacity: 0;
+    animation: laserSweep 2.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}
+
+.intro-subtitle {
+    margin-top: 1rem;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 10px;
+    color: #a1a1aa;
+    opacity: 0;
+    transform: translateY(10px);
+    animation: subtitleFadeIn 1s ease-out 3.2s forwards,
+               subtitleNeon 2s ease-in-out 4.2s infinite alternate;
+    text-transform: uppercase;
+}
+
+@keyframes drawText {
+    to {
+        stroke-dashoffset: 0;
+    }
+}
+
+@keyframes laserSweep {
+    0% {
+        left: 5%;
+        opacity: 0;
+    }
+    10% {
+        opacity: 1;
+    }
+    90% {
+        opacity: 1;
+    }
+    100% {
+        left: 95%;
+        opacity: 0;
+    }
+}
+
+@keyframes neonFlicker {
+    0% {
+        text-shadow: none;
+        fill: transparent;
+        stroke: rgba(255, 255, 255, 0.9);
+    }
+    10% {
+        text-shadow: 0 0 10px #00f0ff, 0 0 20px #00f0ff;
+        fill: rgba(0, 240, 255, 0.2);
+        stroke: #00f0ff;
+    }
+    12% {
+        text-shadow: none;
+        fill: transparent;
+        stroke: rgba(255, 255, 255, 0.2);
+    }
+    15% {
+        text-shadow: 0 0 15px #ff007f, 0 0 30px #ff007f;
+        fill: rgba(255, 0, 127, 0.3);
+        stroke: #ff007f;
+    }
+    18% {
+        text-shadow: none;
+        fill: transparent;
+        stroke: rgba(255, 255, 255, 0.2);
+    }
+    22% {
+        text-shadow: 0 0 15px #00f0ff, 0 0 30px #00f0ff, 0 0 50px #ff007f;
+        fill: #ffffff;
+        stroke: #00f0ff;
+    }
+    100% {
+        text-shadow: 0 0 15px #00f0ff, 0 0 30px #ff007f, 0 0 45px #00f0ff;
+        fill: #ffffff;
+        stroke: #00f0ff;
+    }
+}
+
+@keyframes subtitleFadeIn {
+    to {
+        opacity: 0.8;
+        transform: translateY(0);
+    }
+}
+
+@keyframes subtitleNeon {
+    from {
+        text-shadow: 0 0 5px rgba(165, 180, 252, 0.3);
+        color: #a1a1aa;
+    }
+    to {
+        text-shadow: 0 0 8px #818cf8, 0 0 15px #818cf8;
+        color: #e4e4e7;
+    }
+}

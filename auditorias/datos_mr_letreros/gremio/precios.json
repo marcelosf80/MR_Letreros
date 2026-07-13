@@ -1,0 +1,32 @@
+[
+  {
+    "id": "precio_1768855922369",
+    "name": "Vinilo base gris",
+    "category": "Vinilo",
+    "unit": "m2",
+    "priceGremio": 9000,
+    "pricePublico": 45000,
+    "discount": 0,
+    "created": "2026-01-19T20:52:02.369Z"
+  },
+  {
+    "id": "precio_1768857369512",
+    "name": "Vinilo Oracal",
+    "category": "Vinilo",
+    "unit": "m2",
+    "priceGremio": 14900,
+    "pricePublico": 0,
+    "discount": 0,
+    "created": "2026-01-19T21:16:09.512Z"
+  },
+  {
+    "id": "precio_1768857427410",
+    "name": "Vinilo Clear",
+    "category": "Vinilos",
+    "unit": "m2",
+    "priceGremio": 10500,
+    "pricePublico": 0,
+    "discount": 0,
+    "created": "2026-01-19T21:17:07.410Z"
+  }
+]

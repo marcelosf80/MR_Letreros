@@ -1,0 +1,207 @@
+/* PLANILLA DE COSTOS - COMPACT PREMIUM DARK MODE & GLASSMORPHISM */
+:root {
+    --primary-color: #6366f1;
+    --primary-hover: #4f46e5;
+    --bg-dark: #1a202c;
+    --text-muted: #718096;
+    --border-color: rgba(255, 255, 255, 0.08);
+    --row-hover: rgba(255, 255, 255, 0.04);
+}
+
+/* Toolbar styled to match premium dark glassmorphism (compact) */
+.spreadsheet-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+    background: var(--bg-surface, rgba(24, 24, 27, 0.75));
+    border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.08));
+    padding: 0.6rem 1rem;
+    border-radius: 10px;
+    box-shadow: var(--sh-md, 0 8px 24px rgba(0, 0, 0, 0.5));
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+}
+
+/* Container override to allow full-width table without double border */
+.spreadsheet-container {
+    padding: 0 !important;
+    background: var(--bg-surface, rgba(24, 24, 27, 0.75)) !important;
+    border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.08)) !important;
+    box-shadow: var(--sh-md, 0 8px 24px rgba(0, 0, 0, 0.5)) !important;
+    border-radius: 12px !important;
+}
+
+.spreadsheet-wrapper {
+    background: transparent;
+    border-radius: 0;
+    box-shadow: none;
+    border: none;
+    margin-top: 0;
+}
+
+.spreadsheet-table {
+    width: max-content;
+    min-width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 0.8rem;
+    background-color: transparent;
+}
+
+/* Header Styling - Dark theme, sticky (compact) */
+.spreadsheet-table thead th {
+    background: var(--bg-deep, #18181b) !important;
+    color: var(--txt, #f4f4f5) !important;
+    font-weight: 600;
+    padding: 8px 10px;
+    text-align: left;
+    border-bottom: 2px solid var(--bg-mid, #27272a);
+    white-space: nowrap;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+/* Sticky Columns */
+.spreadsheet-table .sticky-col {
+    position: sticky;
+    z-index: 5;
+    background: var(--bg-deep, #18181b) !important;
+    color: var(--txt, #f4f4f5) !important;
+}
+
+.spreadsheet-table .first-col {
+    left: 0;
+    width: 85px;
+    min-width: 85px;
+    max-width: 85px;
+}
+
+.spreadsheet-table .second-col {
+    left: 85px;
+    width: 220px;
+    min-width: 220px;
+    max-width: 220px;
+    border-right: 2px solid var(--bg-mid, #27272a);
+    box-shadow: 4px 0 8px rgba(0, 0, 0, 0.3);
+}
+
+.spreadsheet-table thead th.sticky-col {
+    z-index: 15;
+    background: var(--bg-deep, #18181b) !important;
+}
+
+/* Cells and Rows (compact padding) */
+.spreadsheet-table tbody td {
+    padding: 4px 8px;
+    border-bottom: 1px solid var(--bg-mid, #27272a);
+    vertical-align: middle;
+    color: var(--txt-2, #a1a1aa);
+    background-color: rgba(24, 24, 27, 0.4);
+}
+
+/* Hover effects with sticky column background persistence */
+.spreadsheet-table tbody tr:hover td {
+    background-color: var(--bg-mid, #27272a) !important;
+}
+
+.spreadsheet-table tbody tr:hover .sticky-col {
+    background-color: var(--bg-mid, #27272a) !important;
+}
+
+/* Inputs within spreadsheet - white text and clean focus state (compact) */
+.spreadsheet-input {
+    width: 100%;
+    padding: 3px 6px;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    text-align: right;
+    font-family: inherit;
+    font-size: 0.8rem;
+    background: transparent;
+    color: var(--txt, #f4f4f5) !important;
+    transition: all 0.2s;
+}
+
+.spreadsheet-input:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: var(--bg-mid, #27272a);
+}
+
+.spreadsheet-input:focus {
+    outline: none;
+    background: var(--bg-void, #09090b);
+    border-color: var(--brand, #ffffff);
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1);
+}
+
+/* Hide arrows in number inputs */
+.spreadsheet-input::-webkit-inner-spin-button,
+.spreadsheet-input::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+/* Badges - Neon styling (compact) */
+.badge {
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 600;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+}
+
+.bg-success {
+    background-color: rgba(34, 197, 94, 0.1) !important;
+    color: #4ade80 !important;
+    border: 1px solid rgba(34, 197, 94, 0.4) !important;
+}
+
+.bg-info {
+    background-color: rgba(59, 130, 246, 0.1) !important;
+    color: #60a5fa !important;
+    border: 1px solid rgba(59, 130, 246, 0.4) !important;
+}
+
+.bg-warning {
+    background-color: rgba(234, 179, 8, 0.1) !important;
+    color: #facc15 !important;
+    border: 1px solid rgba(234, 179, 8, 0.4) !important;
+}
+
+.bg-secondary {
+    background-color: rgba(255, 255, 255, 0.05) !important;
+    color: #a1a1aa !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+}
+
+/* Totals Footer */
+.spreadsheet-table tfoot tr {
+    background: var(--bg-deep, #18181b) !important;
+}
+
+.spreadsheet-table tfoot td {
+    padding: 8px 10px;
+    font-weight: bold;
+    border-top: 2px solid var(--bg-mid, #27272a);
+    color: var(--txt, #f4f4f5) !important;
+    background-color: var(--bg-deep, #18181b);
+}
+
+/* Column widths and overrides */
+th, td {
+    min-width: 80px;
+}
+
+th:nth-child(3), td:nth-child(3) { width: 90px; } /* Tipo */
+th:nth-child(4), td:nth-child(4) { width: 110px; } /* Estado */
+
+/* Cost columns should be wider */
+.header-total, .cell-total {
+    min-width: 110px;
+}
+
+.text-success { color: #22C55E !important; }
+.text-danger { color: #EF4444 !important; }
+.text-primary { color: #3B82F6 !important; }

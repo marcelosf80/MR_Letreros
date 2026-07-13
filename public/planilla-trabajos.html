@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Planilla de Costos - MR Letreros</title>
+    <script src="js/auth.js"></script>
+    <link rel="stylesheet" href="css/base.css">
+    <link rel="stylesheet" href="css/sidebar-universal.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/maxton-theme.css">
+    <link rel="stylesheet" href="css/planilla-trabajos.css">
+    <style>
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal.active { display: flex; }
+        .modal-content {
+            background: #1a202c;
+            color: white;
+            padding: 2rem;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+        }
+        .material-item-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem;
+            background: rgba(255,255,255,0.05);
+            border-radius: 6px;
+            margin-bottom: 0.5rem;
+        }
+
+        /* Fixed Viewport Layout for Spreadsheet */
+        @media (min-width: 769px) {
+            body, html {
+                height: 100%;
+                overflow: hidden;
+            }
+            .main-content {
+                height: 100vh;
+                display: flex;
+                flex-direction: column;
+            }
+            .content-container {
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                overflow: hidden;
+                min-height: 0;
+                padding-bottom: 1.5rem;
+            }
+            .spreadsheet-container {
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                overflow: hidden;
+                min-height: 0;
+            }
+            #spreadsheetWrapper {
+                flex: 1;
+                overflow: auto;
+                max-height: none !important;
+            }
+        }
+    </style>
+</head>
+
+<body class="bg-light">
+
+    <div class="main-content">
+        <div class="mx-topbar">
+            <div class="d-flex align-items-center gap-3">
+                <div class="topbar-icon" style="background: var(--primary-color); color: white; padding: 10px; border-radius: 12px; line-height: 1;">📊</div>
+                <h1 class="top-bar-title m-0">Planilla de Costos y Ganancias</h1>
+            </div>
+            <div class="top-bar-actions">
+                <span id="saveStatus" class="badge bg-secondary me-2"></span>
+                <button class="btn btn-primary shadow-sm" onclick="saveAllChanges()">💾 Guardar Cambios</button>
+            </div>
+        </div>
+
+        <div class="content-container">
+            <!-- Dashboard Stats (Compact) -->
+            <div class="row g-2 mb-2">
+                <div class="col-md-3">
+                    <div class="card mx-card p-2 text-center" style="border: 1px solid var(--primary-color);">
+                        <div class="text-muted small" style="font-size: 0.75rem;">Ingresos Totales</div>
+                        <div class="h5 mb-0" id="statIngresos" style="font-weight: 700; font-size: 1.15rem;">$0</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card mx-card p-2 text-center" style="border: 1px solid var(--bs-danger);">
+                        <div class="text-muted small" style="font-size: 0.75rem;">Costos Totales</div>
+                        <div class="h5 mb-0" id="statCostos" style="font-weight: 700; font-size: 1.15rem;">$0</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card mx-card p-2 text-center" style="border: 1px solid var(--bs-success);">
+                        <div class="text-muted small" style="font-size: 0.75rem;">Ganancia Neta</div>
+                        <div class="h5 mb-0" id="statGanancia" style="font-weight: 700; font-size: 1.15rem;">$0</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card mx-card p-2 text-center" style="border: 1px solid var(--bs-info);">
+                        <div class="text-muted small" style="font-size: 0.75rem;">Margen Real</div>
+                        <div class="h5 mb-0" id="statMargen" style="font-weight: 700; font-size: 1.15rem;">0%</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Toolbar -->
+            <div class="spreadsheet-toolbar">
+                <div style="display: flex; gap: 1rem; align-items: center;">
+                    <div class="search-box">
+                        <input type="text" id="filterSearch" class="form-input" placeholder="🔍 Buscar cliente o trabajo..." oninput="renderSpreadsheet()">
+                    </div>
+                    <select id="filterStatus" class="form-select" onchange="renderSpreadsheet()" style="width: auto;">
+                        <option value="active">Trabajos Activos</option>
+                        <option value="all">Todos los Trabajos</option>
+                    </select>
+                </div>
+                <div style="display: flex; gap: 0.5rem;">
+                    <button class="btn btn-outline-primary" onclick="abrirConfiguracionColumnas()">⚙️ Configurar Items</button>
+                    <button class="btn btn-secondary" onclick="loadData()">🔄 Actualizar</button>
+                </div>
+            </div>
+
+            <!-- Spreadsheet Wrapper -->
+            <div class="spreadsheet-container card shadow-sm overflow-hidden" style="padding: 0;">
+                <div id="spreadsheetWrapper" class="spreadsheet-wrapper" style="overflow: auto; max-height: 70vh;">
+                    <table class="spreadsheet-table" id="costsTable">
+                        <thead id="tableHeader"></thead>
+                        <tbody id="tableBody"></tbody>
+                        <tfoot id="tableFooter"></tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Configuración -->
+    <div id="configModal" class="modal">
+        <div class="modal-content">
+            <h3 class="mb-3">Configurar Items de Costo</h3>
+            <p class="small text-muted mb-3">Agregá o quitá los materiales que querés trackear en la planilla.</p>
+            
+            <div id="materialList" class="mb-4" style="max-height: 300px; overflow-y: auto;">
+                <!-- Lista dinámica -->
+            </div>
+
+            <div class="input-group mb-4">
+                <input type="text" id="newMaterialName" class="form-control" placeholder="Ej: Pintura, Hierro...">
+                <button class="btn btn-success" onclick="agregarMaterial()">+ Agregar</button>
+            </div>
+
+            <div class="d-flex justify-content-end gap-2">
+                <button class="btn btn-secondary" onclick="cerrarConfiguracionColumnas()">Cancelar</button>
+                <button class="btn btn-primary" onclick="guardarConfiguracionColumnas()">Guardar Cambios</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Editar Fila (Costos) -->
+    <div id="editRowModal" class="modal">
+        <div class="modal-content" style="max-width: 650px;">
+            <div class="modal-header">
+                <h3 class="modal-title" id="editRowTitle">✏️ Cargar/Editar Costos</h3>
+                <button class="btn-close" onclick="cerrarEditorFila()">×</button>
+            </div>
+            <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
+                <input type="hidden" id="editRowWorkId">
+                
+                <div class="highlight-box mb-3">
+                    <h4 id="editRowClientName" class="m-0">Cliente</h4>
+                    <small id="editRowDescription" class="text-muted">Detalle del trabajo</small>
+                </div>
+                
+                <h5 class="mb-3 border-bottom pb-2 text-primary">📦 Materiales</h5>
+                <div class="row g-2 mb-4" id="editRowMaterialsContainer">
+                    <!-- Dinámico -->
+                </div>
+                
+                <h5 class="mb-3 border-bottom pb-2" style="color: #a5b4fc;">🔧 Servicios de Terceros</h5>
+                <div class="row g-2 mb-4" id="editRowTercerosContainer">
+                    <!-- Dinámico -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="cerrarEditorFila()">Cancelar</button>
+                <button class="btn btn-success" onclick="guardarDatosFila()">💾 Guardar Costos</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/shared/data-manager-network.js"></script>
+    <script src="js/shared/sidebar-universal.js"></script>
+    <script>
+        let allWorks = [];
+        let terceros = [];
+        let materialColumns = ['Vinilo mts', 'Lona mts', 'Polifan', 'LED', 'Fuente', 'Varios'];
+        let saveTimeout = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const saved = localStorage.getItem('mr_planilla_materiales');
+            if (saved) materialColumns = JSON.parse(saved);
+            loadData();
+            setupSocketListeners();
+        });
+
+        function setupSocketListeners() {
+            const bindSocket = (socket) => {
+                socket.on('works_updated', () => {
+                    console.log('[REALTIME] Trabajos actualizados. Recargando planilla...');
+                    loadData();
+                });
+            };
+            if (window.mrSocket) {
+                bindSocket(window.mrSocket);
+            } else {
+                window.addEventListener('mrSocketReady', (e) => bindSocket(e.detail));
+            }
+        }
+
+        async function loadData() {
+            // Prevent reloading if user has an active input inside the spreadsheet
+            if (document.activeElement && document.activeElement.classList.contains('spreadsheet-input')) {
+                console.log('[REALTIME] Recarga omitida: usuario editando celda.');
+                return;
+            }
+            try {
+                const [worksData, tercerosData] = await Promise.all([
+                    window.mrDataManager.request('/api/trabajos'),
+                    window.mrDataManager.getTerceros()
+                ]);
+                allWorks = worksData.works || [];
+                terceros = tercerosData || [];
+                renderSpreadsheet();
+            } catch (e) { console.error('Error al cargar:', e); }
+        }
+
+        function abrirConfiguracionColumnas() {
+            const list = document.getElementById('materialList');
+            list.innerHTML = materialColumns.map((m, i) => `
+                <div class="material-item-row">
+                    <span>${m}</span>
+                    <button class="btn btn-danger btn-sm" onclick="eliminarMaterial(${i})">×</button>
+                </div>
+            `).join('');
+            document.getElementById('configModal').classList.add('active');
+        }
+
+        function agregarMaterial() {
+            const input = document.getElementById('newMaterialName');
+            if (input.value.trim()) {
+                materialColumns.push(input.value.trim());
+                input.value = '';
+                abrirConfiguracionColumnas();
+            }
+        }
+
+        function eliminarMaterial(index) {
+            materialColumns.splice(index, 1);
+            abrirConfiguracionColumnas();
+        }
+
+        function guardarConfiguracionColumnas() {
+            localStorage.setItem('mr_planilla_materiales', JSON.stringify(materialColumns));
+            cerrarConfiguracionColumnas();
+            renderSpreadsheet();
+        }
+
+        function cerrarConfiguracionColumnas() {
+            document.getElementById('configModal').classList.remove('active');
+        }
+
+        function renderSpreadsheet() {
+            const header = document.getElementById('tableHeader');
+            const body = document.getElementById('tableBody');
+            const footer = document.getElementById('tableFooter');
+            const searchTerm = document.getElementById('filterSearch').value.toLowerCase();
+            const statusFilter = document.getElementById('filterStatus').value;
+
+            // Column Widths from CSS classes: sticky-col first-col (100px), second-col (250px)
+            header.innerHTML = `
+                <tr>
+                    <th class="sticky-col first-col">Fecha</th>
+                    <th class="sticky-col second-col">Cliente / Trabajo</th>
+                    <th style="width: 100px;">Tipo</th>
+                    <th style="width: 120px;">Estado</th>
+                    ${materialColumns.map(m => `<th style="width: 110px;">${m}</th>`).join('')}
+                    ${terceros.map(t => `<th style="width: 130px; color: #a5b4fc; background: rgba(99, 102, 241, 0.1);">${t.nombre || t.empresa}</th>`).join('')}
+                    <th class="header-total fw-bold" style="width: 130px;">Costo Mat.</th>
+                    <th class="header-total fw-bold" style="width: 130px;">Costo Total</th>
+                    <th class="header-total fw-bold text-success" style="width: 140px;">Precio Público</th>
+                    <th class="header-total fw-bold text-primary" style="width: 140px;">Ganancia</th>
+                </tr>
+            `;
+
+            let filtered = allWorks.filter(w => {
+                const matches = (w.clientName || '').toLowerCase().includes(searchTerm) || (w.descripcion || '').toLowerCase().includes(searchTerm);
+                return matches && (statusFilter === 'all' || w.deliveryStatus !== 'delivered');
+            });
+
+            let totals = { mat: Array(materialColumns.length).fill(0), terc: Array(terceros.length).fill(0), cMat: 0, cTot: 0, prec: 0, gan: 0 };
+
+            body.innerHTML = filtered.map(w => {
+                if (!w.costos) w.costos = { materiales: {}, terceros: {} };
+                if (!w.costos.materiales) w.costos.materiales = {};
+                if (!w.costos.terceros) w.costos.terceros = {};
+                let rowCMat = 0, rowCTerc = 0;
+
+                const matCells = materialColumns.map((m, i) => {
+                    const val = parseFloat(w.costos.materiales[m] || 0);
+                    rowCMat += val; totals.mat[i] += val;
+                    return `<td><input type="number" class="spreadsheet-input" value="${val || ''}" onchange="updateVal('${w.id}','materiales','${m}',this.value)"></td>`;
+                }).join('');
+
+                const tercCells = terceros.map((t, i) => {
+                    const key = t.nombre || t.empresa;
+                    const val = parseFloat(w.costos.terceros[key] || 0);
+                    rowCTerc += val; totals.terc[i] += val;
+                    return `<td><input type="number" class="spreadsheet-input" value="${val || ''}" onchange="updateVal('${w.id}','terceros','${key}',this.value)"></td>`;
+                }).join('');
+
+                const totalRowCost = rowCMat + rowCTerc;
+                const rowPrecio = parseFloat(w.total || 0);
+                const rowGanancia = rowPrecio - totalRowCost;
+
+                totals.cMat += rowCMat; totals.cTot += totalRowCost; totals.prec += rowPrecio; totals.gan += rowGanancia;
+
+                return `
+                    <tr>
+                        <td class="sticky-col first-col">${new Date(w.createdAt).toLocaleDateString('es-AR')}</td>
+                        <td class="sticky-col second-col">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>${w.clientName || 'Cliente'}</strong>
+                                    <div class="small opacity-50">${w.descripcion || ''}</div>
+                                </div>
+                                <button class="btn btn-secondary btn-small p-1 px-2 ms-2" onclick="abrirEditorFila('${w.id}')" title="Cargar Costos en Formulario">✏️</button>
+                            </div>
+                        </td>
+                        <td><span class="badge ${w.tipo_cliente === 'gremio' ? 'bg-success' : 'bg-info'}">${w.tipo_cliente || 'cliente'}</span></td>
+                        <td><span class="badge ${w.deliveryStatus === 'delivered' ? 'bg-secondary' : 'bg-warning'}">${w.deliveryStatus || 'pendiente'}</span></td>
+                        ${matCells}
+                        ${tercCells}
+                        <td class="fw-bold">$${fmt(rowCMat)}</td>
+                        <td class="fw-bold">$${fmt(totalRowCost)}</td>
+                        <td class="fw-bold text-success">$${fmt(rowPrecio)}</td>
+                        <td class="fw-bold ${rowGanancia >= 0 ? 'text-primary' : 'text-danger'}">$${fmt(rowGanancia)}</td>
+                    </tr>
+                `;
+            }).join('');
+
+            footer.innerHTML = `
+                <tr class="fw-bold bg-dark text-white">
+                    <td colspan="4" class="text-end">TOTALES:</td>
+                    ${totals.mat.map(v => `<td>$${fmt(v)}</td>`).join('')}
+                    ${totals.terc.map(v => `<td>$${fmt(v)}</td>`).join('')}
+                    <td>$${fmt(totals.cMat)}</td>
+                    <td>$${fmt(totals.cTot)}</td>
+                    <td>$${fmt(totals.prec)}</td>
+                    <td>$${fmt(totals.gan)}</td>
+                </tr>
+            `;
+
+            updateStatsUI(totals);
+        }
+
+        function updateStatsUI(t) {
+            document.getElementById('statIngresos').textContent = `$${fmt(t.prec)}`;
+            document.getElementById('statCostos').textContent = `$${fmt(t.cTot)}`;
+            document.getElementById('statGanancia').textContent = `$${fmt(t.gan)}`;
+            document.getElementById('statMargen').textContent = (t.prec > 0 ? (t.gan / t.prec * 100).toFixed(1) : 0) + '%';
+        }
+
+        function updateVal(id, cat, key, val) {
+            const w = allWorks.find(x => String(x.id) === String(id));
+            if (w) {
+                if (!w.costos) w.costos = { materiales: {}, terceros: {} };
+                if (!w.costos.materiales) w.costos.materiales = {};
+                if (!w.costos.terceros) w.costos.terceros = {};
+                w.costos[cat][key] = parseFloat(val) || 0;
+                document.getElementById('saveStatus').textContent = '⏳ Cambios pendientes...';
+                clearTimeout(saveTimeout);
+                saveTimeout = setTimeout(() => saveAllChanges(true), 1500);
+            }
+        }
+
+        async function saveAllChanges(silent = false) {
+            try {
+                await window.mrDataManager.request('/api/trabajos', 'POST', { works: allWorks, notifications: [] });
+                await registrarPagosTerceros();
+                document.getElementById('saveStatus').textContent = '✅ Guardado';
+                if (!silent) alert('✅ Cambios guardados y sincronizados con Terceros.');
+                renderSpreadsheet();
+            } catch (e) { alert('Error al guardar'); }
+        }
+
+        async function registrarPagosTerceros() {
+            try {
+                // 1. Obtener pagos manuales actuales
+                let pagosManuales = await window.mrDataManager.getTercerosPagosManuales() || [];
+                let modified = false;
+
+                // 2. Limpiar entradas antiguas (incluyendo las que empezaban con 'gasto_pl_')
+                const pagosAntes = pagosManuales.length;
+                pagosManuales = pagosManuales.filter(p => {
+                    if (!p.id) return true;
+                    // Borrar si es de la planilla (ID empieza con 'pl_' o 'gasto_pl_')
+                    if (p.id.startsWith('pl_') || p.id.startsWith('gasto_pl_')) return false;
+                    return true;
+                });
+                if (pagosManuales.length !== pagosAntes) modified = true;
+
+                // 3. Sincronizar deudas actuales (Limpias y con nombres correctos)
+                allWorks.forEach(w => {
+                    if (w.costos?.terceros) {
+                        for (let [nom, monto] of Object.entries(w.costos.terceros)) {
+                            monto = parseFloat(monto) || 0;
+                            if (monto > 0) {
+                                const empresaNombre = nom.trim(); // Mantenemos el nombre original (con Ñ y espacios)
+                                const gid = `pl_${w.id}_${empresaNombre.replace(/[^a-zA-Z0-9]/g, '_')}`;
+                                
+                                pagosManuales.push({
+                                    id: gid,
+                                    empresa: empresaNombre, // "ROMINA DISEÑOS"
+                                    concepto: `Planilla: ${w.clientName || 'Trabajo'}`,
+                                    monto: monto,
+                                    fecha: new Date().toISOString().split('T')[0],
+                                    observaciones: `Sincronizado desde Planilla. Trabajo: ${w.clientName}`,
+                                    pagado: false,
+                                    fechaCarga: new Date().toISOString()
+                                });
+                                modified = true;
+                            }
+                        }
+                    }
+                });
+
+                if (modified) {
+                    await window.mrDataManager.saveTercerosPagosManuales(pagosManuales);
+                    console.log('[SYNC] Terceros depurados y actualizados');
+                }
+            } catch (e) { console.error('Error en sync terceros:', e); }
+        }
+
+        // --- FUNCIONES DEL EDITOR DE FILA (MODAL) ---
+        let activeEditWorkId = null;
+
+        function abrirEditorFila(id) {
+            activeEditWorkId = id;
+            const w = allWorks.find(x => String(x.id) === String(id));
+            if (!w) return;
+            
+            document.getElementById('editRowWorkId').value = id;
+            document.getElementById('editRowClientName').textContent = w.clientName || 'Cliente';
+            document.getElementById('editRowDescription').textContent = w.descripcion || 'Detalle del trabajo';
+            
+            if (!w.costos) w.costos = { materiales: {}, terceros: {} };
+            if (!w.costos.materiales) w.costos.materiales = {};
+            if (!w.costos.terceros) w.costos.terceros = {};
+            
+            // Renderizar Materiales
+            const matContainer = document.getElementById('editRowMaterialsContainer');
+            matContainer.innerHTML = materialColumns.map(m => {
+                const val = w.costos.materiales[m] || 0;
+                return `
+                    <div class="col-md-6">
+                        <div class="form-group mb-2">
+                            <label class="form-label">${m}</label>
+                            <input type="number" class="form-control edit-modal-input-material" data-material="${m}" value="${val || ''}" placeholder="0" step="any">
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            // Renderizar Terceros
+            const tercContainer = document.getElementById('editRowTercerosContainer');
+            tercContainer.innerHTML = terceros.map(t => {
+                const key = t.nombre || t.empresa;
+                const val = w.costos.terceros[key] || 0;
+                return `
+                    <div class="col-md-6">
+                        <div class="form-group mb-2">
+                            <label class="form-label" style="color: #a5b4fc;">${key}</label>
+                            <input type="number" class="form-control edit-modal-input-tercero" data-tercero="${key}" value="${val || ''}" placeholder="0" step="any">
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            document.getElementById('editRowModal').classList.add('active');
+        }
+
+        function cerrarEditorFila() {
+            document.getElementById('editRowModal').classList.remove('active');
+            activeEditWorkId = null;
+        }
+
+        async function guardarDatosFila() {
+            if (!activeEditWorkId) return;
+            const w = allWorks.find(x => String(x.id) === String(activeEditWorkId));
+            if (!w) return;
+            
+            if (!w.costos) w.costos = { materiales: {}, terceros: {} };
+            if (!w.costos.materiales) w.costos.materiales = {};
+            if (!w.costos.terceros) w.costos.terceros = {};
+            
+            // Leer materiales
+            const matInputs = document.querySelectorAll('.edit-modal-input-material');
+            matInputs.forEach(input => {
+                const mat = input.getAttribute('data-material');
+                w.costos.materiales[mat] = parseFloat(input.value) || 0;
+            });
+            
+            // Leer terceros
+            const tercInputs = document.querySelectorAll('.edit-modal-input-tercero');
+            tercInputs.forEach(input => {
+                const terc = input.getAttribute('data-tercero');
+                w.costos.terceros[terc] = parseFloat(input.value) || 0;
+            });
+            
+            cerrarEditorFila();
+            
+            document.getElementById('saveStatus').textContent = '⏳ Guardando...';
+            await saveAllChanges(true);
+        }
+
+        function fmt(n) { return new Intl.NumberFormat('es-AR').format(n || 0); }
+    </script>
+</body>
+</html>
