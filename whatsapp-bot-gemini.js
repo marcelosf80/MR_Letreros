@@ -989,19 +989,43 @@ app.post('/send-message', async (req, res) => {
   }
 
   try {
-    // Normalizar número argentino para WhatsApp
-    let num = String(phone).replace(/\D/g, ''); // Solo dígitos
+    // Normalización robusta para números de Argentina (ej: 0342 154050011 -> 5493424050011)
+    let cleanNum = String(phone).replace(/\D/g, '');
+    
+    // Quitar prefijo de país 54/549 si ya lo tiene para normalizar el resto
+    let has54 = false;
+    if (cleanNum.startsWith('54')) {
+      cleanNum = cleanNum.substring(2);
+      has54 = true;
+    }
+    if (has54 && cleanNum.startsWith('9')) {
+      cleanNum = cleanNum.substring(1);
+    }
 
-    // Quitar prefijos comunes
-    if (num.startsWith('0054')) num = num.substring(4);
-    if (num.startsWith('0')) num = num.substring(1);     // 0342... -> 342...
-    if (num.startsWith('15')) num = num.substring(2);     // 15... -> (necesita área)
+    // Quitar el 0 inicial del código de área
+    if (cleanNum.startsWith('0')) {
+      cleanNum = cleanNum.substring(1);
+    }
+
+    // Quitar el 15 (prefijo móvil de Argentina) si está presente
+    if (cleanNum.length >= 11) {
+      if (cleanNum.substring(2, 4) === '15') {
+        cleanNum = cleanNum.substring(0, 2) + cleanNum.substring(4);
+      } else if (cleanNum.substring(3, 5) === '15') {
+        cleanNum = cleanNum.substring(0, 3) + cleanNum.substring(5);
+      } else if (cleanNum.substring(4, 6) === '15') {
+        cleanNum = cleanNum.substring(0, 4) + cleanNum.substring(6);
+      }
+    } else if (cleanNum.length === 11 && cleanNum.startsWith('15')) {
+      cleanNum = cleanNum.substring(2);
+    }
 
     // Asegurar formato internacional argentino: 549 + código de área + número
-    if (!num.startsWith('54')) {
-      num = '549' + num;  // Ej: 3424123456 -> 5493424123456
-    } else if (num.startsWith('54') && !num.startsWith('549')) {
-      num = '549' + num.substring(2);  // 543424123456 -> 5493424123456
+    let num;
+    if (cleanNum.length === 10) {
+      num = '549' + cleanNum;
+    } else {
+      num = '549' + cleanNum;
     }
 
     const chatId = `${num}@c.us`;

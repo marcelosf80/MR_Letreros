@@ -18,7 +18,7 @@
 
     // Información de la empresa
     companyInfo: {
-      phone: '📞 +54 9 342 6136868',
+      phone: '📞 +54 9 342 4050011',
       email: '✉️ info@mrletreros.com',
       location: '📍 Santa Fe, Argentina'
     },

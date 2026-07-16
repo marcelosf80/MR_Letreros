@@ -142,7 +142,7 @@ const FILES = {
 // Configuración de Multer para subida de imágenes
 const upload = multer({
   dest: UPLOADS_TEMP_DIR,
-  limits: { fileSize: 50 * 1024 * 1024 } // 50MB límite
+  limits: { fileSize: 150 * 1024 * 1024 } // 150MB límite
 });
 
 // Middleware
@@ -152,8 +152,8 @@ app.use(helmet({
   crossOriginResourcePolicy: false // Permitir cargar recursos locales o externos sin bloqueo
 }));
 app.use(cors());
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+app.use(express.json({ limit: '150mb' }));
+app.use(express.urlencoded({ extended: true, limit: '150mb' }));
 app.use((err, req, res, next) => {
   if (err.type === 'entity.parse.failed') {
     return res.status(400).json({ error: 'Request JSON inválido' });
@@ -878,9 +878,43 @@ async function enviarNotificacionTrabajoListo(trabajo) {
     return { success: false, error: 'El trabajo no tiene un teléfono registrado.' };
   }
 
-  // Normalización básica de número
-  phone = phone.toString().replace(/\D/g, '');
-  if (phone.length === 10 && !phone.startsWith('54')) phone = '549' + phone;
+  // Normalización robusta para números de Argentina (ej: 0342 154050011 -> 5493424050011)
+  let cleanPhone = phone.toString().replace(/\D/g, '');
+  
+  // Quitar prefijo de país 54/549 si ya lo tiene para normalizar el resto
+  let has54 = false;
+  if (cleanPhone.startsWith('54')) {
+    cleanPhone = cleanPhone.substring(2);
+    has54 = true;
+  }
+  if (has54 && cleanPhone.startsWith('9')) {
+    cleanPhone = cleanPhone.substring(1);
+  }
+
+  // Quitar el 0 inicial del código de área
+  if (cleanPhone.startsWith('0')) {
+    cleanPhone = cleanPhone.substring(1);
+  }
+
+  // Quitar el 15 (prefijo móvil de Argentina) si está presente
+  if (cleanPhone.length >= 11) {
+    if (cleanPhone.substring(2, 4) === '15') {
+      cleanPhone = cleanPhone.substring(0, 2) + cleanPhone.substring(4);
+    } else if (cleanPhone.substring(3, 5) === '15') {
+      cleanPhone = cleanPhone.substring(0, 3) + cleanPhone.substring(5);
+    } else if (cleanPhone.substring(4, 6) === '15') {
+      cleanPhone = cleanPhone.substring(0, 4) + cleanPhone.substring(6);
+    }
+  } else if (cleanPhone.length === 11 && cleanPhone.startsWith('15')) {
+    cleanPhone = cleanPhone.substring(2);
+  }
+
+  // Si nos quedan 10 dígitos (característica + número), agregamos el 549
+  if (cleanPhone.length === 10) {
+    phone = '549' + cleanPhone;
+  } else {
+    phone = '549' + cleanPhone;
+  }
 
   let mensaje = '';
   try {

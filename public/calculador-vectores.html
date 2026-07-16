@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Calculadora de Vectores - MR Letreros</title>
     <link rel="stylesheet" href="css/base.css">
+    <link rel="stylesheet" href="css/calculador-vectores.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
@@ -16,320 +17,6 @@
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/exporters/STLExporter.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/clipper-lib@1.0.0/clipper.js"></script>
-    <style>
-        :root {
-            --sb-accent: #6366f1;
-            --sb-accent-gradient: linear-gradient(135deg, #6366f1 0%, #4361ee 100%);
-            --sb-bg: #fdfdfd;
-            --sb-card: rgba(255, 255, 255, 0.85);
-            --sb-txt: #0f172a;
-            --sb-txt-dim: #64748b;
-            --sb-glass: rgba(255, 255, 255, 0.75);
-            --sb-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.05);
-            --sb-border: rgba(226, 232, 240, 0.6);
-        }
-
-        body {
-            background: radial-gradient(circle at 0% 0%, #f8faff 0%, #f1f5f9 100%);
-            font-family: 'Outfit', 'Inter', sans-serif;
-            color: var(--sb-txt);
-            height: 100vh;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .header-nav {
-            background: rgba(255, 255, 255, 0.8);
-            backdrop-filter: blur(12px);
-            padding: 12px 30px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid var(--sb-border);
-            z-index: 100;
-        }
-
-        .main-layout {
-            display: flex;
-            flex: 1;
-            overflow: hidden;
-        }
-
-        .workspace {
-            flex: 1;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-            background: #f1f5f9;
-            position: relative;
-        }
-
-        .canvas-area {
-            flex: 1;
-            background-color: #ffffff;
-            background-image: 
-                linear-gradient(45deg, #f0f0f0 25%, transparent 25%), 
-                linear-gradient(-45deg, #f0f0f0 25%, transparent 25%), 
-                linear-gradient(45deg, transparent 75%, #f0f0f0 75%), 
-                linear-gradient(-45deg, transparent 75%, #f0f0f0 75%);
-            background-size: 20px 20px;
-            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
-            border: 2px dashed #cbd5e1;
-            border-radius: 12px;
-            position: relative;
-            overflow: hidden;
-            transition: all 0.3s ease;
-        }
-
-        .canvas-area.dark-mode {
-            background-color: #1e293b;
-            background-image: 
-                linear-gradient(45deg, #0f172a 25%, transparent 25%), 
-                linear-gradient(-45deg, #0f172a 25%, transparent 25%), 
-                linear-gradient(45deg, transparent 75%, #0f172a 75%), 
-                linear-gradient(-45deg, transparent 75%, #0f172a 75%);
-            border-color: #334155;
-        }
-
-        .canvas-area.dragover {
-            border-color: var(--sb-accent);
-            background: #eff6ff !important;
-        }
-
-        .canvas-toolbar {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            z-index: 1000;
-            display: flex;
-            flex-direction: column;
-            align-items: flex-end;
-            gap: 10px;
-        }
-
-        .canvas-container {
-            position: absolute !important;
-            top: 0;
-            left: 0;
-        }
-
-        .sidebar {
-            width: 400px;
-            background: var(--sb-glass);
-            backdrop-filter: blur(20px);
-            border-left: 1px solid var(--sb-border);
-            padding: 25px;
-            overflow-y: auto;
-            overflow-x: hidden;
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-            box-shadow: -10px 0 30px rgba(0,0,0,0.02);
-            scrollbar-width: thin;
-            scrollbar-color: var(--sb-accent) transparent;
-            color: var(--sb-txt) !important;
-        }
-
-        .sidebar label {
-            color: var(--sb-txt) !important;
-        }
-
-        .sidebar-title {
-            font-size: 1.15rem;
-            font-weight: 800;
-            margin-bottom: 5px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            color: #1e293b;
-        }
-
-        .sidebar-section {
-            background: white;
-            padding: 18px;
-            border-radius: 16px;
-            border: 1px solid var(--sb-border);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.02);
-            margin-bottom: 20px;
-            flex-shrink: 0;
-        }
-
-        .section-title {
-            font-size: 0.7rem;
-            font-weight: 800;
-            color: var(--sb-accent);
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            margin-bottom: 15px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .option-group {
-            background: white;
-            padding: 18px;
-            border-radius: 16px;
-            border: 1px solid var(--sb-border);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.02);
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-        }
-        
-        .option-group:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(0,0,0,0.04);
-        }
-
-        .option-label {
-            font-size: 0.7rem;
-            font-weight: 800;
-            color: var(--sb-accent);
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            margin-bottom: 15px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .input-with-label {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            margin-bottom: 15px;
-        }
-
-        .form-control, .form-select {
-            border: 1px solid #e5e7eb;
-            padding: 10px 14px;
-            border-radius: 10px;
-            font-weight: 500;
-            font-size: 0.9rem;
-            background: #fdfdfd;
-            transition: all 0.2s ease;
-        }
-
-        .form-control:focus, .form-select:focus {
-            border-color: var(--sb-accent);
-            background: white;
-            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
-        }
-
-        .result-card {
-            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-            color: white;
-            padding: 24px;
-            border-radius: 20px;
-            margin-top: auto;
-            box-shadow: 0 20px 40px -10px rgba(15, 23, 42, 0.3);
-            position: relative;
-            overflow: hidden;
-            flex-shrink: 0;
-        }
-        
-        .result-card::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: radial-gradient(circle at 30% 30%, rgba(99, 102, 241, 0.15) 0%, transparent 50%);
-            pointer-events: none;
-        }
-
-        .result-item {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 12px;
-            font-size: 0.9rem;
-            opacity: 0.8;
-        }
-
-        .result-total {
-            border-top: 1px solid rgba(255,255,255,0.1);
-            padding-top: 15px;
-            margin-top: 15px;
-            display: flex;
-            justify-content: space-between;
-            align-items: baseline;
-        }
-
-        .total-amount {
-            font-size: 2.2rem;
-            font-weight: 900;
-            color: #fbbf24;
-            letter-spacing: -0.02em;
-        }
-
-        .btn-action {
-            width: 100%;
-            padding: 15px;
-            border-radius: 10px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            border: none;
-            transition: all 0.2s ease;
-        }
-
-        .btn-primary-custom {
-            background: var(--sb-accent-gradient);
-            color: white;
-            border: none;
-            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
-        }
-
-        .btn-primary-custom:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(99, 102, 241, 0.35);
-        }
-
-        #dropText {
-            text-align: center;
-        }
-
-        .stats-badge {
-            background: #e0f2fe;
-            color: #0369a1;
-            padding: 4px 10px;
-            border-radius: 50px;
-            font-size: 0.75rem;
-            font-weight: 700;
-        }
-
-        .form-group {
-            margin-bottom: 15px;
-        }
-
-        .form-label {
-            font-size: 0.8rem;
-            font-weight: 600;
-            color: var(--sb-txt-dim) !important;
-            margin-bottom: 8px;
-            display: block;
-        }
-
-        .form-input {
-            width: 100%;
-            border: 1px solid #e5e7eb;
-            padding: 10px 14px;
-            border-radius: 10px;
-            font-weight: 500;
-            font-size: 0.9rem;
-            background: #fdfdfd;
-            transition: all 0.2s ease;
-        }
-
-        .form-input:focus {
-            border-color: var(--sb-accent);
-            background: white;
-            outline: none;
-            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
-        }
-    </style>
 </head>
 <body>
     <header class="header-nav">
@@ -342,7 +29,7 @@
         </div>
         <div style="display: flex; align-items: center; gap: 15px;">
             <span class="stats-badge" id="zoomLevel">Zoom: 100%</span>
-            <span style="font-size: 0.8rem; font-weight: 700; color: var(--sb-txt-dim);">MR LETREROS v2.5</span>
+            <span style="font-size: 0.8rem; font-weight: 700; color: var(--sb-txt-dim);">MR LETREROS v3.0</span>
         </div>
     </header>
 
@@ -358,16 +45,16 @@
                     <button class="btn btn-outline-primary" id="btnUpload" onclick="document.getElementById('fileInput').click()" style="border-radius: 8px; padding: 8px 25px; font-weight: 600;">
                         Seleccionar Archivo
                     </button>
-                    <div style="margin-top: 20px; color: #999; font-size: 0.8rem;">Solo archivos .SVG (Vectores)</div>
+                    <div style="margin-top: 20px; color: #999; font-size: 0.8rem;">Solo archivos .SVG (Vectores) o .DXF</div>
                     <div id="uploadStatus" style="margin-top: 10px; font-weight: 700; color: var(--sb-accent); display: none;">Procesando diseño...</div>
                 </div>
-                <!-- Canvas container should be relative to canvas-area -->
+                <!-- Canvas container -->
                 <div class="canvas-wrapper" style="width: 100%; height: 100%; position: relative; z-index: 1;">
                     <canvas id="mainCanvas"></canvas>
                 </div>
                 <div id="container3D" style="display: none; width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 2;"></div>
 
-                <!-- Toolbar moved to end for stacking order -->
+                <!-- Toolbar -->
                 <div class="canvas-toolbar" style="z-index: 999;">
                     <div style="display: flex; gap: 10px; align-items: center;">
                         <button class="btn btn-sm btn-light shadow-sm" onclick="toggleCanvasMode()" title="Cambiar fondo (Claro/Oscuro)">
@@ -389,13 +76,12 @@
                             <i class="fas fa-cube"></i> VISTA 3D
                         </button>
                     </div>
-                    <!-- Extra 3D Options (only shown in 3D) -->
+                    <!-- Extra 3D Options -->
                     <div id="extra3DOptions" style="display: none; background: rgba(255,255,255,0.9); border-radius: 8px; padding: 5px 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); border: 1px solid #e2e8f0; align-items: center; gap: 15px; font-size: 0.8rem; font-weight: 700;">
                         <div class="form-check form-switch m-0 d-flex align-items-center gap-2">
                             <input class="form-check-input" type="checkbox" id="checkHollow" onchange="update3DView()">
                             <label class="form-check-label fw-bold" for="checkHollow">Cazoleta (Hueco)</label>
                             
-                            <!-- New Sub-options -->
                             <div id="hollowSubOptions" style="display: none; align-items: center; gap: 10px; margin-left: 10px; padding-left: 10px; border-left: 1px solid #ddd;">
                                 <label style="display: flex; align-items: center; gap: 4px; cursor: pointer; font-size: 0.75rem;">
                                     <input type="checkbox" id="checkFront" checked onchange="update3DView()"> Frente
@@ -434,6 +120,15 @@
 
         <aside class="sidebar">
             <h3 class="sidebar-title">⚙️ Configuración</h3>
+
+            <!-- SWITCH DE MODO (NUEVO) -->
+            <div class="option-group" style="display: none;">
+                <label class="option-label"><i class="fas fa-sliders"></i> Modo de Cotización</label>
+                <select id="selectQuoteMode" class="form-select" style="font-weight: 700;">
+                    <option value="linear" selected>Por Producto (Cm Lineal)</option>
+                    <option value="material">Por Materiales (M² / Plancha)</option>
+                </select>
+            </div>
             
             <div class="option-group">
                 <label class="option-label">Dimensiones y Margen</label>
@@ -466,69 +161,88 @@
                 </div>
             </div>
 
+            <!-- SECCIÓN INSUMO / PRODUCTO ADAPTADA -->
             <div class="option-group">
-                <label class="option-label">Logística de Material</label>
-                <div class="input-with-label">
-                    <label style="font-size: 0.8rem; opacity: 0.7;">Tipo de Plancha</label>
-                    <select id="selectSheet" class="form-select">
-                        <option value="custom">Personalizado</option>
-                        <option value="polifan" selected>Polifan (125 x 60 cm)</option>
-                        <option value="acrilico">Acrílico/Galv (244 x 122 cm)</option>
-                    </select>
-                </div>
-                <div class="input-with-label">
-                    <label style="font-size: 0.8rem; opacity: 0.7;">Modo de Cobro (Desperdicio)</label>
-                    <select id="selectBillingMode" class="form-select" onchange="calculateCosts()">
-                        <option value="efficient">Opción A: Uso Eficiente (+15%)</option>
-                        <option value="strip">Opción B: Tira/Plancha Completa</option>
-                    </select>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <label class="option-label" style="margin: 0;"><i class="fas fa-box"></i> Insumo / Producto</label>
+                    <button id="adminProductsBtn" onclick="openProductAdminModal()" class="btn btn-xs btn-primary shadow-sm" style="display: none; font-size: 0.65rem; padding: 4px 8px; border-radius: 6px; font-weight: 700;">
+                        <i class="fas fa-cogs"></i> Administrar
+                    </button>
                 </div>
                 <div class="input-with-label">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
-                        <label style="font-size: 0.8rem; opacity: 0.7; margin: 0;">Material Base</label>
-                        <button onclick="editMaterialPrice()" class="btn btn-sm p-0" style="color: var(--sb-accent); font-size: 0.7rem; font-weight: 700; border: none; background: transparent;">
+                        <label id="labelMaterialSelect" style="font-size: 0.8rem; opacity: 0.7; margin: 0;">Material Base</label>
+                        <button id="btnEditMaterialPrice" onclick="editMaterialPrice()" class="btn btn-sm p-0" style="color: var(--sb-accent); font-size: 0.7rem; font-weight: 700; border: none; background: transparent;">
                             <i class="fas fa-edit"></i> EDITAR PRECIO
                         </button>
                     </div>
-                    <select id="selectMaterial" class="form-select" onchange="calculateCosts()">
-                        <option value="">Cargando materiales...</option>
+                    <select id="selectMaterial" class="form-select">
+                        <option value="">Cargando...</option>
                     </select>
+                </div>
+
+                <div id="logisticMaterialGroup">
+                    <div class="input-with-label">
+                        <label style="font-size: 0.8rem; opacity: 0.7;">Tipo de Plancha</label>
+                        <select id="selectSheet" class="form-select">
+                            <option value="custom">Personalizado</option>
+                            <option value="polifan" selected>Polifan (125 x 60 cm)</option>
+                            <option value="acrilico">Acrílico/Galv (244 x 122 cm)</option>
+                        </select>
+                    </div>
+                    <div class="input-with-label">
+                        <label style="font-size: 0.8rem; opacity: 0.7;">Modo de Cobro (Desperdicio)</label>
+                        <select id="selectBillingMode" class="form-select">
+                            <option value="efficient">Opción A: Uso Eficiente (+15%)</option>
+                            <option value="strip">Opción B: Tira/Plancha Completa</option>
+                        </select>
+                    </div>
                 </div>
             </div>
 
+            <!-- COTIZADOR (VALORES) -->
             <div class="option-group">
                 <label class="option-label"><i class="fas fa-calculator"></i> Cotizador</label>
                 
                 <!-- Header Costo | Venta -->
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 2px solid var(--sb-border);">
+                <div style="display: none; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 2px solid var(--sb-border);">
                     <div style="text-align: center; font-size: 0.65rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; color: #ef4444; background: #fef2f2; padding: 4px 0; border-radius: 6px;">💰 Costo</div>
                     <div style="text-align: center; font-size: 0.65rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; color: #22c55e; background: #f0fdf4; padding: 4px 0; border-radius: 6px;">🏷️ Venta</div>
                 </div>
 
                 <!-- Cm Lineal: Costo | Venta -->
                 <div style="margin-bottom: 12px;">
-                    <label style="font-size: 0.75rem; font-weight: 700; color: var(--sb-txt-dim); margin-bottom: 6px; display: block;">$/Cm Lineal</label>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-                        <input type="number" id="inputCutCost" class="form-control" value="10" step="0.5" style="border-color: #fecaca; font-size: 0.85rem;" title="Costo interno de corte">
-                        <input type="number" id="inputCutPrice" class="form-control" value="25" step="0.5" style="border-color: #bbf7d0; font-size: 0.85rem;" title="Precio de venta de corte">
+                    <label style="font-size: 0.75rem; font-weight: 700; color: var(--sb-txt-dim); margin-bottom: 6px; display: block;">Precio/Cm Lineal ($)</label>
+                    <div style="display: block;">
+                        <input type="number" id="inputCutCost" class="form-control" value="0" style="display: none;">
+                        <input type="number" id="inputCutPrice" class="form-control" value="25" step="0.5" style="border-color: #bbf7d0; font-size: 0.85rem;" title="Precio de venta del producto/corte">
                     </div>
                 </div>
 
                 <!-- Mano de Obra: Costo | Venta -->
                 <div style="margin-bottom: 12px;">
                     <label style="font-size: 0.75rem; font-weight: 700; color: var(--sb-txt-dim); margin-bottom: 6px; display: block;">Mano de Obra ($) <small style="opacity:0.5">x unidad</small></label>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-                        <input type="number" id="inputLaborCost" class="form-control" value="0" step="100" style="border-color: #fecaca; font-size: 0.85rem;" title="Costo interno mano de obra">
+                    <div style="display: block;">
+                        <input type="number" id="inputLaborCost" class="form-control" value="0" style="display: none;">
                         <input type="number" id="inputLaborPrice" class="form-control" value="0" step="100" style="border-color: #bbf7d0; font-size: 0.85rem;" title="Precio de venta mano de obra">
                     </div>
                 </div>
 
-                <!-- Margen de Ganancia sobre Material -->
-                <div style="margin-bottom: 12px; padding-top: 8px; border-top: 1px dashed var(--sb-border);">
+                <!-- Margen de Ganancia sobre Material (Modo Material) -->
+                <div id="markupGroup" style="margin-bottom: 12px; padding-top: 8px; border-top: 1px dashed var(--sb-border);">
                     <label style="font-size: 0.75rem; font-weight: 700; color: var(--sb-txt-dim); margin-bottom: 6px; display: block;">Margen s/Material (x)</label>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; align-items: center;">
                         <input type="number" id="inputMarkup" class="form-control" value="2.5" step="0.1" min="1" style="font-size: 0.85rem;">
                         <small style="color: #64748b; font-size: 0.7rem; line-height: 1.2;">Multiplica el costo del material para la venta</small>
+                    </div>
+                </div>
+
+                <!-- Porcentaje de Ganancia (Modo Producto) -->
+                <div id="profitGroup" style="margin-bottom: 12px; padding-top: 8px; border-top: 1px dashed var(--sb-border); display: none;">
+                    <label style="font-size: 0.75rem; font-weight: 700; color: var(--sb-txt-dim); margin-bottom: 6px; display: block;">Porcentaje de Ganancia (%)</label>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; align-items: center;">
+                        <input type="number" id="inputProfitPct" class="form-control" value="150" step="10" min="0" style="font-size: 0.85rem;">
+                        <small style="color: #64748b; font-size: 0.7rem; line-height: 1.2;">Suma este % al costo del cm lineal</small>
                     </div>
                 </div>
 
@@ -541,57 +255,17 @@
                 <button class="btn btn-xs btn-outline-primary w-100 mt-2" onclick="saveAllConfig()" style="font-size:0.75rem; font-weight:700;"><i class="fas fa-save"></i> Guardar Configuración por Defecto</button>
             </div>
 
-            <div class="option-group" id="cncSection" style="display: none; border: 2px solid #f59e0b; background: linear-gradient(135deg, #fffbeb, #fef3c7);">
-                <label class="option-label" style="color: #b45309;"><i class="fas fa-industry"></i> CNC Hilo Caliente (.NC)</label>
-                <div class="input-with-label">
-                    <label style="font-size: 0.8rem; opacity: 0.7;">Nombre del Archivo</label>
-                    <input type="text" id="inputCNCFilename" class="form-control" value="corte" placeholder="Nombre sin extensión">
-                </div>
-                <div class="input-with-label">
-                    <label style="font-size: 0.8rem; opacity: 0.7;">Velocidad de Corte (mm/min)</label>
-                    <input type="number" id="inputCNCSpeed" class="form-control" value="300" min="300" max="500" step="10">
-                    <small style="color: #92400e; font-size: 0.7rem;">Normal: 300 | Rápida: 500</small>
-                </div>
-                <div class="input-with-label">
-                    <label style="font-size: 0.8rem; opacity: 0.7;">Temperatura del Alambre (1-1000)</label>
-                    <input type="number" id="inputCNCTemp" class="form-control" value="600" min="1" max="1000">
-                    <small style="color: #92400e; font-size: 0.7rem;">Polifan 20mm: 600 | 50mm: 800 | Telgopor 20mm: 350</small>
-                </div>
-                <div class="form-check mb-2">
-                    <input class="form-check-input" type="checkbox" id="checkCNCAutoClose" checked>
-                    <label class="form-check-label" for="checkCNCAutoClose" style="font-size: 0.85rem;">Cerrar trayectos automáticamente</label>
-                </div>
-                <div class="form-check mb-2">
-                    <input class="form-check-input" type="checkbox" id="checkCNCBorder" onchange="document.getElementById('cncBorderOpts').style.display=this.checked?'block':'none'">
-                    <label class="form-check-label" for="checkCNCBorder" style="font-size: 0.85rem;">Recorte de borde (rectángulo)</label>
-                </div>
-                <div id="cncBorderOpts" style="display:none; padding-left:1.5rem;">
-                    <div class="input-with-label">
-                        <label style="font-size: 0.8rem; opacity: 0.7;">Margen del borde (mm)</label>
-                        <input type="number" id="inputCNCBorderMargin" class="form-control" value="5" min="0" step="0.5">
-                    </div>
-                </div>
-                <div style="display: flex; gap: 8px; margin-top: 10px;">
-                    <button class="btn btn-action" onclick="CNCModule.togglePreview()" id="btnCNCPreview" style="flex:1; background: linear-gradient(135deg, #6366f1, #4f46e5); color: #fff; border: none; font-weight: 700; font-size: 0.8rem; padding: 12px 8px;">
-                        <i class="fas fa-eye"></i> VER TRAYECTO
-                    </button>
-                    <button class="btn btn-action" onclick="CNCModule.generateAndDownload()" style="flex:1; background: linear-gradient(135deg, #f59e0b, #d97706); color: #fff; border: none; font-weight: 700; font-size: 0.8rem; padding: 12px 8px;">
-                        <i class="fas fa-download"></i> GENERAR .NC
-                    </button>
-                </div>
-            </div>
-
-            <!-- CARD DE RESULTADOS (Moved to bottom) -->
+            <!-- CARD DE RESULTADOS -->
             <div class="result-card" id="results">
-                <div class="result-item" style="border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 8px; margin-bottom: 12px;">
+                <div class="result-item" style="border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 8px; margin-bottom: 12px; display: none;">
                     <span>Área Neta:</span>
                     <strong id="resAreaNet">0.00 m²</strong>
                 </div>
-                <div class="result-item">
+                <div class="result-item" style="display: none;">
                     <span>Área Bruta (Cobro):</span>
                     <strong id="resAreaGross">0.00 m²</strong>
                 </div>
-                <div class="result-item" style="color: #FFD43B;">
+                <div class="result-item" style="color: #FFD43B; display: none;">
                     <span>Planchas:</span>
                     <strong id="resSheetCount">0</strong>
                 </div>
@@ -600,11 +274,11 @@
                     <strong id="resPerimeter">0.00 cm</strong>
                 </div>
                 
-                <div class="result-item" style="color: #fca5a5; font-weight: 600;">
+                <div class="result-item" style="color: #fca5a5; font-weight: 600; display: none;">
                     <span>Costo de Producción:</span>
                     <strong id="resCostTotal">$0</strong>
                 </div>
-                <div class="result-item" style="color: #86efac; font-weight: 600;">
+                <div class="result-item" style="color: #86efac; font-weight: 600; display: none;">
                     <span>Ganancia Estimada:</span>
                     <strong id="resProfit">$0</strong>
                 </div>
@@ -613,7 +287,7 @@
                     <div>
                         <div style="font-size: 0.75rem; opacity: 0.9; text-transform: uppercase; letter-spacing: 0.05em; color: #38bdf8; font-weight: bold;">Precio Sugerido (Venta)</div>
                         <div class="total-amount" id="resTotal" style="color: #ffffff;">$0</div>
-                        <div style="font-size: 0.7rem; opacity: 0.6; margin-top: 4px;" id="resBreakdown">Cálculo basado en costo + ganancia</div>
+                        <div style="font-size: 0.7rem; opacity: 0.6; margin-top: 4px;" id="resBreakdown">Cálculo basado en precio final</div>
                     </div>
                 </div>
 
@@ -627,2048 +301,6 @@
             </div>
         </aside>
     </main>
-
-    <script src="js/auth.js"></script>
-    <script>
-        let materials = [];
-        let canvas;
-        let scaleFactor = 1; // px to cm
-        let currentGroup = null;
-        let cachedCostsConfig = {};
-        let cachedPricesConfig = {};
-        let materialFrame = null;
-        let originalSVG = null;
-        let is3DMode = false;
-        let isOutlineMode = false;
-        let scene, camera, renderer, controls, modelGroup;
-        let ambientLight, directLight;
-
-        document.addEventListener('DOMContentLoaded', () => {
-            initCanvas();
-            init3D();
-            loadMaterials();
-            initFileUpload();
-            loadCalculatorConfig().then(() => {
-                if (currentGroup) calculateCosts();
-            });
-        });
-
-        function initCanvas() {
-            canvas = new fabric.Canvas('mainCanvas', {
-                backgroundColor: 'transparent',
-                width: 800,
-                height: 600
-            });
-
-            // --- ZOOM with mouse wheel ---
-            canvas.on('mouse:wheel', function(opt) {
-                const delta = opt.e.deltaY;
-                let zoom = canvas.getZoom();
-                zoom *= 0.999 ** delta;
-                if (zoom > 20) zoom = 20;
-                if (zoom < 0.05) zoom = 0.05;
-                canvas.zoomToPoint({ x: opt.e.offsetX, y: opt.e.offsetY }, zoom);
-                opt.e.preventDefault();
-                opt.e.stopPropagation();
-                document.getElementById('zoomLevel').innerText = `Zoom: ${Math.round(zoom * 100)}%`;
-            });
-
-            // --- PAN with ALT + drag ---
-            canvas.on('mouse:down', function(opt) {
-                if (opt.e.altKey) {
-                    this.isDragging = true;
-                    this.selection = false;
-                    this.lastPosX = opt.e.clientX;
-                    this.lastPosY = opt.e.clientY;
-                }
-            });
-            canvas.on('mouse:move', function(opt) {
-                if (this.isDragging) {
-                    const vpt = this.viewportTransform;
-                    vpt[4] += opt.e.clientX - this.lastPosX;
-                    vpt[5] += opt.e.clientY - this.lastPosY;
-                    this.requestRenderAll();
-                    this.lastPosX = opt.e.clientX;
-                    this.lastPosY = opt.e.clientY;
-                }
-            });
-            canvas.on('mouse:up', function() {
-                this.setViewportTransform(this.viewportTransform);
-                this.isDragging = false;
-                this.selection = true;
-            });
-
-            canvas.on('object:modified', function(opt) {
-                if (typeof CNCModule !== 'undefined' && CNCModule._previewVisible) {
-                    CNCModule.showPreview();
-                }
-            });
-
-            window.addEventListener('resize', resizeCanvas);
-            resizeCanvas();
-        }
-
-        function resetZoom() {
-            if (canvas) {
-                canvas.setZoom(1);
-                canvas.setViewportTransform([1, 0, 0, 1, 0, 0]);
-                if (currentGroup) {
-                    canvas.centerObject(currentGroup);
-                    currentGroup.setCoords();
-                }
-                canvas.renderAll();
-                document.getElementById('zoomLevel').innerText = `Zoom: 100%`;
-            }
-        }
-
-        function toggleCanvasMode() {
-            const area = document.getElementById('dropZoneLayer');
-            if (area) area.classList.toggle('dark-mode');
-        }
-
-        function resizeCanvas() {
-            const container = document.querySelector('.canvas-area');
-            if (!container || !canvas) return;
-            
-            const w = container.clientWidth;
-            const h = container.clientHeight;
-            
-            if (w > 0 && h > 0) {
-                canvas.setWidth(w);
-                canvas.setHeight(h);
-                canvas.renderAll();
-                
-                // Resize 3D also
-                if (renderer && camera) {
-                    camera.aspect = w / h;
-                    camera.updateProjectionMatrix();
-                    renderer.setSize(w, h);
-                }
-            }
-        }
-
-        function toggleAutoRotate3D() {
-            if (controls) {
-                controls.autoRotate = document.getElementById('checkAutoRotate').checked;
-                controls.autoRotateSpeed = 4.0;
-            }
-        }
-
-        function reset3DCamera() {
-            if (controls && camera) {
-                camera.position.set(0, 0, 400);
-                camera.lookAt(0, 0, 0);
-                controls.target.set(0, 0, 0);
-                controls.update();
-            }
-        }
-
-        function update3DLightScale(val) {
-            if (ambientLight) ambientLight.intensity = parseFloat(val);
-            if (directLight) directLight.intensity = parseFloat(val) + 0.2;
-        }
-
-        function toggle3DView() {
-            is3DMode = !is3DMode;
-            const canvas2D = document.getElementById('mainCanvas').parentElement; 
-            const container3D = document.getElementById('container3D');
-            const btn = document.getElementById('btnToggle3D');
-            
-            if (is3DMode) {
-                canvas2D.style.display = 'none';
-                container3D.style.display = 'block';
-                btn.innerHTML = '<i class="fas fa-th"></i> VISTA 2D';
-                btn.classList.replace('btn-primary', 'btn-secondary');
-                document.getElementById('btnDownloadSTL').style.display = 'block';
-                document.getElementById('extra3DOptions').style.display = 'flex';
-                resizeCanvas(); // Ensure renderer size is correct
-                update3DView();
-            } else {
-                canvas2D.style.display = 'block';
-                container3D.style.display = 'none';
-                btn.innerHTML = '<i class="fas fa-cube"></i> VISTA 3D';
-                btn.classList.replace('btn-secondary', 'btn-primary');
-                document.getElementById('btnDownloadSTL').style.display = 'none';
-                document.getElementById('extra3DOptions').style.display = 'none';
-            }
-        }
-
-        function toggleOutlineMode() {
-            isOutlineMode = !isOutlineMode;
-            const btn = document.getElementById('btnToggleOutline');
-            if (isOutlineMode) {
-                btn.classList.replace('btn-light', 'btn-warning');
-                btn.innerHTML = '<i class="fas fa-paint-brush"></i> Lleno';
-            } else {
-                btn.classList.replace('btn-warning', 'btn-light');
-                btn.innerHTML = '<i class="fas fa-vector-square"></i> Contorno';
-            }
-            calculateCosts(); // Re-render logic with new style
-        }
-
-        function init3D() {
-            const container = document.getElementById('container3D');
-            const width = container.clientWidth || 800;
-            const height = container.clientHeight || 600;
-
-            scene = new THREE.Scene();
-            scene.background = new THREE.Color(0xf1f5f9);
-
-            camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 10000);
-            camera.position.set(0, -100, 400);
-
-            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-            renderer.setSize(width, height);
-            renderer.setPixelRatio(window.devicePixelRatio);
-            renderer.shadowMap.enabled = true;
-            container.appendChild(renderer.domElement);
-
-            controls = new THREE.OrbitControls(camera, renderer.domElement);
-            controls.enableDamping = true;
-            controls.autoRotate = false; // default
-            controls.autoRotateSpeed = 4.0;
-
-            ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-            scene.add(ambientLight);
-
-            directLight = new THREE.DirectionalLight(0xffffff, 0.8);
-            directLight.position.set(100, 100, 200);
-            directLight.castShadow = true;
-            scene.add(directLight);
-
-            modelGroup = new THREE.Group();
-            scene.add(modelGroup);
-
-            function animate() {
-                requestAnimationFrame(animate);
-                controls.update();
-                renderer.render(scene, camera);
-            }
-            animate();
-        }
-
-        function downloadSTL() {
-            if (!modelGroup || modelGroup.children.length === 0) {
-                alert("Primero debes cargar un diseño y entrar en la Vista 3D.");
-                return;
-            }
-
-            const exporter = new THREE.STLExporter();
-            
-            // Temporalmente escalamos para que el STL esté en milímetos reales
-            // En nuestra escena 1 unidad = 1 px. 
-            // Queremos que en el STL, 1 unidad = 1 mm.
-            // px a cm es scaleFactor. px a mm es scaleFactor / 10.
-            // 1 / (scaleFactor/10) = 10 / scaleFactor.
-            
-            const originalScale = modelGroup.scale.clone();
-            const originalPos = modelGroup.position.clone();
-            const originalRot = modelGroup.rotation.clone();
-
-            // Reset transform for export to get "real" world units
-            // El group en Three.js tiene scale 'fitScale'. 
-            // Pero queremos el tamaño real definido por targetH.
-            
-            const targetH_cm = parseFloat(document.getElementById('inputHeight').value) || 10;
-            const targetH_mm = targetH_cm * 10;
-            
-            // Usar la profundidad manual de la interfaz
-            const manualDepth_cm = parseFloat(document.getElementById('inputManualDepth').value) || 2;
-            const manualDepth_mm = manualDepth_cm * 10;
-            
-            // Calculamos el factor: el modelo en pixeles tiene una altura original
-            const box = new THREE.Box3().setFromObject(modelGroup);
-            const currentH_3dUnits = box.getSize(new THREE.Vector3()).y / modelGroup.scale.y;
-            
-            // Factor para que la altura sea targetH_mm
-            const worldScale = targetH_mm / currentH_3dUnits;
-            
-            modelGroup.scale.set(worldScale, worldScale, worldScale);
-            modelGroup.rotation.set(Math.PI, 0, 0); // Exportar derecho
-            modelGroup.position.set(0, 0, 0);
-
-            const result = exporter.parse(modelGroup, { binary: true });
-            
-            // Restaurar vista
-            modelGroup.scale.copy(originalScale);
-            modelGroup.position.copy(originalPos);
-            modelGroup.rotation.copy(originalRot);
-
-            const blob = new Blob([result], { type: 'application/octet-stream' });
-            const link = document.createElement('a');
-            link.style.display = 'none';
-            document.body.appendChild(link);
-            link.href = URL.createObjectURL(blob);
-            link.download = `letrero_3d_${targetH_cm}cm.stl`;
-            link.click();
-            document.body.removeChild(link);
-        }
-
-        function update3DView() {
-            if (!originalSVG || !is3DMode) return;
-
-            const isHollowNow = document.getElementById('checkHollow').checked;
-            // Show/Hide sub-options for hollow mode
-            document.getElementById('hollowSubOptions').style.display = isHollowNow ? 'flex' : 'none';
-
-            // Reset transformations
-
-            // Clear previous model
-            for (let i = scene.children.length - 1; i >= 0; i--) {
-                const obj = scene.children[i];
-                if (obj.type === 'Group' || obj.type === 'Mesh') {
-                    scene.remove(obj);
-                }
-            }
-            modelGroup = new THREE.Group();
-            scene.add(modelGroup);
-
-            const loader = new THREE.SVGLoader();
-            const svgData = loader.parse(originalSVG);
-            
-            // Get material properties
-            const selectedMatId = document.getElementById('selectMaterial').value;
-            const material = materials.find(m => String(m.id) === String(selectedMatId));
-            const matName = material ? (material.productoNombre || material.producto).toLowerCase() : "";
-            
-            // Scaling from SVG px to 3D units
-            const unitsPerPx = 1 / scaleFactor;
-
-            // Simple material logic
-            let threeMat;
-            if (matName.includes('polifan')) {
-                threeMat = new THREE.MeshPhongMaterial({ color: 0xeeeeee, flatShading: true, side: THREE.DoubleSide });
-            } else if (matName.includes('chapa') || matName.includes('acero') || matName.includes('galv')) {
-                threeMat = new THREE.MeshStandardMaterial({ color: 0x888888, metalness: 0.8, roughness: 0.3, side: THREE.DoubleSide });
-            } else if (matName.includes('acrilico')) {
-                threeMat = new THREE.MeshPhongMaterial({ color: 0x4361ee, transparent: true, opacity: 0.8, shininess: 100, side: THREE.DoubleSide });
-            } else {
-                threeMat = new THREE.MeshPhongMaterial({ color: 0x4361ee, side: THREE.DoubleSide });
-            }
-            
-            let currentDepth = parseFloat(document.getElementById('inputManualDepth').value) || 2;
-            
-            // -- COMPLETELY DECOUPLED FROM FABRIC.JS SCALING --
-            const targetH_cm = parseFloat(document.getElementById('inputHeight').value) || 10;
-            const wallThickness_mm = parseFloat(document.getElementById('inputWallThickness').value) || 2;
-            const isHollow = document.getElementById('checkHollow').checked;
-
-            // 1. Obtenemos los Shapes y calculamos las medidas nativas reales de los vectores 3D
-            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-            const allShapes = [];
-            
-            svgData.paths.forEach((path) => {
-                const shapes = THREE.SVGLoader.createShapes(path);
-                shapes.forEach(shape => {
-                    allShapes.push(shape);
-                    const pts = shape.getPoints();
-                    pts.forEach(p => {
-                        if (p.x < minX) minX = p.x;
-                        if (p.y < minY) minY = p.y;
-                        if (p.x > maxX) maxX = p.x;
-                        if (p.y > maxY) maxY = p.y;
-                    });
-                });
-            });
-
-            const nativeSVGHeight = (maxY - minY) > 0 ? (maxY - minY) : 100;
-            
-            // 2. Cálculo matemático exacto para la extrusión
-            // Si el alto real nativo mide X unidades, y corresponde a targetH_cm centímetros.
-            // Entonces 1 cm = (nativeSVGHeight / targetH_cm) unidades.
-            const unitsPerCm = nativeSVGHeight / targetH_cm;
-            
-            const depthInUnits = currentDepth * unitsPerCm;
-            const wall_3dUnits = (wallThickness_mm / 10) * unitsPerCm;
-            const backPanel_units = 0.15 * unitsPerCm; // 1.5mm back panel
-            
-            // Override de color personalizado
-            const customColorHex = document.getElementById('input3DColorOverride').value;
-            const customColor = new THREE.Color(customColorHex);
-
-            allShapes.forEach((shape) => {
-                    // Update threeMat if custom color is used
-                    const designMat = threeMat.clone();
-                    designMat.color.copy(customColor);
-                    
-                    if (isHollow) {
-                        const hasFront = document.getElementById('checkFront').checked;
-                        const hasBack = document.getElementById('checkBack').checked;
-
-                        // 1. FRONT PANEL (cara visible, más cercana a la cámara = z alto)
-                        if (hasFront) {
-                            const frontGeom = new THREE.ExtrudeGeometry(shape, {
-                                depth: backPanel_units,
-                                bevelEnabled: false
-                            });
-                            const frontMesh = new THREE.Mesh(frontGeom, designMat);
-                            frontMesh.position.z = depthInUnits - backPanel_units;
-                            modelGroup.add(frontMesh);
-                        }
-
-                        // 2. BACK PANEL (cara trasera, al fondo = z=0)
-                        if (hasBack) {
-                            const backGeom = new THREE.ExtrudeGeometry(shape, {
-                                depth: backPanel_units,
-                                bevelEnabled: false
-                            });
-                            const backMesh = new THREE.Mesh(backGeom, designMat);
-                            // z=0 is the back (farthest from camera)
-                            modelGroup.add(backMesh);
-                        }
-                        
-                        // ... (the rest remains using designMat)
-
-                        // 3. WALLS (Hollow extrusion using Clipper.js)
-                        if (typeof ClipperLib !== 'undefined') {
-                            const scale = 10000;
-                            const subj = new ClipperLib.Paths();
-                            
-                            // Original outer path
-                            subj.push(shape.getPoints().map(p => ({ X: Math.round(p.x * scale), Y: Math.round(p.y * scale) })));
-                            shape.holes.forEach(hole => {
-                                subj.push(hole.getPoints().map(p => ({ X: Math.round(p.x * scale), Y: Math.round(p.y * scale) })));
-                            });
-                            
-                            // A) Computed Inset (Core of the geometry)
-                            // Reverse to ensure standard orientation if needed, Clipper handles it usually 
-                            const co = new ClipperLib.ClipperOffset();
-                            co.AddPaths(subj, ClipperLib.JoinType.jtMiter, ClipperLib.EndType.etClosedPolygon);
-                            const corePaths = new ClipperLib.Paths();
-                            co.Execute(corePaths, -wall_3dUnits * scale); 
-                            
-                            // B) Boolean Difference: Original - Core = Wall
-                            const c = new ClipperLib.Clipper();
-                            c.AddPaths(subj, ClipperLib.PolyType.ptSubject, true);
-                            c.AddPaths(corePaths, ClipperLib.PolyType.ptClip, true);
-                            const solutionTree = new ClipperLib.PolyTree();
-                            c.Execute(ClipperLib.ClipType.ctDifference, solutionTree, ClipperLib.PolyFillType.pftNonZero, ClipperLib.PolyFillType.pftNonZero);
-
-                            // Helper to extract THREE.Shapes from PolyTree robustly
-                            const finalShapes = [];
-                            const extractPolyTree = (node) => {
-                                const childs = typeof node.Childs === 'function' ? node.Childs() : (node.Childs || node.m_childs || []);
-                                for (let i = 0; i < childs.length; i++) {
-                                    const outerNode = childs[i];
-                                    const contour = typeof outerNode.Contour === 'function' ? outerNode.Contour() : (outerNode.Contour || outerNode.m_polygon || []);
-                                    
-                                    if (contour.length > 0) {
-                                        const pts = contour.map(p => new THREE.Vector2(p.X / scale, p.Y / scale));
-                                        const threeShape = new THREE.Shape(pts);
-                                        
-                                        const holes = typeof outerNode.Childs === 'function' ? outerNode.Childs() : (outerNode.Childs || outerNode.m_childs || []);
-                                        for (let j = 0; j < holes.length; j++) {
-                                            const holeNode = holes[j];
-                                            const hContour = typeof holeNode.Contour === 'function' ? holeNode.Contour() : (holeNode.Contour || holeNode.m_polygon || []);
-                                            if (hContour.length > 0) {
-                                                const hPts = hContour.map(p => new THREE.Vector2(p.X / scale, p.Y / scale));
-                                                threeShape.holes.push(new THREE.Path(hPts));
-                                            }
-                                            extractPolyTree(holeNode); // Islands inside holes
-                                        }
-                                        finalShapes.push(threeShape);
-                                    }
-                                }
-                            };
-                            extractPolyTree(solutionTree);
-
-                            finalShapes.forEach(s => {
-                                const wallGeom = new THREE.ExtrudeGeometry(s, { depth: depthInUnits, bevelEnabled: false });
-                                const wallMesh = new THREE.Mesh(wallGeom, designMat);
-                                modelGroup.add(wallMesh);
-                            });
-
-                        } else {
-                            // Fallback to solid if CDN failed
-                            const mesh = new THREE.Mesh(new THREE.ExtrudeGeometry(shape, {
-                                depth: depthInUnits,
-                                bevelEnabled: false
-                            }), designMat);
-                            modelGroup.add(mesh);
-                        }
-
-                    } else {
-                        // SOLID MODE (Original)
-                        const geometry = new THREE.ExtrudeGeometry(shape, {
-                            depth: depthInUnits,
-                            bevelEnabled: false
-                        });
-
-                        let meshMaterial = designMat;
-                        if (isOutlineMode) {
-                            meshMaterial = new THREE.MeshPhongMaterial({ 
-                                color: customColorHex, 
-                                wireframe: true,
-                                transparent: true,
-                                opacity: 0.5,
-                                side: THREE.DoubleSide
-                            });
-                        }
-
-                        const mesh = new THREE.Mesh(geometry, meshMaterial);
-                        modelGroup.add(mesh);
-                        
-                        if (isOutlineMode) {
-                            const edges = new THREE.EdgesGeometry(geometry);
-                            const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0x000000 }));
-                            modelGroup.add(line);
-                        }
-                    }
-                });
-
-            // --- Auto-fit model in viewport ---
-            const box = new THREE.Box3().setFromObject(modelGroup);
-            const center = new THREE.Vector3();
-            box.getCenter(center);
-            const size = new THREE.Vector3();
-            box.getSize(size);
-
-            // Center geometry at origin
-            modelGroup.position.set(-center.x, -center.y, -center.z);
-
-            // Flip Y to correct SVG orientation (SVG Y goes down, Three.js Y goes up)
-            modelGroup.scale.set(1, -1, 1);
-
-            // Calculate optimal camera distance to frame the entire model
-            const maxDim = Math.max(size.x, size.y, size.z);
-            const fov = camera.fov * (Math.PI / 180);
-            const cameraDistance = (maxDim / 2) / Math.tan(fov / 2) * 1.5; // 1.5x margin
-
-            camera.position.set(0, 0, cameraDistance);
-            camera.lookAt(0, 0, 0);
-            controls.target.set(0, 0, 0);
-            controls.update();
-        }
-
-        async function loadMaterials() {
-            try {
-                const token = localStorage.getItem('mr_token');
-                const response = await fetch('/api/materiales', {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                
-                if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                
-                const rawData = await response.json();
-                const rawMaterials = Array.isArray(rawData) ? rawData : [];
-                const excludedCategories = ["lonas", "vinilo", "laqueado", "tintas", "banners", "otros"];
-                materials = rawMaterials.filter(m => {
-                    const cat = (m.categoria || "").toLowerCase().trim();
-                    return !excludedCategories.includes(cat);
-                });
-                
-                const select = document.getElementById('selectMaterial');
-                if (materials.length === 0) {
-                    select.innerHTML = '<option value="">No hay materiales disponibles</option>';
-                    return;
-                }
-
-                // Agrupar por categoría
-                const categories = [...new Set(materials.map(m => m.categoria))].sort();
-                let html = '<option value="">Seleccione material...</option>';
-                
-                categories.forEach(cat => {
-                    html += `<optgroup label="${cat}">`;
-                    materials.filter(m => m.categoria === cat).forEach(m => {
-                        let priceLabel = "";
-                        const prodName = (m.productoNombre || m.producto || "").toLowerCase();
-                        if (prodName.includes("polifan")) {
-                            const platePrice = m.costoPorM2 || 0;
-                            const calculatedLinearPrice = Math.round(platePrice * (345 / 2090));
-                            priceLabel = `$${calculatedLinearPrice}/cm`;
-                        } else if (m.precioLineal && m.precioLineal > 0) {
-                            priceLabel = `$${m.precioLineal}/cm`;
-                        } else {
-                            const price = m.costoPorM2 || (m.m2 > 0 ? m.precioRollo / m.m2 : 0);
-                            priceLabel = `$${Math.round(price)}/m²`;
-                        }
-                        html += `<option value="${m.id}">${m.productoNombre || m.producto} (${priceLabel})</option>`;
-                    });
-                    html += `</optgroup>`;
-                });
-
-                select.innerHTML = html;
-                select.addEventListener('change', () => {
-                    // Actualizar profundidad manual y precio lineal según material seleccionado
-                    const selectedMatId = select.value;
-                    const material = materials.find(m => String(m.id) === String(selectedMatId));
-                    if (material) {
-                        console.log("Material seleccionado:", material.productoNombre || material.producto);
-                        
-                        // 1. Manejo de PROFUNDIDAD (3D)
-                        const matName = (material.productoNombre || material.producto).toLowerCase();
-                        let d = 0.5;
-                        if (matName.includes('20 mm') || matName.includes('20mm')) d = 2;
-                        else if (matName.includes('30 mm') || matName.includes('30mm')) d = 3;
-                        else if (matName.includes('40 mm') || matName.includes('40mm')) d = 4;
-                        else if (matName.includes('50 mm') || matName.includes('50mm')) d = 5;
-                        else if (matName.includes('10 mm') || matName.includes('10mm')) d = 1;
-                        
-                        const inputDepth = document.getElementById('inputManualDepth');
-                        if (inputDepth) inputDepth.value = d;
-                    }
-                    
-                    applyMaterialConfig();
-                    calculateCosts();
-                });
-            } catch (err) {
-                console.error("Error cargando materiales:", err);
-                document.getElementById('selectMaterial').innerHTML = '<option value="">Error al cargar materiales</option>';
-            }
-        }
-
-        function initFileUpload() {
-            const dropZone = document.getElementById('dropZone');
-            const fileInput = document.getElementById('fileInput');
-
-            console.log("initFileUpload: Input y DropZone configurados.");
-
-            dropZone.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                dropZone.classList.add('dragover');
-            });
-            dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
-            dropZone.addEventListener('drop', (e) => {
-                e.preventDefault();
-                dropZone.classList.remove('dragover');
-                console.log("Archivo soltado en DropZone.");
-                if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
-            });
-
-            fileInput.addEventListener('change', (e) => {
-                console.log("Cambio detectado en fileInput.");
-                if (e.target.files.length) handleFile(e.target.files[0]);
-            });
-        }
-
-        function handleFile(file) {
-            console.log("Procesando archivo:", file.name, "Tipo:", file.type);
-            const fileName = file.name.toLowerCase();
-            const status = document.getElementById('uploadStatus');
-            if (status) {
-                status.innerText = "Leyendo archivo...";
-                status.style.display = "block";
-            }
-            
-            // Detectar formatos propietarios de diseño
-            if (fileName.endsWith('.cdr') || fileName.endsWith('.ai') || fileName.endsWith('.eps')) {
-                const modal = new bootstrap.Modal(document.getElementById('modalCorelHelp'));
-                modal.show();
-                return;
-            }
-
-            if (fileName.endsWith('.dxf')) {
-                const reader = new FileReader();
-                reader.onload = (e) => loadDXF(e.target.result);
-                reader.readAsText(file);
-                return;
-            }
-
-            if (!fileName.endsWith('.svg')) {
-                alert("Por favor sube un archivo válido (.SVG o .DXF).");
-                return;
-            }
-
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const svgText = e.target.result;
-                originalSVG = svgText;
-                loadSVG(svgText);
-            };
-            reader.readAsText(file);
-        }
-
-        function loadSVG(svgText) {
-            console.log("LOAD_SVG: Iniciando proceso...");
-            const status = document.getElementById('uploadStatus');
-            if (status) status.innerText = "Cargando vectores...";
-
-            try {
-                if (!svgText) throw new Error("SVG vacío o inválido.");
-
-                fabric.loadSVGFromString(svgText, (objects, options) => {
-                    console.log(`LOAD_SVG: SVG parseado. Objetos: ${objects.length}`);
-                    
-                    if (!objects || objects.length === 0) {
-                        alert("El archivo SVG parece estar vacío o no tiene vectores válidos.");
-                        if (status) status.style.display = "none";
-                        return;
-                    }
-
-                    // Forzar ocultar el texto de ayuda
-                    document.getElementById('dropText').style.display = 'none';
-
-                    // Asegurar que el canvas tenga tamaño antes de escalar
-                    resizeCanvas();
-                    const cw = canvas.getWidth();
-                    const ch = canvas.getHeight();
-                    console.log(`LOAD_SVG: Dimensiones del canvas: ${cw}x${ch}`);
-
-                    // Mejora de Visibilidad
-                    objects.forEach(obj => {
-                        const fill = obj.fill ? obj.fill.toString().toLowerCase() : "";
-                        if (!obj.fill || fill === 'white' || fill === '#ffffff' || fill === 'transparent') {
-                            if (!obj.stroke || obj.stroke === 'transparent') {
-                                obj.set({
-                                    stroke: '#6366f1',
-                                    strokeWidth: 1.5,
-                                    strokeUniform: true
-                                });
-                            }
-                        }
-                    });
-
-                    const group = fabric.util.groupSVGElements(objects, options);
-                    if (currentGroup) canvas.remove(currentGroup);
-                    
-                    group.set({
-                        originX: 'center',
-                        originY: 'center',
-                        selectable: true,
-                        strokeUniform: true
-                    });
-
-                    // Detección física
-                    const physical = parsePhysicalUnits(svgText);
-                    if (physical && physical.height > 0) {
-                        scaleFactor = group.height / physical.height;
-                        document.getElementById('inputHeight').value = physical.height.toFixed(1);
-                    }
-
-                    // Escala en visor
-                    const padding = 0.85;
-                    const scaleW = (cw > 0 ? (cw * padding) / group.width : 1);
-                    const scaleH = (ch > 0 ? (ch * padding) / group.height : 1);
-                    let scale = Math.min(scaleW, scaleH);
-                    
-                    if (!isFinite(scale) || scale <= 0) scale = 1;
-                    console.log(`LOAD_SVG: Escala calculada: ${scale}`);
-
-                    group.scale(scale);
-                    canvas.add(group);
-                    canvas.centerObject(group);
-                    canvas.setActiveObject(group);
-                    currentGroup = group;
-                    group.setCoords();
-                    
-                    // Asegurar visibilidad del contenedor de Fabric
-                    if (canvas.wrapperEl) {
-                        canvas.wrapperEl.style.display = 'block';
-                        canvas.wrapperEl.style.visibility = 'visible';
-                        canvas.wrapperEl.style.opacity = '1';
-                    }
-
-                    canvas.renderAll();
-                    refreshPreviewImage();
-                    
-                    document.getElementById('autoDims').style.display = 'block';
-                    document.getElementById('btnToggle3D').style.display = 'block';
-                    document.getElementById('btnChangeFile').style.display = 'block';
-                    document.getElementById('cncSection').style.display = 'block';
-                    
-                    if (document.getElementById('btnSendRenderer')) {
-                        document.getElementById('btnSendRenderer').disabled = false;
-                    }
-                    
-                    calculateCosts();
-                    resetZoom();
-                    console.log("LOAD_SVG: Finalizado exitosamente.");
-                    if (status) status.style.display = "none";
-                });
-            } catch (err) {
-                console.error("LOAD_SVG ERROR:", err);
-                alert("Error al cargar el visor: " + err.message);
-                if (status) status.style.display = "none";
-            }
-        }
-
-        function loadDXF(dxfText) {
-            document.getElementById('dropText').style.display = 'none';
-            // Fabric wrapper show
-            const canvasWrapper = document.getElementById('mainCanvas').parentElement;
-            if (canvasWrapper) canvasWrapper.style.display = 'block';
-
-            // Verificación básica de formato ASCII
-            if (!dxfText || (!dxfText.includes('SECTION') && !dxfText.includes('HEADER'))) {
-                alert("⚠️ Error: El archivo DXF parece ser binario o estar corrupto. \n\nPor favor, desde tu CAD exporta como 'DXF ASCII' (versión R12 o R14) o usa el formato SVG para mayor compatibilidad.");
-                document.getElementById('dropText').style.display = 'flex';
-                return;
-            }
-
-            try {
-                const parser = new DxfParser();
-                const dxf = parser.parseSync(dxfText);
-                
-                const fabricObjects = [];
-                
-                // Mapear unidades ($INSUNITS)
-                // 4 = mm, 5 = cm, 1 = inches, 0 = unitless (usamos mm default)
-                let unitScale = 0.1; // Default mm -> cm
-                const insUnits = dxf.header ? dxf.header.$INSUNITS : 0;
-                if (insUnits === 5) unitScale = 1;      // cm
-                if (insUnits === 1) unitScale = 2.54;   // inches
-                if (insUnits === 6) unitScale = 100;    // meters
-
-                dxf.entities.forEach(entity => {
-                    let pathData = "";
-                    
-                    if (entity.type === 'LINE') {
-                        pathData = `M ${entity.vertices[0].x} ${-entity.vertices[0].y} L ${entity.vertices[1].x} ${-entity.vertices[1].y}`;
-                    } else if (entity.type === 'LWPOLYLINE' || entity.type === 'POLYLINE') {
-                        entity.vertices.forEach((v, i) => {
-                            pathData += (i === 0 ? "M " : "L ") + `${v.x} ${-v.y} `;
-                        });
-                        if (entity.shape) pathData += "Z";
-                    } else if (entity.type === 'CIRCLE') {
-                        const r = entity.radius;
-                        pathData = `M ${entity.center.x - r} ${-entity.center.y} A ${r} ${r} 0 1 0 ${entity.center.x + r} ${-entity.center.y} A ${r} ${r} 0 1 0 ${entity.center.x - r} ${-entity.center.y}`;
-                    } else if (entity.type === 'ARC') {
-                        const r = entity.radius;
-                        const startX = entity.center.x + r * Math.cos(entity.startAngle);
-                        const startY = entity.center.y + r * Math.sin(entity.startAngle);
-                        const endX = entity.center.x + r * Math.cos(entity.endAngle);
-                        const endY = entity.center.y + r * Math.sin(entity.endAngle);
-                        const largeArc = (entity.endAngle - entity.startAngle + 2 * Math.PI) % (2 * Math.PI) > Math.PI ? 1 : 0;
-                        pathData = `M ${startX} ${-startY} A ${r} ${r} 0 ${largeArc} 0 ${endX} ${-endY}`;
-                    }
-
-                    if (pathData) {
-                        fabricObjects.push(new fabric.Path(pathData, {
-                            fill: 'transparent',
-                            stroke: '#fbbf24',
-                            strokeWidth: 1,
-                            strokeUniform: true
-                        }));
-                    }
-                });
-
-                if (fabricObjects.length === 0) throw new Error("No se encontraron entidades válidas en el DXF");
-
-                if (currentGroup) canvas.remove(currentGroup);
-                const group = new fabric.Group(fabricObjects);
-                
-                group.set({
-                    left: 0,
-                    top: 0,
-                    originX: 'left',
-                    originY: 'top',
-                    selectable: true,
-                    strokeUniform: true
-                });
-
-                // Auto-escala basada en las unidades del DXF
-                scaleFactor = 1 / unitScale; 
-                const physicalH = group.height / scaleFactor;
-                document.getElementById('inputHeight').value = physicalH.toFixed(1);
-
-                const visScale = Math.min((canvas.width * 0.8) / group.width, (canvas.height * 0.8) / group.height);
-                group.scale(visScale);
-
-                canvas.add(group);
-                canvas.setActiveObject(group);
-                currentGroup = group;
-                canvas.renderAll();
-                
-                document.getElementById('autoDims').style.display = 'block';
-                document.getElementById('btnChangeFile').style.display = 'block';
-                document.getElementById('cncSection').style.display = 'none';
-                refreshPreviewImage();
-                calculateCosts();
-
-            } catch (err) {
-                console.error("Error cargando DXF:", err);
-                alert("Error al procesar el archivo DXF. Asegúrate de que sea un archivo R12/R14 o versión moderna compatible.");
-                document.getElementById('dropText').style.display = 'flex';
-            }
-        }
-
-        // Función para extraer medidas reales del SVG (Corel, Illustrator, etc)
-        function parsePhysicalUnits(svgText) {
-            try {
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(svgText, "image/svg+xml");
-                const svgTag = doc.querySelector('svg');
-                if (!svgTag) return null;
-
-                const rawW = svgTag.getAttribute('width') || "";
-                const rawH = svgTag.getAttribute('height') || "";
-                const viewBox = svgTag.getAttribute('viewBox') || "";
-
-                const toCm = (val) => {
-                    if (!val) return null;
-                    const num = parseFloat(val);
-                    if (val.includes('mm')) return num / 10;
-                    if (val.includes('cm')) return num;
-                    if (val.includes('in')) return num * 2.54;
-                    if (val.includes('pt')) return num * 0.03527; // 1/72 inch
-                    return null; // Si es px o sin unidad, no lo tomamos como físico aún
-                };
-
-                const h = toCm(rawH);
-                const w = toCm(rawW);
-
-                if (h && w) return { width: w, height: h };
-                
-                // Fallback: si no hay unidades físicas pero hay width/height en números grandes (Corel)
-                // Usualmente Corel pone px si no se especifica, pero podemos intentar inferir DPI
-                return null;
-            } catch (e) {
-                return null;
-            }
-        }
-
-        function applyScale() {
-            if (!currentGroup) return;
-            
-            const targetH = parseFloat(document.getElementById('inputHeight').value);
-            if (!targetH) return;
-
-            const pxHeight = currentGroup.height * currentGroup.scaleY;
-            scaleFactor = pxHeight / targetH; // px por cada 1 cm
-
-            const realH = (currentGroup.height * currentGroup.scaleY) / scaleFactor;
-            const realW = (currentGroup.width * currentGroup.scaleX) / scaleFactor;
-            
-            document.getElementById('textWidth').innerText = realW.toFixed(1);
-            document.getElementById('textHeight').innerText = realH.toFixed(1);
-            
-            // Actualizar vista previa al cambiar escala
-            refreshPreviewImage();
-            
-            calculateCosts();
-        }
-
-        function updateMaterialFrame(sheetW_cm, sheetH_cm) {
-            if (!canvas || !currentGroup) return;
-            
-            // scaleFactor = px / cm. Real px in canvas = cm * scaleFactor.
-            const frameW = sheetW_cm * scaleFactor;
-            const frameH = sheetH_cm * scaleFactor;
-
-            if (!materialFrame) {
-                materialFrame = new fabric.Rect({
-                    left: 0,
-                    top: 0,
-                    fill: 'rgba(148, 163, 184, 0.1)',
-                    stroke: '#ef4444', 
-                    strokeWidth: 2,
-                    strokeDashArray: [10, 5],
-                    selectable: false,
-                    evented: false,
-                    originX: 'center',
-                    originY: 'center'
-                });
-                canvas.add(materialFrame);
-            }
-            // Send to back so it doesn't block interactions
-            materialFrame.sendToBack();
-
-            materialFrame.set({ width: frameW, height: frameH });
-            canvas.centerObject(materialFrame);
-            
-            // Allow dragging of the SVG
-            currentGroup.set({
-                selectable: true,
-                hasControls: false, // drag only, no resize
-                hasBorders: true,
-                lockRotation: true,
-                lockScalingX: true,
-                lockScalingY: true
-            });
-
-            // Adjust zoom to fit the entire material frame, not just the SVG
-            const safeW = Math.max(frameW, currentGroup.width * currentGroup.scaleX);
-            const safeH = Math.max(frameH, currentGroup.height * currentGroup.scaleY);
-            const visScale = Math.min((canvas.width * 0.8) / safeW, (canvas.height * 0.8) / safeH);
-            
-            // Instead of resetting zoom on every change (which breaks drag), only apply initial center
-            // when materialFrame is newly created or sizes heavily mismatch. 
-            // For now, let's keep it simple: just update the rect size.
-        }
-
-        function refreshPreviewImage() {
-            if (!currentGroup) return;
-            try {
-                // Generar un dataURL ligero solo del grupo
-                window.currentPreviewImage = currentGroup.toDataURL({
-                    format: 'png',
-                    quality: 0.8,
-                    multiplier: 0.5 // Imagen más pequeña para rendimiento
-                });
-            } catch (e) {
-                console.error("Error generando preview:", e);
-            }
-        }
-
-        function calculateCosts() {
-            if (!currentGroup) return;
-
-            try {
-                // 1. Calcular Perímetro (Recursivo para grupos anidados) en CENTÍMETROS
-                let totalPathLengthPx = 0;
-                
-                function calculateRecursivePerimeter(objs) {
-                    objs.forEach(obj => {
-                        if (obj.type === 'path' && obj.path) {
-                            totalPathLengthPx += getPathLength(obj) * Math.min(obj.scaleX, obj.scaleY);
-                        } else if (obj.getObjects) {
-                            calculateRecursivePerimeter(obj.getObjects());
-                        } else if (obj._objects) {
-                            calculateRecursivePerimeter(obj._objects);
-                        }
-                    });
-                }
-
-                const topObjects = currentGroup._objects || [currentGroup];
-                calculateRecursivePerimeter(topObjects);
-
-                if (totalPathLengthPx === 0) totalPathLengthPx = (currentGroup.width + currentGroup.height) * 2;
-                
-                // Aplicar escala general del grupo
-                totalPathLengthPx *= currentGroup.scaleX; 
-                
-                let totalCL = Math.round(totalPathLengthPx / scaleFactor) || 0;
-                
-                // Override manual de centímetros lineales si el usuario lo define
-                const manualPerimeter = parseFloat(document.getElementById('inputManualPerimeter').value);
-                if (manualPerimeter && manualPerimeter > 0) {
-                    totalCL = Math.round(manualPerimeter);
-                }
-                
-                // 2. Dimensiones Netas (cm)
-                const netH = (currentGroup.height * currentGroup.scaleY) / scaleFactor || 0;
-                const netW = (currentGroup.width * currentGroup.scaleX) / scaleFactor || 0;
-                const areaNetM2 = (netH / 100) * (netW / 100) || 0;
-
-                // Actualizar labels de la sidebar
-                const elWidth = document.getElementById('textWidth');
-                const elHeight = document.getElementById('textHeight');
-                if (elWidth) elWidth.innerText = netW.toFixed(1);
-                if (elHeight) elHeight.innerText = netH.toFixed(1);
-
-                // 3. Área a Cobrar (Bruta) con Lógica Pro
-                const margin = parseFloat(document.getElementById('inputMargin').value) || 0;
-                const grossH = netH + margin;
-                const grossW = netW + margin;
-                
-                const selectedMatId = document.getElementById('selectMaterial').value;
-                const material = materials.find(m => String(m.id) === String(selectedMatId));
-                const sheetType = document.getElementById('selectSheet').value;
-                const billingMode = document.getElementById('selectBillingMode').value;
-                
-                let areaToChargeM2 = 0;
-
-                // Determinar dimensiones de plancha
-                let sheetW = 244, sheetH = 122; // Default Standard
-                
-                if (material && material.ancho > 1 && material.largo > 1) {
-                    sheetW = material.ancho;
-                    sheetH = material.largo;
-                    if (sheetW > 10) sheetW = sheetW / 1; 
-                    else sheetW = sheetW * 100; 
-                    if (sheetH > 10) sheetH = sheetH / 1;
-                    else sheetH = sheetH * 100;
-                } else {
-                    if (sheetType === 'polifan') { sheetW = 125; sheetH = 60; }
-                    else if (sheetType === 'acrilico') { sheetW = 244; sheetH = 122; }
-                }
-                
-                if (sheetW < sheetH) [sheetW, sheetH] = [sheetH, sheetW];
-
-                updateMaterialFrame(sheetW, sheetH);
-
-                if (billingMode === 'efficient') {
-                    areaToChargeM2 = (grossH / 100) * (grossW / 100) * 1.15;
-                } else {
-                    if (grossH <= sheetH) areaToChargeM2 = (grossW / 100) * (sheetH / 100);
-                    else if (grossW <= sheetW) areaToChargeM2 = (sheetW / 100) * (grossH / 100);
-                    else areaToChargeM2 = (grossH / 100) * (grossW / 100);
-                }
-
-                const matName = material ? (material.productoNombre || material.producto || "").toLowerCase() : "";
-
-                // 4. UI Updates Básicas
-                document.getElementById('resAreaNet').innerText = areaNetM2.toFixed(3) + ' m²';
-                document.getElementById('resAreaGross').innerText = areaToChargeM2.toFixed(3) + ' m²';
-                document.getElementById('resPerimeter').innerText = (isFinite(totalCL) ? totalCL.toFixed(0) : "0") + ' cm';
-
-                // 5. Costos y Venta
-                const quantity = parseInt(document.getElementById('inputQuantity').value) || 1;
-                const cutCost = parseFloat(document.getElementById('inputCutCost').value) || 0;
-                const laborCost = parseFloat(document.getElementById('inputLaborCost').value) || 0;
-                const cutPrice = parseFloat(document.getElementById('inputCutPrice').value) || 0;
-                const laborPrice = parseFloat(document.getElementById('inputLaborPrice').value) || 0;
-                const markup = parseFloat(document.getElementById('inputMarkup').value) || 1;
-                
-                // 6. Planchas
-                const itemW = grossW || 1;
-                const itemH = grossH || 1;
-                const itemsPerSheetFixed = Math.floor((sheetW + 0.1) / itemW) * Math.floor((sheetH + 0.1) / itemH);
-                const itemsPerSheetRotated = Math.floor((sheetW + 0.1) / itemH) * Math.floor((sheetH + 0.1) / itemW);
-                const itemsPerSheet = Math.max(itemsPerSheetFixed, itemsPerSheetRotated);
-                const canFit = itemsPerSheet > 0 && isFinite(itemsPerSheet);
-                const totalSheets = canFit ? Math.ceil(quantity / itemsPerSheet) : "?";
-
-                document.getElementById('resSheetCount').innerText = canFit ? totalSheets + " unid." : "⚠️ No cabe";
-                document.getElementById('resSheetCount').style.color = canFit ? "#FFD43B" : "#FF6B6B";
-                document.getElementById('btnDistribucion').disabled = !canFit;
-                document.getElementById('btnSendBudget').disabled = false;
-
-                window.layoutData = { sheetW, sheetH, itemW, itemH, isRotated: itemsPerSheetRotated > itemsPerSheetFixed, quantity, itemsPerSheet, canFit };
-
-                let matCost = 0;
-                if (material) {
-                    if (material.precioLineal && material.precioLineal > 0) {
-                        matCost = 0;
-                    } else {
-                        let cpm2 = material.costoPorM2 || 0;
-                        if (material.m2 > 1000) cpm2 *= 10000;
-                        matCost = areaToChargeM2 * quantity * cpm2;
-                    }
-                }
-
-                // Cálculo de Costo de Producción Interno
-                const cutCostTotal = totalCL * cutCost * quantity;
-                const laborCostTotal = laborCost * quantity;
-                const prodCostTotal = matCost + cutCostTotal + laborCostTotal;
-
-                // Cálculo de Precio Sugerido de Cotización
-                const cutPriceTotal = totalCL * cutPrice * quantity;
-                const laborPriceTotal = laborPrice * quantity;
-                const salePrice = (matCost * markup) + cutPriceTotal + laborPriceTotal;
-                
-                const profit = salePrice - prodCostTotal;
-
-                window.lastCalculatedSalePrice = salePrice;
-
-                document.getElementById('resCostTotal').innerText = '$' + Math.round(prodCostTotal).toLocaleString();
-                document.getElementById('resProfit').innerText = '$' + Math.round(profit).toLocaleString();
-                
-                const resTotal = document.getElementById('resTotal');
-                if (resTotal) {
-                    resTotal.innerText = '$' + (isFinite(salePrice) ? Math.round(salePrice).toLocaleString() : "0");
-                }
-                
-                const resBreakdown = document.getElementById('resBreakdown');
-                if (resBreakdown) {
-                    const matVenta = Math.round(matCost * markup);
-                    resBreakdown.innerText = `Corte: ${isFinite(totalCL) ? totalCL.toFixed(0) : "0"}cm×$${cutPrice}×${quantity} | Mat: $${matVenta} | MO: $${laborPrice}×${quantity}`;
-                }
-
-                // Sincronizar zoom badge
-                const elZoom = document.getElementById('zoomLevel');
-                if (elZoom) elZoom.innerText = `Zoom: ${Math.round(canvas.getZoom() * 100)}%`;
-
-                // Refresh preview for distribution
-                refreshPreviewImage();
-
-                // Update 3D view if active
-                if (is3DMode) update3DView();
-
-            } catch (err) {
-                console.error("Error en calculateCosts:", err);
-            }
-        }
-
-        function getPathLength(pathObj) {
-            if (!pathObj.path) return 0;
-            const pathData = pathObj.path.map(c => c.join(' ')).join(' ');
-            const tempPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-            tempPath.setAttribute('d', pathData);
-            return tempPath.getTotalLength();
-        }
-
-        // --- Visualización de Distribución ---
-        function openLayoutModal() {
-            const modal = new bootstrap.Modal(document.getElementById('modalLayout'));
-            modal.show();
-            setTimeout(drawLayout, 300);
-        }
-
-        function drawLayout() {
-            const d = window.layoutData;
-            const previewImage = window.currentPreviewImage;
-            if (!d || !previewImage) return;
-
-            const canvasLayout = document.getElementById('canvasLayout');
-            const ctx = canvasLayout.getContext('2d');
-            
-            const iw = d.isRotated ? d.itemH : d.itemW;
-            const ih = d.isRotated ? d.itemW : d.itemH;
-
-            const maxRealW = Math.max(d.sheetW, iw);
-            const maxRealH = Math.max(d.sheetH, ih);
-            const maxPx = 550;
-            const scale = Math.min(maxPx / maxRealW, 350 / maxRealH);
-            
-            canvasLayout.width = maxRealW * scale + 20;
-            canvasLayout.height = maxRealH * scale + 20;
-
-            const img = new Image();
-            img.onload = function() {
-                // Limpiar
-                ctx.fillStyle = "#ffffff";
-                ctx.fillRect(0, 0, canvasLayout.width, canvasLayout.height);
-                
-                // Dibujar Plancha
-                ctx.strokeStyle = "#adb5bd";
-                ctx.setLineDash([5, 5]);
-                ctx.strokeRect(10, 10, d.sheetW * scale, d.sheetH * scale);
-                ctx.setLineDash([]);
-                
-                ctx.fillStyle = "#adb5bd";
-                ctx.font = "10px Inter";
-                ctx.fillText(`PLANCHA ${d.sheetW}x${d.sheetH}cm`, 12, 22);
-
-                if (!d.canFit) {
-                    ctx.fillStyle = "rgba(255, 107, 107, 0.1)";
-                    ctx.fillRect(10, 10, iw * scale, ih * scale);
-                    ctx.strokeStyle = "#FF6B6B";
-                    ctx.lineWidth = 1;
-                    ctx.strokeRect(10, 10, iw * scale, ih * scale);
-                    
-                    // Dibujar el logo centrado en el area
-                    drawLogo(10, 10, iw, ih);
-
-                    const margin = parseFloat(document.getElementById('inputMargin').value) || 0;
-                    document.getElementById('layoutInfo').innerHTML = 
-                        `<b style="color:#FF6B6B">⚠️ EL DISEÑO ES MÁS GRANDE QUE LA PLANCHA</b><br>
-                         Medida Neta: <b>${(d.itemW - margin).toFixed(1)} x ${(d.itemH - margin).toFixed(1)} cm</b> | Con Margen: ${iw.toFixed(1)} x ${ih.toFixed(1)} cm`;
-                    return;
-                }
-
-                const cols = Math.floor(d.sheetW / iw);
-                const rows = Math.floor(d.sheetH / ih);
-                let drawn = 0;
-
-                for (let r = 0; r < rows; r++) {
-                    for (let c = 0; c < cols; c++) {
-                        if (drawn >= d.quantity) break;
-                        const x = c * iw * scale + 10;
-                        const y = r * ih * scale + 10;
-                        
-                        // Fondo suave para el area bruta
-                        ctx.fillStyle = "rgba(226, 232, 240, 0.4)";
-                        ctx.fillRect(x, y, iw * scale, ih * scale);
-                        ctx.strokeStyle = "rgba(148, 163, 184, 0.5)";
-                        ctx.strokeRect(x, y, iw * scale, ih * scale);
-
-                        drawLogo(x, y, iw, ih);
-                        drawn++;
-                    }
-                }
-
-                document.getElementById('layoutInfo').innerHTML = 
-                    `Plancha: ${d.sheetW}x${d.sheetH}cm | Piezas: ${iw.toFixed(1)}x${ih.toFixed(1)}cm | <b>Entran: ${d.itemsPerSheet} por plancha.</b>`;
-            };
-            img.src = window.currentPreviewImage;
-
-            function drawLogo(x, y, areaW, areaH) {
-                ctx.save();
-                ctx.translate(x + (areaW * scale) / 2, y + (areaH * scale) / 2);
-                if (d.isRotated) ctx.rotate(Math.PI / 2);
-                
-                // El diseño original (sin margen) debe caber dentro del area
-                const margin = parseFloat(document.getElementById('inputMargin').value) || 0;
-                const designW = d.itemW - margin;
-                const designH = d.itemH - margin;
-                
-                // Dibujar la imagen centrada
-                ctx.drawImage(img, 
-                    -(designW * scale) / 2, 
-                    -(designH * scale) / 2, 
-                    designW * scale, 
-                    designH * scale
-                );
-                ctx.restore();
-            }
-        }
-
-        // ============ MÓDULO CNC - Generador de G-Code para CNC de Hilo Caliente ============
-         const CNCModule = {
-            CLOSE_DISTANCE: 0.5, // mm
-            FLATNESS: 0.005, // for Bézier subdivision (extremely low for perfect curves)
-            _previewObjects: [], // fabric.js objects for preview
-            _previewVisible: false,
-
-            generateAndDownload() {
-                if (!originalSVG) { alert('Primero cargá un archivo SVG.'); return; }
-                const targetH = parseFloat(document.getElementById('inputHeight').value);
-                if (!targetH || targetH <= 0) { alert('Configurá el alto deseado (cm) antes de generar.'); return; }
-
-                const speed = parseFloat(document.getElementById('inputCNCSpeed').value) || 300;
-                const temp = parseInt(document.getElementById('inputCNCTemp').value) || 600;
-                const autoClose = document.getElementById('checkCNCAutoClose').checked;
-                const cutBorder = document.getElementById('checkCNCBorder').checked;
-                const borderMargin = cutBorder ? parseFloat(document.getElementById('inputCNCBorderMargin').value) || 0 : 0;
-                const filename = (document.getElementById('inputCNCFilename').value || 'corte').replace(/[^a-zA-Z0-9_-]/g, '_');
-
-                try {
-                    // 1. Extract paths from SVG (in SVG native units)
-                    const rawPaths = this.extractPathsFromSVG(originalSVG);
-                    if (!rawPaths.length) { alert('No se encontraron trayectos en el SVG.'); return; }
-
-                    // 2. Convert to mm
-                    const { paths, width, height } = this.convertToMM(rawPaths, targetH);
-
-                    // 3. Auto-close paths
-                    if (autoClose) paths.forEach(p => this.closePathIfNeeded(p));
-
-                    // 4. Verify/close paths
-                    paths.forEach(p => this.verifyPathClosed(p));
-
-                    // 5. Sort paths top-to-bottom (highest Y first = top of design in CNC Y-up)
-                    paths.sort((a, b) => {
-                        const maxYa = Math.max(...a.map(p => p[1]));
-                        const maxYb = Math.max(...b.map(p => p[1]));
-                        return maxYb - maxYa;
-                    });
-
-                    // 6. Join paths
-                    const joined = this.joinPaths(paths);
-                    if (!joined || !joined.length) { alert('Error al unir trayectos.'); return; }
-
-                    // 7. Generate border if needed
-                    let border = null;
-                    if (cutBorder) border = this.computeBorder(paths, borderMargin);
-
-                    // 8. Generate tool path (start from top)
-                    const toolPath = this.generateToolPath(joined, border, height);
-
-                    // 8. Compute stats
-                    let totalLen = 0;
-                    for (let i = 1; i < toolPath.length; i++) totalLen += this.dist(toolPath[i-1], toolPath[i]);
-                    const timeMin = speed > 0 ? Math.ceil(totalLen / speed) : 0;
-
-                    // 9. Generate G-Code
-                    const gcode = this.generateGCode(toolPath, speed, temp);
-
-                    // 10. Download
-                    const ts = new Date().toISOString().slice(0,10).replace(/-/g,'');
-                    this.downloadFile(gcode, `${filename}-${ts}.nc`);
-                    alert(`✅ Archivo generado: ${filename}-${ts}.nc\nTiempo estimado de corte: ${timeMin} minutos\nLongitud total: ${totalLen.toFixed(1)} mm`);
-                } catch (e) {
-                    console.error('CNC Error:', e);
-                    alert('❌ Error generando G-Code: ' + e.message);
-                }
-            },
-
-            // ---- SVG PATH EXTRACTION ----
-            extractPathsFromSVG(svgText) {
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(svgText, 'image/svg+xml');
-                const svg = doc.querySelector('svg');
-                if (!svg) return [];
-                const allPaths = [];
-                this._extractElement(svg, [[1,0,0,1,0,0]], allPaths);
-                return allPaths;
-            },
-
-            _extractElement(el, transformStack, allPaths) {
-                const localMat = this._parseTransform(el.getAttribute('transform'));
-                const parentMat = transformStack[transformStack.length - 1];
-                const combinedMat = this._mulMat(parentMat, localMat);
-                transformStack.push(combinedMat);
-
-                const ns = 'http://www.w3.org/2000/svg';
-                const tag = el.localName;
-
-                if (tag === 'path') {
-                    const d = el.getAttribute('d');
-                    if (d) {
-                        const subPaths = this._parseSVGPath(d);
-                        subPaths.forEach(sp => {
-                            const transformed = sp.map(pt => this._applyMat(combinedMat, pt));
-                            if (transformed.length > 1) allPaths.push(transformed);
-                        });
-                    }
-                } else if (tag === 'rect') {
-                    const x = parseFloat(el.getAttribute('x')) || 0;
-                    const y = parseFloat(el.getAttribute('y')) || 0;
-                    const w = parseFloat(el.getAttribute('width')) || 0;
-                    const h = parseFloat(el.getAttribute('height')) || 0;
-                    if (w > 0 && h > 0) {
-                        const pts = [[x,y],[x+w,y],[x+w,y+h],[x,y+h],[x,y]].map(p => this._applyMat(combinedMat, p));
-                        allPaths.push(pts);
-                    }
-                } else if (tag === 'line') {
-                    const x1 = parseFloat(el.getAttribute('x1'))||0, y1 = parseFloat(el.getAttribute('y1'))||0;
-                    const x2 = parseFloat(el.getAttribute('x2'))||0, y2 = parseFloat(el.getAttribute('y2'))||0;
-                    allPaths.push([[x1,y1],[x2,y2]].map(p => this._applyMat(combinedMat, p)));
-                } else if (tag === 'polyline' || tag === 'polygon') {
-                    const raw = el.getAttribute('points');
-                    if (raw) {
-                        const nums = raw.trim().split(/[\s,]+/).map(Number);
-                        const pts = [];
-                        for (let i = 0; i < nums.length - 1; i += 2) pts.push(this._applyMat(combinedMat, [nums[i], nums[i+1]]));
-                        if (tag === 'polygon' && pts.length > 1) pts.push(pts[0].slice());
-                        if (pts.length > 1) allPaths.push(pts);
-                    }
-                } else if (tag === 'circle') {
-                    const cx = parseFloat(el.getAttribute('cx'))||0, cy = parseFloat(el.getAttribute('cy'))||0;
-                    const r = parseFloat(el.getAttribute('r'))||0;
-                    if (r > 0) allPaths.push(this._circleToPoints(cx, cy, r, r, combinedMat));
-                } else if (tag === 'ellipse') {
-                    const cx = parseFloat(el.getAttribute('cx'))||0, cy = parseFloat(el.getAttribute('cy'))||0;
-                    const rx = parseFloat(el.getAttribute('rx'))||0, ry = parseFloat(el.getAttribute('ry'))||0;
-                    if (rx > 0 && ry > 0) allPaths.push(this._circleToPoints(cx, cy, rx, ry, combinedMat));
-                }
-
-                // Recurse into children (g, svg, etc.)
-                for (const child of el.children) {
-                    this._extractElement(child, transformStack, allPaths);
-                }
-                transformStack.pop();
-            },
-
-            _circleToPoints(cx, cy, rx, ry, mat) {
-                const pts = [];
-                // Generate a lot of steps for smooth circles (1 step per degree max)
-                const steps = Math.max(120, Math.ceil(Math.max(rx, ry) * 4));
-                for (let i = 0; i <= steps; i++) {
-                    const a = (2 * Math.PI * i) / steps;
-                    pts.push(this._applyMat(mat, [cx + rx * Math.cos(a), cy + ry * Math.sin(a)]));
-                }
-                return pts;
-            },
-
-            // ---- SVG PATH d PARSER ----
-            _parseSVGPath(d) {
-                const tokens = d.match(/[MmLlHhVvCcSsQqTtAaZz]|[-+]?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?/g);
-                if (!tokens) return [];
-                const paths = []; let cur = []; let x = 0, y = 0, sx = 0, sy = 0;
-                let pcx = 0, pcy = 0; // previous control for S/T
-                let cmd = '', i = 0;
-                const n = () => parseFloat(tokens[i++]);
-                while (i < tokens.length) {
-                    const tk = tokens[i];
-                    if (/[A-Za-z]/.test(tk)) { cmd = tk; i++; } // else implicit repeat
-                    switch (cmd) {
-                        case 'M': if (cur.length) paths.push(cur); cur = []; x = n(); y = n(); sx = x; sy = y; cur.push([x,y]); cmd = 'L'; break;
-                        case 'm': if (cur.length) paths.push(cur); cur = []; x += n(); y += n(); sx = x; sy = y; cur.push([x,y]); cmd = 'l'; break;
-                        case 'L': x = n(); y = n(); cur.push([x,y]); break;
-                        case 'l': x += n(); y += n(); cur.push([x,y]); break;
-                        case 'H': x = n(); cur.push([x,y]); break;
-                        case 'h': x += n(); cur.push([x,y]); break;
-                        case 'V': y = n(); cur.push([x,y]); break;
-                        case 'v': y += n(); cur.push([x,y]); break;
-                        case 'C': { const x1=n(),y1=n(),x2=n(),y2=n(),ex=n(),ey=n(); this._flatCubic([x,y],[x1,y1],[x2,y2],[ex,ey],cur); pcx=x2;pcy=y2;x=ex;y=ey; break; }
-                        case 'c': { const x1=x+n(),y1=y+n(),x2=x+n(),y2=y+n(),ex=x+n(),ey=y+n(); this._flatCubic([x,y],[x1,y1],[x2,y2],[ex,ey],cur); pcx=x2;pcy=y2;x=ex;y=ey; break; }
-                        case 'S': { const rx=2*x-pcx,ry=2*y-pcy,x2=n(),y2=n(),ex=n(),ey=n(); this._flatCubic([x,y],[rx,ry],[x2,y2],[ex,ey],cur); pcx=x2;pcy=y2;x=ex;y=ey; break; }
-                        case 's': { const rx=2*x-pcx,ry=2*y-pcy,x2=x+n(),y2=y+n(),ex=x+n(),ey=y+n(); this._flatCubic([x,y],[rx,ry],[x2,y2],[ex,ey],cur); pcx=x2;pcy=y2;x=ex;y=ey; break; }
-                        case 'Q': { const x1=n(),y1=n(),ex=n(),ey=n(); this._flatQuad([x,y],[x1,y1],[ex,ey],cur); pcx=x1;pcy=y1;x=ex;y=ey; break; }
-                        case 'q': { const x1=x+n(),y1=y+n(),ex=x+n(),ey=y+n(); this._flatQuad([x,y],[x1,y1],[ex,ey],cur); pcx=x1;pcy=y1;x=ex;y=ey; break; }
-                        case 'T': { const rx=2*x-pcx,ry=2*y-pcy,ex=n(),ey=n(); this._flatQuad([x,y],[rx,ry],[ex,ey],cur); pcx=rx;pcy=ry;x=ex;y=ey; break; }
-                        case 't': { const rx=2*x-pcx,ry=2*y-pcy,ex=x+n(),ey=y+n(); this._flatQuad([x,y],[rx,ry],[ex,ey],cur); pcx=rx;pcy=ry;x=ex;y=ey; break; }
-                        case 'A': case 'a': {
-                            const arx=n(),ary=n(),rot=n(),la=n(),sw=n();
-                            let ex,ey; if(cmd==='A'){ex=n();ey=n();}else{ex=x+n();ey=y+n();}
-                            this._flatArc([x,y],arx,ary,rot,la,sw,[ex,ey],cur); x=ex;y=ey; break;
-                        }
-                        case 'Z': case 'z': cur.push([sx,sy]); x=sx;y=sy; break;
-                        default: i++; // skip unknown
-                    }
-                }
-                if (cur.length > 0) paths.push(cur);
-                return paths;
-            },
-
-            // ---- BÉZIER FLATTENING ----
-            _flatCubic(p0, p1, p2, p3, pts) {
-                // Parametric sampling: completely immune to scale, loops, and cusps.
-                // Guarantee perfectly smooth curves without straight facet artifacts.
-                const dist1 = this.dist(p0, p1);
-                const dist2 = this.dist(p1, p2);
-                const dist3 = this.dist(p2, p3);
-                const len = dist1 + dist2 + dist3;
-                
-                // Adaptive resolution: minimum 20 points, up to 150 points for very large curves
-                const steps = Math.max(20, Math.min(150, Math.ceil(len * 2)));
-                
-                for (let i = 1; i <= steps; i++) {
-                    const t = i / steps;
-                    const mt = 1 - t;
-                    const a = mt * mt * mt;
-                    const b = 3 * mt * mt * t;
-                    const c = 3 * mt * t * t;
-                    const d = t * t * t;
-                    
-                    const x = a * p0[0] + b * p1[0] + c * p2[0] + d * p3[0];
-                    const y = a * p0[1] + b * p1[1] + c * p2[1] + d * p3[1];
-                    pts.push([x, y]);
-                }
-            },
-
-            _flatQuad(p0, p1, p2, pts) {
-                // Elevate to cubic: CP1 = P0 + 2/3*(P1-P0), CP2 = P2 + 2/3*(P1-P2)
-                const cp1 = [p0[0]+(2/3)*(p1[0]-p0[0]), p0[1]+(2/3)*(p1[1]-p0[1])];
-                const cp2 = [p2[0]+(2/3)*(p1[0]-p2[0]), p2[1]+(2/3)*(p1[1]-p2[1])];
-                this._flatCubic(p0, cp1, cp2, p2, pts);
-            },
-
-            _flatArc(start, rx, ry, xRot, largeArc, sweep, end, pts) {
-                if (rx === 0 || ry === 0) { pts.push(end); return; }
-                // Convert SVG arc to center parameterization, then sample
-                const phi = xRot * Math.PI / 180;
-                const cp = Math.cos(phi), sp = Math.sin(phi);
-                const dx = (start[0]-end[0])/2, dy = (start[1]-end[1])/2;
-                const x1p = cp*dx + sp*dy, y1p = -sp*dx + cp*dy;
-                let rxs = rx*rx, rys = ry*ry;
-                const x1ps = x1p*x1p, y1ps = y1p*y1p;
-                let lam = x1ps/rxs + y1ps/rys;
-                if (lam > 1) { const sl = Math.sqrt(lam); rx *= sl; ry *= sl; rxs = rx*rx; rys = ry*ry; }
-                let sq = Math.max(0, (rxs*rys - rxs*y1ps - rys*x1ps) / (rxs*y1ps + rys*x1ps));
-                sq = Math.sqrt(sq); if (largeArc === sweep) sq = -sq;
-                const cxp = sq*rx*y1p/ry, cyp = -sq*ry*x1p/rx;
-                const cx = cp*cxp - sp*cyp + (start[0]+end[0])/2;
-                const cy = sp*cxp + cp*cyp + (start[1]+end[1])/2;
-                const ang = (ux,uy,vx,vy) => {
-                    const nm = Math.sqrt(ux*ux+uy*uy)*Math.sqrt(vx*vx+vy*vy);
-                    if (nm === 0) return 0;
-                    let c = (ux*vx+uy*vy)/nm;
-                    c = Math.max(-1, Math.min(1, c));
-                    let a = Math.acos(c);
-                    if (ux*vy - uy*vx < 0) a = -a;
-                    return a;
-                };
-                const theta1 = ang(1, 0, (x1p-cxp)/rx, (y1p-cyp)/ry);
-                let dtheta = ang((x1p-cxp)/rx, (y1p-cyp)/ry, (-x1p-cxp)/rx, (-y1p-cyp)/ry);
-                if (!sweep && dtheta > 0) dtheta -= 2*Math.PI;
-                if (sweep && dtheta < 0) dtheta += 2*Math.PI;
-                // High resolution for arcs (max 2 degrees per step, min 60 steps per circle fraction)
-                const steps = Math.max(24, Math.ceil(Math.abs(dtheta) / (Math.PI/90)));
-                for (let i = 1; i <= steps; i++) {
-                    const t = theta1 + dtheta * (i / steps);
-                    const xr = rx*Math.cos(t), yr = ry*Math.sin(t);
-                    pts.push([cp*xr - sp*yr + cx, sp*xr + cp*yr + cy]);
-                }
-            },
-
-            // ---- TRANSFORM PARSING ----
-            _parseTransform(s) {
-                if (!s) return [1,0,0,1,0,0];
-                let m = [1,0,0,1,0,0];
-                const re = /(matrix|translate|scale|rotate|skewX|skewY)\s*\(([^)]+)\)/g;
-                let match;
-                while ((match = re.exec(s)) !== null) {
-                    const args = match[2].split(/[\s,]+/).map(Number);
-                    let t;
-                    switch (match[1]) {
-                        case 'matrix': t = args; break;
-                        case 'translate': t = [1,0,0,1,args[0],args[1]||0]; break;
-                        case 'scale': t = [args[0],0,0,args.length>1?args[1]:args[0],0,0]; break;
-                        case 'rotate': {
-                            const r = args[0]*Math.PI/180, c = Math.cos(r), sn = Math.sin(r);
-                            if (args.length === 3) {
-                                const cx = args[1], cy = args[2];
-                                t = [c,sn,-sn,c, cx-c*cx+sn*cy, cy-sn*cx-c*cy];
-                            } else { t = [c,sn,-sn,c,0,0]; }
-                            break;
-                        }
-                        case 'skewX': { const tn = Math.tan(args[0]*Math.PI/180); t = [1,0,tn,1,0,0]; break; }
-                        case 'skewY': { const tn = Math.tan(args[0]*Math.PI/180); t = [1,tn,0,1,0,0]; break; }
-                        default: t = [1,0,0,1,0,0];
-                    }
-                    m = this._mulMat(m, t);
-                }
-                return m;
-            },
-            _mulMat(a, b) {
-                return [a[0]*b[0]+a[2]*b[1], a[1]*b[0]+a[3]*b[1], a[0]*b[2]+a[2]*b[3], a[1]*b[2]+a[3]*b[3], a[0]*b[4]+a[2]*b[5]+a[4], a[1]*b[4]+a[3]*b[5]+a[5]];
-            },
-            _applyMat(m, p) { return [m[0]*p[0]+m[2]*p[1]+m[4], m[1]*p[0]+m[3]*p[1]+m[5]]; },
-
-            // ---- COORDINATE CONVERSION (SVG units → mm) ----
-            convertToMM(rawPaths, targetH_cm) {
-                let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-                rawPaths.forEach(p => p.forEach(([x,y]) => {
-                    if (x < minX) minX = x; if (x > maxX) maxX = x;
-                    if (y < minY) minY = y; if (y > maxY) maxY = y;
-                }));
-                const nativeH = maxY - minY;
-                if (nativeH <= 0) throw new Error('El diseño tiene altura cero.');
-                const mmPerUnit = (targetH_cm * 10) / nativeH;
-
-                let xOffsetMM = 0;
-                let yOffsetMM = 0;
-                let boardW_mm = (maxX - minX) * mmPerUnit;
-                let boardH_mm = targetH_cm * 10;
-                let hasFrame = false;
-
-                if (materialFrame && currentGroup) {
-                    hasFrame = true;
-                    const mf = materialFrame;
-                    const cg = currentGroup;
-                    
-                    const boardBL_X = mf.left - mf.width / 2;
-                    const boardBL_Y = mf.top + mf.height / 2;
-                    
-                    const svgTL_X = cg.left - (cg.width * cg.scaleX) / 2;
-                    const svgTL_Y = cg.top - (cg.height * cg.scaleY) / 2;
-                    
-                    xOffsetMM = ((svgTL_X - boardBL_X) / scaleFactor) * 10;
-                    yOffsetMM = ((boardBL_Y - svgTL_Y) / scaleFactor) * 10;
-                    
-                    boardW_mm = (mf.width / scaleFactor) * 10;
-                    boardH_mm = (mf.height / scaleFactor) * 10;
-                }
-
-                const paths = rawPaths.map(p => p.map(([x,y]) => {
-                    if (hasFrame) {
-                        return [
-                            (x - minX) * mmPerUnit + xOffsetMM,
-                            yOffsetMM - ((y - minY) * mmPerUnit)
-                        ];
-                    } else {
-                        return [
-                            (x - minX) * mmPerUnit,
-                            (maxY - y) * mmPerUnit
-                        ];
-                    }
-                }));
-
-                return { paths, width: boardW_mm, height: boardH_mm, mmPerUnit, minX, minY, maxX, maxY };
-            },
-
-            // ---- PATH UTILITIES ----
-            dist(a, b) { return Math.sqrt((a[0]-b[0])**2 + (a[1]-b[1])**2); },
-            sqDist(a, b) { return (a[0]-b[0])**2 + (a[1]-b[1])**2; },
-
-            closePathIfNeeded(path) {
-                if (path.length > 1 && this.dist(path[0], path[path.length-1]) > this.CLOSE_DISTANCE) {
-                    path.push([path[0][0], path[0][1]]);
-                }
-            },
-
-            verifyPathClosed(path) {
-                // Silently close if close enough, otherwise leave open
-                if (path.length > 1 && this.dist(path[0], path[path.length-1]) <= this.CLOSE_DISTANCE * 5) {
-                    path[path.length-1] = [path[0][0], path[0][1]];
-                }
-            },
-
-            pointPathDist(point, path) {
-                let bestIdx = 0, bestDist = this.sqDist(point, path[0]);
-                for (let i = 1; i < path.length; i++) {
-                    const d = this.sqDist(point, path[i]);
-                    if (d < bestDist) { bestDist = d; bestIdx = i; }
-                }
-                return { dist: bestDist, idx: bestIdx };
-            },
-
-            rotatePath(path, newStart) {
-                if (!path.length || newStart === 0 || newStart >= path.length - 1) return path;
-                return [...path.slice(newStart), ...path.slice(1, newStart + 1)];
-            },
-
-            // ---- PATH JOINING (port of PathsJoiner) ----
-            joinPaths(inputPaths) {
-                if (!inputPaths.length) return [];
-                if (inputPaths.length === 1) return inputPaths[0];
-                let mainPath = inputPaths[0].slice();
-                const remaining = inputPaths.slice(1).map(p => p.slice());
-
-                while (remaining.length > 0) {
-                    let bestPathIdx = 0, bestDist = Infinity, bestIdx1 = 0, bestIdx2 = 0;
-                    for (let pi = 0; pi < remaining.length; pi++) {
-                        for (let i = 0; i < mainPath.length; i++) {
-                            const { dist, idx } = this.pointPathDist(mainPath[i], remaining[pi]);
-                            if (dist < bestDist) {
-                                bestDist = dist; bestPathIdx = pi; bestIdx1 = i; bestIdx2 = idx;
-                            }
-                        }
-                    }
-                    const pathToAdd = remaining.splice(bestPathIdx, 1)[0];
-                    const rotated = this.rotatePath(pathToAdd, bestIdx2);
-                    mainPath = [...mainPath.slice(0, bestIdx1 + 1), ...rotated, ...mainPath.slice(bestIdx1)];
-                }
-                return mainPath;
-            },
-
-            // ---- BORDER ----
-            computeBorder(paths, margin) {
-                let xMin = Infinity, xMax = -Infinity, yMin = Infinity, yMax = -Infinity;
-                paths.forEach(p => p.forEach(([x,y]) => {
-                    if (x < xMin) xMin = x; if (x > xMax) xMax = x;
-                    if (y < yMin) yMin = y; if (y > yMax) yMax = y;
-                }));
-                return {
-                    xMin: xMin - margin, xMax: xMax + margin,
-                    yMin: yMin - margin, yMax: yMax + margin
-                };
-            },
-
-            // ---- TOOL PATH GENERATION ----
-            // CNC Y-up: origen en (0,0) inferior-izquierda, inicia corte desde arriba
-            generateToolPath(joinedPath, border, designHeight) {
-                // Top margin (safe travel zone)
-                const topY = border ? border.yMax : (designHeight || 0);
-                
-                const toolPath = [[0, 0]]; // Machine home (INICIO)
-
-                // 1. Subir recto por el eje Y hacia el margen seguro (evita diagonales)
-                toolPath.push([0, topY]);
-
-                // Find the absolute highest Y point (top-most) in the joined path to avoid intersecting the design
-                let bestIdx = 0;
-                let maxY = -Infinity;
-                for (let i = 0; i < joinedPath.length; i++) {
-                    if (joinedPath[i][1] > maxY) {
-                        maxY = joinedPath[i][1];
-                        bestIdx = i;
-                    }
-                }
-
-                // 2. Moverse en horizontal por el margen seguro hasta la vertical del punto de entrada
-                toolPath.push([joinedPath[bestIdx][0], topY]);
-
-                // 3. Bajar recto hasta el punto más alto del diseño
-                const rotated = this.rotatePath(joinedPath, bestIdx);
-                toolPath.push(...rotated);
-
-                // 4. Volver a subir recto hasta el margen seguro por la misma línea
-                toolPath.push([joinedPath[bestIdx][0], topY]);
-
-                // 5. Final border rectangle (clockwise from top-left)
-                if (border) {
-                    toolPath.push([border.xMin, topY]); // Mover al inicio del recuadro
-                    toolPath.push([border.xMax, topY]); // Arriba-derecha
-                    toolPath.push([border.xMax, border.yMin]); // Abajo-derecha
-                    toolPath.push([border.xMin, border.yMin]); // Abajo-izquierda
-                    toolPath.push([border.xMin, topY]); // Cerrar recuadro (Arriba-izquierda)
-                }
-
-                // 6. Volver en horizontal al inicio del eje Y
-                toolPath.push([0, topY]);
-
-                // 7. Bajar recto devuelta a (0,0)
-                toolPath.push([0, 0]); 
-                
-                return toolPath;
-            },
-
-            // ---- G-CODE GENERATION ----
-            generateGCode(toolPath, speed, temperatura) {
-                if (!toolPath || !toolPath.length) return '';
-                let gc = 'G0Z0\n';
-                gc += `M03 S${Math.round(temperatura)}\n`;
-                gc += 'G04P1\n';
-                gc += `G01 F${speed.toFixed(3)}\n\n`;
-                const last = toolPath.length - 1;
-                toolPath.forEach((pt, i) => {
-                    if (i === 2) gc += 'G04P0.5\n';
-                    if (i === last) gc += 'G04P0.5\n';
-                    gc += `G01 X${pt[0].toFixed(3)} Y${pt[1].toFixed(3)}\n`;
-                });
-                gc += 'M5\n';
-                return gc;
-            },
-
-            // ---- FILE DOWNLOAD ----
-            downloadFile(content, filename) {
-                const blob = new Blob([content], { type: 'text/plain' });
-                const a = document.createElement('a');
-                a.href = URL.createObjectURL(blob);
-                a.download = filename;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(a.href);
-            },
-
-            // ---- VISTA PREVIA DEL TRAYECTO ----
-            togglePreview() {
-                if (this._previewVisible) {
-                    this.clearPreview();
-                    return;
-                }
-                this.showPreview();
-            },
-
-            clearPreview() {
-                this._previewObjects.forEach(obj => canvas.remove(obj));
-                this._previewObjects = [];
-                this._previewVisible = false;
-                canvas.renderAll();
-                const btn = document.getElementById('btnCNCPreview');
-                btn.innerHTML = '<i class="fas fa-eye"></i> VER TRAYECTO';
-                btn.style.background = 'linear-gradient(135deg, #6366f1, #4f46e5)';
-            },
-
-            showPreview() {
-                if (!originalSVG || !currentGroup) { alert('Primero cargá un archivo SVG.'); return; }
-                const targetH = parseFloat(document.getElementById('inputHeight').value);
-                if (!targetH || targetH <= 0) { alert('Configurá el alto deseado (cm).'); return; }
-
-                this.clearPreview();
-
-                try {
-                    const autoClose = document.getElementById('checkCNCAutoClose').checked;
-                    const cutBorder = document.getElementById('checkCNCBorder').checked;
-                    const borderMargin = cutBorder ? parseFloat(document.getElementById('inputCNCBorderMargin').value) || 0 : 0;
-
-                    const rawPaths = this.extractPathsFromSVG(originalSVG);
-                    if (!rawPaths.length) { alert('No se encontraron trayectos.'); return; }
-
-                    const { paths, width, height, mmPerUnit, minX, minY, maxX, maxY } = this.convertToMM(rawPaths, targetH);
-                    if (autoClose) paths.forEach(p => this.closePathIfNeeded(p));
-                    paths.forEach(p => this.verifyPathClosed(p));
-
-                    // Sort paths top-to-bottom (highest Y first = top in CNC Y-up)
-                    paths.sort((a, b) => {
-                        const maxYa = Math.max(...a.map(p => p[1]));
-                        const maxYb = Math.max(...b.map(p => p[1]));
-                        return maxYb - maxYa;
-                    });
-
-                    const joined = this.joinPaths(paths);
-                    let border = null;
-                    if (cutBorder) border = this.computeBorder(paths, borderMargin);
-                    const toolPath = this.generateToolPath(joined, border, height);
-
-                    // Map mm coordinates to fabric.js canvas coordinates
-                    let refLeft, refTop, refW, refH;
-
-                    if (materialFrame && currentGroup) {
-                        const mf = materialFrame;
-                        refW = mf.width;
-                        refH = mf.height;
-                        refLeft = mf.left - refW / 2;
-                        refTop = mf.top - refH / 2;
-                    } else {
-                        const grp = currentGroup;
-                        refW = grp.width * grp.scaleX;
-                        refH = grp.height * grp.scaleY;
-                        refLeft = grp.left - refW / 2;
-                        refTop = grp.top - refH / 2;
-                    }
-
-                    // CNC mm-space has Y-up, but canvas has Y-down, so invert Y
-                    const toCanvas = (pt) => ({
-                        x: refLeft + (pt[0] / width) * refW,
-                        y: refTop + (1 - pt[1] / height) * refH
-                    });
-
-                    // Draw origin marker (green circle at 0,0)
-                    const originPt = toCanvas([0, 0]);
-                    const originMarker = new fabric.Circle({
-                        left: originPt.x - 5, top: originPt.y - 5,
-                        radius: 5, fill: '#22c55e', stroke: '#fff', strokeWidth: 1.5,
-                        selectable: false, evented: false, opacity: 0.9
-                    });
-                    canvas.add(originMarker);
-                    this._previewObjects.push(originMarker);
-
-                    // Origin label
-                    const originLabel = new fabric.Text('INICIO (0,0)', {
-                        left: originPt.x + 8, top: originPt.y - 5,
-                        fontSize: 9, fill: '#22c55e', fontWeight: 'bold', fontFamily: 'Inter, sans-serif',
-                        selectable: false, evented: false
-                    });
-                    canvas.add(originLabel);
-                    this._previewObjects.push(originLabel);
-
-                    // Draw tool path segments with colors (thinner lines)
-                    for (let i = 0; i < toolPath.length - 1; i++) {
-                        const from = toCanvas(toolPath[i]);
-                        const to = toCanvas(toolPath[i + 1]);
-                        const isTravelMove = (i === 0) || (i === toolPath.length - 2);
-
-                        const line = new fabric.Line([from.x, from.y, to.x, to.y], {
-                            stroke: isTravelMove ? '#ef4444' : '#f59e0b',
-                            strokeWidth: isTravelMove ? 0.8 : 1,
-                            strokeDashArray: isTravelMove ? [4, 3] : null,
-                            selectable: false, evented: false,
-                            opacity: 0.85
-                        });
-                        canvas.add(line);
-                        this._previewObjects.push(line);
-                    }
-
-                    // Draw direction arrows every N segments (smaller)
-                    const arrowInterval = Math.max(1, Math.floor(toolPath.length / 20));
-                    for (let i = 0; i < toolPath.length - 1; i += arrowInterval) {
-                        const from = toCanvas(toolPath[i]);
-                        const to = toCanvas(toolPath[i + 1]);
-                        const mx = (from.x + to.x) / 2, my = (from.y + to.y) / 2;
-                        const angle = Math.atan2(to.y - from.y, to.x - from.x) * 180 / Math.PI;
-                        const arrow = new fabric.Triangle({
-                            left: mx, top: my, width: 5, height: 5,
-                            fill: '#f59e0b', angle: angle + 90,
-                            originX: 'center', originY: 'center',
-                            selectable: false, evented: false, opacity: 0.7
-                        });
-                        canvas.add(arrow);
-                        this._previewObjects.push(arrow);
-                    }
-
-                    this._previewVisible = true;
-                    canvas.renderAll();
-
-                    const btn = document.getElementById('btnCNCPreview');
-                    btn.innerHTML = '<i class="fas fa-eye-slash"></i> OCULTAR';
-                    btn.style.background = 'linear-gradient(135deg, #ef4444, #dc2626)';
-
-                } catch (e) {
-                    console.error('Preview error:', e);
-                    alert('Error generando vista previa: ' + e.message);
-                }
-            }
-        };
-
-        ['inputHeight', 'inputMargin', 'inputManualPerimeter', 'inputQuantity', 'selectSheet', 'selectBillingMode', 'inputCutCost', 'inputLaborCost', 'inputCutPrice', 'inputLaborPrice', 'inputMarkup'].forEach(id => {
-            const el = document.getElementById(id);
-            if (el) el.addEventListener('input', calculateCosts);
-        });
-
-        function getMaterialConfigKey(materialName) {
-            if (!materialName) return 'default';
-            const nameLower = materialName.toLowerCase();
-            const keys = Object.keys(cachedCostsConfig);
-            const sortedKeys = keys.filter(k => k !== 'default').sort((a, b) => b.length - a.length);
-            for (const key of sortedKeys) {
-                if (nameLower.includes(key)) {
-                    return key;
-                }
-            }
-            return 'default';
-        }
-
-        function applyMaterialConfig() {
-            const select = document.getElementById('selectMaterial');
-            const selectedMatId = select.value;
-            const material = materials.find(m => String(m.id) === String(selectedMatId));
-            const materialName = material ? (material.productoNombre || material.producto) : '';
-            
-            const key = getMaterialConfigKey(materialName);
-            console.log(`Aplicando configuración de calculadora para llave: "${key}" (Material: "${materialName}")`);
-            
-            const costConfig = cachedCostsConfig[key] || cachedCostsConfig['default'] || { cutCostPerCm: 10, laborCost: 0 };
-            const priceConfig = cachedPricesConfig[key] || cachedPricesConfig['default'] || { cutPricePerCm: 25, laborPrice: 0, markup: 2.5 };
-            
-            document.getElementById('inputCutCost').value = costConfig.cutCostPerCm ?? 10;
-            document.getElementById('inputLaborCost').value = costConfig.laborCost ?? 0;
-            
-            if (materialName.toLowerCase().includes('polifan')) {
-                const platePrice = material.costoPorM2 || 0;
-                // Calculamos proporcionalmente basado en el Polifan de 30 mm (precio base $2090, lineal $345)
-                const calculatedLinearPrice = Math.round(platePrice * (345 / 2090));
-                console.log(`Cálculo dinámico de Polifan: Placa $${platePrice} -> cm lineal calculado: $${calculatedLinearPrice}`);
-                document.getElementById('inputCutPrice').value = calculatedLinearPrice;
-            } else {
-                document.getElementById('inputCutPrice').value = priceConfig.cutPricePerCm ?? 25;
-            }
-            
-            document.getElementById('inputLaborPrice').value = priceConfig.laborPrice ?? 0;
-            document.getElementById('inputMarkup').value = priceConfig.markup ?? 2.5;
-            
-            if (material && material.precioLineal && material.precioLineal > 0) {
-                console.log("Sobrepasando con precio lineal específico de base de datos de materiales:", material.precioLineal);
-                document.getElementById('inputCutPrice').value = material.precioLineal;
-            }
-        }
-
-        async function loadCalculatorConfig() {
-            try {
-                const resCosts = await fetch('/api/calculadora/costos');
-                if (resCosts.ok) {
-                    cachedCostsConfig = await resCosts.json();
-                }
-                const resPrices = await fetch('/api/calculadora/precios');
-                if (resPrices.ok) {
-                    cachedPricesConfig = await resPrices.json();
-                }
-                applyMaterialConfig();
-            } catch (err) {
-                console.error("Error cargando configuraciones de la calculadora:", err);
-            }
-        }
-
-        async function saveAllConfig() {
-            const select = document.getElementById('selectMaterial');
-            const selectedMatId = select.value;
-            const material = materials.find(m => String(m.id) === String(selectedMatId));
-            const materialName = material ? (material.productoNombre || material.producto) : '';
-            const key = getMaterialConfigKey(materialName);
-
-            // Costos
-            if (!cachedCostsConfig[key]) cachedCostsConfig[key] = {};
-            cachedCostsConfig[key].cutCostPerCm = parseFloat(document.getElementById('inputCutCost').value) || 0;
-            cachedCostsConfig[key].laborCost = parseFloat(document.getElementById('inputLaborCost').value) || 0;
-
-            // Precios
-            if (!cachedPricesConfig[key]) cachedPricesConfig[key] = {};
-            cachedPricesConfig[key].cutPricePerCm = parseFloat(document.getElementById('inputCutPrice').value) || 0;
-            cachedPricesConfig[key].laborPrice = parseFloat(document.getElementById('inputLaborPrice').value) || 0;
-            cachedPricesConfig[key].markup = parseFloat(document.getElementById('inputMarkup').value) || 1;
-            
-            try {
-                const token = localStorage.getItem('mr_token');
-                const [resCosts, resPrices] = await Promise.all([
-                    fetch('/api/calculadora/costos', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                        body: JSON.stringify(cachedCostsConfig)
-                    }),
-                    fetch('/api/calculadora/precios', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                        body: JSON.stringify(cachedPricesConfig)
-                    })
-                ]);
-                if (resCosts.ok && resPrices.ok) {
-                    alert(`✅ Configuración guardada por defecto para "${key}".`);
-                    calculateCosts();
-                } else {
-                    alert('❌ Error al guardar configuración.');
-                }
-            } catch (err) {
-                console.error("Error guardando configuración:", err);
-                alert('❌ Error de conexión al guardar.');
-            }
-        }
-
-        // Mantener compatibilidad con llamadas existentes
-        const saveCostsConfig = saveAllConfig;
-        const savePricesConfig = saveAllConfig;
-
-        function sendToBudget() {
-            if (!currentGroup || !window.lastCalculatedSalePrice) return;
-
-            const qty = parseInt(document.getElementById('inputQuantity').value) || 1;
-            const singlePrice = window.lastCalculatedSalePrice / qty;
-            
-            const matSelect = document.getElementById('selectMaterial');
-            const materialName = matSelect.options[matSelect.selectedIndex]?.text || '';
-            const techSelect = document.getElementById('selectBillingMode');
-            const cutModeName = techSelect.options[techSelect.selectedIndex]?.text || '';
-            
-            const netW = parseFloat(document.getElementById('textWidth').innerText);
-            const netH = parseFloat(document.getElementById('textHeight').innerText);
-            const totalCL = parseFloat(document.getElementById('resPerimeter').innerText);
-            const pricePerCm = parseFloat(document.getElementById('inputCutPrice').value);
-            
-            // Remove the price from the material name (e.g., "$296/cm") so the client doesn't see the internal cost
-            const cleanMaterial = materialName.replace(/\s*\([^)]*\)/g, '').trim();
-            
-            const desc = `Trabajo a medida en ${cleanMaterial}.\nDimensiones totales: ${netW} x ${netH} cm.`;
-
-            const item = {
-                id: Date.now(),
-                description: desc,
-                qty: qty,
-                price: singlePrice,
-                isAutoAssigned: true
-            };
-
-            const existingList = JSON.parse(localStorage.getItem('mr_pending_budget_items') || '[]');
-            existingList.push(item);
-            localStorage.setItem('mr_pending_budget_items', JSON.stringify(existingList));
-            
-            window.location.href = 'presupuesto-gen.html';
-        }
-
-    </script>
 
     <!-- MODAL DISTRIBUCION -->
     <div class="modal fade" id="modalLayout" tabindex="-1">
@@ -2691,7 +323,65 @@
         </div>
     </div>
 
-    <!-- Modal Ayuda Diseño (Corel / Illustrator) -->
+    <!-- MODAL ADMINISTRAR PRODUCTOS CM LINEAL (NUEVO) -->
+    <div class="modal fade" id="modalAdminProducts" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content" style="background: #1e1e2d; color: #fff; border-radius: 12px; overflow: hidden;">
+                <div class="modal-header border-0" style="padding: 1.5rem 1.5rem 0.5rem;">
+                    <h5 class="modal-title"><i class="fas fa-boxes"></i> Administrar Productos (Cm Lineal)</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" style="padding: 1.5rem;">
+                    <div class="table-responsive" style="max-height: 180px; overflow-y: auto; margin-bottom: 1.5rem;">
+                        <table class="table table-dark table-hover table-striped mb-0" style="font-size: 0.85rem;">
+                            <thead>
+                                <tr>
+                                    <th>Producto</th>
+                                    <th>Precio Venta/Cm</th>
+                                    <th style="display: none;">Ganancia (%)</th>
+                                    <th>Profundidad</th>
+                                    <th class="text-end">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="adminProductsList">
+                                <!-- Dinámico -->
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div style="background: rgba(255,255,255,0.05); padding: 1.2rem; border-radius: 8px;">
+                        <h6 id="adminFormHeader" style="color: #6366f1; margin-bottom: 1rem;"><i class="fas fa-plus"></i> Crear Nuevo Producto</h6>
+                        <div class="row g-2">
+                            <div class="col-md-5">
+                                <label style="font-size: 0.75rem; opacity: 0.8;">Nombre del Producto</label>
+                                <input type="text" id="newProductName" class="form-control form-control-sm bg-dark text-white border-secondary" placeholder="Ej: Neón Led 8mm">
+                            </div>
+                            <div class="col-md-4">
+                                <label style="font-size: 0.75rem; opacity: 0.8;">Precio Venta/Cm ($)</label>
+                                <input type="number" id="newProductCost" class="form-control form-control-sm bg-dark text-white border-secondary" placeholder="Ej: 950" step="0.5">
+                            </div>
+                            <div class="col-md-2" style="display: none;">
+                                <label style="font-size: 0.75rem; opacity: 0.8;">Ganancia (%)</label>
+                                <input type="number" id="newProductProfit" class="form-control form-control-sm bg-dark text-white border-secondary" value="0" step="10">
+                            </div>
+                            <div class="col-md-2">
+                                <label style="font-size: 0.75rem; opacity: 0.8;">Grosor (cm)</label>
+                                <input type="number" id="newProductDepth" class="form-control form-control-sm bg-dark text-white border-secondary" value="2" step="0.5">
+                            </div>
+                            <div class="col-md-1 d-flex align-items-end">
+                                <input type="color" id="newProductColor" class="form-control form-control-sm form-control-color w-100 bg-dark border-secondary p-0" value="#6366f1" style="height: 31px; cursor: pointer;" title="Color 3D">
+                            </div>
+                        </div>
+                        <div id="adminFormButtons">
+                            <button id="btnSubmitProduct" class="btn btn-sm btn-primary w-100 mt-3 fw-bold" onclick="addCustomProduct()"><i class="fas fa-plus"></i> AGREGAR PRODUCTO</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Ayuda Diseño -->
     <div class="modal fade" id="modalCorelHelp" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content border-0 shadow-lg" style="border-radius: 20px; background: #f8fafc;">
@@ -2735,62 +425,9 @@
             </div>
         </div>
     </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        // Integración con Renderizador 3D
-        function sendToRenderer() {
-            if (typeof originalSVG === 'undefined' || !originalSVG) {
-                alert('No hay un diseño cargado. Sube un archivo SVG primero.');
-                return;
-            }
-            sessionStorage.setItem('mr_vcalc_svg', originalSVG);
-            window.location.href = 'renderizador-3d.html';
-        }
-        function editMaterialPrice() {
-            const selectedMatId = document.getElementById('selectMaterial').value;
-            const material = materials.find(m => String(m.id) === String(selectedMatId));
-            
-            if (!material) {
-                alert("Por favor selecciona un material primero.");
-                return;
-            }
-
-            const currentPrice = material.costoPorM2 || 0;
-            const newPrice = prompt(`Editar precio para: ${material.productoNombre || material.producto}\nPrecio actual por m²: $${currentPrice}\n\nIngresa el nuevo precio por m²:`, currentPrice);
-
-            if (newPrice !== null && !isNaN(newPrice)) {
-                material.costoPorM2 = parseFloat(newPrice);
-                
-                // Si es un material con precio lineal, actualizar también ahí si el usuario lo confirma
-                if (material.precioLineal > 0) {
-                    material.precioLineal = parseFloat(newPrice) / 100; // Ajuste proporcional si se editó m2
-                }
-
-                // Persistencia al servidor
-                fetch('/api/materiales', {
-                    method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${localStorage.getItem('mr_token')}`
-                    },
-                    body: JSON.stringify(materials)
-                })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.success) {
-                        alert("✅ Precio actualizado y guardado correctamente.");
-                        applyMaterialConfig();
-                        calculateCosts();
-                    } else {
-                        alert("❌ Error al guardar en el servidor: " + (data.error || "Desconocido"));
-                    }
-                })
-                .catch(err => {
-                    console.error("Error guardando material:", err);
-                    alert("❌ Error de conexión al servidor.");
-                });
-            }
-        }
-    </script>
+    <script src="js/auth.js"></script>
+    <script src="js/calculador-vectores.js"></script>
 </body>
 </html>

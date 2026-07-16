@@ -1976,7 +1976,7 @@ async function exportToPDF() {
     // Teléfono
     doc.setFillColor(255, 0, 0);
     doc.circle(130, 25, 2, 'F');
-    doc.text('3426136868', 135, 27);
+    doc.text('3424050011', 135, 27);
     
     // Instagram
     doc.setFillColor(255, 0, 0);
