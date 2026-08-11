@@ -34,8 +34,8 @@ def upscale_images_batch(
 
     Args:
         glob_pattern: Glob pattern to match image files (e.g., "*.jpg", "images/*.png")
-        target_width: Target width in pixels (1-10000)
-        target_height: Target height in pixels (1-10000)
+        target_width: Target width in pixels (1-30000)
+        target_height: Target height in pixels (1-30000)
         width_cm: Target width in centimeters (0.1-400)
         height_cm: Target height in centimeters (0.1-400)
         dpi: Dots per inch (10-1200)
@@ -125,13 +125,13 @@ Examples:
         "-w",
         "--width",
         type=int,
-        help="Target width in pixels (1-10000)",
+        help="Target width in pixels (1-30000)",
     )
 
     parser.add_argument(
         "--height",
         type=int,
-        help="Target height in pixels (1-10000)",
+        help="Target height in pixels (1-30000)",
     )
 
     # Centimeter-based dimensions
@@ -210,12 +210,12 @@ Examples:
             logger.error("Both --width and --height are required in pixel mode")
             return 1
 
-        if not (1 <= args.width <= 10000):
-            logger.error("Width must be between 1 and 10000 pixels")
+        if not (1 <= args.width <= 30000):
+            logger.error("Width must be between 1 and 30000 pixels")
             return 1
 
-        if not (1 <= args.height <= 10000):
-            logger.error("Height must be between 1 and 10000 pixels")
+        if not (1 <= args.height <= 30000):
+            logger.error("Height must be between 1 and 30000 pixels")
             return 1
 
         # Run batch upscaling with pixels

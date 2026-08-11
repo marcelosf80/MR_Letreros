@@ -148,12 +148,28 @@ function injectMultiCategoryUI() {
 // ==================== LÓGICA DE POBLADO DE DATOS ====================
 
 window.populateMultiCategorySelectors = async function() {
+    // 0. Cargar precios desde /api/precios
+    if (!window.preciosGremio || window.preciosGremio.length === 0) {
+        try {
+            if (window.mrDataManager) {
+                window.preciosGremio = await window.mrDataManager.getPrecios() || [];
+            } else {
+                const res = await fetch('/api/precios');
+                if (res.ok) window.preciosGremio = await res.json();
+            }
+        } catch (e) {
+            console.warn('[GREMIO] Error cargando precios:', e);
+        }
+    }
+
+    const sourceData = window.preciosGremio || [];
+
     // 1. Poblar Categorías de Materiales
     const catSelect = document.getElementById('mcCategorySelect');
     if (catSelect) {
         let categorias = [];
         
-        // A. Intentar cargar categorías guardadas del servidor
+        // A. Cargar categorías guardadas del servidor
         try {
             const response = await fetch('/api/categorias');
             if (response.ok) {
@@ -162,8 +178,7 @@ window.populateMultiCategorySelectors = async function() {
             }
         } catch (e) { console.warn('Error cargando categorías API:', e); }
 
-        // B. Combinar con categorías de productos existentes (si ya cargaron)
-        const sourceData = window.preciosGremio || [];
+        // B. Combinar con categorías de precios.html
         if (sourceData.length > 0) {
             const productCats = sourceData.map(p => p.category || p.categoria).filter(Boolean);
             categorias = [...new Set([...categorias, ...productCats])];
@@ -175,8 +190,7 @@ window.populateMultiCategorySelectors = async function() {
             categorias.map(cat => `<option value="${cat}">${cat}</option>`).join('');
     }
 
-    // 2. Poblar Tintas (Buscar productos que contengan "tinta" en nombre o categoría)
-    const sourceData = window.preciosGremio || [];
+    // 2. Poblar Tintas
     if (sourceData.length > 0) {
         const inkSelect = document.getElementById('mcInkSelect');
         if (inkSelect) {
@@ -188,8 +202,8 @@ window.populateMultiCategorySelectors = async function() {
             
             inkSelect.innerHTML = '<option value="">Seleccionar Tinta...</option>' + 
                 tintas.map((p, idx) => {
-                    const precio = p.priceGremio || p.precioGremio || 0;
-                    return `<option value="${idx}" data-price="${precio}">${p.name || p.producto}</option>`;
+                    const precio = p.precioGremio || p.priceGremio || p.precioCliente || 0;
+                    return `<option value="${idx}" data-price="${precio}">${p.producto || p.name}</option>`;
                 }).join('');
         }
     }
@@ -208,38 +222,56 @@ window.populateMultiCategorySelectors = async function() {
 };
 
 window.filterMcProducts = function() {
-    const cat = document.getElementById('mcCategorySelect').value;
+    const catSelect = document.getElementById('mcCategorySelect');
+    if (!catSelect) return;
+    const cat = catSelect.value;
     const prodSelect = document.getElementById('mcProductSelect');
+    if (!prodSelect) return;
     
     if (!cat) {
         prodSelect.innerHTML = '<option value="">Selecciona categoría...</option>';
         return;
     }
 
-    const sourceData = window.preciosGremio || [];
-    const productos = sourceData.filter(p => (p.category === cat || p.categoria === cat));
+    const sourceData = (window.preciosGremio && window.preciosGremio.length > 0) 
+        ? window.preciosGremio 
+        : (window.preciosClientes || []);
+
+    const catLower = cat.trim().toLowerCase();
+    const productos = sourceData.filter(p => {
+        const pCat = (p.categoria || p.category || '').trim().toLowerCase();
+        return pCat === catLower;
+    });
+
+    if (productos.length === 0) {
+        prodSelect.innerHTML = '<option value="">No hay productos en esta categoría</option>';
+        return;
+    }
+
     prodSelect.innerHTML = '<option value="">Seleccionar producto...</option>' + 
         productos.map((p, idx) => {
-            // Guardamos el índice global o pasamos el objeto stringificado (menos eficiente)
-            // Mejor buscar en el array original filtrado
-            return `<option value="${p.id}" data-price="${p.priceGremio || p.precioGremio || 0}" data-cost="${p.costo || 0}">${p.name || p.producto}</option>`;
+            const priceGremio = parseFloat(p.precioGremio || p.priceGremio || p.precioCliente || p.precio || 0);
+            const costo = parseFloat(p.costo || p.costoTotal || 0);
+            const unidad = p.unidad || p.unit || 'm2';
+            const nombre = p.producto || p.name || p.productoNombre || 'Producto';
+            
+            return `<option value="${p.id || idx}" data-price="${priceGremio}" data-cost="${costo}" data-unit="${unidad}">${nombre}</option>`;
         }).join('');
 };
 
 window.selectMcProduct = function() {
     const select = document.getElementById('mcProductSelect');
+    if (!select) return;
     const option = select.options[select.selectedIndex];
     
     if (option && option.value) {
         document.getElementById('mcName').value = option.text;
-        document.getElementById('mcPrice').value = option.dataset.price;
-        document.getElementById('mcCost').value = option.dataset.cost;
+        document.getElementById('mcPrice').value = option.dataset.price || 0;
+        document.getElementById('mcCost').value = option.dataset.cost || 0;
 
-        // Detectar unidad automáticamente
-        let detectedUnit = 'm2'; // default
+        let detectedUnit = 'm2';
         const prodName = option.text.toLowerCase();
         
-        // Buscar en la base de materiales completa si tenemos acceso
         const allMaterials = window.listaCostos || [];
         const materialData = allMaterials.find(m => (m.name || m.producto || '').toLowerCase() === prodName);
         

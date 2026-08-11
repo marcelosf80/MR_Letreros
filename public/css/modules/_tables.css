@@ -1,0 +1,38 @@
+/* =========================================================================
+   MR LETREROS — MÓDULO 8: DATA TABLES (LIGHT THEME)
+   ========================================================================= */
+
+.table, .dashboard-table {
+  color: var(--mr-txt-primary) !important;
+  border-color: var(--mr-border-light) !important;
+  vertical-align: middle;
+  width: 100%;
+  background: transparent !important;
+}
+
+.table thead, .table-light, .table-light th, .bg-light, .dashboard-table thead, table thead tr {
+  background: #f1f5f9 !important;
+  color: var(--mr-txt-secondary) !important;
+}
+
+.table th, .dashboard-table th {
+  font-family: var(--mr-font-heading) !important;
+  text-transform: uppercase;
+  font-size: 0.75rem !important;
+  letter-spacing: 1px !important;
+  color: var(--mr-txt-secondary) !important;
+  background: #f1f5f9 !important;
+  border-bottom: 1px solid #cbd5e1 !important;
+  padding: 0.85rem 1rem !important;
+}
+
+.table td, .dashboard-table td {
+  padding: 0.85rem 1rem !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+  background: transparent !important;
+  color: var(--mr-txt-primary) !important;
+}
+
+.table-hover tbody tr:hover {
+  background-color: rgba(241, 245, 249, 0.7) !important;
+}

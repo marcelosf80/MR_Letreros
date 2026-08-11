@@ -1,0 +1,58 @@
+/* =========================================================================
+   MR LETREROS — MÓDULO 2: BASE RESETS & ATMOSPHERE (LIGHT THEME)
+   ========================================================================= */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body, html {
+  background-color: var(--mr-bg-void) !important;
+  color: var(--mr-txt-primary) !important;
+  font-family: var(--mr-font-body) !important;
+  min-height: 100vh;
+  background-image: radial-gradient(circle at 50% -20%, #e2e8f0 0%, #f8fafc 75%) !important;
+  background-attachment: fixed !important;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Tipografía de Encabezados */
+h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
+  font-family: var(--mr-font-heading) !important;
+  font-weight: 700 !important;
+  color: var(--mr-txt-primary) !important;
+  letter-spacing: -0.02em;
+}
+
+/* Links */
+a {
+  color: var(--mr-blue);
+  text-decoration: none;
+  transition: var(--mr-transition);
+}
+
+a:hover {
+  color: var(--mr-blue-hover);
+}
+
+/* Scrollbar Personalizada */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--mr-bg-void);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.3);
+}

@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="es" class="dark">
+
 <head>
     <link rel="icon" type="image/x-icon" href="/img/logo.ico">
     <meta charset="UTF-8">
@@ -15,15 +16,18 @@
         body {
             /* Now handled by maxton-theme.css and base.css */
         }
+
         :root[data-theme="light"] .text-gray-300,
         :root[data-theme="light"] .text-gray-400 {
             color: var(--txt-2) !important;
         }
+
         :root[data-theme="light"] .bg-\\[\\#333\\] {
             background-color: var(--bg-surface) !important;
             color: var(--txt) !important;
             border-color: var(--glass-border) !important;
         }
+
         .glass-card {
             background: var(--bg-surface, rgba(40, 40, 40, 0.8));
             backdrop-filter: blur(10px);
@@ -32,98 +36,160 @@
             border-radius: 12px;
             color: var(--txt, #f1f1f1);
         }
+
         .input-premium {
             background: rgba(0, 0, 0, 0.1);
             border: 1px solid var(--glass-border, #444);
             color: var(--txt, white);
             transition: all 0.3s ease;
         }
+
         .input-premium:focus {
             outline: none;
             border-color: #ffd700;
             box-shadow: 0 0 0 2px rgba(255, 215, 0, 0.2);
-            background: var(--bg-surface, rgba(20,20,20,0.8));
+            background: var(--bg-surface, rgba(20, 20, 20, 0.8));
         }
+
         .btn-premium {
             background: linear-gradient(135deg, #ffd700 0%, #ff8c00 100%);
             color: #111;
             transition: all 0.3s ease;
             font-weight: bold;
         }
+
         .btn-premium:hover {
             transform: translateY(-2px);
             box-shadow: 0 10px 20px -10px rgba(255, 215, 0, 0.6);
         }
+
         .file-drop-zone {
             border: 2px dashed #666;
             transition: all 0.3s ease;
         }
+
         .file-drop-zone.dragover {
             border-color: #ffd700;
             background: rgba(255, 215, 0, 0.05);
         }
     </style>
 </head>
+
 <body class="min-h-screen flex flex-col antialiased">
     <div class="main-content">
         <header class="glass-card sticky top-0 z-50 px-6 py-4 mx-4 mt-4 border-b-4 border-yellow-400">
             <div class="max-w-4xl mx-auto flex justify-between items-center">
-                <h1 class="text-3xl font-black text-yellow-400 tracking-tighter italic">MR <span class="text-txt text-xl uppercase not-italic font-bold tracking-normal" style="color:var(--txt);">Letreros</span></h1>
-                <span class="text-sm text-yellow-400 font-bold px-3 py-1 bg-yellow-400/10 rounded-full border border-yellow-400/30">GREMIO</span>
+                <h1 class="text-3xl font-black text-yellow-400 tracking-tighter italic">MR <span
+                        class="text-txt text-xl uppercase not-italic font-bold tracking-normal"
+                        style="color:var(--txt);">Letreros</span></h1>
+                <span
+                    class="text-sm text-yellow-400 font-bold px-3 py-1 bg-yellow-400/10 rounded-full border border-yellow-400/30">GREMIO</span>
             </div>
         </header>
 
-    <main class="flex-grow p-4 sm:p-6 flex justify-center pb-20">
-        <div class="w-full max-w-4xl space-y-6">
-            <div class="bg-yellow-400 text-black px-4 py-2 rounded-lg font-bold text-center shadow-lg animate-pulse">
-                🔥 Por + DE 10M2 en cualquier impresión 10% DE DESCUENTO
+        <main class="flex-grow p-4 sm:p-6 flex justify-center pb-20">
+            <div class="w-full max-w-4xl space-y-6">
+                <!-- Tabs del Portal Gremio -->
+                <div class="flex justify-between items-center gap-4 bg-slate-950/60 p-2 rounded-xl border border-slate-900/60 shadow-md">
+                    <div class="flex gap-2">
+                        <button type="button" onclick="switchPortalTab('cotizar')" id="tabCotizar" class="px-4 py-2 text-xs font-black uppercase tracking-wider rounded-lg bg-yellow-400 text-black transition-all cursor-pointer">
+                            <i class="fa-solid fa-calculator mr-1"></i> Cotizar Nuevo
+                        </button>
+                        <button type="button" onclick="switchPortalTab('pedidos')" id="tabPedidos" class="px-4 py-2 text-xs font-black uppercase tracking-wider rounded-lg text-gray-400 hover:text-white transition-all cursor-pointer">
+                            <i class="fa-solid fa-clock-rotate-left mr-1"></i> Mis Pedidos
+                        </button>
+                    </div>
+                    <button type="button" onclick="logoutGremio()" class="px-3 py-1.5 bg-red-950/40 hover:bg-red-900/60 border border-red-900/40 text-red-400 text-[10px] font-bold uppercase tracking-widest rounded-lg transition-all cursor-pointer">
+                        <i class="fa-solid fa-right-from-bracket"></i> Salir
+                    </button>
+                </div>
+
+                <div class="bg-yellow-400 text-black px-4 py-2 rounded-lg font-bold text-center shadow-lg animate-pulse">
+                    🔥 Por + DE 10M2 en cualquier impresión 10% DE DESCUENTO
+                </div>
+
+                <!-- Historial de Pedidos -->
+                <div id="pedidosSection" class="hidden space-y-4">
+                    <div class="glass-card p-6">
+                        <h3 class="text-lg font-bold text-yellow-400 mb-4 flex items-center gap-2">
+                            <i class="fa-solid fa-list-check"></i> Historial de tus Pedidos
+                        </h3>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-xs border-collapse">
+                                <thead>
+                                    <tr class="border-b border-slate-800 text-gray-400 font-bold uppercase tracking-wider">
+                                        <th class="py-3 px-2">ID Pedido</th>
+                                        <th class="py-3 px-2">Fecha</th>
+                                        <th class="py-3 px-2">Detalle del Pedido</th>
+                                        <th class="py-3 px-2 text-right">Total</th>
+                                        <th class="py-3 px-2 text-center">Estado</th>
+                                        <th class="py-3 px-2 text-center">Acción</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="pedidosTableBody" class="divide-y divide-slate-900 text-gray-300">
+                                    <tr>
+                                        <td colspan="6" class="text-center py-8 text-gray-500">
+                                            <i class="fa-solid fa-circle-notch animate-spin text-lg mb-1 block text-yellow-400"></i>
+                                            Cargando tus pedidos...
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <form id="cotizadorForm" class="space-y-6">
+                    <!-- Datos del Gremio -->
+                    <div class="glass-card p-6">
+                        <h3 class="text-lg font-bold text-yellow-400 mb-4"><i
+                                class="fa-solid fa-address-card mr-2"></i>Tus Datos</h3>
+                        <div class="space-y-2">
+                            <label class="text-sm font-medium text-gray-300">Nombre del Gremio / Empresa *</label>
+                            <input type="text" id="nombreGremio" class="w-full input-premium rounded-xl px-4 py-3"
+                                placeholder="Ej: Gráfica San Martín" required>
+                        </div>
+                    </div>
+
+                    <!-- Contenedor de Productos -->
+                    <div id="productosContainer" class="space-y-6">
+                        <!-- Los productos se inyectan acá -->
+                    </div>
+
+                    <!-- Botón Agregar Producto -->
+                    <div class="text-center">
+                        <button type="button" onclick="agregarProducto()"
+                            class="bg-[#333] hover:bg-[#444] text-white font-bold py-3 px-6 rounded-xl border border-dashed border-gray-500 transition-all">
+                            <i class="fa-solid fa-plus mr-2"></i> Agregar Otro Producto
+                        </button>
+                    </div>
+
+                    <!-- Resultado y Envío -->
+                    <div
+                        class="glass-card p-6 mt-8 flex flex-col md:flex-row items-center justify-between gap-6 border-t-4 border-yellow-400">
+                        <div class="text-center md:text-left">
+                            <p class="text-gray-400 text-sm">Total Estimado Final</p>
+                            <div class="text-4xl font-black text-yellow-400" id="precioTotalGlobalDisplay">$0</div>
+                            <p class="text-xs text-gray-400 mt-1" id="resumenCantidades">0 Productos</p>
+                        </div>
+
+                        <button type="submit"
+                            class="w-full md:w-auto btn-premium py-4 px-8 rounded-xl shadow-lg flex items-center justify-center gap-3 text-lg"
+                            id="btnSubmit">
+                            <span>Enviar y Subir a Drive</span>
+                            <i class="fa-solid fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </form>
             </div>
-
-            <form id="cotizadorForm" class="space-y-6">
-                <!-- Datos del Gremio -->
-                <div class="glass-card p-6">
-                    <h3 class="text-lg font-bold text-yellow-400 mb-4"><i class="fa-solid fa-address-card mr-2"></i>Tus Datos</h3>
-                    <div class="space-y-2">
-                        <label class="text-sm font-medium text-gray-300">Nombre del Gremio / Empresa *</label>
-                        <input type="text" id="nombreGremio" class="w-full input-premium rounded-xl px-4 py-3" placeholder="Ej: Gráfica San Martín" required>
-                    </div>
-                </div>
-
-                <!-- Contenedor de Productos -->
-                <div id="productosContainer" class="space-y-6">
-                    <!-- Los productos se inyectan acá -->
-                </div>
-
-                <!-- Botón Agregar Producto -->
-                <div class="text-center">
-                    <button type="button" onclick="agregarProducto()" class="bg-[#333] hover:bg-[#444] text-white font-bold py-3 px-6 rounded-xl border border-dashed border-gray-500 transition-all">
-                        <i class="fa-solid fa-plus mr-2"></i> Agregar Otro Producto
-                    </button>
-                </div>
-
-                <!-- Resultado y Envío -->
-                <div class="glass-card p-6 mt-8 flex flex-col md:flex-row items-center justify-between gap-6 border-t-4 border-yellow-400">
-                    <div class="text-center md:text-left">
-                        <p class="text-gray-400 text-sm">Total Estimado Final</p>
-                        <div class="text-4xl font-black text-yellow-400" id="precioTotalGlobalDisplay">$0</div>
-                        <p class="text-xs text-gray-400 mt-1" id="resumenCantidades">0 Productos</p>
-                    </div>
-                    
-                    <button type="submit" class="w-full md:w-auto btn-premium py-4 px-8 rounded-xl shadow-lg flex items-center justify-center gap-3 text-lg" id="btnSubmit">
-                        <span>Enviar y Subir a Drive</span>
-                        <i class="fa-solid fa-paper-plane"></i>
-                    </button>
-                </div>
-            </form>
-        </div>
-    </main>
+        </main>
     </div> <!-- /main-content -->
 
     <script src="js/shared/sidebar-universal.js"></script>
     <script>
         // Reemplazar URL por el script de Google Apps
         // EL USUARIO DEBE PONER EL LINK QUE LE DEVOLVAMOS ACÁ:
-        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxOUJLvINt8w82W6yl-r3mJocZNlcKr82JE7Z_uEV6ZnrHGziHGfYId0I5GkMReR6Nu/exec"; 
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxOUJLvINt8w82W6yl-r3mJocZNlcKr82JE7Z_uEV6ZnrHGziHGfYId0I5GkMReR6Nu/exec";
 
         let catalogo = {
             "impresion": [],
@@ -137,7 +203,7 @@
                 const response = await fetch('/api/precios');
                 if (!response.ok) throw new Error("No se pudo cargar el catálogo");
                 const data = await response.json();
-                
+
                 // Limpiar categorías
                 const nuevoCatalogo = {
                     "impresion": [],
@@ -182,7 +248,7 @@
                 status.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full border';
                 header.appendChild(status);
             }
-            
+
             if (ok) {
                 status.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full border border-green-500/50 text-green-500 bg-green-500/10';
                 status.innerHTML = '<i class="fa-solid fa-link mr-1"></i> SISTEMA LOCAL: CONECTADO';
@@ -270,7 +336,7 @@
                     </div>
                 </div>
             `;
-            
+
             document.getElementById('productosContainer').insertAdjacentHTML('beforeend', html);
             setupDropZone(id);
         }
@@ -298,7 +364,7 @@
             const cat = document.getElementById(`cat_${id}`).value;
             const val = document.getElementById(`prod_${id}`).value;
             const prod = catalogo[cat].find(p => p.id === val);
-            
+
             const msgBox = document.getElementById(`msg_${id}`);
             msgBox.classList.remove('hidden');
 
@@ -318,28 +384,28 @@
             let totalItemsStr = 0;
 
             const cards = document.querySelectorAll('[id^="card_item_"]');
-            
+
             cards.forEach(card => {
                 totalItemsStr++;
                 const idStr = card.id.replace('card_item_', '');
                 const id = parseInt(idStr);
-                
+
                 const cat = document.getElementById(`cat_${id}`).value;
                 const prodVal = document.getElementById(`prod_${id}`).value;
                 if (!cat || !prodVal) return;
-                
+
                 const prod = catalogo[cat].find(p => p.id === prodVal);
                 if (!prod || typeof prod.precio !== 'number') return;
-                
+
                 const ancho = parseFloat(document.getElementById(`ancho_${id}`).value) || 0;
                 const alto = parseFloat(document.getElementById(`alto_${id}`).value) || 0;
                 const cant = parseInt(document.getElementById(`cant_${id}`).value) || 1;
-                
+
                 if (ancho > 0 && alto > 0) {
                     let m2 = (ancho / 100) * (alto / 100);
                     let totalMetros = m2 * cant;
                     let subtotal = 0;
-                    
+
                     if (prod.unidad === "ml") {
                         subtotal = (alto / 100) * prod.precio * cant;
                     } else {
@@ -428,7 +494,7 @@
             return new Promise((resolve, reject) => {
                 const xhr = new XMLHttpRequest();
                 xhr.open('PUT', uploadUrl, true);
-                
+
                 xhr.upload.onprogress = (e) => {
                     if (e.lengthComputable && onProgress) {
                         const percent = Math.round((e.loaded / e.total) * 100);
@@ -484,7 +550,7 @@
                 let driveLinks = [];
 
                 const cards = document.querySelectorAll('[id^="card_item_"]');
-                
+
                 // 1. Recolectar todos los archivos a subir
                 let totalFiles = 0;
                 let filesToUpload = [];
@@ -508,11 +574,11 @@
                 // 2. Subir archivos uno por uno
                 for (let i = 0; i < filesToUpload.length; i++) {
                     const item = filesToUpload[i];
-                    document.getElementById('progress-text').textContent = `Subiendo archivo ${i+1} de ${totalFiles}: ${item.file.name}`;
-                    
+                    document.getElementById('progress-text').textContent = `Subiendo archivo ${i + 1} de ${totalFiles}: ${item.file.name}`;
+
                     // Obtener URL de subida para este archivo
                     const uploadUrl = await getResumableUploadUrl(item.file);
-                    
+
                     // Subir archivo
                     const driveLink = await uploadFileDirectly(item.file, uploadUrl, (p) => {
                         const globalP = Math.round(((i / totalFiles) * 100) + (p / totalFiles));
@@ -528,8 +594,8 @@
                     const card = cards[i];
                     const id = parseInt(card.id.replace('card_item_', ''));
                     const cat = document.getElementById(`cat_${id}`).value;
-                    if(!cat) continue;
-                    
+                    if (!cat) continue;
+
                     const prodName = document.getElementById(`prod_${id}`).options[document.getElementById(`prod_${id}`).selectedIndex].text;
                     const ancho = document.getElementById(`ancho_${id}`).value;
                     const alto = document.getElementById(`alto_${id}`).value;
@@ -538,11 +604,11 @@
                     const subtotal = document.getElementById(`subtotal_${id}`).textContent;
 
                     docContent += `-----------------------------------\n`;
-                    docContent += `PRODUCTO #${i+1}: ${prodName}\n`;
+                    docContent += `PRODUCTO #${i + 1}: ${prodName}\n`;
                     docContent += `MEDIDAS: ${ancho}x${alto} cm | CANTIDAD: ${cant}\n`;
                     docContent += `SUBTOTAL: ${subtotal}\n`;
                     docContent += `DETALLES: ${detalles}\n`;
-                    
+
                     const myLinks = driveLinks.filter(l => l.itemId === id);
                     docContent += `ARCHIVOS:\n${myLinks.map(l => ` - ${l.name}: ${l.link}`).join('\n')}\n`;
                 }
@@ -564,8 +630,8 @@
 
                 const result = await res.json();
                 progressContainer.classList.add('hidden');
-                
-                if(result.status === 'success') {
+
+                if (result.status === 'success') {
                     // Notificar al sistema local
                     try {
                         const totalGlobalVal = parseFloat(totalStr.replace('$', '').replace(/\./g, '').replace(',', '.'));
@@ -577,7 +643,7 @@
                             status: 'pending',
                             createdAt: new Date().toISOString(),
                             descripcion: "Pedido recibido desde Portal Web (Archivos Grandes)",
-                            notes: [{ text: docContent, author: "Sistema", date: new Date().toISOString() }]
+                            notes: [{ text: `Detalle del pedido:\n` + docContent, author: "Portal Web", date: new Date().toISOString() }]
                         };
 
                         await fetch('/api/public/trabajo', {
@@ -636,7 +702,7 @@
                 timeLeft--;
                 const counter = document.getElementById('countdown');
                 if (counter) counter.textContent = `${timeLeft} seg`;
-                
+
                 if (timeLeft <= 0) {
                     clearInterval(timer);
                     window.location.reload();
@@ -644,8 +710,158 @@
             }, 1000);
         }
 
+        // --- SISTEMA DE TABS E HISTORIAL PARA PORTAL DE GREMIOS ---
+
+        function switchPortalTab(tab) {
+            const cotizarTabBtn = document.getElementById('tabCotizar');
+            const pedidosTabBtn = document.getElementById('tabPedidos');
+            const form = document.getElementById('cotizadorForm');
+            const banner = form.previousElementSibling;
+            const pedidosSec = document.getElementById('pedidosSection');
+
+            if (tab === 'cotizar') {
+                form.classList.remove('hidden');
+                if (banner) banner.classList.remove('hidden');
+                pedidosSec.classList.add('hidden');
+
+                cotizarTabBtn.className = "px-4 py-2 text-xs font-black uppercase tracking-wider rounded-lg bg-yellow-400 text-black transition-all cursor-pointer";
+                pedidosTabBtn.className = "px-4 py-2 text-xs font-black uppercase tracking-wider rounded-lg text-gray-400 hover:text-white transition-all cursor-pointer";
+            } else {
+                form.classList.add('hidden');
+                if (banner) banner.classList.add('hidden');
+                pedidosSec.classList.remove('hidden');
+
+                cotizarTabBtn.className = "px-4 py-2 text-xs font-black uppercase tracking-wider rounded-lg text-gray-400 hover:text-white transition-all cursor-pointer";
+                pedidosTabBtn.className = "px-4 py-2 text-xs font-black uppercase tracking-wider rounded-lg bg-yellow-400 text-black transition-all cursor-pointer";
+                cargarHistorialPedidos();
+            }
+        }
+
+        async function cargarHistorialPedidos() {
+            const tbody = document.getElementById('pedidosTableBody');
+            if (!tbody) return;
+
+            try {
+                const res = await fetch('/api/gremio/pedidos', {
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('mr_token')}` }
+                });
+                const orders = await res.json();
+
+                if (!Array.isArray(orders) || orders.length === 0) {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="6" class="text-center py-8 text-gray-500 font-bold">
+                                No has realizado ningún pedido todavía.
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+
+                let html = '';
+                orders.forEach(o => {
+                    const dateStr = new Date(o.created_at || o.createdAt).toLocaleDateString('es-AR', {
+                        day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
+                    });
+                    
+                    let badgeClass = 'bg-gray-700/20 text-gray-400 border-gray-700/40';
+                    let statusLabel = (o.status || 'pending').toUpperCase();
+                    
+                    if (o.status === 'pending') {
+                        badgeClass = 'bg-yellow-400/10 text-yellow-400 border-yellow-400/20';
+                        statusLabel = 'PENDIENTE';
+                    } else if (o.status === 'production') {
+                        badgeClass = 'bg-blue-400/10 text-blue-400 border-blue-400/20';
+                        statusLabel = 'EN TALLER';
+                    } else if (o.status === 'completed' || o.status === 'delivered') {
+                        badgeClass = 'bg-green-400/10 text-green-400 border-green-400/20';
+                        statusLabel = 'ENTREGADO';
+                    } else if (o.status === 'cancelled') {
+                        badgeClass = 'bg-red-400/10 text-red-400 border-red-400/20';
+                        statusLabel = 'CANCELADO';
+                    }
+
+                    let actionHtml = '';
+                    if (o.status === 'pending') {
+                        actionHtml = `
+                            <button type="button" onclick="cancelarPedidoGremio('${o.id}', event)" class="px-2.5 py-1.5 bg-red-950/40 hover:bg-red-900/60 border border-red-900/40 text-red-400 font-bold rounded-lg text-[10px] uppercase tracking-wider transition-all cursor-pointer">
+                                Cancelar
+                            </button>
+                        `;
+                    } else {
+                        actionHtml = `<span class="text-gray-600">-</span>`;
+                    }
+
+                    const formattedDetail = (o.descripcion || '') + '\n' + (o.notes?.[0]?.text || '');
+                    const cleanDetail = formattedDetail.replace(/-----------------------------------/g, '').trim().substring(0, 160) + '...';
+
+                    html += `
+                        <tr class="hover:bg-white/5 border-b border-slate-900/40">
+                            <td class="py-3 px-2 font-mono font-bold text-gray-400">${o.id}</td>
+                            <td class="py-3 px-2 text-gray-400">${dateStr}</td>
+                            <td class="py-3 px-2 min-w-[200px]">
+                                <div class="whitespace-pre-line text-xs font-semibold leading-relaxed text-gray-300">${cleanDetail}</div>
+                            </td>
+                            <td class="py-3 px-2 text-right font-black text-white">$${Math.round(o.total || 0).toLocaleString()}</td>
+                            <td class="py-3 px-2 text-center">
+                                <span class="px-2 py-0.5 rounded-full border text-[10px] font-bold ${badgeClass}">
+                                    ${statusLabel}
+                                </span>
+                            </td>
+                            <td class="py-3 px-2 text-center">
+                                ${actionHtml}
+                            </td>
+                        </tr>
+                    `;
+                });
+                tbody.innerHTML = html;
+            } catch (err) {
+                console.error(err);
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="text-center py-8 text-red-400/80 font-bold">
+                            <i class="fa-solid fa-triangle-exclamation mr-1"></i> Error al cargar el historial.
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+
+        async function cancelarPedidoGremio(orderId, event) {
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+
+            if (!confirm(`¿Estás seguro de que deseas cancelar el pedido ${orderId}?`)) return;
+
+            try {
+                const res = await fetch(`/api/gremio/pedidos/${orderId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('mr_token')}` }
+                });
+                const data = await res.json();
+                if (res.ok && data.success) {
+                    alert("✅ Pedido cancelado correctamente.");
+                    cargarHistorialPedidos();
+                } else {
+                    alert("❌ Error: " + (data.error || "No se pudo cancelar el pedido"));
+                }
+            } catch (err) {
+                console.error(err);
+                alert("❌ Error de conexión al cancelar el pedido.");
+            }
+        }
+
+        function logoutGremio() {
+            localStorage.removeItem('mr_token');
+            localStorage.removeItem('mr_user');
+            window.location.href = '/login.html';
+        }
+
         // Iniciar con un producto vacío
         agregarProducto();
     </script>
 </body>
+
 </html>

@@ -22,16 +22,35 @@ const MATERIALES_FILE = path.join(DATA_DIR, 'gremio_materiales.json');
 const PRECIOS_FILE = path.join(DATA_DIR, 'gremio_precios_db.json');
 const GASTOS_FILE = path.join(DATA_DIR, 'mr_letreros_gastos.json');
 const TERCEROS_FILE = path.join(DATA_DIR, 'gremio_terceros.json');
+const GREMIO_HOJA_FILE = path.join(DATA_DIR, 'gremio_hoja_clientes.json');
 
 module.exports = {
     syncData: async (io) => {
         try {
-            // 0. Sincronizar clientes desde Google Sheets (PEDIDOS)
+            // 0. Sincronizar clientes desde Google Sheets (Hoja GREMIO)
             try {
                 const gremiosResponse = await axios.get(`${GOOGLE_SCRIPT_URL}?action=getGremios`, { timeout: 15000 });
                 const gremiosData = gremiosResponse.data;
                 
                 if (gremiosData && typeof gremiosData === 'object' && !Array.isArray(gremiosData)) {
+                    // --- GUARDAR LISTA PURA DE LA HOJA GREMIO (sin mezclar con datos viejos) ---
+                    const hojaGremioClientes = [];
+                    for (const [gremio, whatsapp] of Object.entries(gremiosData)) {
+                        if (!gremio || gremio.toLowerCase() === 'nombre' || gremio.toLowerCase() === 'usuario') continue;
+                        hojaGremioClientes.push({
+                            id: `hoja_gremio_${gremio.trim().toLowerCase().replace(/\s+/g, '_')}`,
+                            nombre: gremio.trim(),
+                            name: gremio.trim(),
+                            telefono: whatsapp ? whatsapp.toString() : '',
+                            phone: whatsapp ? whatsapp.toString() : '',
+                            tipo: 'gremio',
+                            origen: 'hoja_gremio'
+                        });
+                    }
+                    await fs.writeFile(GREMIO_HOJA_FILE, JSON.stringify(hojaGremioClientes, null, 2));
+                    logger.info(`[Google Sync] Hoja GREMIO: ${hojaGremioClientes.length} clientes guardados en gremio_hoja_clientes.json`);
+
+                    // --- También actualizar clientes.json (merge, sin borrar viejos) ---
                     let clientes = [];
                     try {
                         const cData = await fs.readFile(CLIENTES_FILE, 'utf-8');
@@ -41,31 +60,38 @@ module.exports = {
                     
                     let clientesCambiados = false;
                     for (const [gremio, whatsapp] of Object.entries(gremiosData)) {
-                        const existe = clientes.some(c => (c.nombre || '').trim().toLowerCase() === gremio.trim().toLowerCase());
-                        if (!existe) {
+                        if (!gremio || gremio.toLowerCase() === 'nombre' || gremio.toLowerCase() === 'usuario') continue;
+                        const existing = clientes.find(c => (c.nombre || c.name || '').trim().toLowerCase() === gremio.trim().toLowerCase());
+                        if (!existing) {
                             clientes.push({
-                                id: `cli_auto_${String(Math.random()).slice(-6)}`,
+                                id: `gremio_cli_${Date.now()}_${String(Math.random()).slice(-4)}`,
                                 tipo: 'gremio',
                                 estado: 'activo',
                                 nombre: gremio.trim(),
+                                name: gremio.trim(),
                                 telefono: whatsapp ? whatsapp.toString() : '',
+                                phone: whatsapp ? whatsapp.toString() : '',
                                 email: '',
                                 direccion: '',
                                 cuit: '',
                                 condicionIVA: '',
                                 descuento: 0,
-                                notas: 'Importado de Google Sheets (PEDIDOS)',
+                                notas: 'Importado de Google Sheets (GREMIO)',
                                 fechaCreacion: new Date().toISOString(),
                                 totalFacturado: 0,
                                 cantidadTrabajos: 0,
                                 ultimoTrabajo: null
                             });
                             clientesCambiados = true;
+                        } else {
+                            if (!existing.name) { existing.name = existing.nombre || gremio.trim(); clientesCambiados = true; }
+                            if (!existing.phone && whatsapp) { existing.phone = whatsapp.toString(); clientesCambiados = true; }
+                            if (!existing.telefono && whatsapp) { existing.telefono = whatsapp.toString(); clientesCambiados = true; }
                         }
                     }
                     if (clientesCambiados) {
                         await fs.writeFile(CLIENTES_FILE, JSON.stringify(clientes, null, 2));
-                        logger.info('[Google Sync] Clientes (Gremios) sincronizados con Google Sheets.');
+                        logger.info('[Google Sync] Clientes (Gremios) sincronizados con la hoja GREMIO de Google Sheets.');
                     }
                 }
             } catch (err) {
@@ -185,24 +211,24 @@ module.exports = {
                 const precioFinal = parseFloat(order.total) || 0;
                 const costoEstimado = precioFinal * 0.7;
 
-                // 3. DUPLICATE CHECK (Evitar doble entrada si el portal ya notificó al server)
+                // 3. DUPLICATE CHECK (Evitar duplicar si ya existe el trabajo para ese cliente)
                 const isDuplicate = fullData.works.some(w => {
-                    const timeDiff = Math.abs(new Date(w.createdAt).getTime() - new Date().getTime());
                     return w.clientName === order.gremio && 
-                           Math.abs(w.total - precioFinal) < 1 && 
-                           timeDiff < 60000; // 60 segundos
+                           (w.descripcion === order.detalle || (Math.abs(w.total - precioFinal) < 1 && Math.abs(new Date(w.createdAt).getTime() - new Date().getTime()) < 60000));
                 });
 
                 if (isDuplicate) {
-                    logger.info(`[Google Sync] Ignorando duplicado reciente para ${order.gremio}`);
+                    logger.info(`[Google Sync] Ignorando trabajo duplicado para ${order.gremio}`);
                     continue;
                 }
 
                 const workId = 'goog_' + Date.now() + Math.random().toString(36).substr(2, 5);
+                const descripcionWork = order.detalle || "Trabajo importado desde Hoja Gremio";
 
                 // 4. Crear el trabajo
                 const newWork = {
                     id: workId,
+                    tipo_cliente: 'gremio',
                     clientName: order.gremio,
                     clientPhone: order.whatsapp ? order.whatsapp.toString() : '',
                     total: precioFinal,
@@ -212,18 +238,18 @@ module.exports = {
                     paidAmount: 0,
                     status: 'pending',
                     paymentStatus: 'unpaid',
-                    priority: 'high',
-                    createdAt: new Date().toISOString(),
-                    descripcion: "Pedido desde Portal Web Google",
+                    priority: 'normal',
+                    createdAt: order.fecha || new Date().toISOString(),
+                    descripcion: descripcionWork,
                     notes: [
                         { 
-                            text: `Detalle del pedido:\n${order.detalle}\n\nLink a Drive: ${order.driveUrl}`, 
-                            author: "Google Sync", 
+                            text: `Detalle:\n${descripcionWork}${order.driveUrl ? '\n\nLink a Drive: ' + order.driveUrl : ''}`, 
+                            author: "Google Sync (Hoja Gremio)", 
                             date: new Date().toISOString() 
                         }
                     ],
                     timeline: [
-                        { type: 'created', description: 'Pedido recibido desde Google Web App', timestamp: new Date().toISOString() }
+                        { type: 'created', description: 'Trabajo sincronizado desde Hoja Gremio', timestamp: new Date().toISOString() }
                     ]
                 };
 
@@ -270,15 +296,21 @@ module.exports = {
                     date: new Date().toISOString()
                 });
 
-                // 6. NOTIFICACIÓN DE WINDOWS
-                notifier.notify({
-                    title: 'MR Letreros - Nuevo Pedido',
-                    message: `Gremio: ${order.gremio}\nTotal: $${precioFinal.toLocaleString()}`,
-                    icon: path.join(BASE_PATH, 'public', 'img', 'logo_negro.png'),
-                    sound: true,
-                    wait: true,
-                    appID: 'MR Letreros'
-                });
+                // 6. NOTIFICACIÓN DE WINDOWS (Modo Seguro y Asíncrono)
+                try {
+                    notifier.notify({
+                        title: 'MR Letreros - Nuevo Pedido',
+                        message: `Gremio: ${order.gremio}\nTotal: $${precioFinal.toLocaleString()}`,
+                        icon: path.join(BASE_PATH, 'public', 'img', 'logo_negro.png'),
+                        sound: true,
+                        wait: false,
+                        appID: 'MR Letreros'
+                    }, (err) => {
+                        if (err) logger.warn(`[Notifier] Error enviando notificación: ${err.message}`);
+                    });
+                } catch (notiErr) {
+                    logger.warn(`[Notifier] Error al invocar notificador: ${notiErr.message}`);
+                }
 
                 // 7. WHATSAPP (SOLO SI ES GREMIO O IDENTIFICADO)
                 if (order.whatsapp && order.whatsapp.toString().length > 5) {

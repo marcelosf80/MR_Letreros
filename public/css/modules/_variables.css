@@ -1,0 +1,50 @@
+/* =========================================================================
+   MR LETREROS — MÓDULO 1: VARIABLES & DESIGN TOKENS (LIGHT THEME)
+   ========================================================================= */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap');
+
+:root {
+  /* Paleta de Colores (Clean Apple-Style Light Mode) */
+  --mr-bg-void:       #f8fafc;
+  --mr-bg-deep:       #ffffff;
+  --mr-bg-surface:    #ffffff;
+  --mr-bg-modal:      #ffffff;
+  
+  --mr-border-light:  rgba(0, 0, 0, 0.08);
+  --mr-border-hover:  rgba(0, 0, 0, 0.16);
+  --mr-border-focus:  #2563eb;
+
+  /* Colores de Acento y Estado */
+  --mr-emerald:       #16a34a;
+  --mr-emerald-hover: #15803d;
+  --mr-blue:          #2563eb;
+  --mr-blue-hover:    #1d4ed8;
+  --mr-amber:         #d97706;
+  --mr-rose:          #dc2626;
+
+  /* Texto */
+  --mr-txt-primary:   #0f172a;
+  --mr-txt-secondary: #475569;
+  --mr-txt-muted:     #64748b;
+
+  /* Tipografía */
+  --mr-font-body: 'Inter', system-ui, -apple-system, sans-serif;
+  --mr-font-heading: 'Outfit', 'Inter', sans-serif;
+  --mr-font-mono: 'Space Mono', monospace;
+
+  /* Bordes Redondeados */
+  --mr-radius-sm: 8px;
+  --mr-radius-md: 12px;
+  --mr-radius-lg: 16px;
+  --mr-radius-xl: 20px;
+
+  /* Sombras y Elevaciones */
+  --mr-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
+  --mr-shadow-md: 0 4px 20px rgba(0, 0, 0, 0.06);
+  --mr-shadow-lg: 0 15px 45px rgba(0, 0, 0, 0.1);
+
+  /* Transiciones */
+  --mr-transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
+  --mr-spring: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}

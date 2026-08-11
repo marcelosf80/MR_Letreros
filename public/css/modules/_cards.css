@@ -1,0 +1,83 @@
+/* =========================================================================
+   MR LETREROS — MÓDULO 4: CARDS & CONTAINERS (LIGHT THEME)
+   ========================================================================= */
+
+.card, .mx-card, .mr-card, .client-card, .detail-box, .stat-card, .panel-cliente, .panel-centro, .panel-historial {
+  background: var(--mr-bg-surface) !important;
+  border: 1px solid var(--mr-border-light) !important;
+  border-radius: var(--mr-radius-lg) !important;
+  box-shadow: var(--mr-shadow-md) !important;
+  color: var(--mr-txt-primary) !important;
+  transition: var(--mr-transition) !important;
+}
+
+.card:hover, .mx-card:hover, .mr-card:hover, .stat-card:hover {
+  border-color: var(--mr-border-hover) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08) !important;
+}
+
+.card-header, .panel-header {
+  background: #f8fafc !important;
+  border-bottom: 1px solid var(--mr-border-light) !important;
+  padding: 1.25rem 1.5rem !important;
+  border-radius: var(--mr-radius-lg) var(--mr-radius-lg) 0 0 !important;
+}
+
+.card-title {
+  font-size: 1.1rem !important;
+  font-weight: 700 !important;
+  color: var(--mr-txt-primary) !important;
+  margin: 0;
+}
+
+.stat-card {
+  padding: 1.25rem 1.5rem;
+}
+
+.stat-label {
+  font-size: 0.85rem;
+  color: var(--mr-txt-secondary);
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.stat-value {
+  font-size: 1.8rem;
+  font-weight: 800;
+  font-family: var(--mr-font-mono);
+  color: var(--mr-txt-primary);
+}
+
+/* =========================================================================
+   TOOL PANELS & CONTAINERS OVERRIDES (LIGHT MODE UNIFIED)
+   ========================================================================= */
+.toolbar, .tool-group, .tools-panel, .config-panel, .panel, .sidebar-panel,
+.canvas-area, .nesting-card, .nesting-panel, .drop-zone, .r3d-card, .vector-card, .ai-card,
+.led-wizard-container, .tool-section, .led-config-panel, .led-tools-panel, .preview-box {
+  background: #ffffff !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+  color: #0f172a !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05) !important;
+}
+
+.toolbar button, .tool-group button, .dropdown button, .btn-action, .tool-btn {
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+  border: 1px solid #cbd5e1 !important;
+}
+
+.toolbar button:hover, .tool-group button:hover, .dropdown button:hover, .btn-action:hover, .tool-btn:hover {
+  background: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+.toolbar button.active, .tool-group button.active, .tool-btn.active {
+  background: #2563eb !important;
+  color: #ffffff !important;
+  border-color: #2563eb !important;
+}
+
+.panel-title, .section-title, .tool-title, label, .form-label {
+  color: #0f172a !important;
+}

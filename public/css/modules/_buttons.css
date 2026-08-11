@@ -1,0 +1,72 @@
+/* =========================================================================
+   MR LETREROS — MÓDULO 6: BUTTONS & BADGES (LIGHT THEME)
+   ========================================================================= */
+
+.btn {
+  font-family: var(--mr-font-body) !important;
+  font-weight: 600 !important;
+  border-radius: var(--mr-radius-md) !important;
+  padding: 0.6rem 1.25rem !important;
+  transition: var(--mr-spring) !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  cursor: pointer;
+}
+
+/* Primario (Verde Esmeralda) */
+.btn-primary, .btn-success, .mr-btn-primary {
+  background: linear-gradient(135deg, #16a34a 0%, #15803d 100%) !important;
+  border: none !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(22, 163, 74, 0.25) !important;
+}
+
+.btn-primary:hover, .btn-success:hover, .mr-btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(22, 163, 74, 0.35) !important;
+  filter: brightness(1.05);
+}
+
+/* Secundario (Azul) */
+.btn-outline-primary {
+  background: rgba(37, 99, 235, 0.06) !important;
+  border: 1px solid rgba(37, 99, 235, 0.25) !important;
+  color: var(--mr-blue) !important;
+}
+
+.btn-outline-primary:hover {
+  background: var(--mr-blue) !important;
+  color: #ffffff !important;
+  border-color: var(--mr-blue) !important;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3) !important;
+}
+
+/* Neutro */
+.btn-secondary, .btn-outline-secondary {
+  background: #f1f5f9 !important;
+  border: 1px solid #cbd5e1 !important;
+  color: var(--mr-txt-primary) !important;
+}
+
+.btn-secondary:hover, .btn-outline-secondary:hover {
+  background: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+/* Badges de Estado */
+.badge {
+  border-radius: var(--mr-radius-sm) !important;
+  padding: 0.4em 0.75em !important;
+  font-weight: 600 !important;
+  font-size: 0.8rem !important;
+}
+
+.badge-price, .mr-badge-price {
+  font-size: 1.5rem !important;
+  font-weight: 800 !important;
+  color: var(--mr-amber) !important;
+  font-family: var(--mr-font-mono) !important;
+  letter-spacing: -0.5px;
+}

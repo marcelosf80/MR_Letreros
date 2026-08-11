@@ -146,12 +146,28 @@ function injectMultiCategoryUI() {
 // ==================== LÓGICA DE POBLADO (CLIENTES) ====================
 
 window.populateMultiCategorySelectors = async function() {
+    // 0. Asegurar la carga de los precios configurados en precios.html (/api/precios)
+    if (!window.preciosClientes || window.preciosClientes.length === 0) {
+        try {
+            if (window.mrDataManager) {
+                window.preciosClientes = await window.mrDataManager.getPrecios() || [];
+            } else {
+                const res = await fetch('/api/precios');
+                if (res.ok) window.preciosClientes = await res.json();
+            }
+        } catch (e) {
+            console.warn('[CLIENTES] Error cargando precios:', e);
+        }
+    }
+
+    const sourceData = window.preciosClientes || [];
+
     // 1. Categorías
     const catSelect = document.getElementById('mcCategorySelect');
     if (catSelect) {
         let categorias = [];
         
-        // A. Cargar desde API
+        // A. Cargar desde API /api/categorias
         try {
             const response = await fetch('/api/categorias');
             if (response.ok) {
@@ -160,8 +176,7 @@ window.populateMultiCategorySelectors = async function() {
             }
         } catch (e) { console.warn('Error cargando categorías API:', e); }
 
-        // B. Cargar desde productos
-        const sourceData = window.preciosClientes || [];
+        // B. Cargar desde precios configurados en precios.html
         if (sourceData.length > 0) {
             const productCats = sourceData.map(p => p.category || p.categoria).filter(Boolean);
             categorias = [...new Set([...categorias, ...productCats])];
@@ -174,7 +189,6 @@ window.populateMultiCategorySelectors = async function() {
     }
 
     // 2. Tintas
-    const sourceData = window.preciosClientes || [];
     if (sourceData.length > 0) {
         const inkSelect = document.getElementById('mcInkSelect');
         if (inkSelect) {
@@ -186,8 +200,8 @@ window.populateMultiCategorySelectors = async function() {
             
             inkSelect.innerHTML = '<option value="">Seleccionar Tinta...</option>' + 
                 tintas.map((p, idx) => {
-                    const precio = p.priceCliente || p.precioCliente || p.pricePublico || 0;
-                    return `<option value="${idx}" data-price="${precio}">${p.name || p.producto}</option>`;
+                    const precio = p.precioCliente || p.priceCliente || p.precioGremio || p.pricePublico || 0;
+                    return `<option value="${idx}" data-price="${precio}">${p.producto || p.name}</option>`;
                 }).join('');
         }
     }
@@ -206,38 +220,72 @@ window.populateMultiCategorySelectors = async function() {
 };
 
 window.filterMcProducts = function() {
-    const cat = document.getElementById('mcCategorySelect').value;
+    const catSelect = document.getElementById('mcCategorySelect');
+    if (!catSelect) return;
+    const cat = catSelect.value;
     const prodSelect = document.getElementById('mcProductSelect');
+    if (!prodSelect) return;
     
     if (!cat) {
         prodSelect.innerHTML = '<option value="">Selecciona categoría...</option>';
         return;
     }
 
-    const sourceData = window.preciosClientes || [];
-    const productos = sourceData.filter(p => (p.category === cat || p.categoria === cat));
+    const sourceData = (window.preciosClientes && window.preciosClientes.length > 0) 
+        ? window.preciosClientes 
+        : (window.preciosGremio || []);
+        
+    const catLower = cat.trim().toLowerCase();
+    const productos = sourceData.filter(p => {
+        const pCat = (p.categoria || p.category || '').trim().toLowerCase();
+        return pCat === catLower;
+    });
+
+    if (productos.length === 0) {
+        prodSelect.innerHTML = '<option value="">No hay productos en esta categoría</option>';
+        return;
+    }
+
+    const currentTipo = document.getElementById('clientTipo')?.value || window.currentTipoCliente || 'cliente';
+    const isGremio = (currentTipo === 'gremio');
+
     prodSelect.innerHTML = '<option value="">Seleccionar producto...</option>' + 
         productos.map((p, idx) => {
-            const precio = p.priceCliente || p.precioCliente || p.pricePublico || 0;
-            const costo = p.costo || p.costoTotal || 0;
+            const priceGremio = parseFloat(p.precioGremio || p.priceGremio || 0);
+            const priceCliente = parseFloat(p.precioCliente || p.priceCliente || p.pricePublico || p.precio || 0);
+            const precioFinal = isGremio 
+                ? (priceGremio > 0 ? priceGremio : priceCliente)
+                : (priceCliente > 0 ? priceCliente : priceGremio);
+            const costo = parseFloat(p.costo || p.costoTotal || 0);
             const unidad = p.unidad || p.unit || 'm2';
-            return `<option value="${p.id}" data-price="${precio}" data-cost="${costo}" data-unit="${unidad}">${p.name || p.producto}</option>`;
+            const nombre = p.producto || p.name || p.productoNombre || 'Producto';
+            
+            return `<option value="${p.id || idx}" data-price="${precioFinal}" data-price-gremio="${priceGremio}" data-price-cliente="${priceCliente}" data-cost="${costo}" data-unit="${unidad}">${nombre}</option>`;
         }).join('');
 };
 
 window.selectMcProduct = function() {
     const select = document.getElementById('mcProductSelect');
+    if (!select) return;
     const option = select.options[select.selectedIndex];
     
     if (option && option.value) {
+        const currentTipo = document.getElementById('clientTipo')?.value || window.currentTipoCliente || 'cliente';
+        const isGremio = (currentTipo === 'gremio');
+
+        let price = parseFloat(option.dataset.price) || 0;
+        if (isGremio && option.dataset.priceGremio && parseFloat(option.dataset.priceGremio) > 0) {
+            price = parseFloat(option.dataset.priceGremio);
+        } else if (!isGremio && option.dataset.priceCliente && parseFloat(option.dataset.priceCliente) > 0) {
+            price = parseFloat(option.dataset.priceCliente);
+        }
+
         document.getElementById('mcName').value = option.text;
-        document.getElementById('mcPrice').value = option.dataset.price;
-        document.getElementById('mcCost').value = option.dataset.cost;
+        document.getElementById('mcPrice').value = price;
+        document.getElementById('mcCost').value = option.dataset.cost || 0;
         
-        // Detectar unidad según fue guardada en el material
         let savedUnit = option.dataset.unit;
         
-        // Refinado: Si no tiene unidad en precios, buscar en listaCostos (materiales)
         if (!savedUnit || savedUnit === 'undefined' || savedUnit === 'm2') {
             const nombreNormalizado = option.text.toLowerCase().trim();
             const mat = (window.listaCostos || []).find(m => 
@@ -248,7 +296,6 @@ window.selectMcProduct = function() {
             }
         }
         
-        // Normalizar unidad
         if (savedUnit === 'm²') savedUnit = 'm2';
         if (!savedUnit) savedUnit = 'm2';
 

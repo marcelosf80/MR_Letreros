@@ -1,0 +1,91 @@
+/* =========================================================================
+   MR LETREROS — MÓDULO 3: LAYOUT, TOPBAR & SIDEBAR (LIGHT THEME)
+   ========================================================================= */
+
+.main-content {
+  padding: 1.5rem 2rem;
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+/* Sidebar Universal — Limpio en Blanco */
+.app-sidebar, :root[data-theme="light"] .app-sidebar, body .app-sidebar, div.app-sidebar {
+  background: var(--mr-bg-surface) !important;
+  border-right: 1px solid var(--mr-border-light) !important;
+  color: var(--mr-txt-primary) !important;
+  box-shadow: 4px 0 20px rgba(0, 0, 0, 0.04) !important;
+}
+
+.app-sidebar .sidebar-header, .app-sidebar .sidebar-footer {
+  border-color: var(--mr-border-light) !important;
+  background: #ffffff !important;
+}
+
+.app-sidebar .sidebar-logo {
+  filter: none !important;
+}
+
+.app-sidebar .nav-item, .app-sidebar .nav-link, .app-sidebar a, .app-sidebar .sidebar-title, .app-sidebar .sidebar-user {
+  color: var(--mr-txt-secondary) !important;
+}
+
+.app-sidebar .nav-link:hover, .app-sidebar a:hover {
+  background: rgba(0, 0, 0, 0.04) !important;
+  color: var(--mr-txt-primary) !important;
+}
+
+.app-sidebar .nav-link.active, .app-sidebar a.active {
+  background: rgba(37, 99, 235, 0.08) !important;
+  color: var(--mr-blue) !important;
+  border-left: 3px solid var(--mr-blue) !important;
+}
+
+.app-sidebar .sidebar-user, .app-sidebar .user-info {
+  background: #f8fafc !important;
+  border-top: 1px solid var(--mr-border-light) !important;
+  color: var(--mr-txt-primary) !important;
+}
+
+/* Topbar Flotante Unificada en Blanco */
+.mx-topbar {
+  background: var(--mr-bg-surface) !important;
+  border: 1px solid var(--mr-border-light) !important;
+  border-radius: var(--mr-radius-lg) !important;
+  padding: 1rem 1.5rem !important;
+  margin-bottom: 1.5rem !important;
+  box-shadow: var(--mr-shadow-md) !important;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.top-bar-title {
+  font-family: var(--mr-font-heading) !important;
+  font-weight: 700 !important;
+  font-size: 1.5rem !important;
+  letter-spacing: -0.5px;
+  color: var(--mr-txt-primary) !important;
+}
+
+.top-bar-actions {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.content-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+@media (max-width: 992px) {
+  .main-content {
+    padding: 1rem;
+  }
+  .mx-topbar {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: flex-start;
+  }
+}

@@ -36,7 +36,7 @@ def get_image_description_and_points(image_path, api_key):
             "Content-Type": "application/json"
         }
         data_groq = {
-            "model": "meta-llama/llama-4-scout-17b-16e-instruct",
+            "model": "llama-3.2-11b-vision-preview",
             "messages": [
                 {
                     "role": "user",

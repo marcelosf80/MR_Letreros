@@ -682,3 +682,74 @@ table tbody tr:hover {
   --txt-muted:   #64748B;   
   --sh-brand:    0 8px 24px  rgba(0, 0, 0, 0.1);
 }
+
+/* ─── MR UNIFIED UI SYSTEM (COLLECT UI INSPIRED) ─────── */
+.mr-modal-content {
+  background: var(--bg-deep) !important;
+  color: var(--txt) !important;
+  border: 1px solid var(--glass-border) !important;
+  border-radius: var(--r-md) !important;
+  box-shadow: var(--sh-lg) !important;
+  backdrop-filter: blur(16px);
+}
+
+.mr-modal-header {
+  border-bottom: 1px solid var(--glass-border) !important;
+  background: rgba(255, 255, 255, 0.02) !important;
+  padding: 1.25rem 1.5rem !important;
+}
+
+.mr-card {
+  background: var(--bg-surface) !important;
+  border: 1px solid var(--glass-border) !important;
+  border-radius: var(--r-md) !important;
+  box-shadow: var(--sh-sm) !important;
+  backdrop-filter: blur(12px);
+  transition: all 0.25s var(--smooth);
+}
+
+.mr-card:hover {
+  border-color: rgba(255, 255, 255, 0.18) !important;
+  box-shadow: var(--sh-md) !important;
+}
+
+.mr-input, select.mr-input, textarea.mr-input {
+  background: var(--bg-void) !important;
+  color: var(--txt) !important;
+  border: 1px solid var(--glass-border) !important;
+  border-radius: var(--r-sm) !important;
+  padding: 0.65rem 0.9rem !important;
+  font-family: var(--font-body) !important;
+  font-size: 0.95rem !important;
+  transition: all 0.2s var(--smooth) !important;
+}
+
+.mr-input:focus {
+  border-color: rgba(255, 255, 255, 0.35) !important;
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.08) !important;
+  outline: none !important;
+}
+
+.mr-btn-primary {
+  background: linear-gradient(135deg, #22C55E 0%, #16A34A 100%) !important;
+  color: #FFFFFF !important;
+  font-weight: 700 !important;
+  border: none !important;
+  border-radius: var(--r-sm) !important;
+  padding: 0.65rem 1.25rem !important;
+  box-shadow: 0 4px 14px rgba(34, 197, 94, 0.3) !important;
+  transition: all 0.2s var(--spring) !important;
+}
+
+.mr-btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(34, 197, 94, 0.45) !important;
+}
+
+.mr-badge-price {
+  font-size: 1.5rem !important;
+  font-weight: 800 !important;
+  color: #FACC15 !important;
+  font-family: var(--font-mono) !important;
+  letter-spacing: -0.5px;
+}

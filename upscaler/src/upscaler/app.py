@@ -55,8 +55,8 @@ async def upscale_image(
 
     Args:
         image: Image file to upscale
-        target_width: Target width in pixels (1-10000) - used if width_cm is not provided
-        target_height: Target height in pixels (1-10000) - used if height_cm is not provided
+        target_width: Target width in pixels (1-30000) - used if width_cm is not provided
+        target_height: Target height in pixels (1-30000) - used if height_cm is not provided
         width_cm: Target width in centimeters (0.1-400) - alternative to target_width
         height_cm: Target height in centimeters (0.1-400) - alternative to target_height
         dpi: Dots per inch (10-1200) - required when using width_cm/height_cm
@@ -101,10 +101,10 @@ async def upscale_image(
             )
 
     # Validate pixel dimensions
-    if target_width < 1 or target_width > 10000:
-        raise HTTPException(status_code=400, detail="Width must be between 1 and 10000 pixels")
-    if target_height < 1 or target_height > 10000:
-        raise HTTPException(status_code=400, detail="Height must be between 1 and 10000 pixels")
+    if target_width < 1 or target_width > 30000:
+        raise HTTPException(status_code=400, detail="Width must be between 1 and 30000 pixels")
+    if target_height < 1 or target_height > 30000:
+        raise HTTPException(status_code=400, detail="Height must be between 1 and 30000 pixels")
 
     # Check file type
     if not image.content_type.startswith("image/"):

@@ -100,7 +100,8 @@ const SCHEMA = `
     password TEXT NOT NULL,
     rol TEXT NOT NULL DEFAULT 'vendedor',
     activo INTEGER NOT NULL DEFAULT 1,
-    fecha_creacion TEXT
+    fecha_creacion TEXT,
+    cliente_id TEXT
   );
 
   -- Clientes (gremio y final unificados)
@@ -517,14 +518,17 @@ function init() {
               // Agregar columna printed de forma incremental si no existe
               db.run('ALTER TABLE trabajos ADD COLUMN printed INTEGER DEFAULT 0', () => {
                 // Agregar columna printed_items_json de forma incremental si no existe
-                db.run('ALTER TABLE trabajos ADD COLUMN printed_items_json TEXT DEFAULT "{}"', async (alterErr) => {
-                  try {
-                    await migrateFromJson();
-                    resolve();
-                  } catch (migErr) {
-                    logger.error('❌ Error en migración JSON→SQLite:', migErr);
-                    reject(migErr);
-                  }
+                db.run('ALTER TABLE trabajos ADD COLUMN printed_items_json TEXT DEFAULT "{}"', () => {
+                  // Agregar columna cliente_id a la tabla usuarios si no existe
+                  db.run('ALTER TABLE usuarios ADD COLUMN cliente_id TEXT', async (alterErr) => {
+                    try {
+                      await migrateFromJson();
+                      resolve();
+                    } catch (migErr) {
+                      logger.error('❌ Error en migración JSON→SQLite:', migErr);
+                      reject(migErr);
+                    }
+                  });
                 });
               });
             });

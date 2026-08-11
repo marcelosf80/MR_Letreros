@@ -1,0 +1,35 @@
+/* =========================================================================
+   MR LETREROS — MÓDULO 7: MODALS & OVERLAYS (LIGHT THEME)
+   ========================================================================= */
+
+.modal-content, .mr-modal-content {
+  background: var(--mr-bg-modal) !important;
+  border: 1px solid var(--mr-border-hover) !important;
+  border-radius: var(--mr-radius-xl) !important;
+  color: var(--mr-txt-primary) !important;
+  box-shadow: var(--mr-shadow-lg) !important;
+}
+
+.modal-header, .mr-modal-header {
+  border-bottom: 1px solid var(--mr-border-light) !important;
+  padding: 1.25rem 1.75rem !important;
+  background: #f8fafc !important;
+  border-radius: var(--mr-radius-xl) var(--mr-radius-xl) 0 0 !important;
+}
+
+.modal-header .modal-title {
+  font-family: var(--mr-font-heading) !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.3px;
+  color: var(--mr-txt-primary) !important;
+}
+
+.modal-footer {
+  border-top: 1px solid var(--mr-border-light) !important;
+  padding: 1.25rem 1.75rem !important;
+}
+
+.modal-backdrop.show {
+  opacity: 0.5;
+  background: #0f172a;
+}

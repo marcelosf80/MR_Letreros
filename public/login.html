@@ -36,26 +36,50 @@
     <div class="bg-overlay"></div>
 
     <div class="main-wrapper">
-    <div class="login-container">
-        <div class="card mx-card animate-fade-in-up">
-            <div class="logo-wrapper">
-                <img src="img/logo_negro.png" alt="MR Letreros Logo" class="logo-img">
+        <div class="login-container">
+            <div class="card mx-card animate-fade-in-up">
+                <div class="logo-wrapper">
+                    <img src="img/logo_negro.png" alt="MR Letreros Logo" class="logo-img">
+                </div>
+                <div class="logo mb-2">MR Letreros • Acceso</div>
+
+                <!-- Tabs de Iniciar Sesión / Registro -->
+                <div class="d-flex mb-3" style="border-bottom: 1px solid rgba(255,255,255,0.1); width: 100%;">
+                    <button type="button" id="tabLogin" class="btn w-50 py-2 border-0 bg-transparent fw-bold" style="color: #ffffff; border-bottom: 2px solid #ffd700 !important; border-radius: 0; font-size: 0.85rem; outline: none; box-shadow: none;" onclick="switchTab('login')">Ingresar</button>
+                    <button type="button" id="tabRegister" class="btn w-50 py-2 border-0 bg-transparent" style="color: rgba(255,255,255,0.4); border-radius: 0; font-size: 0.85rem; outline: none; box-shadow: none;" onclick="switchTab('register')">Registrar Gremio</button>
+                </div>
+
+                <!-- Formulario de Login -->
+                <form id="loginForm">
+                    <div class="form-group">
+                        <label for="usuario">Usuario (Nombre Gremio)</label>
+                        <input type="text" id="usuario" name="usuario" required autocomplete="off" autofocus>
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Contraseña (Teléfono)</label>
+                        <input type="password" id="password" name="password" required>
+                    </div>
+                    <button type="submit" id="btnSubmit">Ingresar al Sistema</button>
+                    <div class="error-msg" id="errorMsg">Credenciales incorrectas</div>
+                </form>
+
+                <!-- Formulario de Registro -->
+                <form id="registerForm" style="display: none;" onsubmit="handleRegister(event)">
+                    <div class="form-group">
+                        <label for="regNombre">Nombre Gremio / Empresa</label>
+                        <input type="text" id="regNombre" name="regNombre" required autocomplete="off" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.2); color: white; outline: none;">
+                    </div>
+                    <div class="form-group">
+                        <label for="regTelefono">WhatsApp / Teléfono</label>
+                        <input type="text" id="regTelefono" name="regTelefono" required placeholder="Ej: 1122334455" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.2); color: white; outline: none; margin-top: 5px;">
+                        <div style="font-size: 0.75rem; color: #888; margin-top: 5px;">* Tu número de teléfono será tu contraseña para ingresar.</div>
+                    </div>
+                    <button type="submit" id="btnRegSubmit" style="background: linear-gradient(135deg, #ffd700 0%, #ff8c00 100%); color: black; font-weight: bold; width: 100%; padding: 12px; border-radius: 8px; border: none; margin-top: 15px; cursor: pointer; transition: all 0.3s;">Registrarse</button>
+                    <div class="error-msg" id="regErrorMsg" style="color: #ff6b6b; font-size: 0.8rem; margin-top: 10px; display: none;"></div>
+                    <div class="success-msg" id="regSuccessMsg" style="color: #2ec4b6; font-size: 0.8rem; margin-top: 10px; font-weight: bold; display: none; text-align: center;"></div>
+                </form>
             </div>
-            <div class="logo">MR Letreros • Acceso</div>
-            <form id="loginForm">
-                <div class="form-group">
-                    <label for="usuario">Usuario</label>
-                    <input type="text" id="usuario" name="usuario" required autocomplete="off" autofocus>
-                </div>
-                <div class="form-group">
-                    <label for="password">Contraseña</label>
-                    <input type="password" id="password" name="password" required>
-                </div>
-                <button type="submit" id="btnSubmit">Ingresar al Sistema</button>
-                <div class="error-msg" id="errorMsg">Credenciales incorrectas</div>
-            </form>
         </div>
-    </div>
     </div>
 
     <footer class="login-footer">
@@ -68,6 +92,86 @@
 
     <script>
         const API_URL = '/api/auth/login';
+
+        function switchTab(tab) {
+            const loginForm = document.getElementById('loginForm');
+            const registerForm = document.getElementById('registerForm');
+            const tabLogin = document.getElementById('tabLogin');
+            const tabRegister = document.getElementById('tabRegister');
+            const errorMsg = document.getElementById('errorMsg');
+            const regErrorMsg = document.getElementById('regErrorMsg');
+            const regSuccessMsg = document.getElementById('regSuccessMsg');
+
+            errorMsg.style.display = 'none';
+            regErrorMsg.style.display = 'none';
+            regSuccessMsg.style.display = 'none';
+
+            if (tab === 'login') {
+                loginForm.style.display = 'block';
+                registerForm.style.display = 'none';
+                tabLogin.style.color = '#ffffff';
+                tabLogin.style.fontWeight = 'bold';
+                tabLogin.style.borderBottom = '2px solid #ffd700';
+                tabRegister.style.color = 'rgba(255, 255, 255, 0.4)';
+                tabRegister.style.fontWeight = 'normal';
+                tabRegister.style.borderBottom = 'none';
+            } else {
+                loginForm.style.display = 'none';
+                registerForm.style.display = 'block';
+                tabLogin.style.color = 'rgba(255, 255, 255, 0.4)';
+                tabLogin.style.fontWeight = 'normal';
+                tabLogin.style.borderBottom = 'none';
+                tabRegister.style.color = '#ffffff';
+                tabRegister.style.fontWeight = 'bold';
+                tabRegister.style.borderBottom = '2px solid #ffd700';
+            }
+        }
+
+        async function handleRegister(e) {
+            e.preventDefault();
+            const nombre = document.getElementById('regNombre').value;
+            const telefono = document.getElementById('regTelefono').value;
+            const btn = document.getElementById('btnRegSubmit');
+            const errorMsg = document.getElementById('regErrorMsg');
+            const successMsg = document.getElementById('regSuccessMsg');
+
+            errorMsg.style.display = 'none';
+            successMsg.style.display = 'none';
+            btn.disabled = true;
+            btn.textContent = 'Registrando...';
+
+            try {
+                const res = await fetch('/api/public/gremio/registrar', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ nombre, telefono })
+                });
+
+                const data = await res.json();
+                if (res.ok) {
+                    successMsg.textContent = data.message;
+                    successMsg.style.display = 'block';
+                    document.getElementById('regNombre').value = '';
+                    document.getElementById('regTelefono').value = '';
+                    
+                    // Pre-llenar login
+                    document.getElementById('usuario').value = nombre;
+                    document.getElementById('password').value = telefono;
+
+                    setTimeout(() => {
+                        switchTab('login');
+                    }, 2000);
+                } else {
+                    throw new Error(data.error || 'Error al registrar');
+                }
+            } catch (err) {
+                errorMsg.textContent = err.message;
+                errorMsg.style.display = 'block';
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Registrarse';
+            }
+        }
 
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -92,7 +196,13 @@
                     const data = await response.json();
                     localStorage.setItem('mr_token', data.token);
                     localStorage.setItem('mr_user', JSON.stringify(data.user));
-                    window.location.href = '/index.html'; // Or main page
+                    
+                    // Redirección según rol
+                    if (data.user && data.user.rol === 'gremio') {
+                        window.location.href = '/cotizador.html';
+                    } else {
+                        window.location.href = '/index.html';
+                    }
                 } else {
                     const err = await response.json();
                     throw new Error(err.error || 'Error de acceso');
@@ -107,8 +217,12 @@
 
         // Check if already logged in
         if (localStorage.getItem('mr_token')) {
-            // Optional: verify token validity with an API call, but for now redirect
-            window.location.href = '/index.html';
+            const user = JSON.parse(localStorage.getItem('mr_user') || '{}');
+            if (user.rol === 'gremio') {
+                window.location.href = '/cotizador.html';
+            } else {
+                window.location.href = '/index.html';
+            }
         }
 
         // Carousel Logic

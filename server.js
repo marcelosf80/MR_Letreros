@@ -240,7 +240,10 @@ app.post('/api/auth/login', loginLimiter, async (req, res) => {
     // Leer usuario desde SQLite
     let user;
     try {
-      user = await db.get({ sql: 'SELECT * FROM usuarios WHERE usuario = ? AND activo = 1', params: [usuario] });
+      user = await db.get({ 
+        sql: 'SELECT u.*, c.telefono FROM usuarios u LEFT JOIN clientes c ON u.cliente_id = c.id WHERE u.usuario = ? AND u.activo = 1', 
+        params: [usuario] 
+      });
     } catch (error) {
       logger.error('Error leyendo usuarios desde SQLite durante login.', { error: error.message });
       return res.status(500).json({ error: 'Error al leer usuarios' });
@@ -272,7 +275,8 @@ app.post('/api/auth/login', loginLimiter, async (req, res) => {
         id: user.id,
         usuario: user.usuario,
         nombre: user.nombre,
-        rol: user.rol
+        rol: user.rol,
+        telefono: user.telefono || ''
       }
     });
   } catch (error) {
@@ -493,7 +497,7 @@ async function initializeDataStructure() {
         const key = path.relative(BASE_PATH, filepath).replace(/\\/g, '/');
         const stats = await fs.stat(filepath);
         const mtimeMs = stats.mtimeMs;
-        
+
         const row = await db.get(key);
         if (!row || mtimeMs > row.updated_at) {
           const fileData = await fs.readFile(filepath, 'utf-8');
@@ -648,7 +652,7 @@ function getLocalIP() {
 async function readJSON(filepath) {
   try {
     const key = path.relative(BASE_PATH, filepath).replace(/\\/g, '/');
-    
+
     // Obtener estadísticas del archivo en disco si existe
     let fileExists = false;
     let mtimeMs = 0;
@@ -656,7 +660,7 @@ async function readJSON(filepath) {
       const stats = await fs.stat(filepath);
       fileExists = true;
       mtimeMs = stats.mtimeMs;
-    } catch (e) {}
+    } catch (e) { }
 
     // Buscar en SQLite
     const row = await db.get(key);
@@ -716,14 +720,14 @@ async function getQuoteById(quoteId) {
   try {
     const gremioQuotes = await readJSON(FILES.gremio_data).catch(() => []);
     const clientQuotes = await readJSON(FILES.clientes_data).catch(() => []);
-    
+
     let quote = null;
     if (Array.isArray(gremioQuotes)) {
       quote = gremioQuotes.find(q => String(q.id) === String(quoteId));
     } else if (gremioQuotes && typeof gremioQuotes === 'object') {
       quote = gremioQuotes[quoteId];
     }
-    
+
     if (!quote) {
       if (Array.isArray(clientQuotes)) {
         quote = clientQuotes.find(q => String(q.id) === String(quoteId));
@@ -740,14 +744,14 @@ async function getQuoteById(quoteId) {
 
 async function getJobProductsAndPrices(job) {
   const items = [];
-  
+
   // 1. Parsear notas de detalle si existen (para pedidos web o notas de unificación)
-  const notesDetalle = (job.notes || []).filter(n => 
-    n.author === 'Google Sync' || 
-    n.author === 'Google' || 
+  const notesDetalle = (job.notes || []).filter(n =>
+    n.author === 'Google Sync' ||
+    n.author === 'Google' ||
     (n.text && (n.text.includes('PRODUCTO') || n.text.includes('ITEM') || n.text.includes('Detalle del pedido')))
   );
-  
+
   if (notesDetalle.length > 0) {
     for (const note of notesDetalle) {
       const text = note.text || '';
@@ -757,42 +761,63 @@ async function getJobProductsAndPrices(job) {
         // Regex para capturar "ITEM 1: Vinilo ... - $14.960" o similar
         const match = trimmed.match(/^(?:ITEM\s*\d+|P#\d+|PRODUCTO\s*\d+)\s*:\s*(.*?)\s*-\s*(\$?\s*[\d\.,]+)\s*$/i);
         if (match) {
-          const name = match[1].trim();
+          let name = match[1].trim();
           const price = match[2].trim();
-          items.push({ name, price });
+
+          // Extraer la cantidad si está en formato " xN" o " x N" al final del nombre
+          let quantity = 1;
+          const qtyMatch = name.match(/\s+x\s*(\d+)(?:\s|$)/i);
+          if (qtyMatch) {
+            quantity = parseInt(qtyMatch[1]);
+            name = name.replace(/\s+x\s*\d+(?:\s|$)/i, '').trim();
+          }
+
+          items.push({ name, price, quantity });
         }
       }
     }
   }
-  
+
   // 2. Si tiene quoteId, consultar cotización interna
   if (job.quoteId) {
     const quote = await getQuoteById(job.quoteId);
     if (quote) {
       const categories = quote.multiCategories?.categories || [];
       const productos = quote.productos || [];
-      
+
       for (const cat of categories) {
         const name = cat.name || 'Componente';
         const price = cat.totalPrice ? `$${Number(cat.totalPrice).toLocaleString('es-AR')}` : '$0';
-        items.push({ name, price });
+        const quantity = cat.quantity || cat.cantidad || 1;
+        items.push({ name, price, quantity });
       }
-      
+
       for (const prod of productos) {
         const name = prod.name || prod.nombre || 'Producto';
         const price = (prod.total || prod.price) ? `$${Number(prod.total || prod.price).toLocaleString('es-AR')}` : '$0';
-        items.push({ name, price });
+        const quantity = prod.quantity || prod.cantidad || 1;
+        items.push({ name, price, quantity });
       }
     }
   }
-  
+
   // 3. Fallback: descripción del trabajo si no se obtuvo detalle de items
   if (items.length === 0 && job.descripcion) {
     const name = job.descripcion;
     const price = job.total ? `$${Number(job.total).toLocaleString('es-AR')}` : '$0';
-    items.push({ name, price });
+
+    // Extraer la cantidad de la descripción si contiene " xN"
+    let quantity = 1;
+    const qtyMatch = name.match(/\s+x\s*(\d+)(?:\s|$)/i);
+    let cleanName = name;
+    if (qtyMatch) {
+      quantity = parseInt(qtyMatch[1]);
+      cleanName = name.replace(/\s+x\s*\d+(?:\s|$)/i, '').trim();
+    }
+
+    items.push({ name: cleanName, price, quantity });
   }
-  
+
   return items;
 }
 
@@ -828,7 +853,7 @@ function normalizarTrabajo(w) {
       if (typeof w.merged_works_json === 'string') {
         try {
           return JSON.parse(w.merged_works_json);
-        } catch (e) {}
+        } catch (e) { }
       }
       if (Array.isArray(w.merged_works_json)) return w.merged_works_json;
       return [];
@@ -838,7 +863,7 @@ function normalizarTrabajo(w) {
       if (typeof w.productos_json === 'string') {
         try {
           return JSON.parse(w.productos_json);
-        } catch (e) {}
+        } catch (e) { }
       }
       if (Array.isArray(w.productos_json)) return w.productos_json;
       return [];
@@ -848,7 +873,7 @@ function normalizarTrabajo(w) {
       if (typeof w.costos_json === 'string') {
         try {
           return JSON.parse(w.costos_json);
-        } catch (e) {}
+        } catch (e) { }
       }
       if (typeof w.costos_json === 'object') return w.costos_json;
       return { materiales: {}, terceros: {} };
@@ -858,7 +883,7 @@ function normalizarTrabajo(w) {
       if (typeof w.notes_json === 'string') {
         try {
           return JSON.parse(w.notes_json);
-        } catch (e) {}
+        } catch (e) { }
       }
       if (Array.isArray(w.notes_json)) return w.notes_json;
       return [];
@@ -880,7 +905,7 @@ async function enviarNotificacionTrabajoListo(trabajo) {
 
   // Normalización robusta para números de Argentina (ej: 0342 154050011 -> 5493424050011)
   let cleanPhone = phone.toString().replace(/\D/g, '');
-  
+
   // Quitar prefijo de país 54/549 si ya lo tiene para normalizar el resto
   let has54 = false;
   if (cleanPhone.startsWith('54')) {
@@ -919,12 +944,12 @@ async function enviarNotificacionTrabajoListo(trabajo) {
   let mensaje = '';
   try {
     const clientName = job.clientName || job.gremio || 'Cliente';
-    
+
     // Obtener todos los productos y precios del trabajo principal y unificados
     let allItems = [];
     const mainItems = await getJobProductsAndPrices(job);
     allItems.push(...mainItems);
-    
+
     if (job.mergedWorks && Array.isArray(job.mergedWorks)) {
       for (const mw of job.mergedWorks) {
         if (mw.quoteId) {
@@ -933,27 +958,28 @@ async function enviarNotificacionTrabajoListo(trabajo) {
         }
       }
     }
-    
+
     let itemsDetailText = '';
     if (allItems.length > 0) {
-      itemsDetailText = `📦 *Detalle de productos:*\n`;
+      itemsDetailText = `📦 *DETALLES DEL PEDIDO:*\n`;
       allItems.forEach(item => {
-        itemsDetailText += `• ${item.name}: *${item.price}*\n`;
+        const qty = item.quantity || 1;
+        itemsDetailText += `👉 *CANTIDAD: ${qty}*  ➔  *${item.name.toUpperCase()}*  _(${item.price})_\n`;
       });
       itemsDetailText += `\n`;
     }
-    
+
     const isUnified = job.mergedWorks && Array.isArray(job.mergedWorks) && job.mergedWorks.length > 0;
     const total = job.total ? `$${Number(job.total).toLocaleString('es-AR')}` : '';
     const totalLabel = isUnified ? '💰 *Total unificado:*' : '💰 *Total:*';
-    
+
     mensaje = `*MR Letreros - ¡Tu pedido está listo!* ✅\n\n` +
-              `Hola *${clientName}*, te informamos que tu trabajo ya está *terminado y listo para retirar*.\n\n` +
-              `${itemsDetailText}` +
-              `${total ? `${totalLabel} ${total}\n` : ''}` +
-              `📍 *Retiro:* En nuestro taller, en horario de atención.\n\n` +
-              `Si necesitás coordinar el envío o tenés alguna consulta, respondé este mensaje.\n\n` +
-              `¡Gracias por confiar en nosotros! 🙌`;
+      `Hola *${clientName}*, te informamos que tu trabajo ya está *terminado y listo para retirar*.\n\n` +
+      `${itemsDetailText}` +
+      `${total ? `${totalLabel} ${total}\n` : ''}` +
+      `📍 *Retiro:* En nuestro taller, en horario de atención.\n\n` +
+      `Si necesitás coordinar el envío o tenés alguna consulta, respondé este mensaje.\n\n` +
+      `¡Gracias por confiar en nosotros! 🙌`;
 
     logger.info(`📲 Intentando enviar WhatsApp de retiro a ${phone}...`);
     const botRes = await fetch('http://localhost:3001/send-message', {
@@ -974,22 +1000,229 @@ async function enviarNotificacionTrabajoListo(trabajo) {
     logger.error(`❌ Error de conexión con el bot al enviar notificación de retiro: ${botErr.message}`);
     // GUARDAR EN COLA PENDIENTE
     try {
-        const pendingFile = path.join(DATA_DIR, 'pending_messages.json');
-        let pending = [];
-        try {
-            pending = JSON.parse(await fs.readFile(pendingFile, 'utf-8'));
-        } catch (e) {}
-        pending.push({ phone: phone, message: mensaje, date: new Date().toISOString() });
-        await fs.writeFile(pendingFile, JSON.stringify(pending, null, 2));
-        logger.info(`📥 Notificación guardada en cola pendiente para ${phone}`);
+      const pendingFile = path.join(DATA_DIR, 'pending_messages.json');
+      let pending = [];
+      try {
+        pending = JSON.parse(await fs.readFile(pendingFile, 'utf-8'));
+      } catch (e) { }
+      pending.push({ phone: phone, message: mensaje, date: new Date().toISOString() });
+      await fs.writeFile(pendingFile, JSON.stringify(pending, null, 2));
+    logger.info(`📥 Notificación guardada en cola pendiente para ${phone}`);
     } catch (queueErr) {
-        logger.error(`❌ Error al guardar en cola pendiente: ${queueErr.message}`);
+      logger.error(`❌ Error al guardar en cola pendiente: ${queueErr.message}`);
     }
     return { success: false, error: botErr.message, queued: true };
   }
 }
 
+async function enviarNotificacionConfirmacion(trabajo) {
+  const job = normalizarTrabajo(trabajo);
+  if (!job) {
+    return { success: false, error: 'Trabajo no válido.' };
+  }
+
+  let phone = job.clientPhone || job.whatsapp || '';
+  if (!phone) {
+    logger.warn(`⚠️ Trabajo ${job.id} no tiene teléfono registrado (clientPhone/whatsapp)`);
+    return { success: false, error: 'El trabajo no tiene un teléfono registrado.' };
+  }
+
+  // Normalización robusta para números de Argentina (ej: 0342 154050011 -> 5493424050011)
+  let cleanPhone = phone.toString().replace(/\D/g, '');
+
+  // Quitar prefijo de país 54/549 si ya lo tiene para normalizar el resto
+  let has54 = false;
+  if (cleanPhone.startsWith('54')) {
+    cleanPhone = cleanPhone.substring(2);
+    has54 = true;
+  }
+  if (has54 && cleanPhone.startsWith('9')) {
+    cleanPhone = cleanPhone.substring(1);
+  }
+
+  // Quitar el 0 inicial del código de área
+  if (cleanPhone.startsWith('0')) {
+    cleanPhone = cleanPhone.substring(1);
+  }
+
+  // Quitar el 15 (prefijo móvil de Argentina) si está presente
+  if (cleanPhone.length >= 11) {
+    if (cleanPhone.substring(2, 4) === '15') {
+      cleanPhone = cleanPhone.substring(0, 2) + cleanPhone.substring(4);
+    } else if (cleanPhone.substring(3, 5) === '15') {
+      cleanPhone = cleanPhone.substring(0, 3) + cleanPhone.substring(5);
+    } else if (cleanPhone.substring(4, 6) === '15') {
+      cleanPhone = cleanPhone.substring(0, 4) + cleanPhone.substring(6);
+    }
+  } else if (cleanPhone.length === 11 && cleanPhone.startsWith('15')) {
+    cleanPhone = cleanPhone.substring(2);
+  }
+
+  // Si nos quedan 10 dígitos (característica + número), agregamos el 549
+  if (cleanPhone.length === 10) {
+    phone = '549' + cleanPhone;
+  } else {
+    phone = '549' + cleanPhone;
+  }
+
+  let mensaje = '';
+  try {
+    const clientName = job.clientName || job.gremio || 'Cliente';
+
+    // Obtener todos los productos y precios
+    let allItems = [];
+    const mainItems = await getJobProductsAndPrices(job);
+    allItems.push(...mainItems);
+
+    if (job.mergedWorks && Array.isArray(job.mergedWorks)) {
+      for (const mw of job.mergedWorks) {
+        if (mw.quoteId) {
+          const mwItems = await getJobProductsAndPrices(mw);
+          allItems.push(...mwItems);
+        }
+      }
+    }
+
+    let itemsDetailText = '';
+    if (allItems.length > 0) {
+      itemsDetailText = `\n\n*Detalles del pedido:*\n`;
+      allItems.forEach(item => {
+        const qty = item.quantity || 1;
+        itemsDetailText += `👉 *CANTIDAD: ${qty}*  ➔  *${item.name.toUpperCase()}*  _(${item.price})_\n`;
+      });
+    } else if (job.descripcion) {
+      itemsDetailText = `\n\n*Detalle del pedido:*\n${job.descripcion}`;
+    }
+
+    const total = job.total ? `$${Number(job.total).toLocaleString('es-AR')}` : '';
+
+    mensaje = `*MR Letreros - Confirmación de Recepción* ✅\n\n` +
+      `Hola *${clientName}*, confirmamos que hemos recibido tu pedido correctamente.${itemsDetailText}\n\n` +
+      `${total ? `💰 *Total Estimado:* ${total}\n` : ''}` +
+      `📂 *Estado:* En cola de producción\n\n` +
+      `Ya lo hemos ingresado en nuestro sistema administrativo. Ante cualquier duda, podés consultarnos por este medio.\n\n` +
+      `¡Muchas gracias por confiar en nosotros!`;
+
+    logger.info(`📲 Intentando enviar WhatsApp de confirmación a ${phone}...`);
+    const botRes = await fetch('http://localhost:3001/send-message', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone: phone, message: mensaje })
+    });
+
+    if (botRes.ok) {
+      logger.info(`✅ WhatsApp de confirmación enviado exitosamente a ${phone}`);
+      return { success: true };
+    } else {
+      const errorText = await botRes.text();
+      logger.error(`❌ El bot respondió con error al enviar confirmación de recepción: ${errorText}`);
+      return { success: false, error: errorText };
+    }
+  } catch (botErr) {
+    logger.error(`❌ Error de conexión con el bot al enviar confirmación de recepción: ${botErr.message}`);
+    // GUARDAR EN COLA PENDIENTE
+    try {
+      const pendingFile = path.join(DATA_DIR, 'pending_messages.json');
+      let pending = [];
+      try {
+        pending = JSON.parse(await fs.readFile(pendingFile, 'utf-8'));
+      } catch (e) { }
+      pending.push({ phone: phone, message: mensaje, date: new Date().toISOString() });
+      await fs.writeFile(pendingFile, JSON.stringify(pending, null, 2));
+      logger.info(`📥 Notificación guardada en cola pendiente para ${phone}`);
+    } catch (queueErr) {
+      logger.error(`❌ Error al guardar en cola pendiente: ${queueErr.message}`);
+    }
+    return { success: false, error: botErr.message, queued: true };
+  }
+}
+
+async function enviarNotificacionRecordatorioPago(trabajo) {
+  const job = normalizarTrabajo(trabajo);
+  if (!job) return { success: false, error: 'Trabajo no válido.' };
+
+  let phone = job.clientPhone || job.whatsapp || '';
+  if (!phone) return { success: false, error: 'El trabajo no tiene un teléfono registrado.' };
+
+  let cleanPhone = phone.toString().replace(/\D/g, '');
+  let has54 = false;
+  if (cleanPhone.startsWith('54')) {
+    cleanPhone = cleanPhone.substring(2);
+    has54 = true;
+  }
+  if (has54 && cleanPhone.startsWith('9')) {
+    cleanPhone = cleanPhone.substring(1);
+  }
+  if (cleanPhone.startsWith('0')) {
+    cleanPhone = cleanPhone.substring(1);
+  }
+  phone = '549' + cleanPhone;
+
+  const clientName = job.clientName || job.gremio || 'Cliente';
+  const balance = job.balance ? `$${Number(job.balance).toLocaleString('es-AR')}` : '';
+  const total = job.total ? `$${Number(job.total).toLocaleString('es-AR')}` : '';
+
+  const mensaje = `*MR Letreros - Recordatorio de Saldo Pendiente* 💳\n\n` +
+    `Hola *${clientName}*, te contactamos por tu trabajo entregado en MR Letreros.\n\n` +
+    `📌 *Detalle de cuenta:*\n` +
+    `• Total del trabajo: *${total}*\n` +
+    `• Saldo pendiente: *${balance}*\n\n` +
+    `Por favor, cuando te sea posible, envíanos el comprobante de pago o comunicate para coordinarlo.\n\n` +
+    `¡Muchas gracias por tu atención! 🙌`;
+
+  try {
+    const botRes = await fetch('http://localhost:3001/send-message', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone: phone, message: mensaje })
+    });
+
+    if (botRes.ok) {
+      logger.info(`✅ Recordatorio de pago enviado a ${phone}`);
+      return { success: true };
+    } else {
+      const errorText = await botRes.text();
+      logger.error(`❌ Error enviando recordatorio de pago: ${errorText}`);
+      return { success: false, error: errorText };
+    }
+  } catch (botErr) {
+    logger.error(`❌ Error de conexión con el bot enviando recordatorio de pago: ${botErr.message}`);
+    try {
+      const pendingFile = path.join(DATA_DIR, 'pending_messages.json');
+      let pending = [];
+      try { pending = JSON.parse(await fs.readFile(pendingFile, 'utf-8')); } catch (e) {}
+      pending.push({ phone: phone, message: mensaje, date: new Date().toISOString() });
+      await fs.writeFile(pendingFile, JSON.stringify(pending, null, 2));
+    } catch (e) {}
+    return { success: false, error: botErr.message, queued: true };
+  }
+}
+
 // ==================== ENDPOINTS GREMIO CLIENTES ====================
+
+
+// Devuelve los precios y catálogo por categoría y producto
+app.get('/api/gremio/precios', verifyToken, async (req, res) => {
+  try {
+    const data = await readJSON(FILES.precios);
+    res.json(Array.isArray(data) ? data : []);
+  } catch (error) {
+    logger.error('Error en GET /api/gremio/precios', { error: error.message });
+    res.status(500).json({ error: 'Error al leer los precios de gremio' });
+  }
+});
+
+// Devuelve SOLO los clientes que están en la hoja GREMIO de la planilla de Google Sheets
+app.get('/api/gremio/hoja-clientes', verifyToken, async (req, res) => {
+  try {
+    const hojaFile = path.join(DATA_DIR, 'gremio_hoja_clientes.json');
+    const data = await readJSON(hojaFile);
+    res.json(Array.isArray(data) ? data : []);
+  } catch (error) {
+    logger.warn('gremio_hoja_clientes.json no existe aún, devolviendo vacío');
+    res.json([]);
+  }
+});
 
 app.get('/api/gremio/clientes', verifyToken, async (req, res) => {
   try {
@@ -1190,12 +1423,12 @@ app.post('/api/costos', verifyToken, requireRole(['admin', 'vendedor']), async (
 app.get('/api/gastos', verifyToken, requireRole(['admin', 'superadmin', 'vendedor']), async (req, res) => {
   try {
     let data = await readJSON(FILES.gastos);
-    
+
     // ✅ SEGURIDAD: Vendedores solo ven sus propios gastos
     if (req.user.rol === 'vendedor') {
       data = data.filter(g => g.usuario === req.user.usuario);
     }
-    
+
     res.json(data);
   } catch (error) {
     logger.error('Error en GET /api/gastos', { error: error.message });
@@ -1210,10 +1443,10 @@ app.post('/api/gastos', verifyToken, requireRole(['admin', 'superadmin', 'vended
       // Combinamos lo que envían con lo que ya existe de otros usuarios para no borrar nada ajeno.
       const allGastos = await readJSON(FILES.gastos);
       const otherGastos = allGastos.filter(g => g.usuario !== req.user.usuario);
-      
+
       // Aseguramos que cada registro que envían tenga su usuario asignado correctamente
       const userGastos = req.body.map(g => ({ ...g, usuario: req.user.usuario }));
-      
+
       const finalGastos = [...otherGastos, ...userGastos];
       const success = await writeJSON(FILES.gastos, finalGastos);
       res.json({ success });
@@ -1654,13 +1887,13 @@ app.get('/api/rendimientos', verifyToken, requireRole(['superadmin']), async (re
     }
 
     // Ingresos manuales (Deduplicar si traen prefijo de automatización)
-    const manualIncomes = gastos.filter(g => 
-      g.tipo === 'ingreso' && 
+    const manualIncomes = gastos.filter(g =>
+      g.tipo === 'ingreso' &&
       !String(g.id || '').startsWith('ingreso_coti_') // Evitar doble conteo de lo que ya procesamos arriba
     );
 
     const totalManual = manualIncomes.reduce((sum, g) => sum + (parseFloat(g.monto) || 0), 0);
-    
+
     manualIncomes.forEach(g => {
       ingresosList.push({
         id: g.id,
@@ -1920,6 +2153,8 @@ async function ejecutarAccion(accion, datos, trabajosRaw, cotsClientes, cotsGrem
 
       if (!trabajo) return { ok: false, error: `No se encontró trabajo de "${datos.nombre_cliente}"` };
 
+      const oldStatus = trabajo.status;
+
       if (datos.nuevo_estado) {
         trabajo.status = datos.nuevo_estado;
         trabajo.timeline = [...(trabajo.timeline || []), {
@@ -1934,7 +2169,25 @@ async function ejecutarAccion(accion, datos, trabajosRaw, cotsClientes, cotsGrem
       }
 
       await writeJSON(FILES.trabajos, tw);
-      logger.info('✅ Asistente actualizó trabajo:', trabajo.id);
+      logger.info('✅ Asistente actualizó trabajo en JSON:', trabajo.id);
+
+      // Sincronizar en SQLite para mantener compatibilidad
+      try {
+        await db.run(
+          `UPDATE trabajos SET status = ?, delivery_status = ?, actual_delivery_date = ? WHERE id = ?`,
+          [trabajo.status, trabajo.deliveryStatus || 'pending', trabajo.actualDeliveryDate || null, trabajo.id]
+        );
+        logger.info('✅ Asistente sincronizó trabajo en SQLite:', trabajo.id);
+      } catch (dbErr) {
+        logger.error('❌ Error al actualizar en SQLite por Asistente IA:', dbErr.message);
+      }
+
+      // Enviar notificación de retiro si el estado pasa a terminado/listo
+      if (datos.nuevo_estado && oldStatus !== datos.nuevo_estado &&
+        ['completed', 'ready', 'para_retirar'].includes(datos.nuevo_estado)) {
+        await enviarNotificacionTrabajoListo(trabajo);
+      }
+
       return {
         ok: true,
         id: trabajo.id,
@@ -2049,7 +2302,7 @@ async function ejecutarAccion(accion, datos, trabajosRaw, cotsClientes, cotsGrem
         descripcion: datos.descripcion || '',
         categoria: datos.categoria || 'Productos'
       };
-      
+
       // ✅ Sincronizar categorías
       if (nuevo.categoria) {
         let cats = await readJSON(FILES.categorias);
@@ -2082,7 +2335,7 @@ async function ejecutarAccion(accion, datos, trabajosRaw, cotsClientes, cotsGrem
         createdAt: new Date().toISOString(),
         id: String(ts + 1)
       };
-      
+
       // ✅ Sincronizar categorías
       if (nuevo.categoria) {
         let cats = await readJSON(FILES.categorias).catch(() => []);
@@ -2811,7 +3064,7 @@ async function analizarImagenConGroq(imagePath, prompt) {
   const base64Image = imgBuffer.toString('base64');
 
   const completion = await groq.chat.completions.create({
-    model: 'meta-llama/llama-4-scout-17b-16e-instruct',
+    model: 'llama-3.2-11b-vision-preview',
     messages: [
       {
         role: 'user',
@@ -2992,7 +3245,11 @@ async function preprocesarImagen(imagePath, analisis, improveResolution = false,
   }
 
   if (analisis.remover_fondo_antes && analisis.tiene_fondo_blanco) {
-    pipeline = pipeline.flatten({ background: { r: 255, g: 255, b: 255 } }).threshold(240);
+    if (analisis.params_vtracer && analisis.params_vtracer.colormode === 'binary') {
+      pipeline = pipeline.flatten({ background: { r: 255, g: 255, b: 255 } }).threshold(240);
+    } else {
+      pipeline = pipeline.flatten({ background: { r: 255, g: 255, b: 255 } });
+    }
   }
 
   if (analisis.tiene_texto) {
@@ -3004,7 +3261,7 @@ async function preprocesarImagen(imagePath, analisis, improveResolution = false,
 }
 
 // 3. Vectorización con VTracer
-async function vectorizarConVTracer(imagePngPath, params, outputSvgPath) {
+async function vectorizarConVTracer(imagePngPath, params, outputSvgPath, onSpawn) {
   return new Promise((resolve, reject) => {
     const paramsJson = JSON.stringify(params);
     const scriptPath = path.join(BASE_PATH, 'vectorize.py');
@@ -3015,6 +3272,8 @@ async function vectorizarConVTracer(imagePngPath, params, outputSvgPath) {
       '--output', outputSvgPath,
       '--params', paramsJson
     ]);
+
+    if (typeof onSpawn === 'function') onSpawn(proceso);
 
     let stderr = '';
     proceso.stderr.on('data', d => stderr += d.toString());
@@ -3030,7 +3289,7 @@ async function vectorizarConVTracer(imagePngPath, params, outputSvgPath) {
 }
 
 // 3b. Vectorización con StarVector
-async function vectorizarConStarVector(imagePngPath, outputSvgPath) {
+async function vectorizarConStarVector(imagePngPath, outputSvgPath, onSpawn) {
   return new Promise((resolve, reject) => {
     const scriptPath = path.join(BASE_PATH, 'vectorize_starvector.py');
 
@@ -3039,6 +3298,8 @@ async function vectorizarConStarVector(imagePngPath, outputSvgPath) {
       '--input', imagePngPath,
       '--output', outputSvgPath
     ]);
+
+    if (typeof onSpawn === 'function') onSpawn(proceso);
 
     let stderr = '';
     proceso.stderr.on('data', d => stderr += d.toString());
@@ -3088,14 +3349,50 @@ app.post('/api/vectorizar', verifyToken, upload.single('imagen'), async (req, re
   "justificacion": "motivo breve"
 }`;
 
+  let childProcess = null;
+
+  // Matar el proceso de python si el cliente cancela la petición
+  req.on('close', () => {
+    if (childProcess) {
+      logger.info(`[VECTORIZADOR] Petición cancelada por el usuario. Terminando proceso Python de vectorización...`);
+      try {
+        childProcess.kill('SIGKILL');
+      } catch (err) {
+        logger.error(`Error matando proceso de vectorización: ${err.message}`);
+      }
+    }
+  });
+
   try {
     logger.info(`[VECTORIZADOR] Iniciando trabajo ${jobId} usando método ${method}`, { file: req.file.originalname });
 
-    // Usar Groq (Llama Vision) como primera opción
+    // Usar Groq (Llama Vision) como primera opción, con fallbacks
     let analisis;
+    const defaultAnalisis = {
+      tipo_imagen: 'logo',
+      descripcion_breve: 'Imagen subida para vectorización',
+      colores_dominantes: 4,
+      tiene_fondo_blanco: false,
+      tiene_texto: false,
+      complejidad: 'media',
+      remover_fondo_antes: false,
+      necesita_upscale: false,
+      params_vtracer: {
+        colormode: 'color',
+        hierarchical: 'stacked',
+        mode: 'spline',
+        filter_speckle: 4,
+        color_precision: 6,
+        layer_difference: 16,
+        corner_threshold: 60,
+        length_threshold: 4.0
+      },
+      justificacion: 'Análisis estándar por defecto'
+    };
+
     try {
       analisis = await analizarImagenConGroq(imagePath, vectorizerPrompt);
-      logger.info(`[VECTORIZADOR] Análisis completado con Groq (Llama 4 Scout)`);
+      logger.info(`[VECTORIZADOR] Análisis completado con Groq`);
     } catch (groqError) {
       logger.warn(`[VECTORIZADOR] Falló Groq (${groqError.message}), intentando con Gemini...`);
       try {
@@ -3103,8 +3400,13 @@ app.post('/api/vectorizar', verifyToken, upload.single('imagen'), async (req, re
         logger.info(`[VECTORIZADOR] Análisis completado con Gemini`);
       } catch (geminiError) {
         logger.warn(`[VECTORIZADOR] Falló Gemini (${geminiError.message}), intentando con Fireworks.ai...`);
-        analisis = await analizarImagenConFireworks(imagePath, vectorizerPrompt);
-        logger.info(`[VECTORIZADOR] Análisis completado con Fireworks.ai`);
+        try {
+          analisis = await analizarImagenConFireworks(imagePath, vectorizerPrompt);
+          logger.info(`[VECTORIZADOR] Análisis completado con Fireworks.ai`);
+        } catch (fwError) {
+          logger.warn(`[VECTORIZADOR] Falló Fireworks (${fwError.message}). Usando análisis por defecto...`);
+          analisis = defaultAnalisis;
+        }
       }
     }
 
@@ -3112,10 +3414,10 @@ app.post('/api/vectorizar', verifyToken, upload.single('imagen'), async (req, re
 
     if (method === 'starvector') {
       logger.info(`[VECTORIZADOR] Procesando con StarVector...`);
-      await vectorizarConStarVector(imgProcesada, svgPath);
+      await vectorizarConStarVector(imgProcesada, svgPath, (proc) => childProcess = proc);
     } else {
       logger.info(`[VECTORIZADOR] Procesando con VTracer...`);
-      await vectorizarConVTracer(imgProcesada, analisis.params_vtracer, svgPath);
+      await vectorizarConVTracer(imgProcesada, analisis.params_vtracer, svgPath, (proc) => childProcess = proc);
     }
 
     // Limpieza temporales
@@ -3151,12 +3453,20 @@ app.post('/api/ai/remove-bg', verifyToken, upload.single('imagen'), async (req, 
   const outputFilename = `nobg_${jobId}.png`;
   const outputPath = path.join(UPLOADS_OUTPUT_DIR, outputFilename);
 
+  let childProcess = null;
+  req.on('close', () => {
+    if (childProcess) {
+      logger.info(`[IMAGE-PROCESSOR] Petición cancelada por el usuario. Matando proceso de quitar fondo...`);
+      try { childProcess.kill('SIGKILL'); } catch (e) { }
+    }
+  });
+
   try {
     const removebgKey = '668bsFxfi3i3iJemtV72ovYh'; // API Key proporcionada
     const groqKey = await getGroqApiKey();
-    
+
     logger.info(`[IMAGE-PROCESSOR] Iniciando quitar fondo para ${jobId}`);
-    
+
     await new Promise((resolve, reject) => {
       const scriptPath = path.join(BASE_PATH, 'image_processor.py');
       const args = [
@@ -3174,10 +3484,11 @@ app.post('/api/ai/remove-bg', verifyToken, upload.single('imagen'), async (req, 
       }
 
       const proceso = spawn(pythonCmd, args);
+      childProcess = proceso;
 
       let stderr = '';
       proceso.stderr.on('data', d => stderr += d.toString());
-      
+
       proceso.on('error', (err) => {
         logger.error(`[IMAGE-PROCESSOR] Error inicializando proceso Python: ${err.message}`);
         reject(new Error(`Fallo al iniciar Python: ${err.message}`));
@@ -3185,11 +3496,11 @@ app.post('/api/ai/remove-bg', verifyToken, upload.single('imagen'), async (req, 
 
       proceso.on('close', (code) => {
         if (code !== 0) {
-            logger.error(`[IMAGE-PROCESSOR] Python devolvió error (code ${code}): ${stderr}`);
-            reject(new Error(`Error en Python: ${stderr}`));
+          logger.error(`[IMAGE-PROCESSOR] Python devolvió error (code ${code}): ${stderr}`);
+          reject(new Error(`Error en Python: ${stderr}`));
         } else {
-            logger.info(`[IMAGE-PROCESSOR] Fondo quitado exitosamente para ${jobId}`);
-            resolve();
+          logger.info(`[IMAGE-PROCESSOR] Fondo quitado exitosamente para ${jobId}`);
+          resolve();
         }
       });
     });
@@ -3221,11 +3532,19 @@ app.post('/api/ai/upscale', verifyToken, upload.single('imagen'), async (req, re
   const factor = req.body.factor || 2.0;
   const method = req.body.method || 'standard';
 
+  let childProcess = null;
+  req.on('close', () => {
+    if (childProcess) {
+      logger.info(`[IMAGE-PROCESSOR] Petición cancelada por el usuario. Matando proceso de aumento de resolución...`);
+      try { childProcess.kill('SIGKILL'); } catch (e) { }
+    }
+  });
+
   try {
     logger.info(`[IMAGE-PROCESSOR] Aumentando resolución: ${jobId} (factor ${factor}, modo ${method})`);
-    
+
     const groqKey = await getGroqApiKey();
-    
+
     await new Promise((resolve, reject) => {
       const scriptPath = path.join(BASE_PATH, 'image_processor.py');
       const args = [
@@ -3242,6 +3561,7 @@ app.post('/api/ai/upscale', verifyToken, upload.single('imagen'), async (req, re
       }
 
       const proceso = spawn(pythonCmd, args);
+      childProcess = proceso;
 
       let stderr = '';
       proceso.stderr.on('data', d => stderr += d.toString());
@@ -3253,11 +3573,11 @@ app.post('/api/ai/upscale', verifyToken, upload.single('imagen'), async (req, re
 
       proceso.on('close', (code) => {
         if (code !== 0) {
-            logger.error(`[IMAGE-PROCESSOR] Python (upscale) devolvió error (code ${code}): ${stderr}`);
-            reject(new Error(`Error en Python: ${stderr}`));
+          logger.error(`[IMAGE-PROCESSOR] Python (upscale) devolvió error (code ${code}): ${stderr}`);
+          reject(new Error(`Error en Python: ${stderr}`));
         } else {
-            logger.info(`[IMAGE-PROCESSOR] Upscale completado para ${jobId}`);
-            resolve();
+          logger.info(`[IMAGE-PROCESSOR] Upscale completado para ${jobId}`);
+          resolve();
         }
       });
     });
@@ -3287,9 +3607,17 @@ app.post('/api/ai/depixel', verifyToken, upload.single('imagen'), async (req, re
   const outputFilename = `depixel_${jobId}.png`;
   const outputPath = path.join(UPLOADS_OUTPUT_DIR, outputFilename);
 
+  let childProcess = null;
+  req.on('close', () => {
+    if (childProcess) {
+      logger.info(`[IMAGE-PROCESSOR] Petición cancelada por el usuario. Matando proceso de despixelado...`);
+      try { childProcess.kill('SIGKILL'); } catch (e) { }
+    }
+  });
+
   try {
     logger.info(`[IMAGE-PROCESSOR] Despixelando imagen: ${jobId}`);
-    
+
     await new Promise((resolve, reject) => {
       const scriptPath = path.join(BASE_PATH, 'image_processor.py');
       const args = [
@@ -3300,6 +3628,7 @@ app.post('/api/ai/depixel', verifyToken, upload.single('imagen'), async (req, re
       ];
 
       const proceso = spawn(pythonCmd, args);
+      childProcess = proceso;
 
       let stderr = '';
       proceso.stderr.on('data', d => stderr += d.toString());
@@ -3311,11 +3640,11 @@ app.post('/api/ai/depixel', verifyToken, upload.single('imagen'), async (req, re
 
       proceso.on('close', (code) => {
         if (code !== 0) {
-            logger.error(`[IMAGE-PROCESSOR] Python (depixel) devolvió error (code ${code}): ${stderr}`);
-            reject(new Error(`Error en Python: ${stderr}`));
+          logger.error(`[IMAGE-PROCESSOR] Python (depixel) devolvió error (code ${code}): ${stderr}`);
+          reject(new Error(`Error en Python: ${stderr}`));
         } else {
-            logger.info(`[IMAGE-PROCESSOR] Depixel completado para ${jobId}`);
-            resolve();
+          logger.info(`[IMAGE-PROCESSOR] Depixel completado para ${jobId}`);
+          resolve();
         }
       });
     });
@@ -3350,7 +3679,7 @@ app.post('/api/ai/groq-vision', verifyToken, async (req, res) => {
     const groq = new OpenAI({ baseURL: 'https://api.groq.com/openai/v1', apiKey });
 
     const completion = await groq.chat.completions.create({
-      model: 'meta-llama/llama-4-scout-17b-16e-instruct',
+      model: 'llama-3.2-11b-vision-preview',
       messages: [
         {
           role: 'user',
@@ -3373,19 +3702,39 @@ app.post('/api/ai/groq-vision', verifyToken, async (req, res) => {
   }
 });
 
-// Endpoint: Guardar en Cliente
+// Endpoint: Guardar en Cliente (soporta SVG y PNG de upscale/depixel/nobg)
 app.post('/api/vectorizar/guardar', verifyToken, async (req, res) => {
   try {
     const { jobId, clientId, nombreArchivo } = req.body;
     if (!jobId || !clientId) return res.status(400).json({ error: 'Faltan datos (jobId, clientId)' });
 
-    const sourceFile = path.join(UPLOADS_OUTPUT_DIR, `${jobId}.svg`);
+    let sourceFile = path.join(UPLOADS_OUTPUT_DIR, `${jobId}.svg`);
+    let detectedExt = 'svg';
 
-    // Verificar existencia
     try {
       await fs.access(sourceFile);
     } catch {
-      return res.status(404).json({ error: 'El archivo vectorial ha expirado o no existe.' });
+      // Intentar variantes de imagen PNG
+      const pngCandidates = [
+        { name: `upscale_${jobId}.png`, ext: 'png' },
+        { name: `depixel_${jobId}.png`, ext: 'png' },
+        { name: `nobg_${jobId}.png`, ext: 'png' },
+        { name: `${jobId}.png`, ext: 'png' }
+      ];
+      let found = false;
+      for (const cand of pngCandidates) {
+        const p = path.join(UPLOADS_OUTPUT_DIR, cand.name);
+        try {
+          await fs.access(p);
+          sourceFile = p;
+          detectedExt = cand.ext;
+          found = true;
+          break;
+        } catch { }
+      }
+      if (!found) {
+        return res.status(404).json({ error: 'El archivo procesado ha expirado o no existe.' });
+      }
     }
 
     // Crear carpeta del cliente si no existe
@@ -3393,16 +3742,18 @@ app.post('/api/vectorizar/guardar', verifyToken, async (req, res) => {
     await fs.mkdir(clientDir, { recursive: true });
 
     // Definir nombre final
-    let finalName = nombreArchivo || `vectorizado_${jobId}`;
+    let finalName = nombreArchivo || `procesado_${jobId}`;
     finalName = finalName.replace(/[^a-z0-9\.\-_ ]/gi, '_').trim(); // Sanitizar
-    if (!finalName.toLowerCase().endsWith('.svg')) finalName += '.svg';
+    if (!finalName.toLowerCase().endsWith('.' + detectedExt)) {
+      finalName += '.' + detectedExt;
+    }
 
     const destFile = path.join(clientDir, finalName);
 
     // Copiar archivo
     await fs.copyFile(sourceFile, destFile);
 
-    logger.info(`[VECTORIZADOR] Archivo guardado en cliente ${clientId}: ${finalName}`);
+    logger.info(`[GUARDAR-CLIENTE] Archivo guardado en cliente ${clientId}: ${finalName}`);
 
     res.json({
       success: true,
@@ -3411,7 +3762,7 @@ app.post('/api/vectorizar/guardar', verifyToken, async (req, res) => {
     });
 
   } catch (e) {
-    logger.error('Error guardando vectorización en cliente', e);
+    logger.error('Error guardando archivo en cliente', e);
     res.status(500).json({ error: e.message });
   }
 });
@@ -3672,7 +4023,7 @@ app.get('/api/trabajos', verifyToken, async (req, res) => {
           if (w.merged_works_json && w.merged_works_json !== '[]') {
             return JSON.parse(w.merged_works_json);
           }
-        } catch (e) {}
+        } catch (e) { }
         return mergersMap.get(w.id) || [];
       })();
 
@@ -3744,7 +4095,7 @@ app.post('/api/trabajos', verifyToken, async (req, res) => {
       // Obtener todos los trabajos y timelines actuales de SQLite para comparación rápida (Diff)
       const existingWorks = await db.all('SELECT * FROM trabajos');
       const existingTimeline = await db.all('SELECT * FROM trabajo_timeline ORDER BY id ASC');
-      
+
       const existingMap = new Map(existingWorks.map(x => [x.id, x]));
       const timelineMap = new Map();
       for (const t of existingTimeline) {
@@ -3831,14 +4182,14 @@ app.post('/api/trabajos', verifyToken, async (req, res) => {
             printed, printed_items_json)
            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
           [w.id, w.quoteId || null, clienteId, w.clientName || '', w.clientPhone || '',
-           w.clientEmail || '', w.clientAddress || '', w.tipo_cliente || 'gremio',
-           w.descripcion || '', w.total || 0, w.totalCost || 0, w.profit || 0,
-           w.paidAmount || 0, w.balance || 0, w.senia || 0,
-           w.status || 'pending', w.paymentStatus || 'unpaid', w.priority || 'normal',
-           w.deliveryDate || null, w.deliveryStatus || 'pending',
-           w.actualDeliveryDate || null, w.paidAt || null, w.createdAt || null,
-           clientProductos, clientIsMerged, clientCostos, clientNotes, clientMergedWorks,
-           clientPrinted, clientPrintedItems]
+          w.clientEmail || '', w.clientAddress || '', w.tipo_cliente || 'gremio',
+          w.descripcion || '', w.total || 0, w.totalCost || 0, w.profit || 0,
+          w.paidAmount || 0, w.balance || 0, w.senia || 0,
+          w.status || 'pending', w.paymentStatus || 'unpaid', w.priority || 'normal',
+          w.deliveryDate || null, w.deliveryStatus || 'pending',
+          w.actualDeliveryDate || null, w.paidAt || null, w.createdAt || null,
+            clientProductos, clientIsMerged, clientCostos, clientNotes, clientMergedWorks,
+            clientPrinted, clientPrintedItems]
         );
 
         // Regenerar timeline
@@ -3892,14 +4243,14 @@ app.get('/api/google/folder-images', verifyToken, async (req, res) => {
   try {
     const googleScriptUrl = "https://script.google.com/macros/s/AKfycbxCWY_Sre0t9V-4ilK-TWIXKAttWdUWqNBa2fTnneVJHbHxGQcWVKq9Ug6UYCf_ewCJ/exec";
     const response = await axios.get(`${googleScriptUrl}?action=getFolderImages&folderId=${folderId}`, { timeout: 8000 });
-    
+
     // Si la respuesta es un array o JSON válido (y no la página de login/redirect de Google que es HTML)
     if (response.data && Array.isArray(response.data)) {
       scriptImages = response.data;
     } else if (typeof response.data === 'string' && response.data.trim().startsWith('[')) {
       try {
         scriptImages = JSON.parse(response.data);
-      } catch(e) {}
+      } catch (e) { }
     }
   } catch (error) {
     logger.warn('Apps Script getFolderImages falló o dio timeout, usando fallback de scraping', { error: error.message, folderId });
@@ -3927,12 +4278,12 @@ app.get('/api/google/folder-images', verifyToken, async (req, res) => {
     // Buscar data-id y data-tooltip (contiene nombre y tipo)
     const regex = /data-id="([a-zA-Z0-9_-]{28,40})"[^>]*data-tooltip="([^"]+)"/g;
     let match;
-    
+
     while ((match = regex.exec(html)) !== null) {
       const [_, fileId, tooltip] = match;
       const name = tooltip.replace(/\s+(Image|PDF|Archive|Word|Video|Folder|Text|Document)$/i, '');
       const isImg = /\.(jpg|jpeg|png|gif|webp|bmp)$/i.test(name) || tooltip.toLowerCase().includes('image');
-      
+
       fileEntries.push({
         id: fileId,
         name: name,
@@ -3970,14 +4321,16 @@ app.get('/api/google/folder-images', verifyToken, async (req, res) => {
           id: file.id,
           name: file.name,
           thumbData: thumbData,
-          fullUrl: file.fullUrl
+          fullUrl: file.fullUrl,
+          isImage: true
         });
       } else {
         images.push({
           id: file.id,
           name: file.name,
           thumbData: null,
-          fullUrl: file.fullUrl
+          fullUrl: file.fullUrl,
+          isImage: false
         });
       }
     }
@@ -3997,7 +4350,7 @@ app.post('/api/public/trabajo', async (req, res) => {
   try {
     const nuevoTrabajo = req.body;
     const filePath = FILES.trabajos;
-    
+
     logger.info(`📝 Intentando registrar trabajo de: ${nuevoTrabajo?.clientName || 'Cliente desconocido'}`);
 
     // Leer datos actuales
@@ -4041,8 +4394,61 @@ app.post('/api/public/trabajo', async (req, res) => {
 
     const success = await writeJSON(filePath, data);
     if (success) {
-      logger.info('📩 Trabajo guardado exitosamente:', nuevoTrabajo.clientName);
-      
+      logger.info('📩 Trabajo guardado exitosamente en JSON:', nuevoTrabajo.clientName);
+
+      // Persistir también en SQLite para sincronización con GET /api/trabajos
+      try {
+        const clienteRow = await db.get('SELECT id FROM clientes WHERE nombre = ? LIMIT 1', [nuevoTrabajo.clientName || '']);
+        const clienteId = clienteRow?.id || null;
+
+        await db.run(
+          `INSERT OR REPLACE INTO trabajos
+           (id, quote_id, cliente_id, cliente_nombre, cliente_telefono, cliente_email, cliente_address,
+            tipo_cliente, descripcion, total, total_cost, profit, paid_amount, balance, senia,
+            status, payment_status, priority, delivery_date, delivery_status, actual_delivery_date,
+            paid_at, created_at, productos_json, is_merged, costos_json, notes_json, merged_works_json)
+           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+          [
+            nuevoTrabajo.id || ('work_web_' + Date.now()),
+            nuevoTrabajo.quoteId || null,
+            clienteId,
+            nuevoTrabajo.clientName || 'Cliente Web',
+            nuevoTrabajo.clientPhone || '',
+            nuevoTrabajo.clientEmail || '',
+            nuevoTrabajo.clientAddress || '',
+            nuevoTrabajo.tipo_cliente || 'gremio',
+            nuevoTrabajo.descripcion || 'Pedido recibido desde Portal Web',
+            nuevoTrabajo.total || 0,
+            nuevoTrabajo.totalCost || 0,
+            (nuevoTrabajo.total || 0) - (nuevoTrabajo.totalCost || 0),
+            nuevoTrabajo.paidAmount || 0,
+            nuevoTrabajo.balance ?? (nuevoTrabajo.total || 0),
+            nuevoTrabajo.senia || 0,
+            nuevoTrabajo.status || 'pending',
+            nuevoTrabajo.paymentStatus || 'unpaid',
+            nuevoTrabajo.priority || 'high',
+            nuevoTrabajo.deliveryDate || null,
+            nuevoTrabajo.deliveryStatus || 'pending',
+            nuevoTrabajo.actualDeliveryDate || null,
+            nuevoTrabajo.paidAt || null,
+            nuevoTrabajo.createdAt || new Date().toISOString(),
+            JSON.stringify(nuevoTrabajo.productos || []),
+            nuevoTrabajo.is_merged ? 1 : 0,
+            JSON.stringify(nuevoTrabajo.costos || {}),
+            JSON.stringify(nuevoTrabajo.notes || []),
+            JSON.stringify(nuevoTrabajo.mergedWorks || [])
+          ]
+        );
+
+        await db.run(
+          'INSERT INTO trabajo_timeline (trabajo_id, type, description, timestamp) VALUES (?,?,?,?)',
+          [nuevoTrabajo.id || ('work_web_' + Date.now()), 'created', 'Pedido recibido desde Portal Web', new Date().toISOString()]
+        );
+        logger.info(`✅ Trabajo guardado en SQLite para ${nuevoTrabajo.clientName}`);
+      } catch (sqErr) {
+        logger.error('⚠️ Error al guardar trabajo web en SQLite:', { error: sqErr.message });
+      }
+
       // 🔔 Emitir evento de tiempo real a todas las PCs
       const io = req.app.get('socketio');
       if (io) {
@@ -4053,19 +4459,251 @@ app.post('/api/public/trabajo', async (req, res) => {
         });
         io.emit('works_updated', { id: nuevoTrabajo.id, source: 'public_api' });
       }
-      
+
       res.json({ success: true });
     } else {
       logger.error('❌ Error: writeJSON devolvió false');
       throw new Error('No se pudo escribir el archivo');
     }
   } catch (error) {
-    logger.error('🔥 Error crítico en /api/public/trabajo', { 
-      message: error.message, 
+    logger.error('🔥 Error crítico en /api/public/trabajo', {
+      message: error.message,
       stack: error.stack,
-      body: req.body 
+      body: req.body
     });
     res.status(500).json({ error: 'Error al procesar pedido externo' });
+  }
+});
+
+// NUEVO: Registrar Gremio (Registro Público)
+app.post('/api/public/gremio/registrar', async (req, res) => {
+  try {
+    const { nombre, telefono } = req.body;
+    if (!nombre || !telefono) {
+      return res.status(400).json({ error: 'Nombre y Teléfono son requeridos' });
+    }
+
+    const cleanNombre = nombre.trim();
+    const cleanTelefono = telefono.trim().replace(/\D/g, ''); // Solo números
+
+    if (cleanNombre.length < 3) {
+      return res.status(400).json({ error: 'El nombre debe tener al menos 3 caracteres' });
+    }
+    if (cleanTelefono.length < 6) {
+      return res.status(400).json({ error: 'El teléfono ingresado es muy corto' });
+    }
+
+    // Verificar duplicado en clientes
+    const existingClient = await db.get({
+      sql: 'SELECT id FROM clientes WHERE LOWER(nombre) = ?',
+      params: [cleanNombre.toLowerCase()]
+    });
+    if (existingClient) {
+      return res.status(409).json({ error: 'Ya existe un gremio con ese nombre' });
+    }
+
+    // Verificar duplicado en usuarios
+    const existingUser = await db.get({
+      sql: 'SELECT id FROM usuarios WHERE LOWER(usuario) = ?',
+      params: [cleanNombre.toLowerCase()]
+    });
+    if (existingUser) {
+      return res.status(409).json({ error: 'El nombre de usuario ya está en uso' });
+    }
+
+    const clientId = `gremio_${Date.now()}`;
+    const userId = `usr_gremio_${Date.now()}`;
+    const fecha = new Date().toISOString();
+
+    // 1. Insertar Cliente Gremio
+    await db.run(
+      'INSERT INTO clientes (id, nombre, telefono, tipo, estado, fecha_creacion, fecha_registro) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      [clientId, cleanNombre, cleanTelefono, 'gremio', 'activo', fecha, fecha]
+    );
+
+    // 2. Insertar Usuario Gremio (password es el teléfono)
+    const hashedPassword = await bcrypt.hash(cleanTelefono, 10);
+    try {
+      await db.run(
+        'INSERT INTO usuarios (id, nombre, usuario, password, rol, activo, fecha_creacion, cliente_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+        [userId, cleanNombre, cleanNombre, hashedPassword, 'gremio', 1, fecha, clientId]
+      );
+    } catch (userErr) {
+      await db.run('DELETE FROM clientes WHERE id = ?', [clientId]);
+      throw userErr;
+    }
+
+    // 3. Escribir Backups JSON
+    const allClients = await db.all('SELECT * FROM clientes');
+    await writeJSON(FILES.clientes, allClients);
+
+    const allUsers = await db.all('SELECT * FROM usuarios');
+    await writeJSON(FILES.usuarios, allUsers.map(u => ({ ...u, activo: u.activo === 1 })));
+
+    logger.info(`✨ Gremio registrado con éxito: "${cleanNombre}" (Tel: ${cleanTelefono})`);
+    res.status(201).json({ success: true, message: 'Gremio registrado correctamente. Iniciá sesión con tu nombre y número de teléfono.' });
+  } catch (error) {
+    logger.error('Error al registrar gremio publicamente', { error: error.stack });
+    res.status(500).json({ error: 'Error interno del servidor al procesar el registro' });
+  }
+});
+
+// NUEVO: Obtener historial de pedidos del Gremio autenticado
+app.get('/api/gremio/pedidos', verifyToken, async (req, res) => {
+  try {
+    const user = req.user;
+    let query = 'SELECT * FROM trabajos';
+    let params = [];
+
+    if (user.rol === 'gremio') {
+      query += ' WHERE cliente_nombre = ?';
+      params.push(user.nombre);
+    }
+
+    query += ' ORDER BY created_at DESC';
+    const orders = await db.all(query, params);
+    
+    // Formatear JSONs
+    const formatted = orders.map(o => ({
+      ...o,
+      productos: JSON.parse(o.productos_json || '[]'),
+      timeline: JSON.parse(o.timeline_json || '[]'),
+      notes: JSON.parse(o.notes_json || '[]')
+    }));
+
+    res.json(formatted);
+  } catch (error) {
+    logger.error('Error al obtener pedidos del gremio', { error: error.message });
+    res.status(500).json({ error: 'Error al consultar pedidos' });
+  }
+});
+
+// NUEVO: Cancelar pedido del Gremio (solo si está 'pending')
+app.delete('/api/gremio/pedidos/:orderId', verifyToken, async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const user = req.user;
+
+    const order = await db.get({ sql: 'SELECT * FROM trabajos WHERE id = ?', params: [orderId] });
+    if (!order) {
+      return res.status(404).json({ error: 'Pedido no encontrado' });
+    }
+
+    if (user.rol === 'gremio' && order.cliente_nombre !== user.nombre) {
+      return res.status(403).json({ error: 'No tienes autorización sobre este pedido' });
+    }
+
+    if (order.status !== 'pending') {
+      return res.status(400).json({ error: 'El pedido ya no está pendiente (entró en producción o entrega) y no se puede cancelar.' });
+    }
+
+    if (orderId.startsWith('goog_')) {
+      try {
+        let driveUrl = '';
+        if (order.notes_json) {
+          try {
+            const notes = JSON.parse(order.notes_json);
+            const syncNote = notes.find(n => n.author === 'Google Sync');
+            if (syncNote) {
+              const match = syncNote.text.match(/Link a Drive:\s*(https:\/\/drive\.google\.com\/\S*)/i);
+              if (match) {
+                driveUrl = match[1];
+              }
+            }
+          } catch (e) {
+            logger.error('Error al extraer driveUrl de las notas', e);
+          }
+        }
+
+        const googleScriptUrl = "https://script.google.com/macros/s/AKfycbxCWY_Sre0t9V-4ilK-TWIXKAttWdUWqNBa2fTnneVJHbHxGQcWVKq9Ug6UYCf_ewCJ/exec";
+        await axios.post(googleScriptUrl, { action: 'cancelOrder', orderId, driveUrl }, { timeout: 8000 });
+      } catch (gasErr) {
+        logger.warn(`No se pudo sincronizar cancelación en Google Sheets para el pedido ${orderId}: ${gasErr.message}`);
+      }
+    }
+
+    await db.run('UPDATE trabajos SET status = ? WHERE id = ?', ['cancelled', orderId]);
+    
+    const timestamp = new Date().toISOString();
+    await db.run(
+      'INSERT INTO trabajo_timeline (trabajo_id, type, description, timestamp) VALUES (?,?,?,?)',
+      [orderId, 'cancelled', 'Pedido cancelado por el cliente gremio', timestamp]
+    );
+
+    const allWorks = await db.all('SELECT * FROM trabajos');
+    const worksJson = {
+      works: allWorks.map(w => ({
+        ...w,
+        notes: JSON.parse(w.notes_json || '[]'),
+        timeline: JSON.parse(w.timeline_json || '[]')
+      })),
+      notifications: []
+    };
+    await writeJSON(FILES.trabajos, worksJson);
+
+    if (io) {
+      io.emit('works_updated', { source: 'gremio_cancel' });
+    }
+
+    logger.info(`🚫 Pedido cancelado por el cliente: ID=${orderId} (Gremio=${order.cliente_nombre})`);
+    res.json({ success: true, message: 'Pedido cancelado correctamente.' });
+  } catch (error) {
+    logger.error('Error al cancelar pedido del gremio', { error: error.message });
+    res.status(500).json({ error: 'Error al procesar la cancelación del pedido' });
+  }
+});
+
+// NUEVO: Modificar pedido del Gremio (solo si está 'pending')
+app.put('/api/gremio/pedidos/:orderId', verifyToken, async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const { detalles } = req.body;
+    const user = req.user;
+
+    const order = await db.get({ sql: 'SELECT * FROM trabajos WHERE id = ?', params: [orderId] });
+    if (!order) {
+      return res.status(404).json({ error: 'Pedido no encontrado' });
+    }
+
+    if (user.rol === 'gremio' && order.cliente_nombre !== user.nombre) {
+      return res.status(403).json({ error: 'No tienes autorización sobre este pedido' });
+    }
+
+    if (order.status !== 'pending') {
+      return res.status(400).json({ error: 'El pedido ya no está pendiente y no se puede modificar.' });
+    }
+
+    // Actualizar en SQLite
+    await db.run('UPDATE trabajos SET descripcion = ? WHERE id = ?', [detalles, orderId]);
+    
+    // Insertar timeline
+    const timestamp = new Date().toISOString();
+    await db.run(
+      'INSERT INTO trabajo_timeline (trabajo_id, type, description, timestamp) VALUES (?,?,?,?)',
+      [orderId, 'edit', 'Pedido modificado por el cliente gremio', timestamp]
+    );
+
+    // Escribir JSON de backup
+    const allWorks = await db.all('SELECT * FROM trabajos');
+    const worksJson = {
+      works: allWorks.map(w => ({
+        ...w,
+        notes: JSON.parse(w.notes_json || '[]'),
+        timeline: JSON.parse(w.timeline_json || '[]')
+      })),
+      notifications: []
+    };
+    await writeJSON(FILES.trabajos, worksJson);
+
+    if (io) {
+      io.emit('works_updated', { source: 'gremio_edit' });
+    }
+
+    logger.info(`✏️ Pedido modificado por el cliente: ID=${orderId} (Gremio=${order.cliente_nombre})`);
+    res.json({ success: true, message: 'Pedido modificado correctamente.' });
+  } catch (error) {
+    logger.error('Error al modificar pedido del gremio', { error: error.message });
+    res.status(500).json({ error: 'Error al procesar la modificación' });
   }
 });
 
@@ -4271,10 +4909,13 @@ app.put('/api/trabajos/:id', verifyToken, async (req, res) => {
     const io = req.app.get('socketio');
     if (io) io.emit('works_updated', { id, updates, source: 'put_api' });
 
-    if (updates.status && oldStatus !== updates.status &&
-        ['completed', 'ready', 'para_retirar'].includes(updates.status)) {
+    const shouldNotify = updates.notifyWhatsApp !== false && updates.skipNotification !== true;
+
+    if (shouldNotify && updates.status && oldStatus !== updates.status &&
+      ['completed', 'ready', 'para_retirar'].includes(updates.status)) {
       await enviarNotificacionTrabajoListo(trabajo);
     }
+
 
     res.json({ success: true, data: trabajo });
   } catch (error) {
@@ -4289,7 +4930,7 @@ app.post('/api/trabajos/:id/reenviar-listo', verifyToken, async (req, res) => {
 
   try {
     let trabajo = await db.get({ sql: 'SELECT * FROM trabajos WHERE id = ?', params: [id] });
-    
+
     if (!trabajo) {
       const data = await readJSON(FILES.trabajos).catch(() => ({ works: [] }));
       if (data && data.works) {
@@ -4307,9 +4948,9 @@ app.post('/api/trabajos/:id/reenviar-listo', verifyToken, async (req, res) => {
     } else {
       const errorMsg = notificationResult?.error || 'No se pudo enviar el mensaje.';
       const isQueued = notificationResult?.queued;
-      return res.status(isQueued ? 202 : 500).json({ 
-        success: false, 
-        error: errorMsg, 
+      return res.status(isQueued ? 202 : 500).json({
+        success: false,
+        error: errorMsg,
         queued: isQueued,
         message: isQueued ? 'Bot desconectado. Mensaje guardado en cola pendiente.' : errorMsg
       });
@@ -4320,7 +4961,82 @@ app.post('/api/trabajos/:id/reenviar-listo', verifyToken, async (req, res) => {
   }
 });
 
+// NUEVO: Endpoint para reenviar el mensaje de confirmación
+app.post('/api/trabajos/:id/reenviar-confirmacion', verifyToken, async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    let trabajo = await db.get({ sql: 'SELECT * FROM trabajos WHERE id = ?', params: [id] });
+
+    if (!trabajo) {
+      const data = await readJSON(FILES.trabajos).catch(() => ({ works: [] }));
+      if (data && data.works) {
+        trabajo = data.works.find(w => w.id === id);
+      }
+    }
+
+    if (!trabajo) {
+      return res.status(404).json({ error: 'Trabajo no encontrado' });
+    }
+
+    const notificationResult = await enviarNotificacionConfirmacion(trabajo);
+    if (notificationResult && notificationResult.success) {
+      return res.json({ success: true, message: 'Mensaje de confirmación reenviado con éxito.' });
+    } else {
+      const errorMsg = notificationResult?.error || 'No se pudo enviar el mensaje.';
+      const isQueued = notificationResult?.queued;
+      return res.status(isQueued ? 202 : 500).json({
+        success: false,
+        error: errorMsg,
+        queued: isQueued,
+        message: isQueued ? 'Bot desconectado. Mensaje guardado en cola pendiente.' : errorMsg
+      });
+    }
+  } catch (error) {
+    logger.error('Error al reenviar mensaje de confirmación', { id, error: error.stack });
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// NUEVO: Endpoint para enviar recordatorio de pago por WhatsApp
+app.post('/api/trabajos/:id/reenviar-recordatorio-pago', verifyToken, async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    let trabajo = await db.get({ sql: 'SELECT * FROM trabajos WHERE id = ?', params: [id] });
+
+    if (!trabajo) {
+      const data = await readJSON(FILES.trabajos).catch(() => ({ works: [] }));
+      if (data && data.works) {
+        trabajo = data.works.find(w => w.id === id);
+      }
+    }
+
+    if (!trabajo) {
+      return res.status(404).json({ error: 'Trabajo no encontrado' });
+    }
+
+    const notificationResult = await enviarNotificacionRecordatorioPago(trabajo);
+    if (notificationResult && notificationResult.success) {
+      return res.json({ success: true, message: 'Recordatorio de pago enviado con éxito.' });
+    } else {
+      const errorMsg = notificationResult?.error || 'No se pudo enviar el recordatorio.';
+      const isQueued = notificationResult?.queued;
+      return res.status(isQueued ? 202 : 500).json({
+        success: false,
+        error: errorMsg,
+        queued: isQueued,
+        message: isQueued ? 'Bot desconectado. Recordatorio guardado en cola pendiente.' : errorMsg
+      });
+    }
+  } catch (error) {
+    logger.error('Error al enviar recordatorio de pago', { id, error: error.stack });
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
 // ==================== GESTIÓN DE CLIENTES (SQLite) ====================
+
 
 app.get('/api/clientes', verifyToken, async (req, res) => {
   try {
@@ -4349,12 +5065,12 @@ app.post('/api/clientes', verifyToken, async (req, res) => {
               cuit, condicion_iva, total_facturado, cantidad_trabajos, ultimo_trabajo, fecha_creacion, fecha_registro)
              VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
             [c.id || `cli_${Date.now()}_${Math.random().toString(36).slice(-4)}`,
-             nombre, c.telefono || '', c.email || '', c.direccion || '',
-             c.tipo || 'gremio', c.estado || 'activo', c.descuento || 0, c.notas || '',
-             c.cuit || '', c.condicionIVA || '', c.totalFacturado || 0,
-             c.cantidadTrabajos || 0, c.ultimoTrabajo || null,
-             c.fechaCreacion || c.fechaRegistro || new Date().toISOString(),
-             c.fechaRegistro || c.fechaCreacion || null]
+              nombre, c.telefono || '', c.email || '', c.direccion || '',
+            c.tipo || 'gremio', c.estado || 'activo', c.descuento || 0, c.notas || '',
+            c.cuit || '', c.condicionIVA || '', c.totalFacturado || 0,
+            c.cantidadTrabajos || 0, c.ultimoTrabajo || null,
+            c.fechaCreacion || c.fechaRegistro || new Date().toISOString(),
+            c.fechaRegistro || c.fechaCreacion || null]
           );
         }
         await db.run('COMMIT');
@@ -4383,10 +5099,10 @@ app.post('/api/clientes', verifyToken, async (req, res) => {
         cuit, condicion_iva, total_facturado, cantidad_trabajos, ultimo_trabajo, fecha_creacion)
        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       [newId, nombre, incomingData.telefono || '', incomingData.email || '',
-       incomingData.direccion || '', incomingData.tipo || 'gremio', 'activo',
-       incomingData.descuento || 0, incomingData.notas || '',
-       incomingData.cuit || '', incomingData.condicionIVA || '', 0, 0, null,
-       incomingData.fechaCreacion || new Date().toISOString()]
+        incomingData.direccion || '', incomingData.tipo || 'gremio', 'activo',
+        incomingData.descuento || 0, incomingData.notas || '',
+        incomingData.cuit || '', incomingData.condicionIVA || '', 0, 0, null,
+        incomingData.fechaCreacion || new Date().toISOString()]
     );
     const all = await db.all('SELECT * FROM clientes ORDER BY nombre ASC');
     await writeJSON(FILES.clientes, all.map(c => ({ ...c, name: c.nombre })));
@@ -4732,133 +5448,133 @@ app.post('/api/instagram/settings', verifyToken, requireRole(['admin', 'superadm
 const igUpload = multer({ dest: UPLOADS_TEMP_DIR });
 
 app.post('/api/instagram/generate-copy', verifyToken, igUpload.single('image'), async (req, res) => {
-    try {
-        const provider = req.body.provider || 'gemini';
-        let caption = "";
+  try {
+    const provider = req.body.provider || 'gemini';
+    let caption = "";
 
-        if (provider === 'ollama') {
-            // --- Lógica OLLAMA (Local) ---
-            const botSettings = await readJSON(path.join(DATA_DIR, 'bot_whatsapp', 'bot_config.json'));
-            const model = botSettings.ollamaVisionModel || botSettings.ollamaModel || 'gemma4:latest';
-            
-            const ollamaClient = new OpenAI({
-                baseURL: 'http://localhost:11434/v1',
-                apiKey: 'ollama'
-            });
+    if (provider === 'ollama') {
+      // --- Lógica OLLAMA (Local) ---
+      const botSettings = await readJSON(path.join(DATA_DIR, 'bot_whatsapp', 'bot_config.json'));
+      const model = botSettings.ollamaVisionModel || botSettings.ollamaModel || 'gemma4:latest';
 
-            let promptText = "Eres el Community Manager de MR Letreros, la mejor fábrica de letras armadas, corpóreos, carteles de neón y marquesinas. Escribe un copy original y muy persuasivo y publicitario para Instagram destacando este trabajo. Usa lenguaje coloquial, amigable, que incite a enviar DM o WhatsApp para cotizaciones, e incluye 5 o 6 hashtags relevantes.";
-            if (req.body.prompt && req.body.prompt.trim()) {
-                promptText += " Además, ten en cuenta este contexto extra dado por el dueño: " + req.body.prompt;
-            }
+      const ollamaClient = new OpenAI({
+        baseURL: 'http://localhost:11434/v1',
+        apiKey: 'ollama'
+      });
 
-            const messages = [{
-                role: 'user',
-                content: [
-                    { type: 'text', text: promptText }
-                ]
-            }];
+      let promptText = "Eres el Community Manager de MR Letreros, la mejor fábrica de letras armadas, corpóreos, carteles de neón y marquesinas. Escribe un copy original y muy persuasivo y publicitario para Instagram destacando este trabajo. Usa lenguaje coloquial, amigable, que incite a enviar DM o WhatsApp para cotizaciones, e incluye 5 o 6 hashtags relevantes.";
+      if (req.body.prompt && req.body.prompt.trim()) {
+        promptText += " Además, ten en cuenta este contexto extra dado por el dueño: " + req.body.prompt;
+      }
 
-            if (req.file) {
-                const imageBuffer = await fs.readFile(req.file.path);
-                const imageBase64 = imageBuffer.toString("base64");
-                messages[0].content.push({
-                    type: 'image_url',
-                    image_url: { url: `data:image/jpeg;base64,${imageBase64}` }
-                });
-                fs.unlink(req.file.path).catch(()=>{});
-            }
+      const messages = [{
+        role: 'user',
+        content: [
+          { type: 'text', text: promptText }
+        ]
+      }];
 
-            const response = await ollamaClient.chat.completions.create({
-                model: model,
-                messages: messages,
-                max_tokens: 800
-            });
-            caption = response.choices[0].message.content;
+      if (req.file) {
+        const imageBuffer = await fs.readFile(req.file.path);
+        const imageBase64 = imageBuffer.toString("base64");
+        messages[0].content.push({
+          type: 'image_url',
+          image_url: { url: `data:image/jpeg;base64,${imageBase64}` }
+        });
+        fs.unlink(req.file.path).catch(() => { });
+      }
 
-        } else {
-            // --- Lógica GROQ (Cloud) ---
-            let apiKey = process.env.GROQ_API_KEY || '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';
-            try {
-                let botSettings = await readJSON(path.join(DATA_DIR, 'bot_whatsapp', 'bot_config.json'));
-                if (botSettings.groqApiKey) apiKey = botSettings.groqApiKey;
-            } catch(e) {}
-            
-            if (!apiKey) throw new Error("API Key de Groq no configurada.");
+      const response = await ollamaClient.chat.completions.create({
+        model: model,
+        messages: messages,
+        max_tokens: 800
+      });
+      caption = response.choices[0].message.content;
 
-            const groqClient = new OpenAI({
-                baseURL: 'https://api.groq.com/openai/v1',
-                apiKey: apiKey
-            });
+    } else {
+      // --- Lógica GROQ (Cloud) ---
+      let apiKey = process.env.GROQ_API_KEY || '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';
+      try {
+        let botSettings = await readJSON(path.join(DATA_DIR, 'bot_whatsapp', 'bot_config.json'));
+        if (botSettings.groqApiKey) apiKey = botSettings.groqApiKey;
+      } catch (e) { }
 
-            // Usamos Llama 4 Scout (como en el bot)
-            const model = 'meta-llama/llama-4-scout-17b-16e-instruct';
+      if (!apiKey) throw new Error("API Key de Groq no configurada.");
 
-            let promptText = "Eres el Community Manager de MR Letreros, la mejor fábrica de letras armadas, corpóreos, carteles de neón y marquesinas. Escribe un copy original y muy persuasivo y publicitario para Instagram destacando este trabajo. Usa lenguaje coloquial, amigable, que incite a enviar DM o WhatsApp para cotizaciones, e incluye 5 o 6 hashtags relevantes.";
-            if (req.body.prompt && req.body.prompt.trim()) {
-                promptText += " Además, ten en cuenta este contexto extra dado por el dueño: " + req.body.prompt;
-            }
+      const groqClient = new OpenAI({
+        baseURL: 'https://api.groq.com/openai/v1',
+        apiKey: apiKey
+      });
 
-            const messages = [{
-                role: 'user',
-                content: [
-                    { type: 'text', text: promptText }
-                ]
-            }];
+      // Usamos Llama 4 Scout (como en el bot)
+      const model = 'meta-llama/llama-4-scout-17b-16e-instruct';
 
-            if (req.file) {
-                const imageBuffer = await fs.readFile(req.file.path);
-                const imageBase64 = imageBuffer.toString("base64");
-                messages[0].content.push({
-                    type: 'image_url',
-                    image_url: { url: `data:image/jpeg;base64,${imageBase64}` }
-                });
-                fs.unlink(req.file.path).catch(()=>{});
-            }
+      let promptText = "Eres el Community Manager de MR Letreros, la mejor fábrica de letras armadas, corpóreos, carteles de neón y marquesinas. Escribe un copy original y muy persuasivo y publicitario para Instagram destacando este trabajo. Usa lenguaje coloquial, amigable, que incite a enviar DM o WhatsApp para cotizaciones, e incluye 5 o 6 hashtags relevantes.";
+      if (req.body.prompt && req.body.prompt.trim()) {
+        promptText += " Además, ten en cuenta este contexto extra dado por el dueño: " + req.body.prompt;
+      }
 
-            const response = await groqClient.chat.completions.create({
-                model: model,
-                messages: messages,
-                max_tokens: 800
-            });
-            caption = response.choices[0].message.content;
-        }
+      const messages = [{
+        role: 'user',
+        content: [
+          { type: 'text', text: promptText }
+        ]
+      }];
 
-        res.json({ copy: caption });
-    } catch (error) {
-        logger.error('Error generando copy', { error: error.message });
-        res.status(500).json({ error: 'Error generando texto con IA: ' + error.message });
-        if (req.file) fs.unlink(req.file.path).catch(()=>{});
+      if (req.file) {
+        const imageBuffer = await fs.readFile(req.file.path);
+        const imageBase64 = imageBuffer.toString("base64");
+        messages[0].content.push({
+          type: 'image_url',
+          image_url: { url: `data:image/jpeg;base64,${imageBase64}` }
+        });
+        fs.unlink(req.file.path).catch(() => { });
+      }
+
+      const response = await groqClient.chat.completions.create({
+        model: model,
+        messages: messages,
+        max_tokens: 800
+      });
+      caption = response.choices[0].message.content;
     }
+
+    res.json({ copy: caption });
+  } catch (error) {
+    logger.error('Error generando copy', { error: error.message });
+    res.status(500).json({ error: 'Error generando texto con IA: ' + error.message });
+    if (req.file) fs.unlink(req.file.path).catch(() => { });
+  }
 });
 
 app.post('/api/instagram/publish', verifyToken, requireRole(['admin', 'superadmin']), igUpload.single('image'), async (req, res) => {
-    try {
-        if (!req.file) return res.status(400).json({ error: 'Imagen requerida.' });
-        if (!req.body.caption) return res.status(400).json({ error: 'Falta la descripción.' });
+  try {
+    if (!req.file) return res.status(400).json({ error: 'Imagen requerida.' });
+    if (!req.body.caption) return res.status(400).json({ error: 'Falta la descripción.' });
 
-        const settings = await readJSON(FILES.instagram_settings);
-        if (!settings.pageId || !settings.accessToken) {
-            fs.unlink(req.file.path).catch(()=>{});
-            return res.status(400).json({ error: 'Falta configurar credenciales desde Marketing.' });
-        }
-
-        const ig = new InstagramAPI(settings.pageId, settings.accessToken);
-        
-        // Optimizar para Instagram (1080x1080 máximo, formato jpg)
-        const optimizedPath = path.join(UPLOADS_TEMP_DIR, `opt_${req.file.filename}.jpg`);
-        await sharp(req.file.path).resize(1080, 1080, { fit: 'inside' }).jpeg({ quality: 90 }).toFile(optimizedPath);
-        
-        const postId = await ig.processAndPublish(optimizedPath, req.body.caption);
-        
-        fs.unlink(req.file.path).catch(()=>{});
-        fs.unlink(optimizedPath).catch(()=>{});
-        
-        res.json({ success: true, postId });
-    } catch (error) {
-        logger.error('Error publicando en IG', { error: error.message });
-        if (req.file) fs.unlink(req.file.path).catch(()=>{});
-        res.status(500).json({ error: error.message });
+    const settings = await readJSON(FILES.instagram_settings);
+    if (!settings.pageId || !settings.accessToken) {
+      fs.unlink(req.file.path).catch(() => { });
+      return res.status(400).json({ error: 'Falta configurar credenciales desde Marketing.' });
     }
+
+    const ig = new InstagramAPI(settings.pageId, settings.accessToken);
+
+    // Optimizar para Instagram (1080x1080 máximo, formato jpg)
+    const optimizedPath = path.join(UPLOADS_TEMP_DIR, `opt_${req.file.filename}.jpg`);
+    await sharp(req.file.path).resize(1080, 1080, { fit: 'inside' }).jpeg({ quality: 90 }).toFile(optimizedPath);
+
+    const postId = await ig.processAndPublish(optimizedPath, req.body.caption);
+
+    fs.unlink(req.file.path).catch(() => { });
+    fs.unlink(optimizedPath).catch(() => { });
+
+    res.json({ success: true, postId });
+  } catch (error) {
+    logger.error('Error publicando en IG', { error: error.message });
+    if (req.file) fs.unlink(req.file.path).catch(() => { });
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // ==================== ENDPOINTS TAREAS INTERNAS ====================
@@ -4877,7 +5593,7 @@ app.post('/api/tareas', verifyToken, async (req, res) => {
   try {
     const tareas = await readJSON(FILES.tareas_internas).catch(() => []);
     const nuevaTarea = {
-      id: `task_${Date.now()}_${Math.floor(Math.random()*1000)}`,
+      id: `task_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
       titulo: req.body.titulo || 'Nueva Tarea',
       descripcion: req.body.descripcion || '',
       estado: req.body.estado || 'pendiente', // pendiente, en_proceso, completado
@@ -4932,14 +5648,14 @@ const uploadTareas = multer({
 app.post('/api/tareas/upload', verifyToken, uploadTareas.single('archivo'), (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'No se subió ningún archivo' });
-    
+
     // Original extension handling
     const ext = path.extname(req.file.originalname);
     const newPath = req.file.path + ext;
     fs.rename(req.file.path, newPath).catch(err => console.error(err));
-    
-    res.json({ 
-      success: true, 
+
+    res.json({
+      success: true,
       filename: req.file.originalname,
       url: `/uploads/tareas/${req.file.filename}${ext}`
     });
@@ -4980,9 +5696,9 @@ app.post('/api/nesting/nest-svg', verifyToken, uploadMemory.single('file'), asyn
     res.json(pythonRes.data);
   } catch (error) {
     logger.error('Error proxying Nesting request to Python backend:', { error: error.message });
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Error al procesar el optimizador de plancha.',
-      details: error.response ? error.response.data : error.message 
+      details: error.response ? error.response.data : error.message
     });
   }
 });
@@ -5120,10 +5836,21 @@ initializeDataStructure().then(() => {
         logger.warn('⚠️ mDNS no disponible:', mdnsErr.message);
       }
 
+      // Endpoint para sincronización manual con Google Sheets
+      app.post('/api/sync-google', verifyToken, async (req, res) => {
+        try {
+          await googleSync.syncData(io);
+          res.json({ success: true, message: 'Planilla de Google Sheets sincronizada correctamente.' });
+        } catch (error) {
+          logger.error('Error sincronizando con Google Sheets', { error: error.message });
+          res.status(500).json({ success: false, error: error.message });
+        }
+      });
+
       // --- INICIAR SINCRONIZACIÓN AUTOMÁTICA CON GOOGLE ---
       logger.info('📡 Sincronización con Google activa (cada 30 seg)');
       // Primera sync al arrancar
-      setTimeout(() => googleSync.syncData(io).catch(() => {}), 5000);
+      setTimeout(() => googleSync.syncData(io).catch(() => { }), 5000);
       setInterval(async () => {
         try {
           await googleSync.syncData(io);

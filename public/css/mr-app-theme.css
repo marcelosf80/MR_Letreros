@@ -1,0 +1,13 @@
+/* =========================================================================
+   MR LETREROS — MASTER SYSTEM BUNDLE
+   Compilador global que importa todos los módulos del sistema de diseño
+   ========================================================================= */
+
+@import "./modules/_variables.css";
+@import "./modules/_base.css";
+@import "./modules/_layout.css";
+@import "./modules/_cards.css";
+@import "./modules/_forms.css";
+@import "./modules/_buttons.css";
+@import "./modules/_modals.css";
+@import "./modules/_tables.css";

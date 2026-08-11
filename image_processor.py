@@ -95,11 +95,11 @@ def remove_background(input_path, output_path, groq_key=None, removebg_key=None)
     cv2.imwrite(output_path, final_rgba)
     print("Módulo 'Dynamic Clean' completado: Recorte nítido sin manchado.")
 
-_upsampler = None
+_upsamplers = {}
 
-def get_realesrgan_upsampler():
-    global _upsampler
-    if _upsampler is None:
+def get_realesrgan_upsampler(model_name="general"):
+    global _upsamplers
+    if model_name not in _upsamplers:
         import sys
         import torchvision.transforms.functional as F
         # Patch for torchvision compatibility with basicsr
@@ -108,23 +108,30 @@ def get_realesrgan_upsampler():
         from basicsr.archs.rrdbnet_arch import RRDBNet
         from realesrgan import RealESRGANer
 
-        print("Inicializando modelo Real-ESRGAN...")
-        model = RRDBNet(
-            num_in_ch=3, num_out_ch=3, num_feat=64, num_block=23, num_grow_ch=32, scale=4
-        )
-        
-        # Guardar pesos en la carpeta models/ del proyecto
+        print(f"Inicializando modelo Real-ESRGAN ({model_name}) local...")
         model_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'models')
-        weights_path = os.path.join(model_dir, 'RealESRGAN_x4plus.pth')
+        
+        if model_name == "anime":
+            model = RRDBNet(
+                num_in_ch=3, num_out_ch=3, num_feat=64, num_block=6, num_grow_ch=32, scale=4
+            )
+            weights_path = os.path.join(model_dir, 'RealESRGAN_x4plus_anime_6B.pth')
+            url = "https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.2.4/RealESRGAN_x4plus_anime_6B.pth"
+        else:
+            model = RRDBNet(
+                num_in_ch=3, num_out_ch=3, num_feat=64, num_block=23, num_grow_ch=32, scale=4
+            )
+            weights_path = os.path.join(model_dir, 'RealESRGAN_x4plus.pth')
+            url = "https://github.com/xinntao/Real-ESRGAN/releases/download/v0.1.0/RealESRGAN_x4plus.pth"
+
         if not os.path.exists(weights_path):
             os.makedirs(model_dir, exist_ok=True)
-            print("Descargando pesos de Real-ESRGAN x4plus (~64MB)...")
-            url = "https://github.com/xinntao/Real-ESRGAN/releases/download/v0.1.0/RealESRGAN_x4plus.pth"
+            print(f"Descargando pesos de Real-ESRGAN {model_name} (~64MB)...")
             import urllib.request
             urllib.request.urlretrieve(url, weights_path)
             print("Descarga de pesos completada.")
 
-        _upsampler = RealESRGANer(
+        _upsamplers[model_name] = RealESRGANer(
             scale=4,
             model_path=weights_path,
             model=model,
@@ -134,11 +141,156 @@ def get_realesrgan_upsampler():
             half=False,  # FP32 para CPU
             gpu_id=None,  # CPU
         )
-        print("Modelo Real-ESRGAN inicializado exitosamente.")
-    return _upsampler
+        print(f"Modelo Real-ESRGAN {model_name} inicializado exitosamente.")
+    return _upsamplers[model_name]
+
+def upscale_image_local(input_path, output_path, target_w, target_h, model_name="general"):
+    """
+    Upscale local utilizando el modelo Real-ESRGAN en memoria de este proceso.
+    Al finalizar el proceso, la memoria se libera completamente.
+    """
+    img_pil = Image.open(input_path)
+    has_alpha = img_pil.mode == "RGBA" or "transparency" in img_pil.info
+    
+    if has_alpha:
+        img_pil = img_pil.convert("RGBA")
+    else:
+        img_pil = img_pil.convert("RGB")
+        
+    upsampler = get_realesrgan_upsampler(model_name)
+    
+    if has_alpha:
+        r, g, b, a = img_pil.split()
+        rgb_img = Image.merge("RGB", (r, g, b))
+        
+        print("Iniciando escalado local de canales RGB...")
+        rgb_np = np.array(rgb_img)
+        output_rgb, _ = upsampler.enhance(rgb_np, outscale=4)
+        
+        print("Escalando canal Alfa...")
+        a_upscaled = a.resize(Image.fromarray(output_rgb).size, Image.Resampling.LANCZOS)
+        
+        upscaled_img = Image.merge(
+            "RGBA", 
+            (
+                Image.fromarray(output_rgb).split()[0], 
+                Image.fromarray(output_rgb).split()[1], 
+                Image.fromarray(output_rgb).split()[2], 
+                a_upscaled
+            )
+        )
+    else:
+        img_np = np.array(img_pil)
+        print("Iniciando escalado local...")
+        output, _ = upsampler.enhance(img_np, outscale=4)
+        upscaled_img = Image.fromarray(output)
+
+    # Redimensionar al tamaño objetivo final con Lanczos
+    final_img = upscaled_img.resize((target_w, target_h), Image.Resampling.LANCZOS)
+    
+    # Aplicar nitidez y mejoras específicas
+    if model_name == "anime":
+        print("Aplicando mejoras locales de ilustración/logo...")
+        try:
+            if final_img.mode == "RGBA":
+                r, g, b, a = final_img.split()
+                
+                a_np = np.array(a)
+                a_np = cv2.bilateralFilter(a_np, 5, 50, 50)
+                _, a_thresh = cv2.threshold(a_np, 127, 255, cv2.THRESH_BINARY)
+                a_smooth = cv2.GaussianBlur(a_thresh, (3, 3), 0.5)
+                a_final = Image.fromarray(a_smooth)
+                
+                rgb_img = Image.merge("RGB", (r, g, b))
+                rgb_np = cv2.cvtColor(np.array(rgb_img), cv2.COLOR_RGB2BGR)
+                
+                rgb_clean = cv2.bilateralFilter(rgb_np, d=9, sigmaColor=55, sigmaSpace=55)
+                rgb_clean = cv2.bilateralFilter(rgb_clean, d=5, sigmaColor=35, sigmaSpace=35)
+                rgb_clean = cv2.medianBlur(rgb_clean, 3)
+                
+                laplacian = cv2.Laplacian(rgb_clean, cv2.CV_64F)
+                laplacian = cv2.convertScaleAbs(laplacian)
+                rgb_clean_sharp = cv2.addWeighted(rgb_clean, 1.0, laplacian, 0.20, 0)
+                
+                gaussian = cv2.GaussianBlur(rgb_clean_sharp, (0, 0), 1.2)
+                rgb_final_cv = cv2.addWeighted(rgb_clean_sharp, 1.4, gaussian, -0.4, 0)
+                rgb_final_cv = cv2.bilateralFilter(rgb_final_cv, d=5, sigmaColor=25, sigmaSpace=25)
+                
+                rgb_final = Image.fromarray(cv2.cvtColor(rgb_final_cv, cv2.COLOR_BGR2RGB))
+                final_img = Image.merge(
+                    "RGBA", 
+                    (rgb_final.split()[0], rgb_final.split()[1], rgb_final.split()[2], a_final)
+                )
+            else:
+                img_np = cv2.cvtColor(np.array(final_img), cv2.COLOR_RGB2BGR)
+                
+                clean = cv2.bilateralFilter(img_np, d=9, sigmaColor=55, sigmaSpace=55)
+                clean = cv2.bilateralFilter(clean, d=5, sigmaColor=35, sigmaSpace=35)
+                clean = cv2.medianBlur(clean, 3)
+                
+                laplacian = cv2.Laplacian(clean, cv2.CV_64F)
+                laplacian = cv2.convertScaleAbs(laplacian)
+                clean_sharp = cv2.addWeighted(clean, 1.0, laplacian, 0.20, 0)
+                
+                gaussian = cv2.GaussianBlur(clean_sharp, (0, 0), 1.2)
+                final_cv = cv2.addWeighted(clean_sharp, 1.4, gaussian, -0.4, 0)
+                final_cv = cv2.bilateralFilter(final_cv, d=5, sigmaColor=25, sigmaSpace=25)
+                
+                final_img = Image.fromarray(cv2.cvtColor(final_cv, cv2.COLOR_BGR2RGB))
+        except Exception as e:
+            print(f"Error en nitidez de ilustración local: {e}")
+            final_img = final_img.filter(ImageFilter.DETAIL)
+            final_img = final_img.filter(ImageFilter.UnsharpMask(radius=1.5, percent=150, threshold=2))
+            final_img = final_img.filter(ImageFilter.SHARPEN)
+    else:
+        final_img = final_img.filter(ImageFilter.DETAIL)
+        final_img = final_img.filter(ImageFilter.UnsharpMask(radius=1.2, percent=150, threshold=2))
+        final_img = final_img.filter(ImageFilter.SHARPEN)
+        
+    final_img.save(output_path, "PNG")
+    print("Escalado local finalizado con éxito.")
+
+def upscale_image_cloud(input_path, output_path, model_name='4xNomosWebPhoto_esrgan'):
+    """
+    Escala la imagen 4x utilizando la API en la nube de Hugging Face (Phips/Upscaler).
+    """
+    try:
+        from gradio_client import Client, handle_file
+        print(f"Enviando imagen a la API de Escalado en la Nube (Phips/Upscaler - Modelo: {model_name})...")
+        client = Client("Phips/Upscaler")
+        result = client.predict(
+            image=handle_file(input_path),
+            model_selection=model_name,
+            api_name="/upscale_image"
+        )
+        upscaled_temp_path = result[1] if isinstance(result, (tuple, list)) and len(result) > 1 else None
+        if upscaled_temp_path and os.path.exists(upscaled_temp_path):
+            import shutil
+            shutil.copy(upscaled_temp_path, output_path)
+            print("Escalado por IA en la nube completado exitosamente.")
+            return True
+        else:
+            print("La API de la nube no devolvió un archivo válido.", file=sys.stderr)
+    except Exception as e:
+        print(f"Error procesando escalado en la nube: {e}", file=sys.stderr)
+    return False
 
 def upscale_image(input_path, output_path, factor=2, method='standard', groq_key=None):
-    if method == 'ultra' or method == 'ultra_anime':
+    if method in ['ultra', 'ultra_anime', 'high_quality']:
+        model_name = '4xNomos2_hq_dat2' if method == 'ultra_anime' else '4xNomosWebPhoto_esrgan'
+        if upscale_image_cloud(input_path, output_path, model_name=model_name):
+            # Si se requería redimensionar al tamaño objetivo específico por el factor:
+            try:
+                img_pil = Image.open(output_path)
+                orig_w, orig_h = Image.open(input_path).size
+                target_w = int(orig_w * factor)
+                target_h = int(orig_h * factor)
+                if img_pil.size != (target_w, target_h):
+                    final_img = img_pil.resize((target_w, target_h), Image.Resampling.LANCZOS)
+                    final_img.save(output_path, "PNG")
+            except Exception as resize_err:
+                print(f"Aviso en ajuste de tamaño final: {resize_err}")
+            return
         try:
             # 1. Cargar imagen para obtener dimensiones objetivo
             img_pil = Image.open(input_path)
@@ -181,43 +333,49 @@ def upscale_image(input_path, output_path, factor=2, method='standard', groq_key
             else:
                 raise Exception(f"La API de upscaler devolvió error {response.status_code}: {response.text}")
         except Exception as e:
-            print(f"Error en Real-ESRGAN: {e}. Usando fallback a filtro Lanczos4...", file=sys.stderr)
+            print(f"Error/Ausencia de API Real-ESRGAN: {e}. Intentando procesamiento local con modelo...")
             try:
-                # Leer imagen con OpenCV
-                img = cv2.imread(input_path)
-                if img is None: raise ValueError("No se pudo leer la imagen")
-                
-                h, w = img.shape[:2]
-                target_size = (int(w * factor), int(h * factor))
-                
-                # 1. Escalado Lanczos4 de Alta Fidelidad (Mejor que Bicúbico)
-                upscaled = cv2.resize(img, target_size, interpolation=cv2.INTER_LANCZOS4)
-                
-                # 2. Refuerzo de Contraste Local (CLAHE adaptado para logos)
-                lab = cv2.cvtColor(upscaled, cv2.COLOR_BGR2LAB)
-                l, a, b = cv2.split(lab)
-                clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8,8))
-                cl = clahe.apply(l)
-                limg = cv2.merge((cl,a,b))
-                enhanced = cv2.cvtColor(limg, cv2.COLOR_LAB2BGR)
-                
-                # 3. AFILADO DE BORDES (Laplacian Sharpening)
-                laplacian = cv2.Laplacian(enhanced, cv2.CV_64F)
-                laplacian = cv2.convertScaleAbs(laplacian)
-                enhanced = cv2.addWeighted(enhanced, 1.0, laplacian, 0.2, 0)
-                
-                # 4. MÁSCARA DE ENFOQUE AGRESIVA (Unsharp Masking)
-                gaussian = cv2.GaussianBlur(enhanced, (0, 0), 2.0)
-                final = cv2.addWeighted(enhanced, 1.8, gaussian, -0.8, 0)
-                
-                # 5. Limpieza Final (Bilateral para evitar "serrucho" en bordes)
-                final = cv2.bilateralFilter(final, 7, 50, 50)
-                
-                cv2.imwrite(output_path, final)
-                print("Escalado Ultra Tíñido (fallback) completado con éxito.")
+                model_name = 'anime' if method == 'ultra_anime' else 'general'
+                upscale_image_local(input_path, output_path, target_w, target_h, model_name)
                 return
-            except Exception as fe:
-                print(f"Error en fallback Ultra: {fe}. Usando Pillow standard...", file=sys.stderr)
+            except Exception as local_err:
+                print(f"Error en Real-ESRGAN local: {local_err}. Usando fallback a filtro Lanczos4...", file=sys.stderr)
+                try:
+                    # Leer imagen con OpenCV
+                    img = cv2.imread(input_path)
+                    if img is None: raise ValueError("No se pudo leer la imagen")
+                    
+                    h, w = img.shape[:2]
+                    target_size = (int(w * factor), int(h * factor))
+                    
+                    # 1. Escalado Lanczos4 de Alta Fidelidad (Mejor que Bicúbico)
+                    upscaled = cv2.resize(img, target_size, interpolation=cv2.INTER_LANCZOS4)
+                    
+                    # 2. Refuerzo de Contraste Local (CLAHE adaptado para logos)
+                    lab = cv2.cvtColor(upscaled, cv2.COLOR_BGR2LAB)
+                    l, a, b = cv2.split(lab)
+                    clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8,8))
+                    cl = clahe.apply(l)
+                    limg = cv2.merge((cl,a,b))
+                    enhanced = cv2.cvtColor(limg, cv2.COLOR_LAB2BGR)
+                    
+                    # 3. AFILADO DE BORDES (Laplacian Sharpening)
+                    laplacian = cv2.Laplacian(enhanced, cv2.CV_64F)
+                    laplacian = cv2.convertScaleAbs(laplacian)
+                    enhanced = cv2.addWeighted(enhanced, 1.0, laplacian, 0.2, 0)
+                    
+                    # 4. MÁSCARA DE ENFOQUE AGRESIVA (Unsharp Masking)
+                    gaussian = cv2.GaussianBlur(enhanced, (0, 0), 2.0)
+                    final = cv2.addWeighted(enhanced, 1.8, gaussian, -0.8, 0)
+                    
+                    # 5. Limpieza Final (Bilateral para evitar "serrucho" en bordes)
+                    final = cv2.bilateralFilter(final, 7, 50, 50)
+                    
+                    cv2.imwrite(output_path, final)
+                    print("Escalado Ultra Tíñido (fallback) completado con éxito.")
+                    return
+                except Exception as fe:
+                    print(f"Error en fallback Ultra: {fe}. Usando Pillow standard...", file=sys.stderr)
 
 
     # Fallback to Pillow (Standard & High Quality)
@@ -247,6 +405,23 @@ def depixel_image(input_path, output_path):
         img_pil = Image.open(input_path)
         orig_w, orig_h = img_pil.size
         
+        # 1. Intentar uso en la nube (Phips/Upscaler con modelo para logos/arte)
+        temp_upscaled = input_path + "_temp_up.png"
+        if upscale_image_cloud(input_path, temp_upscaled, model_name='4xNomos2_hq_dat2'):
+            try:
+                img_enhanced = Image.open(temp_upscaled)
+                final_img = img_enhanced.resize((orig_w, orig_h), Image.Resampling.LANCZOS)
+                final_img = final_img.filter(ImageFilter.DETAIL)
+                final_img = final_img.filter(ImageFilter.UnsharpMask(radius=1.5, percent=220, threshold=2))
+                final_img = final_img.filter(ImageFilter.SHARPEN)
+                if os.path.exists(temp_upscaled):
+                    os.remove(temp_upscaled)
+                final_img.save(output_path, "PNG")
+                print("Despixelado por IA en la nube completado con éxito.")
+                return
+            except Exception as pe:
+                print(f"Error procesando resultado de la nube: {pe}")
+
         # Intentar usar el modelo Real-ESRGAN local en puerto 8002 con el modelo anime
         try:
             print("Intentando despixelar usando Real-ESRGAN local (modelo anime)...")
@@ -284,7 +459,31 @@ def depixel_image(input_path, output_path):
                 print("Despixelado con Real-ESRGAN (anime) y enfoque completado exitosamente.")
                 return
         except Exception as e:
-            print(f"No se pudo usar Real-ESRGAN ({e}). Usando procesamiento local de alta nitidez...")
+            print(f"Error/Ausencia de API Real-ESRGAN ({e}). Intentando despixelar usando procesamiento local con modelo...")
+            try:
+                temp_upscaled = input_path + "_temp_up.png"
+                upscale_image_local(input_path, temp_upscaled, orig_w * 4, orig_h * 4, "anime")
+                
+                # Cargar la imagen escalada por IA
+                img_enhanced = Image.open(temp_upscaled)
+                
+                # Redimensionar al tamaño original usando Lanczos (conservando aspecto)
+                final_img = img_enhanced.resize((orig_w, orig_h), Image.Resampling.LANCZOS)
+                
+                # Aplicar máscara de enfoque agresiva para contornos ultra nítidos y limpios
+                final_img = final_img.filter(ImageFilter.DETAIL)
+                final_img = final_img.filter(ImageFilter.UnsharpMask(radius=1.5, percent=220, threshold=2))
+                final_img = final_img.filter(ImageFilter.SHARPEN)
+                
+                # Limpiar temporal
+                if os.path.exists(temp_upscaled):
+                    os.remove(temp_upscaled)
+                    
+                final_img.save(output_path, "PNG")
+                print("Despixelado local con modelo anime y enfoque completado exitosamente.")
+                return
+            except Exception as local_err:
+                print(f"Error en despixelado local con modelo ({local_err}). Usando procesamiento local alternativo de alta nitidez...")
 
         # --- FALLBACK: Algoritmo de despixelado local con PIL (ultra nítido) ---
         if img_pil.mode != "RGB":
@@ -310,7 +509,6 @@ def depixel_image(input_path, output_path):
     except Exception as e:
         print(f"Error en depixel_image: {e}", file=sys.stderr)
         raise
-        raise
 
 def main():
     parser = argparse.ArgumentParser(description='Procesador de imágenes por IA')
@@ -331,9 +529,10 @@ def main():
             upscale_image(args.input, args.output, args.factor, args.method, args.groq_key)
         elif args.action == 'depixel':
             depixel_image(args.input, args.output)
+        os._exit(0)
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
-        sys.exit(1)
+        os._exit(1)
 
 if __name__ == "__main__":
     main()

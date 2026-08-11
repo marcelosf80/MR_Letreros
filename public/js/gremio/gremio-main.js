@@ -1459,6 +1459,105 @@ window.saveQuote = async function () {
   }
 };
 
+window.createDirectWork = async function () {
+  const clientName = document.getElementById('clientName')?.value.trim();
+
+  if (!window.currentClientId) {
+    if (!clientName) {
+      alert('⚠️ Ingresá el nombre del cliente antes de crear el trabajo.');
+      return;
+    }
+    const autoClient = {
+      id: 'gremio_cli_' + Date.now(),
+      name: clientName,
+      nombre: clientName,
+      telefono: document.getElementById('clientPhone')?.value || '',
+      email: document.getElementById('clientEmail')?.value || '',
+      direccion: document.getElementById('clientAddress')?.value || '',
+      tipo: 'gremio',
+      fechaRegistro: new Date().toISOString()
+    };
+    try {
+      await window.mrDataManager.saveGremioCliente(autoClient);
+      window.currentClientId = autoClient.id;
+    } catch (e) {
+      console.warn('[GREMIO] No se pudo guardar el cliente automáticamente:', e);
+    }
+  }
+
+  const hasMulti = window.multiCategoryManager && window.multiCategoryManager.getCategories().length > 0;
+
+  if (currentQuoteProducts.length === 0 && currentQuoteTerceros.length === 0 && !hasMulti) {
+    alert('⚠️ Agregá al menos un producto o servicio antes de crear el trabajo.');
+    return;
+  }
+
+  const total = currentTotals.totalCliente || 0;
+  const totalCost = currentTotals.costoTotal || 0;
+  const profit = currentTotals.ganancia || 0;
+  const anticipo = parseFloat(document.getElementById('montoAnticipo')?.value) || 0;
+  const saldo = total - anticipo;
+  const deliveryDate = document.getElementById('deliveryDate')?.value || null;
+
+  const items = [];
+  if (Array.isArray(currentQuoteProducts)) {
+    currentQuoteProducts.forEach(p => items.push(`${p.cantidad}x ${p.producto || p.name || 'Producto'}`));
+  }
+  if (Array.isArray(currentQuoteTerceros)) {
+    currentQuoteTerceros.forEach(t => items.push(`${t.cantidad}x ${t.nombre || t.servicio || 'Servicio'}`));
+  }
+  const descripcion = items.join(', ') || 'Trabajo directo de Gremio';
+
+  const newWork = {
+    id: `work_${Date.now()}`,
+    quoteId: `direct_${Date.now()}`,
+    tipo_cliente: 'gremio',
+    clientName: clientName,
+    clientPhone: document.getElementById('clientPhone')?.value || '',
+    clientEmail: document.getElementById('clientEmail')?.value || '',
+    clientAddress: document.getElementById('clientAddress')?.value || '',
+    descripcion: descripcion,
+    products: currentQuoteProducts,
+    terceros: currentQuoteTerceros,
+    total: total,
+    totalCost: totalCost,
+    profit: profit,
+    paidAmount: anticipo,
+    balance: saldo,
+    status: 'pending',
+    paymentStatus: (anticipo >= total - 1) ? 'paid' : 'pending',
+    priority: 'normal',
+    deliveryDate: deliveryDate,
+    createdAt: new Date().toISOString(),
+    timeline: [{ type: 'created', description: 'Trabajo directo creado por Administrador (Gremio)', timestamp: new Date().toISOString() }],
+    notes: []
+  };
+
+  try {
+    let worksData = { works: [], notifications: [] };
+    try {
+      worksData = await window.mrDataManager.request('/api/trabajos');
+      if (!worksData || !Array.isArray(worksData.works)) worksData = { works: [], notifications: [] };
+    } catch (e) {
+      worksData = { works: [], notifications: [] };
+    }
+
+    worksData.works.push(newWork);
+
+    const result = await window.mrDataManager.request('/api/trabajos', 'POST', worksData);
+    if (result?.success) {
+      alert(`🔨 ✅ ¡Trabajo creado exitosamente para ${clientName}!`);
+      clearQuote();
+      if (window.updateStatistics) updateStatistics();
+    } else {
+      alert('❌ Error al guardar el trabajo en el servidor.');
+    }
+  } catch (error) {
+    console.error('[GREMIO] Error creando trabajo directo:', error);
+    alert('❌ Error al crear el trabajo: ' + error.message);
+  }
+};
+
 window.clearQuote = function () {
   currentQuoteProducts = [];
   currentQuoteTerceros = [];

@@ -1,12 +1,39 @@
 // =============== CONFIGURACIÓN ===============
 const DRIVE_FOLDER_NAME = "MR_Letreros_Pedidos";
 
+// Buscar hoja de cálculo sin importar mayúsculas/minúsculas o nombres de pestañas extendidos
+function getSheetByNameCaseInsensitive(ss, name) {
+  if (!ss) return null;
+  const sheets = ss.getSheets();
+  const lowerName = name.toLowerCase().trim();
+  
+  // Coincidencia exacta
+  for (let i = 0; i < sheets.length; i++) {
+    const sheetName = sheets[i].getName().toLowerCase().trim();
+    if (sheetName === lowerName) {
+      return sheets[i];
+    }
+  }
+  
+  // Coincidencia parcial
+  for (let i = 0; i < sheets.length; i++) {
+    const sheetName = sheets[i].getName().toLowerCase().trim();
+    if (sheetName.indexOf(lowerName) > -1 || lowerName.indexOf(sheetName) > -1) {
+      return sheets[i];
+    }
+  }
+  return null;
+}
+
 // =============== CARGAR CATÁLOGO Y STOCK ===============
 function getCatalogData() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
+  if (!ss) {
+    throw new Error("No se pudo acceder a la hoja de cálculo activa. Vinculá este script a tu planilla de Google Sheets.");
+  }
   
   // 1. Cargar Stock por Tipo (Hoja STOCK: A=Ancho cm, B=Estado, C=Tipo)
-  const sheetStock = ss.getSheetByName('STOCK');
+  const sheetStock = getSheetByNameCaseInsensitive(ss, 'STOCK');
   const stockByType = {};
   if (sheetStock) {
     const data = sheetStock.getDataRange().getValues();
@@ -29,7 +56,7 @@ function getCatalogData() {
   }
 
   // 2. Cargar Catálogo (Hoja PRECIOS: A=Cat, B=Prod, C=Precio, D=Unidad, E=Tipo, F=Ancho cm)
-  const sheetPrecios = ss.getSheetByName('PRECIOS');
+  const sheetPrecios = getSheetByNameCaseInsensitive(ss, 'PRECIOS');
   const catalogResult = [];
   if (sheetPrecios) {
     const data = sheetPrecios.getDataRange().getValues();
@@ -126,40 +153,218 @@ function processOrder(jsonString) {
   return { success: true, driveUrl: driveUrl };
 }
 
-// =============== FUNCIÓN PARA EL BOT ===============
-function getPendingOrders() {
+// =============== HISTORIAL DE PEDIDOS POR GREMIO ===============
+function getGremioHistory(gremioName) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sh = ss.getSheetByName('PEDIDOS'); if (!sh) return [];
+  var sh = ss.getSheetByName('PEDIDOS');
+  if (!sh) return [];
   var data = sh.getDataRange().getValues();
-  var pending = [];
+  var orders = [];
+  var searchName = gremioName.toString().trim().toUpperCase();
+  
   for (var i = 1; i < data.length; i++) {
-    if (data[i][4] === 'Pendiente') {
+    var rowGremio = data[i][1] ? data[i][1].toString().trim().toUpperCase() : "";
+    if (rowGremio !== searchName) continue;
+    
+    orders.push({
+      row: i + 1,
+      fecha: data[i][0] ? data[i][0].toString() : "",
+      gremio: data[i][1] ? data[i][1].toString().trim() : "",
+      detalle: data[i][2] ? data[i][2].toString() : "",
+      total: parseFloat(data[i][3]) || 0,
+      estado: data[i][4] ? data[i][4].toString().trim() : "",
+      driveUrl: data[i][5] ? data[i][5].toString().trim() : "",
+      whatsapp: data[i][6] ? data[i][6].toString() : ""
+    });
+  }
+  // Más recientes primero
+  orders.reverse();
+  return orders;
+}
+
+function cancelGremioOrderByRow(row) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sh = ss.getSheetByName('PEDIDOS');
+  if (!sh) throw new Error("No se encontró la hoja PEDIDOS");
+  sh.getRange(row, 5).setValue('Cancelado');
+  return { success: true };
+}
+
+function updateGremioOrderByRow(row, newDetails) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sh = ss.getSheetByName('PEDIDOS');
+  if (!sh) throw new Error("No se encontró la hoja PEDIDOS");
+  sh.getRange(row, 3).setValue(newDetails);
+  return { success: true };
+}
+
+// =============== FUNCIÓN PARA OBTENER TRABAJOS Y PEDIDOS PENDIENTES ===============
+function getPendingOrders() {
+  var ss = getTargetSpreadsheet();
+  var pending = [];
+
+  // 1. Leer trabajos de la pestaña 'GREMIO'
+  var shGremio = getSheetByNameCaseInsensitive(ss, 'GREMIO');
+  if (shGremio && shGremio.getLastRow() > 1) {
+    var dataG = shGremio.getDataRange().getValues();
+    for (var i = 1; i < dataG.length; i++) {
+      var nombre = dataG[i][0] ? dataG[i][0].toString().trim() : '';
+      if (!nombre || nombre.toLowerCase() === 'nombre' || nombre.toLowerCase() === 'usuario' || nombre.toLowerCase() === 'gremio') continue;
+      
+      var tel = dataG[i][1] ? dataG[i][1].toString().trim() : '';
+      var fecha = dataG[i][2] ? dataG[i][2].toString().trim() : '';
+      var detalle = dataG[i][3] ? dataG[i][3].toString().trim() : 'Trabajo cargado en planilla Gremio';
+      var monto = parseFloat(dataG[i][4]) || 0;
+      var estado = dataG[i][5] ? dataG[i][5].toString().trim() : 'Pendiente';
+
       pending.push({
         row: i + 1,
-        gremio: data[i][1],
-        detalle: data[i][2],
-        total: data[i][3],
-        driveUrl: data[i][5],
-        whatsapp: data[i][6] || ''
+        sourceSheet: 'GREMIO',
+        gremio: nombre,
+        whatsapp: tel,
+        fecha: fecha,
+        detalle: detalle,
+        total: monto,
+        estado: estado
       });
-      sh.getRange(i + 1, 5).setValue('Sincronizado');
     }
   }
+
+  // 2. Leer trabajos de la pestaña 'PEDIDOS'
+  var shPedidos = getSheetByNameCaseInsensitive(ss, 'PEDIDOS');
+  if (shPedidos && shPedidos.getLastRow() > 1) {
+    var dataP = shPedidos.getDataRange().getValues();
+    for (var j = 1; j < dataP.length; j++) {
+      var estadoP = dataP[j][4] ? dataP[j][4].toString().trim() : '';
+      if (estadoP === 'Pendiente' || estadoP === '') {
+        pending.push({
+          row: j + 1,
+          sourceSheet: 'PEDIDOS',
+          gremio: dataP[j][1] ? dataP[j][1].toString().trim() : 'Cliente Gremio',
+          detalle: dataP[j][2] ? dataP[j][2].toString().trim() : 'Pedido Web',
+          total: parseFloat(dataP[j][3]) || 0,
+          driveUrl: dataP[j][5] ? dataP[j][5].toString().trim() : '',
+          whatsapp: dataP[j][6] ? dataP[j][6].toString().trim() : '',
+          estado: 'Pendiente'
+        });
+        try { shPedidos.getRange(j + 1, 5).setValue('Sincronizado'); } catch(e) {}
+      }
+    }
+  }
+
   return pending;
+}
+
+// =============== GESTIÓN Y AUTENTICACIÓN DE GREMIOS EN GOOGLE SHEETS ===============
+function loginGremioUser(usuario, password) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sh = getSheetByNameCaseInsensitive(ss, 'GREMIO');
+  if (!sh || sh.getLastRow() === 0) {
+    if (!sh) sh = ss.insertSheet('GREMIO');
+    sh.appendRow(['Nombre', 'Telefono', 'Fecha']);
+    return { success: false, error: 'No hay gremios registrados todavía. Regístrate primero.' };
+  }
+  
+  var data = sh.getDataRange().getValues();
+  var searchUser = usuario.toString().trim().toLowerCase();
+  var rawPass = password.toString().trim();
+  var cleanPass = rawPass.replace(/[^0-9]/g, '');
+  
+  for (var i = 0; i < data.length; i++) {
+    var rowNombre = data[i][0] ? data[i][0].toString().trim() : '';
+    var rowTel = data[i][1] ? data[i][1].toString().trim() : '';
+    
+    // Ignorar encabezados si la primera fila los tiene
+    if (i === 0 && (rowNombre.toLowerCase() === 'nombre' || rowNombre.toLowerCase() === 'usuario' || rowNombre.toLowerCase() === 'gremio')) {
+      continue;
+    }
+    
+    var cleanRowTel = rowTel.replace(/[^0-9]/g, '');
+    
+    if (rowNombre.toLowerCase() === searchUser) {
+      if (rowTel === rawPass || (cleanPass.length > 0 && cleanRowTel === cleanPass)) {
+        return {
+          success: true,
+          token: 'gas_session_' + Date.now(),
+          user: {
+            nombre: rowNombre,
+            usuario: rowNombre,
+            telefono: rowTel
+          }
+        };
+      } else {
+        return { success: false, error: 'Contraseña (teléfono) incorrecta.' };
+      }
+    }
+  }
+  
+  return { success: false, error: 'El usuario / gremio no existe.' };
+}
+
+function registerGremioUser(nombre, telefono) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sh = getSheetByNameCaseInsensitive(ss, 'GREMIO');
+  if (!sh) {
+    sh = ss.insertSheet('GREMIO');
+  }
+  if (sh.getLastRow() === 0) {
+    sh.appendRow(['Nombre', 'Telefono', 'Fecha']);
+  }
+  
+  var data = sh.getDataRange().getValues();
+  var searchName = nombre.toString().trim().toLowerCase();
+  
+  for (var i = 0; i < data.length; i++) {
+    var rowNombre = data[i][0] ? data[i][0].toString().trim().toLowerCase() : '';
+    if (i === 0 && (rowNombre === 'nombre' || rowNombre === 'usuario' || rowNombre === 'gremio')) {
+      continue;
+    }
+    if (rowNombre === searchName) {
+      return { success: false, error: 'El gremio "' + nombre + '" ya está registrado.' };
+    }
+  }
+  
+  var fecha = Utilities.formatDate(new Date(), "America/Argentina/Buenos_Aires", "dd/MM/yyyy HH:mm");
+  sh.appendRow([nombre.toString().trim(), telefono.toString().trim(), fecha]);
+  
+  return {
+    success: true,
+    message: '¡Registro exitoso! Ya puedes ingresar.'
+  };
 }
 
 // =============== OBTENER GREMIOS ===============
 function getGremiosList() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sh = ss.getSheetByName('PEDIDOS'); if (!sh) return [];
-  var data = sh.getDataRange().getValues();
+  var ss = getTargetSpreadsheet();
   var gremios = {};
-  for (var i = 1; i < data.length; i++) {
-    var gremio = data[i][1];
-    if (gremio) {
-      gremios[gremio.toString().trim()] = data[i][6] || '';
+
+  // 1. Leer de la hoja 'GREMIO'
+  var shGremio = getSheetByNameCaseInsensitive(ss, 'GREMIO');
+  if (shGremio && shGremio.getLastRow() > 0) {
+    var dataG = shGremio.getDataRange().getValues();
+    for (var i = 0; i < dataG.length; i++) {
+      var nombre = dataG[i][0] ? dataG[i][0].toString().trim() : '';
+      if (!nombre) continue;
+      // Solo ignorar si es explícitamente el texto 'nombre' en la primera fila como encabezado
+      if (i === 0 && (nombre.toLowerCase() === 'nombre' || nombre.toLowerCase() === 'usuario' || nombre.toLowerCase() === 'gremio')) continue;
+      
+      var whatsapp = dataG[i][1] ? dataG[i][1].toString().trim() : '';
+      gremios[nombre] = whatsapp;
     }
   }
+
+  // 2. Complementar con hoja 'PEDIDOS' como fallback
+  var shPedidos = ss ? ss.getSheetByName('PEDIDOS') : null;
+  if (shPedidos && shPedidos.getLastRow() > 1) {
+    var dataP = shPedidos.getDataRange().getValues();
+    for (var j = 1; j < dataP.length; j++) {
+      var g = dataP[j][1] ? dataP[j][1].toString().trim() : '';
+      if (g && !gremios[g]) {
+        gremios[g] = dataP[j][6] ? dataP[j][6].toString().trim() : '';
+      }
+    }
+  }
+
   return gremios;
 }
 
@@ -203,18 +408,33 @@ function getCostosData() {
 // =============== OBTENER PRECIOS ===============
 function getPreciosData() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sh = ss.getSheetByName('PRECIOS');
+  var sh = getSheetByNameCaseInsensitive(ss, 'PRECIOS');
   if (!sh) return [];
-  // A: Categoria, B: Producto, C: Precio Gremio, D: Unidad
+  // A: Categoria, B: Producto, C: Precio Gremio, D: Unidad, E: Tipo/Subcategoria, F: Costo/Ancho
   var data = sh.getDataRange().getValues();
   var precios = [];
   for (var i = 1; i < data.length; i++) {
-    if (!data[i][1]) continue;
+    var prod = data[i][1] ? data[i][1].toString().trim() : '';
+    if (!prod || prod.toLowerCase() === 'producto' || prod.toLowerCase() === 'nombre') continue;
+    
+    var cat = data[i][0] ? data[i][0].toString().trim() : 'General';
+    var precioGremio = parseFloat(data[i][2]) || 0;
+    var unidad = (data[i][3] || 'm2').toString().trim();
+    var tipo = data[i][4] ? data[i][4].toString().trim() : '';
+    var costo = parseFloat(data[i][5]) || 0;
+
     precios.push({
-      categoria: data[i][0].toString().trim(),
-      producto: data[i][1].toString().trim(),
-      precioGremio: parseFloat(data[i][2]) || 0,
-      unidad: (data[i][3] || 'm2').toString().trim()
+      id: 'p_' + i,
+      categoria: cat,
+      category: cat,
+      producto: prod,
+      name: prod,
+      precioGremio: precioGremio,
+      precio: precioGremio,
+      unidad: unidad,
+      unit: unidad,
+      tipo: tipo,
+      costo: costo
     });
   }
   return precios;
@@ -273,8 +493,8 @@ function getTercerosData() {
 // =============== ENTRADA WEB ===============
 function doGet(e) {
   try {
-    if (!e || !e.parameter) return HtmlService.createHtmlOutput("Faltan parámetros");
-    var action = e.parameter.action;
+    var action = e ? e.parameter.action : null;
+    var page = e ? e.parameter.page : null;
     
     if (action === 'getPending') return ContentService.createTextOutput(JSON.stringify(getPendingOrders())).setMimeType(ContentService.MimeType.JSON);
     if (action === 'getGremios') return ContentService.createTextOutput(JSON.stringify(getGremiosList())).setMimeType(ContentService.MimeType.JSON);
@@ -287,8 +507,19 @@ function doGet(e) {
       return ContentService.createTextOutput(JSON.stringify(getFolderImages(folderId))).setMimeType(ContentService.MimeType.JSON);
     }
     
-    const template = HtmlService.createTemplateFromFile('Index');
-    return template.evaluate().setTitle('Portal MR Letreros').setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL).addMetaTag('viewport', 'width=device-width, initial-scale=1.0');
+    // Obtener la URL de publicación de la Web App
+    var webAppUrl = ScriptApp.getService().getUrl();
+    
+    if (page === 'cotizador') {
+      const template = HtmlService.createTemplateFromFile('Index');
+      template.webAppUrl = webAppUrl;
+      return template.evaluate().setTitle('Portal MR Letreros').setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL).addMetaTag('viewport', 'width=device-width, initial-scale=1.0');
+    }
+    
+    // Por defecto renderiza la pantalla de login
+    const template = HtmlService.createTemplateFromFile('login');
+    template.webAppUrl = webAppUrl;
+    return template.evaluate().setTitle('Acceso Gremio - MR Letreros').setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL).addMetaTag('viewport', 'width=device-width, initial-scale=1.0');
   } catch(err) { return HtmlService.createHtmlOutput("<h1>Error</h1><p>"+err.message+"</p>"); }
 }
 
@@ -403,6 +634,37 @@ function getFolderImages(folderId) {
     return images;
   } catch (e) {
     return [];
+  }
+}
+
+// =============== PROCESAR ACCIONES DE NOTIFICACIÓN DESDE EL BACKEND ===============
+function doPost(e) {
+  try {
+    const postData = JSON.parse(e.postData.contents);
+    const action = postData.action;
+    
+    if (action === 'cancelOrder') {
+      const driveUrl = postData.driveUrl;
+      const ss = SpreadsheetApp.getActiveSpreadsheet();
+      const sh = ss.getSheetByName('PEDIDOS');
+      if (sh && driveUrl) {
+        const data = sh.getDataRange().getValues();
+        // Buscar fila que coincida con el Drive URL
+        for (let i = 1; i < data.length; i++) {
+          const rowDriveUrl = data[i][5] ? data[i][5].toString().trim() : "";
+          if (rowDriveUrl && (rowDriveUrl.indexOf(driveUrl) > -1 || driveUrl.indexOf(rowDriveUrl) > -1)) {
+            // Cambiar Estado (columna E, que es la 5) a 'Cancelado'
+            sh.getRange(i + 1, 5).setValue('Cancelado');
+            break;
+          }
+        }
+      }
+      return ContentService.createTextOutput(JSON.stringify({ success: true, message: 'Pedido cancelado en Sheets' })).setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    return ContentService.createTextOutput(JSON.stringify({ success: false, error: 'Accion no valida' })).setMimeType(ContentService.MimeType.JSON);
+  } catch (err) {
+    return ContentService.createTextOutput(JSON.stringify({ success: false, error: err.message })).setMimeType(ContentService.MimeType.JSON);
   }
 }
 

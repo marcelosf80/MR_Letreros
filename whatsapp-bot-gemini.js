@@ -542,17 +542,7 @@ function cargarCatalogoParaIA() {
  * @returns {string} Texto formateado con las reglas aprendidas.
  */
 function cargarAprendizajesParaIA() {
-  try {
-    if (!fs.existsSync(CONFIG.learningsFile)) return '(Sin aprendizajes todavía. El bot aprenderá de los operadores.)';
-    const aprendizajes = JSON.parse(fs.readFileSync(CONFIG.learningsFile, 'utf-8'));
-    if (!Array.isArray(aprendizajes) || aprendizajes.length === 0) return '(Sin aprendizajes todavía.)';
-
-    return aprendizajes.map((a, i) => {
-      return `${i + 1}. ${a.regla}${a.contexto ? ` (Contexto: ${a.contexto})` : ''}`;
-    }).join('\n');
-  } catch (e) {
-    return '(Error cargando aprendizajes)';
-  }
+  return '';
 }
 
 /**
@@ -561,122 +551,8 @@ function cargarAprendizajesParaIA() {
  * @param {string} nombreCliente - Nombre del cliente.
  */
 async function extraerAprendizajes(historial, nombreCliente) {
-  try {
-    // Solo extraer si hubo mensajes del operador
-    const mensajesOperador = historial.filter(h => h.rol === 'operador');
-    if (mensajesOperador.length < 2) {
-      log('ℹ️ Menos de 2 mensajes del operador, no se extraen aprendizajes.');
-      return;
-    }
-
-    // Construir la conversación para análisis
-    const conversacionTexto = historial.map(h => {
-      const emoji = h.rol === 'cliente' ? '👤 Cliente' : h.rol === 'operador' ? '👨‍💼 Operador humano' : '🤖 Bot';
-      return `${emoji}: ${h.mensaje}`;
-    }).join('\n');
-
-    const promptExtraccion = `Analiza esta conversación REAL entre un operador experto de MR Letreros (negocio de gráfica y señalética) y un cliente.
-El operador es un vendedor humano experimentado. Tu tarea es extraer REGLAS y PATRONES útiles de cómo atendió.
-
-CONVERSACIÓN:
-${conversacionTexto}
-
-EXTRAE las reglas de venta y atención que usó el operador. Enfocate en:
-1. ¿Qué preguntas hizo para entender al cliente?
-2. ¿Cómo manejó objeciones o dudas?
-3. ¿Qué información técnica ofreció?
-4. ¿Cómo cerró la venta o derivó?
-5. ¿Qué productos recomendó y por qué?
-6. ¿Rechazó algún pedido? ¿Por qué? (ej: "no vendemos ese tipo de letreros")
-
-Responde SOLO con un JSON array de objetos:
-[
-  { "regla": "Descripción clara de la regla", "contexto": "Situación donde aplica", "confianza": "alta|media|baja" }
-]
-
-Máximo 5 reglas. Solo reglas CONCRETAS y ACCIONABLES que el bot pueda usar. No incluyas reglas genéricas como "ser amable".`;
-
-    const useOllama = CONFIG.aiProvider === 'ollama';
-    const modelToUse = useOllama ? (CONFIG.ollamaModel || 'llama3.2:latest') : 'meta-llama/llama-4-scout-17b-16e-instruct';
-
-    const completion = await aiClient.chat.completions.create({
-      model: modelToUse,
-      messages: [
-        { role: 'system', content: 'Eres un analista de ventas. Responde SOLO con JSON válido, sin texto adicional ni backticks.' },
-        { role: 'user', content: promptExtraccion }
-      ],
-      max_tokens: 800,
-      temperature: 0.3,
-      response_format: useOllama ? undefined : { type: 'json_object' }
-    });
-
-    const responseText = completion.choices[0].message.content.trim()
-      .replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-
-    // Parsear respuesta - puede ser array directo o objeto con array
-    let nuevasReglas;
-    const parsed = JSON.parse(responseText);
-    if (Array.isArray(parsed)) {
-      nuevasReglas = parsed;
-    } else if (parsed.reglas && Array.isArray(parsed.reglas)) {
-      nuevasReglas = parsed.reglas;
-    } else {
-      // Intentar extraer array del JSON
-      const arrMatch = responseText.match(/\[[\s\S]*\]/);
-      nuevasReglas = arrMatch ? JSON.parse(arrMatch[0]) : [];
-    }
-
-    if (!nuevasReglas || nuevasReglas.length === 0) {
-      log('ℹ️ No se extrajeron reglas de esta conversación.');
-      return;
-    }
-
-    // Agregar metadata
-    nuevasReglas.forEach(r => {
-      r.fecha = new Date().toISOString().split('T')[0];
-      r.cliente = nombreCliente;
-    });
-
-    // Cargar aprendizajes existentes y agregar los nuevos
-    let aprendizajes = [];
-    try {
-      if (fs.existsSync(CONFIG.learningsFile)) {
-        aprendizajes = JSON.parse(fs.readFileSync(CONFIG.learningsFile, 'utf-8'));
-      }
-    } catch (e) { aprendizajes = []; }
-
-    // Filtrar reglas duplicadas (comparar texto similar)
-    const reglasExistentes = aprendizajes.map(a => a.regla.toLowerCase());
-    const reglasNuevasUnicas = nuevasReglas.filter(r => {
-      const reglaLower = r.regla.toLowerCase();
-      return !reglasExistentes.some(existente => {
-        // Si más del 70% de las palabras coinciden, es duplicada
-        const palabrasNueva = reglaLower.split(/\s+/);
-        const coincidencias = palabrasNueva.filter(p => existente.includes(p)).length;
-        return coincidencias / palabrasNueva.length > 0.7;
-      });
-    });
-
-    if (reglasNuevasUnicas.length === 0) {
-      log('ℹ️ Las reglas extraídas ya existían. No se agregaron duplicados.');
-      return;
-    }
-
-    aprendizajes.push(...reglasNuevasUnicas);
-
-    // Mantener máximo (FIFO - descartar las más viejas)
-    if (aprendizajes.length > CONFIG.maxLearnings) {
-      aprendizajes = aprendizajes.slice(aprendizajes.length - CONFIG.maxLearnings);
-    }
-
-    fs.writeFileSync(CONFIG.learningsFile, JSON.stringify(aprendizajes, null, 2));
-    log(`🧠 ¡Aprendizaje exitoso! Se extrajeron ${reglasNuevasUnicas.length} nuevas reglas de la conversación con ${nombreCliente}.`);
-    reglasNuevasUnicas.forEach(r => log(`   📌 ${r.regla}`));
-    io.emit('log', `📚 Total de aprendizajes: ${aprendizajes.length}/${CONFIG.maxLearnings}`);
-
-  } catch (err) {
-    log(`⚠️ Error extrayendo aprendizajes: ${err.message}`);
-  }
+  // Función de aprendizaje deshabilitada
+  return;
 }
 
 function cargarImagenesParaIA() {
@@ -931,6 +807,20 @@ async function restartClient() {
   }, 3000);
 }
 
+// Resuelve el JID real de WhatsApp (útil para números argentinos con o sin '9')
+async function resolveChatId(chatIdOrPhone) {
+  try {
+    const rawNumber = String(chatIdOrPhone).split('@')[0].replace(/\D/g, '');
+    const numberId = await client.getNumberId(rawNumber);
+    if (numberId) {
+      return numberId._serialized;
+    }
+  } catch (err) {
+    console.warn(`⚠️ Error al resolver número con getNumberId: ${err.message}`);
+  }
+  return chatIdOrPhone.includes('@') ? chatIdOrPhone : `${chatIdOrPhone}@c.us`;
+}
+
 async function processMessageQueue() {
   if (isProcessingQueue || messageQueue.length === 0) return;
   isProcessingQueue = true;
@@ -944,9 +834,11 @@ async function processMessageQueue() {
 
     const { chatId, message, resolve, reject, retries = 0 } = messageQueue[0];
     try {
-      console.log(`🤖 [API] Enviando a chatId: ${chatId} (En cola: ${messageQueue.length})`);
-      await client.sendMessage(chatId, message);
-      console.log(`✅ [API] Mensaje enviado a ${chatId}: "${message.substring(0, 50)}..."`);
+      console.log(`🤖 [API] Resolviendo número para chatId: ${chatId}...`);
+      const targetChatId = await resolveChatId(chatId);
+      console.log(`🤖 [API] Enviando a targetChatId: ${targetChatId} (En cola: ${messageQueue.length})`);
+      await client.sendMessage(targetChatId, message);
+      console.log(`✅ [API] Mensaje enviado a ${targetChatId}: "${message.substring(0, 50)}..."`);
       messageQueue.shift(); // Remover de la cola si es exitoso
       resolve({ success: true });
     } catch (error) {
@@ -1415,38 +1307,13 @@ async function procesarComandoOperador(message) {
 
   // ── !aprendizajes ──────────────────────────────────────────────────
   if (texto === '!aprendizajes') {
-    try {
-      let aprendizajes = [];
-      if (fs.existsSync(CONFIG.learningsFile)) {
-        aprendizajes = JSON.parse(fs.readFileSync(CONFIG.learningsFile, 'utf-8'));
-      }
-      if (aprendizajes.length === 0) {
-        await message.reply('📚 El bot todavía no tiene aprendizajes. Atendé clientes con !tomar y al cerrar/liberar el bot aprenderá de tu estilo.');
-        return true;
-      }
-      let resumen = `📚 *Aprendizajes del Bot* (${aprendizajes.length}/${CONFIG.maxLearnings})\n\n`;
-      aprendizajes.forEach((a, i) => {
-        resumen += `${i + 1}. ${a.regla}\n`;
-        if (a.contexto) resumen += `   _${a.contexto}_\n`;
-        resumen += `   📅 ${a.fecha} | Confianza: ${a.confianza || 'N/A'}\n\n`;
-      });
-      resumen += `_Para borrar: !borrar-aprendizajes_`;
-      await message.reply(resumen);
-    } catch (e) {
-      await message.reply('❌ Error leyendo aprendizajes: ' + e.message);
-    }
+    await message.reply('📚 La función de aprendizaje automático del bot ha sido desactivada.');
     return true;
   }
 
   // ── !borrar-aprendizajes ───────────────────────────────────────────
   if (texto === '!borrar-aprendizajes') {
-    try {
-      fs.writeFileSync(CONFIG.learningsFile, JSON.stringify([], null, 2));
-      log('🗑️ Aprendizajes borrados por operador.');
-      await message.reply('✅ Todos los aprendizajes han sido borrados. El bot empezará a aprender de cero.');
-    } catch (e) {
-      await message.reply('❌ Error borrando aprendizajes: ' + e.message);
-    }
+    await message.reply('⚠️ La función de aprendizaje automático está desactivada.');
     return true;
   }
 
@@ -1489,7 +1356,8 @@ async function procesarComandoOperador(message) {
     io.emit('operador-tomo', { numero: numTarget, nombre: conv.nombre });
 
     // Notificar al cliente
-    await client.sendMessage(`${numTarget}@c.us`,
+    const targetJid = await resolveChatId(numTarget);
+    await client.sendMessage(targetJid,
       `👤 *Un asesor de MR Letreros va a atenderte ahora.*\n\n` +
       `En un momento te responde directamente. 😊`
     );
@@ -1513,10 +1381,9 @@ async function procesarComandoOperador(message) {
       return true;
     }
 
-    // 🧠 Extraer aprendizajes ANTES de liberar
+    // 🧠 Extraer aprendizajes ANTES de liberar (DESACTIVADO)
     if (conv.modoOperador && conv.historial.some(h => h.rol === 'operador')) {
-      log(`🧠 Extrayendo aprendizajes de la conversación con ${conv.nombre}...`);
-      extraerAprendizajes(conv.historial, conv.nombre).catch(e => log(`⚠️ ${e.message}`));
+      // Aprendizaje desactivado
     }
 
     conv.modoOperador = false;
@@ -1525,7 +1392,8 @@ async function procesarComandoOperador(message) {
 
     log(`🤖 Bot retomó control de: ${conv.nombre} (${numTarget})`);
 
-    await client.sendMessage(`${numTarget}@c.us`,
+    const targetJid = await resolveChatId(numTarget);
+    await client.sendMessage(targetJid,
       `🤖 *Volvés a hablar con el asistente automático de MR Letreros.*\n\n` +
       `¿En qué más puedo ayudarte?`
     );
@@ -1565,10 +1433,9 @@ async function procesarComandoOperador(message) {
     leads[leadData.id] = leadData;
     saveJSON(leadsFile, leads);
 
-    // 🧠 Extraer aprendizajes ANTES de cerrar
+    // 🧠 Extraer aprendizajes ANTES de cerrar (DESACTIVADO)
     if (conv.historial.some(h => h.rol === 'operador')) {
-      log(`🧠 Extrayendo aprendizajes de la conversación cerrada con ${conv.nombre}...`);
-      extraerAprendizajes(conv.historial, conv.nombre).catch(e => log(`⚠️ ${e.message}`));
+      // Aprendizaje desactivado
     }
 
     delete convs[numTarget];
@@ -2056,8 +1923,8 @@ async function limpiezaAutomaticaYAprendizaje() {
       log(`🧠 Aprendizaje automático: Procesando conversación inactiva de ${conv.nombre}...`);
 
       try {
-        // 1. Extraer aprendizajes de lo que escribió el humano
-        await extraerAprendizajes(conv.historial, conv.nombre);
+        // 1. Extraer aprendizajes (DESACTIVADO)
+        // await extraerAprendizajes(conv.historial, conv.nombre);
 
         // 2. Guardar como lead (si tiene score)
         const tier = calcularTier(conv.scoreAcumulado);

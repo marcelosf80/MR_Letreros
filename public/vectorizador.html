@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <link rel="icon" type="image/x-icon" href="/img/logo.ico">
     <meta charset="UTF-8">
@@ -7,22 +8,20 @@
     <title>Amplificador de Imagen IA - MR Letreros</title>
     <script src="js/auth.js"></script>
     <link rel="stylesheet" href="css/base.css">
-    
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/all.min.css">
-    
+    <link rel="stylesheet" href="css/mr-app-theme.css">
     <link rel="stylesheet" href="css/vectorizador.css">
 </head>
+
 <body>
     <header class="header-nav">
         <div style="display: flex; align-items: center; gap: 20px;">
-            <a href="/" style="color: var(--primary); text-decoration: none; font-weight: 700; font-family: var(--font-display);">
+            <a href="/"
+                style="color: var(--primary); text-decoration: none; font-weight: 700; font-family: var(--font-display);">
                 <i class="fas fa-chevron-left"></i> PANEL
             </a>
             <div style="height: 25px; width: 1px; background: rgba(255,255,255,0.2); margin: 0 10px;"></div>
-            <h2 style="margin: 0; font-size: 1.2rem; font-weight: 800; color: white; font-family: var(--font-display);">HERRAMIENTAS IA</h2>
+            <h2 style="margin: 0; font-size: 1.2rem; font-weight: 800; color: white; font-family: var(--font-display);">
+                HERRAMIENTAS IA</h2>
         </div>
         <div class="tool-tabs">
             <div class="tool-tab active" id="tab-upscale" onclick="setMode('upscale')">Ampliar Imagen</div>
@@ -31,7 +30,9 @@
             <div class="tool-tab" id="tab-depixel" onclick="setMode('depixel')">Despixelar</div>
         </div>
         <div style="display: flex; align-items: center; gap: 10px;">
-            <span style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); font-family: var(--font-display); letter-spacing: 2px;">MR LETREROS v2.0</span>
+            <span
+                style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); font-family: var(--font-display); letter-spacing: 2px;">MR
+                LETREROS v2.0</span>
         </div>
     </header>
 
@@ -41,15 +42,20 @@
             <div class="canvas-area" id="dropZone">
                 <!-- Drop Zone State: Empty -->
                 <div id="dropText" style="display: flex; flex-direction: column; align-items: center;">
-                    <div class="logo-animate" style="background: rgba(0,0,0,0.3); padding: 25px; border-radius: 50%; box-shadow: 0 10px 30px rgba(99, 102, 241, 0.2); margin-bottom: 25px; border: 1px solid var(--surface-border);">
+                    <div class="logo-animate"
+                        style="background: rgba(0,0,0,0.3); padding: 25px; border-radius: 50%; box-shadow: 0 10px 30px rgba(99, 102, 241, 0.2); margin-bottom: 25px; border: 1px solid var(--surface-border);">
                         <i class="fas fa-wand-magic-sparkles" style="font-size: 3.5rem; color: var(--primary);"></i>
                     </div>
-                    <h3 style="font-weight: 800; color: white; font-family: var(--font-display); font-size: 1.5rem;">Selecciona tu diseño</h3>
+                    <h3 style="font-weight: 800; color: white; font-family: var(--font-display); font-size: 1.5rem;">
+                        Selecciona tu diseño</h3>
                     <p style="color: var(--text-muted);">Arrastra y suelta el archivo aquí para mejorar la calidad</p>
-                    <button class="btn-action" style="max-width: 280px; margin-top: 25px; border-radius: 10px; font-size: 1rem; padding: 14px;" onclick="document.getElementById('fileInput').click()">
+                    <button class="btn-action"
+                        style="max-width: 280px; margin-top: 25px; border-radius: 10px; font-size: 1rem; padding: 14px;"
+                        onclick="document.getElementById('fileInput').click()">
                         <i class="fas fa-file-image"></i> Seleccionar de mi PC
                     </button>
-                    <div style="margin-top: 25px; color: #64748b; font-size: 0.8rem; letter-spacing: 0.05em;">JPG, PNG, WEBP (Hasta 20MB)</div>
+                    <div style="margin-top: 25px; color: #64748b; font-size: 0.8rem; letter-spacing: 0.05em;">JPG, PNG,
+                        WEBP (Hasta 20MB)</div>
                 </div>
 
                 <!-- Preview Area -->
@@ -60,36 +66,44 @@
                 <!-- Result Overlay (After Processing) -->
                 <div class="result-overlay" id="resultOverlay">
                     <img id="resultImg" src="" alt="Resultado">
-                    <div id="resultInfo" style="position: absolute; bottom: 20px; background: rgba(0,0,0,0.8); color: white; padding: 12px 25px; border-radius: 50px; font-size: 0.95rem; font-weight: 600; border: 1px solid var(--surface-border); box-shadow: 0 10px 25px rgba(0,0,0,0.5);"></div>
+                    <div id="resultInfo"
+                        style="position: absolute; bottom: 20px; background: rgba(0,0,0,0.8); color: white; padding: 12px 25px; border-radius: 50px; font-size: 0.95rem; font-weight: 600; border: 1px solid var(--surface-border); box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
+                    </div>
                 </div>
 
                 <!-- Loading Overlay -->
-                <div id="loader" style="display: none; flex-direction: column; align-items: center; justify-content: center; position: absolute; z-index: 20; background: rgba(0,0,0,0.7); width: 100%; height: 100%; border-radius: 18px; backdrop-filter: blur(5px);">
+                <div id="loader"
+                    style="display: none; flex-direction: column; align-items: center; justify-content: center; position: absolute; z-index: 20; background: rgba(0,0,0,0.7); width: 100%; height: 100%; border-radius: 18px; backdrop-filter: blur(5px);">
                     <div class="loader"></div>
-                    <div id="loadingText" style="font-weight: 600; color: white; margin-top: 20px; font-family: var(--font-display); font-size: 1.1rem;">Procesando con Inteligencia Artificial...</div>
+                    <div id="loadingText"
+                        style="font-weight: 600; color: white; margin-top: 20px; font-family: var(--font-display); font-size: 1.1rem;">
+                        Procesando con Inteligencia Artificial...</div>
                 </div>
             </div>
 
             <!-- Acciones Post-Proceso -->
             <div id="postActions" style="display: none; justify-content: center; gap: 15px; margin-bottom: 20px;">
-                <a id="downloadBtn" href="#" class="select-btn" style="background: rgba(16, 185, 129, 0.1); color: var(--success); border-color: rgba(16, 185, 129, 0.3); padding: 12px 30px; display: flex; align-items: center; gap: 10px; text-decoration: none;">
+                <a id="downloadBtn" href="#" class="select-btn"
+                    style="background: rgba(16, 185, 129, 0.1); color: var(--success); border-color: rgba(16, 185, 129, 0.3); padding: 12px 30px; display: flex; align-items: center; gap: 10px; text-decoration: none;">
                     <i class="fas fa-download"></i> Descargar
                 </a>
-                <button onclick="openClientModal()" class="select-btn" style="background: rgba(99, 102, 241, 0.1); color: var(--primary); border-color: rgba(99, 102, 241, 0.3); padding: 12px 30px; display: flex; align-items: center; gap: 10px;">
+                <button onclick="openClientModal()" class="select-btn"
+                    style="background: rgba(99, 102, 241, 0.1); color: var(--primary); border-color: rgba(99, 102, 241, 0.3); padding: 12px 30px; display: flex; align-items: center; gap: 10px;">
                     <i class="fas fa-save"></i> Guardar en Cliente
                 </button>
                 <button onclick="resetUI()" class="select-btn" style="padding: 12px 30px;">
                     <i class="fas fa-undo"></i> Nueva Imagen
                 </button>
             </div>
-            
+
             <input type="file" id="fileInput" accept="image/*" style="display:none;">
         </section>
 
         <!-- Sidebar Derecha: Opciones -->
         <aside class="sidebar">
-            <h3 class="sidebar-title" id="sideTitle"><i class="fa-solid fa-wand-magic-sparkles"></i> Opciones de Ampliación</h3>
-            
+            <h3 class="sidebar-title" id="sideTitle"><i class="fa-solid fa-wand-magic-sparkles"></i> Opciones de
+                Ampliación</h3>
+
             <div id="upscale-options">
                 <!-- Modes added from upscaler project -->
                 <div class="mode-toggle">
@@ -106,11 +120,13 @@
                     <div class="dimension-inputs">
                         <div class="form-group">
                             <label class="option-label">ANCHO OBJETIVO (PX)</label>
-                            <input type="number" id="targetWidth" min="1" value="" placeholder="Ej. 2048" oninput="calculateFactor()" />
+                            <input type="number" id="targetWidth" min="1" value="" placeholder="Ej. 2048"
+                                oninput="calculateFactor()" />
                         </div>
                         <div class="form-group">
                             <label class="option-label">ALTO OBJETIVO (PX)</label>
-                            <input type="number" id="targetHeight" min="1" value="" placeholder="Ej. 2048" oninput="calculateFactor()" />
+                            <input type="number" id="targetHeight" min="1" value="" placeholder="Ej. 2048"
+                                oninput="calculateFactor()" />
                         </div>
                     </div>
                 </div>
@@ -120,11 +136,13 @@
                     <div class="dimension-inputs">
                         <div class="form-group">
                             <label class="option-label">ANCHO (CM)</label>
-                            <input type="number" id="widthCm" min="0.1" step="0.1" value="20" oninput="calculateFactor()" />
+                            <input type="number" id="widthCm" min="0.1" step="0.1" value="20"
+                                oninput="calculateFactor()" />
                         </div>
                         <div class="form-group">
                             <label class="option-label">ALTO (CM)</label>
-                            <input type="number" id="heightCm" min="0.1" step="0.1" value="20" oninput="calculateFactor()" />
+                            <input type="number" id="heightCm" min="0.1" step="0.1" value="20"
+                                oninput="calculateFactor()" />
                         </div>
                     </div>
                     <div class="form-group">
@@ -136,17 +154,29 @@
                 <div class="option-group" style="margin-top: 25px;">
                     <label class="option-label">MODO DE CALIDAD IA</label>
                     <div style="display: flex; flex-direction: column; gap: 10px;">
-                        <div class="select-btn upscale-method-btn active" data-value="ultra_anime" style="text-align: left; padding: 15px;">
-                            <div style="font-weight: 700; font-size: 1.05rem; margin-bottom: 5px; color: var(--text-main);">🚀 Ilustraciones / Logos (Ultra Nítido)</div>
-                            <div style="font-size: 0.85rem; font-weight: 400; color: var(--text-muted);">Modelo IA especializado en trazos, letras y logos. Ideal para CorelDRAW.</div>
+                        <div class="select-btn upscale-method-btn active" data-value="ultra_anime"
+                            style="text-align: left; padding: 15px;">
+                            <div
+                                style="font-weight: 700; font-size: 1.05rem; margin-bottom: 5px; color: var(--text-main);">
+                                🚀 Ilustraciones / Logos (Ultra Nítido)</div>
+                            <div style="font-size: 0.85rem; font-weight: 400; color: var(--text-muted);">Modelo IA
+                                especializado en trazos, letras y logos. Ideal para CorelDRAW.</div>
                         </div>
-                        <div class="select-btn upscale-method-btn" data-value="ultra" style="text-align: left; padding: 15px;">
-                            <div style="font-weight: 700; font-size: 1.05rem; margin-bottom: 5px; color: var(--text-main);">📸 Fotos / General (Realista)</div>
-                            <div style="font-size: 0.85rem; font-weight: 400; color: var(--text-muted);">Modelo IA general de súper resolución. Ideal para fotos y texturas.</div>
+                        <div class="select-btn upscale-method-btn" data-value="ultra"
+                            style="text-align: left; padding: 15px;">
+                            <div
+                                style="font-weight: 700; font-size: 1.05rem; margin-bottom: 5px; color: var(--text-main);">
+                                📸 Fotos / General (Realista)</div>
+                            <div style="font-size: 0.85rem; font-weight: 400; color: var(--text-muted);">Modelo IA
+                                general de súper resolución. Ideal para fotos y texturas.</div>
                         </div>
-                        <div class="select-btn upscale-method-btn" data-value="standard" style="text-align: left; padding: 15px;">
-                            <div style="font-weight: 700; font-size: 1.05rem; margin-bottom: 5px; color: var(--text-main);">⚡ Normal (Rápido)</div>
-                            <div style="font-size: 0.85rem; font-weight: 400; color: var(--text-muted);">Escalado tradicional por interpolación Lanczos. Muy rápido.</div>
+                        <div class="select-btn upscale-method-btn" data-value="standard"
+                            style="text-align: left; padding: 15px;">
+                            <div
+                                style="font-weight: 700; font-size: 1.05rem; margin-bottom: 5px; color: var(--text-main);">
+                                ⚡ Normal (Rápido)</div>
+                            <div style="font-size: 0.85rem; font-weight: 400; color: var(--text-muted);">Escalado
+                                tradicional por interpolación Lanczos. Muy rápido.</div>
                         </div>
                     </div>
                 </div>
@@ -156,13 +186,22 @@
                 <div class="option-group">
                     <label class="option-label">MÉTODO DE VECTORIZACIÓN</label>
                     <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px;">
-                        <div class="select-btn vector-method-btn active" id="method-vtracer" onclick="setVectorMethod('vtracer')" style="text-align: left; padding: 15px;">
-                            <div style="font-weight: 700; font-size: 1.05rem; margin-bottom: 5px; color: var(--text-main);">⚡ VTracer (Rápido / Optimizado IA)</div>
-                            <div style="font-size: 0.85rem; font-weight: 400; color: var(--text-muted);">Recomendado para la mayoría de logotipos y diseños lineales. Ejecución rápida.</div>
+                        <div class="select-btn vector-method-btn active" id="method-vtracer"
+                            onclick="setVectorMethod('vtracer')" style="text-align: left; padding: 15px;">
+                            <div
+                                style="font-weight: 700; font-size: 1.05rem; margin-bottom: 5px; color: var(--text-main);">
+                                ⚡ VTracer (Rápido / Optimizado IA)</div>
+                            <div style="font-size: 0.85rem; font-weight: 400; color: var(--text-muted);">Recomendado
+                                para la mayoría de logotipos y diseños lineales. Ejecución rápida.</div>
                         </div>
-                        <div class="select-btn vector-method-btn" id="method-starvector" onclick="setVectorMethod('starvector')" style="text-align: left; padding: 15px;">
-                            <div style="font-weight: 700; font-size: 1.05rem; margin-bottom: 5px; color: var(--text-main);">✨ StarVector (Generativo)</div>
-                            <div style="font-size: 0.85rem; font-weight: 400; color: var(--text-muted);">Modelo multimodal generador de SVG. Ideal para formas abstractas e ilustración. <i>Nota: Ejecución en CPU lenta, requiere descarga inicial (~2.5GB).</i></div>
+                        <div class="select-btn vector-method-btn" id="method-starvector"
+                            onclick="setVectorMethod('starvector')" style="text-align: left; padding: 15px;">
+                            <div
+                                style="font-weight: 700; font-size: 1.05rem; margin-bottom: 5px; color: var(--text-main);">
+                                ✨ StarVector (Generativo)</div>
+                            <div style="font-size: 0.85rem; font-weight: 400; color: var(--text-muted);">Modelo
+                                multimodal generador de SVG. Ideal para formas abstractas e ilustración. <i>Nota:
+                                    Ejecución en CPU lenta, requiere descarga inicial (~2.5GB).</i></div>
                         </div>
                     </div>
                 </div>
@@ -170,35 +209,47 @@
                 <div class="option-group" style="margin-top: 20px;">
                     <label class="option-label">OPTIMIZAR RESOLUCIÓN (PÍXELES)</label>
                     <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-                        <button type="button" class="select-btn opt-res-btn active" data-value="none" style="flex: 1; padding: 10px 5px; font-size: 0.85rem;">
+                        <button type="button" class="select-btn opt-res-btn active" data-value="none"
+                            style="flex: 1; padding: 10px 5px; font-size: 0.85rem;">
                             Original
                         </button>
-                        <button type="button" class="select-btn opt-res-btn" data-value="2000" style="flex: 1; padding: 10px 5px; font-size: 0.85rem;">
+                        <button type="button" class="select-btn opt-res-btn" data-value="2000"
+                            style="flex: 1; padding: 10px 5px; font-size: 0.85rem;">
                             2000 px
                         </button>
-                        <button type="button" class="select-btn opt-res-btn" data-value="3000" style="flex: 1; padding: 10px 5px; font-size: 0.85rem;">
+                        <button type="button" class="select-btn opt-res-btn" data-value="3000"
+                            style="flex: 1; padding: 10px 5px; font-size: 0.85rem;">
                             3000 px
                         </button>
-                        <button type="button" class="select-btn opt-res-btn" data-value="custom" style="flex: 1; padding: 10px 5px; font-size: 0.85rem;">
+                        <button type="button" class="select-btn opt-res-btn" data-value="custom"
+                            style="flex: 1; padding: 10px 5px; font-size: 0.85rem;">
                             Personalizado
                         </button>
                     </div>
-                    <div id="custom-vector-res" style="display: none; animation: fadeIn 0.3s ease; margin-bottom: 20px;">
+                    <div id="custom-vector-res"
+                        style="display: none; animation: fadeIn 0.3s ease; margin-bottom: 20px;">
                         <div class="form-group" style="margin-bottom: 0;">
-                            <label class="option-label" style="font-size: 0.75rem; color: var(--text-muted);">ANCHO OBJETIVO (PX)</label>
-                            <input type="number" id="vectorTargetWidth" min="500" max="6000" value="2000" style="width: 100%; padding: 12px 14px; border: 1px solid var(--surface-border); background: rgba(0,0,0,0.3); color: white; border-radius: 10px;">
+                            <label class="option-label" style="font-size: 0.75rem; color: var(--text-muted);">ANCHO
+                                OBJETIVO (PX)</label>
+                            <input type="number" id="vectorTargetWidth" min="500" max="6000" value="2000"
+                                style="width: 100%; padding: 12px 14px; border: 1px solid var(--surface-border); background: rgba(0,0,0,0.3); color: white; border-radius: 10px;">
                         </div>
                     </div>
                 </div>
 
-                <div id="starvector-warning" style="display: none; background: rgba(245, 158, 11, 0.1); padding: 15px; border-radius: 12px; border: 1px solid rgba(245, 158, 11, 0.3); color: #fef3c7; font-size: 0.85rem; margin-bottom: 20px; line-height: 1.4;">
-                    <i class="fas fa-exclamation-triangle" style="color: #f59e0b; margin-right: 5px;"></i> <b>Nota:</b> Ejecución en CPU activa. El procesamiento puede demorar entre 1 y 2 minutos por imagen, y la primera vez descargará el modelo (~2.5GB).
+                <div id="starvector-warning"
+                    style="display: none; background: rgba(245, 158, 11, 0.1); padding: 15px; border-radius: 12px; border: 1px solid rgba(245, 158, 11, 0.3); color: #fef3c7; font-size: 0.85rem; margin-bottom: 20px; line-height: 1.4;">
+                    <i class="fas fa-exclamation-triangle" style="color: #f59e0b; margin-right: 5px;"></i> <b>Nota:</b>
+                    Ejecución en CPU activa. El procesamiento puede demorar entre 1 y 2 minutos por imagen, y la primera
+                    vez descargará el modelo (~2.5GB).
                 </div>
 
                 <div class="option-group">
                     <label class="option-label">ANÁLISIS DE LA IMAGEN</label>
-                    <div id="analysisResult" style="background: rgba(56, 189, 248, 0.1); padding: 20px; border-radius: 12px; font-size: 0.95rem; line-height: 1.5; border: 1px solid rgba(56, 189, 248, 0.2); color: #bae6fd;">
-                        <i class="fas fa-robot" style="font-size: 1.5rem; margin-bottom: 10px; display: block;"></i> Sube una imagen para analizar complejidad...
+                    <div id="analysisResult"
+                        style="background: rgba(56, 189, 248, 0.1); padding: 20px; border-radius: 12px; font-size: 0.95rem; line-height: 1.5; border: 1px solid rgba(56, 189, 248, 0.2); color: #bae6fd;">
+                        <i class="fas fa-robot" style="font-size: 1.5rem; margin-bottom: 10px; display: block;"></i>
+                        Sube una imagen para analizar complejidad...
                     </div>
                 </div>
             </div>
@@ -206,18 +257,24 @@
             <div id="depixel-options" style="display: none;">
                 <div class="option-group">
                     <label class="option-label">INFORMACIÓN DE DESPIXELADO</label>
-                    <div style="background: rgba(16, 185, 129, 0.1); padding: 20px; border-radius: 12px; font-size: 0.95rem; line-height: 1.5; border: 1px solid rgba(16, 185, 129, 0.2); color: #a7f3d0; margin-bottom: 20px; text-align: left;">
-                        <i class="fas fa-magic" style="font-size: 1.5rem; margin-bottom: 10px; display: block; color: var(--success);"></i>
-                        Esta función suaviza los bordes pixelados ("escalonados") y elimina ruido o borrosidad de logotipos y letras sin aumentar las dimensiones de la imagen. Ideal para restaurar imágenes de baja calidad antes de su uso.
+                    <div
+                        style="background: rgba(16, 185, 129, 0.1); padding: 20px; border-radius: 12px; font-size: 0.95rem; line-height: 1.5; border: 1px solid rgba(16, 185, 129, 0.2); color: #a7f3d0; margin-bottom: 20px; text-align: left;">
+                        <i class="fas fa-magic"
+                            style="font-size: 1.5rem; margin-bottom: 10px; display: block; color: var(--success);"></i>
+                        Esta función suaviza los bordes pixelados ("escalonados") y elimina ruido o borrosidad de
+                        logotipos y letras sin aumentar las dimensiones de la imagen. Ideal para restaurar imágenes de
+                        baja calidad antes de su uso.
                     </div>
                 </div>
             </div>
 
-            <button class="btn-action" id="processBtn" onclick="processImage()" disabled style="opacity: 0.6; margin-top: 30px;">
+            <button class="btn-action" id="processBtn" onclick="processImage()" disabled
+                style="opacity: 0.6; margin-top: 30px;">
                 <span id="btnText">Procesar Imagen</span> <i class="fas fa-arrow-right" style="margin-left: 8px;"></i>
             </button>
-            
-            <div id="imageSizeInfo" style="margin-top: 20px; font-size: 0.9rem; color: var(--text-muted); text-align: center; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 10px; border: 1px solid var(--surface-border);">
+
+            <div id="imageSizeInfo"
+                style="margin-top: 20px; font-size: 0.9rem; color: var(--text-muted); text-align: center; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 10px; border: 1px solid var(--surface-border);">
                 Sube una imagen para ver dimensiones
             </div>
         </aside>
@@ -227,10 +284,14 @@
     <div id="clientModal" class="modal">
         <div class="modal-content">
             <h3 style="font-family: var(--font-display); margin-bottom: 20px; color: white;">Guardar en Cliente</h3>
-            <input type="text" id="clientSearchInput" placeholder="Buscar cliente..." style="width: 100%; padding: 12px; border: 1px solid var(--surface-border); background: rgba(0,0,0,0.3); color: white; border-radius: 10px; margin-bottom: 15px;">
-            <div id="clientList" style="max-height: 300px; overflow-y: auto; border: 1px solid var(--surface-border); background: rgba(0,0,0,0.2); border-radius: 10px;"></div>
+            <input type="text" id="clientSearchInput" placeholder="Buscar cliente..."
+                style="width: 100%; padding: 12px; border: 1px solid var(--surface-border); background: rgba(0,0,0,0.3); color: white; border-radius: 10px; margin-bottom: 15px;">
+            <div id="clientList"
+                style="max-height: 300px; overflow-y: auto; border: 1px solid var(--surface-border); background: rgba(0,0,0,0.2); border-radius: 10px;">
+            </div>
             <div style="margin-top: 25px; display: flex; justify-content: flex-end; gap: 10px;">
-                <button onclick="document.getElementById('clientModal').style.display='none'" class="select-btn" style="padding: 10px 25px;">Cancelar</button>
+                <button onclick="document.getElementById('clientModal').style.display='none'" class="select-btn"
+                    style="padding: 10px 25px;">Cancelar</button>
             </div>
         </div>
     </div>
@@ -242,7 +303,7 @@
         let resultUrl = null;
         let selectedFile = null;
         let originalImg = new Image();
-        
+
         let calculatedFactor = 2.0; // Default fallback
         let upscaleMethod = 'ultra_anime';
         let dimensionMode = 'pixel';
@@ -325,34 +386,34 @@
             const factorW = targetW / originalImg.width;
             const factorH = targetH / originalImg.height;
             calculatedFactor = Math.max(factorW, factorH);
-            
+
             // Limit factor to avoid out of memory, e.g., max 8x
             calculatedFactor = Math.min(Math.max(calculatedFactor, 1), 8);
 
-            document.getElementById('imageSizeInfo').innerHTML = 
+            document.getElementById('imageSizeInfo').innerHTML =
                 `${originalImg.width} x ${originalImg.height} px &nbsp; <i class="fas fa-arrow-right"></i> &nbsp; <span style="color: var(--success); font-weight: bold;">${Math.round(originalImg.width * calculatedFactor)} x ${Math.round(originalImg.height * calculatedFactor)} px</span><br><small style="color: var(--text-muted);">(Factor aplicado: ${calculatedFactor.toFixed(2)}x)</small>`;
         }
 
         function setMode(mode) {
             currentMode = mode;
             document.querySelectorAll('.tool-tab').forEach(t => t.classList.remove('active'));
-            
+
             let tabId = 'tab-upscale';
             if (mode === 'vectorizar') tabId = 'tab-vectorar';
             else if (mode === 'remove_bg') tabId = 'tab-bg';
             else if (mode === 'depixel') tabId = 'tab-depixel';
-            
+
             const selectedTab = document.getElementById(tabId);
             if (selectedTab) selectedTab.classList.add('active');
-            
+
             document.getElementById('upscale-options').style.display = mode === 'upscale' ? 'block' : 'none';
             document.getElementById('vector-options').style.display = mode === 'vectorizar' ? 'block' : 'none';
             document.getElementById('depixel-options').style.display = mode === 'depixel' ? 'block' : 'none';
-            
+
             let icon = 'fa-wand-magic-sparkles';
             let titleText = 'Opciones de Ampliación';
             let btnText = 'Ampliar Imagen';
-            
+
             if (mode === 'vectorizar') {
                 icon = 'fa-bezier-curve';
                 titleText = 'Vectorizador IA';
@@ -366,16 +427,16 @@
                 titleText = 'Despixelar Imagen';
                 btnText = 'Despixelar';
             }
-            
+
             document.getElementById('sideTitle').innerHTML = `<i class="fa-solid ${icon}"></i> ${titleText}`;
             document.getElementById('btnText').innerText = btnText;
-            
+
             // Reset result
             currentJobId = null;
             resultUrl = null;
             resultOverlay.style.display = 'none';
             postActions.style.display = 'none';
-            
+
             if (selectedFile) {
                 calculateFactor();
                 processBtn.disabled = false;
@@ -421,7 +482,7 @@
                 previewImg.src = e.target.result;
                 previewArea.style.display = 'flex';
                 dropText.style.display = 'none';
-                
+
                 // Obtener dimensiones
                 originalImg.onload = () => {
                     // Set default targets
@@ -445,14 +506,14 @@
             } else {
                 document.getElementById('loadingText').innerText = "Procesando con Inteligencia Artificial...";
             }
-            
+
             processBtn.disabled = true;
             processBtn.style.opacity = '0.6';
             processBtn.innerHTML = `<span class="loader" style="width: 20px; height: 20px; border-width: 2px; margin-right: 10px; display: inline-block; vertical-align: middle;"></span> Procesando...`;
 
             const formData = new FormData();
             formData.append('imagen', selectedFile);
-            
+
             let apiUrl = '/api/vectorizar';
             if (currentMode === 'remove_bg') {
                 apiUrl = '/api/ai/remove-bg';
@@ -489,15 +550,15 @@
                 });
 
                 const data = await res.json();
-                
+
                 if (data.success) {
                     currentJobId = data.job_id || Date.now();
                     resultUrl = data.svg_url || data.url;
-                    
+
                     resultImg.src = resultUrl + '?t=' + Date.now();
                     resultOverlay.style.display = 'flex';
                     postActions.style.display = 'flex';
-                    
+
                     if (data.analisis) {
                         document.getElementById('analysisResult').innerHTML = `
                             <strong><i class="fas fa-robot"></i> Análisis IA completado:</strong><br><br>
@@ -508,7 +569,7 @@
 
                     document.getElementById('downloadBtn').href = resultUrl;
                     document.getElementById('downloadBtn').download = `MR_Letreros_${currentMode}_${Date.now()}`;
-                    
+
                     let successMsg = '<i class="fas fa-check-circle" style="color: var(--success);"></i> Procesamiento IA completado';
                     if (currentMode === 'upscale') {
                         successMsg = '<i class="fas fa-check-circle" style="color: var(--success);"></i> Resolución aumentada exitosamente';
@@ -527,13 +588,13 @@
                 loader.style.display = 'none';
                 processBtn.disabled = false;
                 processBtn.style.opacity = '1';
-                
+
                 let btnLabel = 'Procesar Imagen';
                 if (currentMode === 'upscale') btnLabel = 'Ampliar Imagen';
                 else if (currentMode === 'vectorizar') btnLabel = 'Vectorizar Imagen';
                 else if (currentMode === 'remove_bg') btnLabel = 'Remover Fondo';
                 else if (currentMode === 'depixel') btnLabel = 'Despixelar';
-                
+
                 processBtn.innerHTML = `<span id="btnText">${btnLabel}</span> <i class="fas fa-arrow-right" style="margin-left: 8px;"></i>`;
             }
         }
@@ -544,7 +605,7 @@
             document.getElementById('clientModal').style.display = 'flex';
             document.getElementById('clientModal').style.alignItems = 'center';
             document.getElementById('clientModal').style.justifyContent = 'center';
-            
+
             if (allClients.length === 0) {
                 try {
                     const token = localStorage.getItem('mr_token') || localStorage.getItem('token');
@@ -567,7 +628,7 @@
                     <small style="color: var(--text-muted);">${c.telefono || ''}</small>
                 </div>
             `).join('');
-            
+
             // Add hover effects dynamically
             document.querySelectorAll('.client-item').forEach(item => {
                 item.addEventListener('mouseenter', () => item.style.background = 'rgba(99, 102, 241, 0.1)');
@@ -603,4 +664,5 @@
         }
     </script>
 </body>
+
 </html>
