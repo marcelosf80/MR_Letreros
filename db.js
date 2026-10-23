@@ -68,18 +68,41 @@ function set(key, value, updatedAt) {
   });
 }
 
+// DEPRECADO: reimplementado sobre withTransaction (colas serializadas) para no
+// dejar la trampa de "cannot start a transaction within a transaction".
+// Conservado por compatibilidad de llamadas existentes.
 function transaction(fn) {
-  return new Promise((resolve, reject) => {
-    if (!db) return reject(new Error('DB no inicializada'));
-    db.serialize(() => {
-      db.run('BEGIN TRANSACTION');
-      Promise.resolve(fn()).then(result => {
-        db.run('COMMIT', () => resolve(result));
-      }).catch(err => {
-        db.run('ROLLBACK', () => reject(err));
-      });
+  return withTransaction(fn);
+}
+
+// Cola global que serializa transacciones entre sí. SQLite (una sola conexión)
+// serializa los statements, pero peticiones concurrentes que emiten BEGIN/COMMIT
+// de forma manual se intercalan y provocan "cannot start a transaction within
+// a transaction". Esta cola garantiza que solo haya UNA transacción activa a la vez.
+let txQueue = Promise.resolve();
+
+function withTransaction(fn) {
+  const run = txQueue.then(async () => {
+    await new Promise((resolve, reject) => {
+      if (!db) return reject(new Error('DB no inicializada'));
+      db.run('BEGIN', (e) => (e ? reject(e) : resolve()));
     });
+    try {
+      const result = await fn();
+      await new Promise((resolve, reject) => {
+        db.run('COMMIT', (e) => (e ? reject(e) : resolve()));
+      });
+      return result;
+    } catch (err) {
+      await new Promise((resolve) => {
+        db.run('ROLLBACK', () => resolve());
+      });
+      throw err;
+    }
   });
+  // Mantener viva la cadena aunque esta transacción falle
+  txQueue = run.then(() => {}, () => {});
+  return run;
 }
 
 // ==================== SCHEMA ====================
@@ -156,6 +179,8 @@ const SCHEMA = `
     merged_works_json TEXT DEFAULT '[]',
     printed INTEGER DEFAULT 0,
     printed_items_json TEXT DEFAULT '{}',
+    completed_items_json TEXT DEFAULT '{}',
+    billed_items_json TEXT DEFAULT '{}',
     FOREIGN KEY (cliente_id) REFERENCES clientes(id)
   );
 
@@ -408,9 +433,34 @@ async function migrateFromJson() {
 
     for (const w of works) {
       try {
-        // Buscar cliente_id por nombre
-        const clienteRow = await get({ sql: 'SELECT id FROM clientes WHERE nombre = ? LIMIT 1', params: [w.clientName || ''] });
-        const clienteId = clienteRow?.id || null;
+        // FIX: el JSON de respaldo alterna entre camelCase (POST /api/trabajos) y
+        // snake_case (PUT/DELETE). Leer ambos formatos para no perder datos en la migración.
+        const pick = (...keys) => {
+          for (const k of keys) {
+            if (w[k] !== undefined && w[k] !== null) return w[k];
+          }
+          return undefined;
+        };
+        const parseJsonField = (v, fallback) => {
+          if (v === undefined || v === null) return fallback;
+          if (Array.isArray(v) || typeof v === 'object') return v;
+          try { return JSON.parse(v); } catch { return fallback; }
+        };
+
+        const clienteNombre = pick('clientName', 'cliente_nombre', 'gremio', 'nombre', 'name');
+        const mws = parseJsonField(pick('mergedWorks', 'merged_works_json'), []);
+        const mergedArray = Array.isArray(mws) ? mws : [];
+        const costosObj = parseJsonField(pick('costos', 'costos_json'), { materiales: {}, terceros: {} });
+        const notesArr = parseJsonField(pick('notes', 'notes_json'), []);
+        const productosArr = parseJsonField(pick('productos', 'productos_json', 'items'), []);
+
+        // Buscar cliente_id por nombre si no viene
+        const clienteIdDirecto = pick('clientId', 'cliente_id');
+        let clienteId = clienteIdDirecto || null;
+        if (!clienteId && clienteNombre) {
+          const clienteRow = await get({ sql: 'SELECT id FROM clientes WHERE nombre = ? LIMIT 1', params: [String(clienteNombre)] });
+          clienteId = clienteRow?.id || null;
+        }
 
         await run(
           `INSERT OR IGNORE INTO trabajos
@@ -419,18 +469,21 @@ async function migrateFromJson() {
             status, payment_status, priority, delivery_date, delivery_status, actual_delivery_date,
             paid_at, created_at, productos_json, is_merged, costos_json, notes_json, merged_works_json)
            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-          [w.id, w.quoteId || null, clienteId, w.clientName || '', w.clientPhone || '',
-           w.clientEmail || '', w.clientAddress || '', w.tipo_cliente || 'gremio',
-           w.descripcion || '', w.total || 0, w.totalCost || 0, w.profit || 0,
-           w.paidAmount || 0, w.balance || 0, w.senia || 0,
-           w.status || 'pending', w.paymentStatus || 'unpaid', w.priority || 'normal',
-           w.deliveryDate || null, w.deliveryStatus || 'pending',
-           w.actualDeliveryDate || null, w.paidAt || null, w.createdAt || null,
-           JSON.stringify(w.productos || w.items || []),
-           (w.mergedWorks && w.mergedWorks.length > 0) ? 1 : 0,
-           JSON.stringify(w.costos || { materiales: {}, terceros: {} }),
-           JSON.stringify(w.notes || []),
-           JSON.stringify(w.mergedWorks || [])]
+          [w.id, pick('quoteId', 'quote_id') || null, clienteId,
+           clienteNombre || '', pick('clientPhone', 'cliente_telefono', 'whatsapp', 'telefono') || '',
+           pick('clientEmail', 'cliente_email', 'email') || '', pick('clientAddress', 'cliente_address', 'direccion') || '',
+           pick('tipo_cliente', 'tipoCliente') || 'gremio',
+           pick('descripcion', 'detalle') || '', Number(pick('total', 'totalCliente', 'monto') || 0),
+           Number(pick('totalCost', 'total_cost', 'costoTotal') || 0), Number(pick('profit', 'ganancia') || 0),
+           Number(pick('paidAmount', 'paid_amount', 'anticipo') || 0), Number(pick('balance', 'saldo') || 0),
+           Number(pick('senia') || 0),
+           pick('status', 'estado') || 'pending', pick('paymentStatus', 'payment_status') || 'unpaid',
+           pick('priority') || 'normal',
+           pick('deliveryDate', 'delivery_date') || null, pick('deliveryStatus', 'delivery_status') || 'pending',
+           pick('actualDeliveryDate', 'actual_delivery_date') || null, pick('paidAt', 'paid_at') || null,
+           pick('createdAt', 'created_at') || null,
+           JSON.stringify(productosArr), mergedArray.length > 0 ? 1 : 0,
+           JSON.stringify(costosObj), JSON.stringify(notesArr), JSON.stringify(mergedArray)]
         );
 
         // Timeline
@@ -444,17 +497,31 @@ async function migrateFromJson() {
         }
 
         // Unificaciones (mergedWorks → tabla relacional)
-        if (Array.isArray(w.mergedWorks)) {
-          for (const mw of w.mergedWorks) {
+        for (const mw of mergedArray) {
+          await run(
+            `INSERT OR IGNORE INTO trabajo_merger
+             (trabajo_principal_id, trabajo_secundario_id, quote_id, client_name, total, descripcion, merged_at)
+             VALUES (?,?,?,?,?,?,?)`,
+            [w.id, mw.id || mw.workId || '', mw.quoteId || mw.quote_id || null,
+             mw.clientName || mw.cliente_nombre || '', Number(mw.total || 0), mw.descripcion || '',
+             mw.mergedAt || new Date().toISOString()]
+          );
+        }
+
+        // Pagos (trabajo_pagos)
+        if (Array.isArray(w.pagos) && w.pagos.length > 0) {
+          for (const p of w.pagos) {
             await run(
-              `INSERT OR IGNORE INTO trabajo_merger
-               (trabajo_principal_id, trabajo_secundario_id, quote_id, client_name, total, descripcion, merged_at)
-               VALUES (?,?,?,?,?,?,?)`,
-              [w.id, mw.id || mw.workId || '', mw.quoteId || null,
-               mw.clientName || '', mw.total || 0, mw.descripcion || '',
-               mw.mergedAt || new Date().toISOString()]
+              `INSERT INTO trabajo_pagos (trabajo_id, monto, fecha, nota) VALUES (?,?,?,?)`,
+              [w.id, Number(p.monto || p.amount || 0), p.fecha || p.date || w.paidAt || w.createdAt || null, p.nota || p.note || 'Pago']
             );
           }
+        } else if (Number(pick('paidAmount', 'paid_amount', 'senia') || 0) > 0) {
+          const montoPago = Number(pick('paidAmount', 'paid_amount', 'senia') || 0);
+          await run(
+            `INSERT INTO trabajo_pagos (trabajo_id, monto, fecha, nota) VALUES (?,?,?,?)`,
+            [w.id, montoPago, pick('paidAt', 'paid_at', 'createdAt', 'created_at') || new Date().toISOString(), pick('senia') ? 'Seña / Anticipo' : 'Pago registrado']
+          );
         }
 
         migrated++;
@@ -484,6 +551,33 @@ async function migrateFromJson() {
       }
       logger.info(`   💳 Migrados ${gastos.length} gastos a SQLite`);
     }
+  }
+}
+
+// Sincroniza y asegura que todos los trabajos con pagos tengan registros en trabajo_pagos
+async function syncTrabajoPagos() {
+  try {
+    const pagosCount = await get({ sql: 'SELECT COUNT(*) as c FROM trabajo_pagos' });
+    if (pagosCount.c === 0) {
+      logger.info('🔄 Sincronizando registros en la tabla relacional trabajo_pagos...');
+      const trabajosConPago = await all(
+        "SELECT id, paid_amount, senia, paid_at, created_at FROM trabajos WHERE paid_amount > 0 OR senia > 0"
+      );
+      let count = 0;
+      for (const t of trabajosConPago) {
+        const monto = Number(t.paid_amount || t.senia || 0);
+        if (monto > 0) {
+          await run(
+            "INSERT INTO trabajo_pagos (trabajo_id, monto, fecha, nota) VALUES (?,?,?,?)",
+            [t.id, monto, t.paid_at || t.created_at || new Date().toISOString(), t.senia ? 'Seña / Anticipo' : 'Pago registrado']
+          );
+          count++;
+        }
+      }
+      logger.info(`✅ Se popularon ${count} registros de pagos en trabajo_pagos.`);
+    }
+  } catch (err) {
+    logger.warn('⚠️ Error al sincronizar trabajo_pagos:', err.message);
   }
 }
 
@@ -519,15 +613,31 @@ function init() {
               db.run('ALTER TABLE trabajos ADD COLUMN printed INTEGER DEFAULT 0', () => {
                 // Agregar columna printed_items_json de forma incremental si no existe
                 db.run('ALTER TABLE trabajos ADD COLUMN printed_items_json TEXT DEFAULT "{}"', () => {
+                  // Agregar columna completed_items_json de forma incremental si no existe
+                  db.run('ALTER TABLE trabajos ADD COLUMN completed_items_json TEXT DEFAULT "{}"', () => {
+                    // Agregar columna billed_items_json de forma incremental si no existe
+                    db.run('ALTER TABLE trabajos ADD COLUMN billed_items_json TEXT DEFAULT "{}"', () => {
                   // Agregar columna cliente_id a la tabla usuarios si no existe
-                  db.run('ALTER TABLE usuarios ADD COLUMN cliente_id TEXT', async (alterErr) => {
-                    try {
-                      await migrateFromJson();
-                      resolve();
-                    } catch (migErr) {
-                      logger.error('❌ Error en migración JSON→SQLite:', migErr);
-                      reject(migErr);
-                    }
+                  db.run('ALTER TABLE usuarios ADD COLUMN cliente_id TEXT', () => {
+                    // Agregar columna notes_json a trabajo_merger para preservar datos ricos del merged work
+                    db.run('ALTER TABLE trabajo_merger ADD COLUMN notes_json TEXT DEFAULT "[]"', () => {
+                      db.run('ALTER TABLE trabajos ADD COLUMN missing_from_sheet INTEGER DEFAULT 0', async (alterErr) => {
+                        try {
+                          await migrateFromJson();
+                          await syncTrabajoPagos();
+                          // FIX: compactar el WAL al iniciar (la DB acumulaba -wal de 100+ MB sin checkpoint)
+                          db.run('PRAGMA wal_checkpoint(TRUNCATE)', (ckErr) => {
+                            if (ckErr) logger.warn('⚠️ No se pudo compactar WAL:', ckErr.message);
+                          });
+                          resolve();
+                        } catch (migErr) {
+                          logger.error('❌ Error en migración JSON→SQLite:', migErr);
+                          reject(migErr);
+                        }
+                      });
+                    });
+                  });
+                    });
                   });
                 });
               });
@@ -539,4 +649,4 @@ function init() {
   });
 }
 
-module.exports = { init, run, get, all, set, transaction };
+module.exports = { init, run, get, all, set, transaction, withTransaction };

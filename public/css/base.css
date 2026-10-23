@@ -640,27 +640,28 @@ table tbody tr:hover {
 }
 .client-actions { display: flex; gap: 0.5rem; justify-content: flex-end; }
 
-/* FIX VISIBILIDAD & TEXTO CLARO */
+/* FIX VISIBILIDAD & TEXTO */
 .workspace, .panel-cliente, .panel-centro, .panel-historial {
     position: relative;
-    z-index: 10 !important;
-    opacity: 1 !important;
+    z-index: 10;
+    opacity: 1;
 }
 
-.client-name, .detail-value, .stat-number, p, h1, h2, h3 {
-    color: var(--txt) !important;
-    opacity: 1 !important;
+.client-name, .detail-value, .stat-number {
+    color: var(--txt);
+    opacity: 1;
     position: relative;
-    z-index: 20 !important;
+    z-index: 20;
 }
 
 .client-card, .detail-box, .stat-card {
     background: var(--bg-surface) !important;
     backdrop-filter: blur(12px) !important; 
+    border: 1px solid var(--glass-border) !important;
 }
 
 /* ─── LIGHT THEME ─────────────────────────────────────── */
-:root[data-theme="light"] {
+:root[data-theme="light"], body.light-theme {
   --brand:       #000000;
   --brand-warm:  #18181B; 
   --brand-glow:  rgba(0, 0, 0, 0.15);
@@ -669,7 +670,7 @@ table tbody tr:hover {
   --accent-dim:  rgba(22, 163, 74, 0.2);
   --secondary:   #475569; 
   --bg-void:     #F8FAFC;   
-  --bg-deep:     #F1F5F9;   
+  --bg-deep:     #FFFFFF;   
   --bg-mid:      #E2E8F0;   
   --bg-surface:  rgba(255, 255, 255, 0.85); 
   --glass-1:     rgba(255, 255, 255, 0.55);
@@ -681,6 +682,8 @@ table tbody tr:hover {
   --txt-2:       #334155;   
   --txt-muted:   #64748B;   
   --sh-brand:    0 8px 24px  rgba(0, 0, 0, 0.1);
+  --input-bg:    #FFFFFF;
+  --modal-bg:    #FFFFFF;
 }
 
 /* ─── MR UNIFIED UI SYSTEM (COLLECT UI INSPIRED) ─────── */

@@ -1,1001 +1,119 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 
 <head>
     <base target="_top">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cotizador Gremio - MR Letreros</title>
+    <title>Comunicado Oficial - MR Letreros</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         body {
             background-color: #000;
             color: #f1f1f1;
-            font-family: 'Segoe UI', sans-serif;
-            background-image: radial-gradient(circle at top right, #222 0%, #000 70%);
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background-image: radial-gradient(circle at top center, #1f1a0a 0%, #080808 60%, #000 100%);
             background-attachment: fixed;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .glass-card {
-            background: rgba(30, 30, 30, 0.8);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 215, 0, 0.15);
-            border-radius: 16px;
+            background: rgba(20, 20, 20, 0.85);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 215, 0, 0.25);
+            border-radius: 24px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.9), 0 0 30px rgba(255, 215, 0, 0.05);
         }
 
-        .input-premium {
-            background: rgba(10, 10, 10, 0.8);
-            border: 1px solid #333;
+        .btn-whatsapp {
+            background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
             color: white;
-            padding: 14px;
-            border-radius: 12px;
-            width: 100%;
-            transition: all 0.3s;
+            font-weight: 700;
+            border-radius: 14px;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 25px -5px rgba(37, 211, 102, 0.4);
         }
 
-        .input-premium:focus {
-            border-color: #ffd700;
-            outline: none;
-            box-shadow: 0 0 15px rgba(255, 215, 0, 0.1);
-        }
-
-        .btn-premium {
-            background: linear-gradient(135deg, #ffd700 0%, #ccac00 100%);
-            color: #000;
-            font-weight: 800;
-            border-radius: 12px;
-            cursor: pointer;
-            border: none;
-            width: 100%;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .file-drop-zone {
-            border: 2px dashed #444;
-            border-radius: 12px;
-            padding: 20px;
-            text-align: center;
-            position: relative;
-        }
-
-        .warning-badge {
-            border: 1px solid transparent;
-            padding: 10px;
-            border-radius: 12px;
-            font-size: 11px;
-            margin-top: 10px;
-            display: none;
-            font-weight: bold;
-        }
-
-        #successOverlay,
-        #modeSelectionOverlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.85);
-            backdrop-filter: blur(10px);
-            z-index: 9999;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            overflow-y: auto;
-            padding: 1.5rem 1rem;
-        }
-
-        #successOverlay {
-            display: none;
+        .btn-whatsapp:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 30px -5px rgba(37, 211, 102, 0.6);
         }
 
         .logo-anim {
-            animation: pulse 2.5s infinite ease-in-out;
+            animation: pulseSoft 3s infinite ease-in-out;
         }
 
-        @keyframes pulse {
-
-            0%,
-            100% {
-                transform: scale(1);
-                opacity: 1;
-            }
-
-            50% {
-                transform: scale(1.02);
-                opacity: 0.9;
-            }
-        }
-
-        /* Ocultar subida de archivos en modo cotizar */
-        body.mode-cotizar .file-drop-zone {
-            display: none !important;
-        }
-
-        body.mode-cotizar #uploadProgressContainer {
-            display: none !important;
+        @keyframes pulseSoft {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.03); opacity: 0.95; }
         }
     </style>
-    <!-- ESTILOS MODULARES DEL PLANNER -->
-
 </head>
 
-<body class="p-4 md:p-8" style="overflow: hidden;">
+<body class="p-4 md:p-8">
 
+    <main class="w-full max-w-2xl mx-auto">
+        <div class="glass-card p-8 md:p-12 text-center space-y-8 relative overflow-hidden">
+            <!-- Glow decorativo superior -->
+            <div class="absolute -top-24 left-1/2 -translate-x-1/2 w-72 h-32 bg-yellow-500/10 blur-3xl rounded-full pointer-events-none"></div>
 
+            <!-- Logo -->
+            <div class="flex justify-center">
+                <img src="https://mrletreros.com.ar/assets/img/logo.webp" alt="MR Letreros" class="max-w-[200px] h-auto logo-anim">
+            </div>
 
-    <!-- Selector de Modo -->
-    <div id="modeSelectionOverlay">
-        <img src="https://mrletreros.com.ar/assets/img/logo.webp" class="mb-4" alt="MR Letreros"
-            style="max-width:170px">
-        <h2 class="text-xl md:text-2xl font-black text-white mb-6 uppercase text-center tracking-tighter">
-            Hola <span id="welcomeUserName" class="text-yellow-400"></span>,<br>¿Qué deseas hacer hoy?
-        </h2>
-        <div class="flex flex-col md:flex-row gap-4 w-full max-w-2xl px-4">
-            <button onclick="setAppMode('cotizar')"
-                class="flex-1 bg-white/5 hover:bg-white/10 border border-white/20 p-5 md:p-6 rounded-2xl transition-all hover:scale-105 group">
-                <i
-                    class="fa-solid fa-calculator text-4xl text-blue-400 mb-3 group-hover:scale-110 transition-transform"></i>
-                <h3 class="text-lg font-bold text-white mb-1">SOLO QUIERO COTIZAR</h3>
-                <p class="text-xs text-gray-400">Ver precios estimados sin enviar ningún pedido.</p>
-            </button>
-            <button onclick="setAppMode('pedido')"
-                class="flex-1 bg-yellow-500/10 hover:bg-yellow-500/20 border border-yellow-500/30 p-5 md:p-6 rounded-2xl transition-all hover:scale-105 group">
-                <i
-                    class="fa-solid fa-truck-fast text-4xl text-yellow-400 mb-3 group-hover:scale-110 transition-transform"></i>
-                <h3 class="text-lg font-bold text-yellow-400 mb-1">QUIERO HACER UN PEDIDO</h3>
-                <p class="text-xs text-gray-400">Cotizar y enviar los archivos para producción.</p>
-            </button>
-        </div>
-    </div>
+            <!-- Badge -->
+            <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-bold uppercase tracking-widest">
+                <i class="fa-solid fa-circle-exclamation text-amber-400"></i>
+                <span>Comunicado Oficial</span>
+            </div>
 
-    <div id="successOverlay">
-        <img src="https://mrletreros.com.ar/assets/img/logo.webp" class="logo-anim mb-8" alt="MR Letreros"
-            style="max-width:300px">
-        <h2 class="text-4xl font-black text-yellow-400 mb-2 uppercase text-center tracking-tighter">¡PEDIDO ENVIADO!
-        </h2>
-        <div class="mt-12 text-yellow-400/40 text-sm animate-pulse italic tracking-widest uppercase">Reiniciando
-            sistema...</div>
-    </div>
-
-    <!-- ESTRUCTURA MODULAR DEL PLANNER -->
-    <?!= include('Planner'); ?>
-
-    <div class="max-w-4xl mx-auto space-y-8" id="mainContent">
-        <header class="flex flex-col items-center space-y-4 mb-10 text-center relative">
-            <button type="button" onclick="logoutGasGremio()" class="absolute top-2 right-2 px-3 py-1.5 bg-red-950/40 hover:bg-red-900/60 border border-red-900/40 text-red-400 text-[10px] font-bold uppercase rounded-lg transition-all cursor-pointer">
-                <i class="fa-solid fa-right-from-bracket mr-1"></i> Salir
-            </button>
-            <img src="https://i.postimg.cc/NFn4MY1f/encabezado-pdf.png" class="w-full h-auto rounded-xl logo-anim"
-                alt="MR Letreros">
-            <p class="text-yellow-400 font-bold tracking-widest text-sm uppercase italic">Cotizador Gremio - MR Letreros
-            </p>
-        </header>
-
-        <!-- Navegación por Pestañas -->
-        <div class="flex justify-center border-b border-white/10 mb-6 gap-2">
-            <button type="button" id="tabNewOrder" onclick="switchMainTab('new_order')" class="pb-3 px-4 font-bold text-yellow-400 border-b-2 border-yellow-400 focus:outline-none transition-all uppercase tracking-wider text-[11px] cursor-pointer">
-                <i class="fa-solid fa-plus-circle mr-1.5"></i> Nuevo Pedido / Cotizador
-            </button>
-            <button type="button" id="tabHistory" onclick="switchMainTab('history')" class="pb-3 px-4 font-bold text-gray-400 hover:text-white border-b-2 border-transparent focus:outline-none transition-all uppercase tracking-wider text-[11px] cursor-pointer">
-                <i class="fa-solid fa-history mr-1.5"></i> Mis Pedidos (Historial)
-            </button>
-            <button type="button" id="tabTools" onclick="switchMainTab('tools')" class="pb-3 px-4 font-bold text-gray-400 hover:text-white border-b-2 border-transparent focus:outline-none transition-all uppercase tracking-wider text-[11px] cursor-pointer">
-                <i class="fa-solid fa-toolbox mr-1.5"></i> Herramientas IA
-            </button>
-        </div>
-
-        <div id="newOrderSection" class="space-y-6">
-            <form id="cotizadorForm" class="space-y-6">
-                <div class="glass-card p-6 md:p-8 hidden">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <input type="text" id="nombreGremio" class="input-premium" placeholder="Nombre Gremio / Empresa"
-                            required>
-                        <input type="tel" id="whatsapp" class="input-premium" placeholder="WhatsApp (Ej: 3424123456)"
-                            required>
-                    </div>
-                </div>
-
-                <div id="productosContainer" class="space-y-6"></div>
-
-                <div class="text-center py-4">
-                    <button type="button" onclick="agregarProducto()"
-                        class="bg-white/5 hover:bg-white/10 text-white font-bold py-4 px-10 rounded-2xl border border-dashed border-white/20 transition-all">
-                        <i class="fa-solid fa-plus mr-2 text-yellow-400"></i> AGREGAR TRABAJO
-                    </button>
-                </div>
-
-                <div class="glass-card p-8 border-t-4 border-yellow-400 shadow-2xl">
-                    <div class="flex flex-col md:flex-row items-center justify-between gap-8">
-                        <div class="text-center md:text-left">
-                            <p class="text-gray-500 text-sm font-bold uppercase mb-1">Total Estimado Final</p>
-                            <div class="text-6xl font-black text-yellow-400" id="totalLabel">$0</div>
-                        </div>
-                        <button type="submit" class="btn-premium py-5 px-12 text-xl" id="btnSubmit">ENVIAR PEDIDO</button>
-                    </div>
-                    <!-- Barra de Progreso -->
-                    <div id="uploadProgressContainer" class="hidden mt-6 space-y-2">
-                        <div class="flex justify-between text-xs text-yellow-400 font-bold uppercase">
-                            <span id="uploadStatusText">Subiendo archivos...</span>
-                            <span id="uploadProgressPercent">0%</span>
-                        </div>
-                        <div class="w-full bg-white/10 rounded-full h-3 overflow-hidden border border-white/5">
-                            <div id="uploadProgressBar"
-                                class="bg-gradient-to-r from-yellow-400 to-yellow-600 h-full rounded-full transition-all duration-300"
-                                style="width: 0%"></div>
-                        </div>
-                    </div>
-                </div>
-            </form>
-        </div>
-
-        <div id="historySection" class="hidden space-y-6">
-            <div class="glass-card p-6 md:p-8">
-                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-                    <div>
-                        <h2 class="text-2xl font-black text-white uppercase tracking-tighter">Historial de Pedidos</h2>
-                        <p class="text-xs text-gray-400">Consulta el estado, corrige detalles o cancela tus pedidos pendientes.</p>
-                    </div>
-                    <button type="button" onclick="loadGremioHistory()" class="px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-xs font-bold uppercase transition-all flex items-center gap-2 cursor-pointer text-gray-300">
-                        <i class="fa-solid fa-rotate mr-1"></i> Actualizar
-                    </button>
-                </div>
+            <!-- Título y Mensaje -->
+            <div class="space-y-4">
+                <h1 class="text-2xl md:text-3xl font-black text-white uppercase tracking-tight">
+                    Servicio al Gremio <span class="text-yellow-400">Descontinuado</span>
+                </h1>
                 
-                <div id="gremioHistoryList" class="space-y-6">
-                    <!-- Los pedidos se renderizarán aquí -->
+                <div class="space-y-3 text-sm md:text-base text-gray-300 leading-relaxed text-justify md:text-center">
+                    <p>
+                        Estimados clientes y colegas:
+                    </p>
+                    <p>
+                        Les informamos que a partir de la fecha, <strong class="text-white">MR Letreros ya no brindará el servicio de impresión para el gremio</strong>. Por este motivo, el cotizador en línea y la recepción de nuevos pedidos han sido desactivados.
+                    </p>
+                    <p class="text-gray-400 text-xs md:text-sm">
+                        Agradecemos sinceramente la confianza, el trabajo compartido y el acompañamiento durante todo este tiempo.
+                    </p>
                 </div>
             </div>
-        </div>
 
-        <div id="toolsSection" class="hidden space-y-6">
-            <div class="glass-card p-6 md:p-8">
-                <div class="mb-6 text-left">
-                    <h2 class="text-2xl font-black text-white uppercase tracking-tighter">Herramientas de Diseño IA</h2>
-                    <p class="text-xs text-gray-400">Utilidades de Inteligencia Artificial para mejorar resolución y preparar tus archivos de producción.</p>
-                    <div class="mt-3 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-xl text-xs text-yellow-300 flex items-center gap-2">
-                        <i class="fa-solid fa-info-circle text-sm"></i>
-                        <span>Las herramientas se abren en una pestaña independiente para evitar bloqueos de seguridad y descargas del entorno de Google Apps Script.</span>
-                    </div>
-                </div>
-                
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <!-- Herramienta 1: Upscaler -->
-                    <div class="p-6 bg-white/5 border border-white/5 rounded-2xl space-y-4 hover:border-yellow-500/20 transition-all flex flex-col justify-between text-left">
-                        <div class="space-y-2">
-                            <div class="flex items-center gap-3">
-                                <span class="text-2xl">✨</span>
-                                <h3 class="text-lg font-bold text-yellow-400 uppercase tracking-tight">Upscaler IA (Mejorar Imagen)</h3>
-                            </div>
-                            <p class="text-xs text-gray-400 leading-relaxed">
-                                Aumenta la resolución 4x, elimina el ruido y mejora la nitidez de fotos o diseños usando Inteligencia Artificial (HF Space).
-                            </p>
-                        </div>
-                        <div class="space-y-2 mt-4">
-                            <a href="https://phips-upscaler.hf.space" target="_blank" rel="noopener noreferrer" class="w-full btn-premium py-3 text-xs transition-all flex items-center justify-center gap-2 no-underline cursor-pointer">
-                                <i class="fa-solid fa-up-right-from-square"></i> Abrir Web App Directa (Recomendado)
-                            </a>
-                            <a href="https://huggingface.co/spaces/Phips/Upscaler" target="_blank" rel="noopener noreferrer" class="w-full bg-white/5 hover:bg-white/10 text-gray-300 py-2 text-[11px] rounded-xl transition-all flex items-center justify-center gap-2 no-underline border border-white/10">
-                                <i class="fa-solid fa-external-link"></i> Abrir en HuggingFace Space
-                            </a>
-                        </div>
-                    </div>
+            <!-- Separador -->
+            <div class="w-full h-px bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
 
-                    <!-- Herramienta 2: Removedor de Fondo -->
-                    <div class="p-6 bg-white/5 border border-white/5 rounded-2xl space-y-4 hover:border-yellow-500/20 transition-all flex flex-col justify-between text-left">
-                        <div class="space-y-2">
-                            <div class="flex items-center gap-3">
-                                <span class="text-2xl">🖼️</span>
-                                <h3 class="text-lg font-bold text-yellow-400 uppercase tracking-tight">Remover Fondo IA</h3>
-                            </div>
-                            <p class="text-xs text-gray-400 leading-relaxed">
-                                Elimina el fondo de cualquier imagen automáticamente con Inteligencia Artificial. Ideal para logos y productos.
-                            </p>
-                        </div>
-                        <div class="space-y-2 mt-4">
-                            <a href="https://gaviego-removebg.hf.space" target="_blank" rel="noopener noreferrer" class="w-full btn-premium py-3 text-xs transition-all flex items-center justify-center gap-2 no-underline cursor-pointer">
-                                <i class="fa-solid fa-up-right-from-square"></i> Abrir Web App Directa (Recomendado)
-                            </a>
-                            <a href="https://huggingface.co/spaces/gaviego/removebg" target="_blank" rel="noopener noreferrer" class="w-full bg-white/5 hover:bg-white/10 text-gray-300 py-2 text-[11px] rounded-xl transition-all flex items-center justify-center gap-2 no-underline border border-white/10">
-                                <i class="fa-solid fa-external-link"></i> Abrir en HuggingFace Space
-                            </a>
-                        </div>
-                    </div>
-
-                    <!-- Herramienta 3: Vectorizador -->
-                    <div class="p-6 bg-white/5 border border-white/5 rounded-2xl space-y-4 hover:border-yellow-500/20 transition-all flex flex-col justify-between text-left">
-                        <div class="space-y-2">
-                            <div class="flex items-center gap-3">
-                                <span class="text-2xl">🎨</span>
-                                <h3 class="text-lg font-bold text-yellow-400 uppercase tracking-tight">Vectorizador IA</h3>
-                            </div>
-                            <p class="text-xs text-gray-400 leading-relaxed">
-                                Convierte tus imágenes JPG/PNG en formato vectorial (SVG/PDF) listo para corte y grabado láser.
-                            </p>
-                        </div>
-                        <div class="space-y-2 mt-4">
-                            <a href="http://localhost:3005/vectorizador.html" target="_blank" rel="noopener noreferrer" class="w-full btn-premium py-3 text-xs transition-all flex items-center justify-center gap-2 no-underline cursor-pointer">
-                                <i class="fa-solid fa-up-right-from-square"></i> Abrir Vectorizador Local (Servidor 3005)
-                            </a>
-                        </div>
-                    </div>
+            <!-- Botón de Contacto -->
+            <div class="space-y-3 pt-2">
+                <p class="text-xs text-gray-400">
+                    Ante cualquier consulta administrativa o seguimiento de trabajos previos, podés comunicarte directamente con nosotros:
+                </p>
+                <div class="flex justify-center">
+                    <a href="https://wa.me/5493426136868" target="_blank" rel="noopener noreferrer"
+                       class="btn-whatsapp inline-flex items-center justify-center gap-3 px-8 py-4 text-sm uppercase tracking-wider no-underline">
+                        <i class="fa-brands fa-whatsapp text-xl"></i>
+                        <span>Contactar por WhatsApp</span>
+                    </a>
                 </div>
             </div>
-        </div>
-    </div>
 
-    <script>
-        // =============== CONFIGURACIÓN API NODE ===============
-        // Reemplazá esto por la IP pública de tu servidor de producción o tu dominio de Node (ej: http://200.12.34.56:3000)
-        const NODE_API_URL = "http://localhost:3000"; 
-
-        // URL de la Web App obtenida de la plantilla de Apps Script
-        const webAppUrl = "<?= webAppUrl ?>";
-
-        // --- SISTEMA DE AUTENTICACIÓN PARA GOOGLE WEB APP ---
-        function checkGasAuth() {
-            const token = localStorage.getItem('mr_token');
-            const userJson = localStorage.getItem('mr_user');
-            
-            if (!token || !userJson) {
-                // Redirigir de vuelta al login.html del Apps Script
-                window.location.href = webAppUrl;
-                return false;
-            }
-
-            const user = JSON.parse(userJson);
-            
-            const welcomeSpan = document.getElementById('welcomeUserName');
-            if (welcomeSpan) {
-                welcomeSpan.innerText = user.nombre || user.usuario;
-            }
-            
-            const loginOverlay = document.getElementById('gremioLoginOverlay');
-            if (loginOverlay) loginOverlay.style.display = 'none';
-            document.getElementById('modeSelectionOverlay').style.display = 'flex';
-            
-            // Pre-llenar y bloquear inputs de Gremio
-            const nombreInput = document.getElementById('nombreGremio');
-            const whatsappInput = document.getElementById('whatsapp');
-            
-            if (nombreInput) {
-                nombreInput.value = user.nombre || user.usuario;
-                nombreInput.disabled = true;
-                nombreInput.style.opacity = '0.7';
-            }
-            if (whatsappInput) {
-                whatsappInput.value = user.telefono || '';
-                whatsappInput.disabled = true;
-                whatsappInput.style.opacity = '0.7';
-            }
-            return true;
-        }
-
-
-
-        function logoutGasGremio() {
-            localStorage.removeItem('mr_token');
-            localStorage.removeItem('mr_user');
-            window.location.href = webAppUrl;
-        }
-
-        window.appMode = 'cotizar'; // Default
-        function setAppMode(mode) {
-            window.appMode = mode;
-            document.getElementById('modeSelectionOverlay').style.display = 'none';
-            document.body.style.overflow = 'auto'; // Re-enable scrolling
-
-            if (mode === 'cotizar') {
-                document.body.classList.add('mode-cotizar');
-                document.getElementById('btnSubmit').innerHTML = 'REINICIAR COTIZADOR';
-                document.getElementById('btnSubmit').style.background = 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)';
-                document.getElementById('btnSubmit').style.color = 'white';
-            } else {
-                document.body.classList.remove('mode-cotizar');
-                document.getElementById('btnSubmit').innerHTML = 'ENVIAR PEDIDO';
-                document.getElementById('btnSubmit').style.background = '';
-                document.getElementById('btnSubmit').style.color = '#000';
-            }
-        }
-
-        var catalogo = [];
-        var stockPorTipo = {};
-        var itemsCount = 0;
-        var filesByItem = {};
-        var totalBytes = 0;
-
-        const OPCIONES_POLY = [
-            { label: '1.20 x 0.60 m (Placa Completa)', factor: 1.00 },
-            { label: '1.00 x 0.60 m', factor: 0.88 },
-            { label: '0.80 x 0.60 m', factor: 0.73 },
-            { label: '0.60 x 0.60 m (Media Placa)', factor: 0.58 },
-            { label: '0.40 x 0.60 m', factor: 0.40 },
-            { label: '0.20 x 0.60 m', factor: 0.21 }
-        ];
-
-        function init() {
-            if (!checkGasAuth()) {
-                return;
-            }
-            google.script.run
-                .withSuccessHandler(function (data) {
-                    if (!data || !data.catalog || data.catalog.length === 0) {
-                        console.error("Catálogo recibido vacío o inválido:", data);
-                        alert("⚠️ El catálogo de productos está vacío. Verificá que la hoja 'PRECIOS' en tu Google Sheet tenga datos cargados.");
-                        return;
-                    }
-                    catalogo = data.catalog;
-                    stockPorTipo = data.stock;
-                    agregarProducto();
-                })
-                .withFailureHandler(function (err) {
-                    console.error("Error al obtener catálogo:", err);
-                    alert("❌ Error al cargar el catálogo de productos desde Google Sheets:\n" + err.message);
-                })
-                .getCatalogData();
-        }
-
-        function agregarProducto() {
-            itemsCount++;
-            var id = itemsCount;
-            filesByItem['item_' + id] = [];
-            var cats = [];
-            catalogo.forEach(function (p) { if (cats.indexOf(p.categoria) === -1) cats.push(p.categoria); });
-
-            var html = `<div class="glass-card p-6 md:p-8 relative" id="card_${id}">` +
-                `<button type="button" onclick="eliminar(${id})" class="absolute top-4 right-4 text-gray-600 hover:text-red-500"><i class="fa-solid fa-trash-can text-xl"></i></button>` +
-                '<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">' +
-                `<select id="cat_${id}" class="input-premium" onchange="updateProds(${id})"><option value="">Categoría...</option>` +
-                cats.map(function (c) { return '<option value="' + c + '">' + c + '</option>'; }).join('') + '</select>' +
-                `<select id="prod_${id}" class="input-premium" onchange="ajustarInputs(${id})"><option value="">Producto...</option></select>` +
-                '</div>' +
-                `<div id="inputs_container_${id}" class="mb-4"></div>` +
-                `<div id="warn_${id}" class="warning-badge mb-4"></div>` +
-                `<div id="accept_container_${id}" class="mb-4 hidden bg-white/5 p-4 rounded-xl border border-yellow-500/20 transition-all">` +
-                `<div class="text-xs text-yellow-400 font-bold uppercase mb-3">Opción de Fabricación:</div>` +
-                `<div class="flex flex-col gap-3">` +
-                `<label class="flex items-start gap-3 cursor-pointer text-gray-200"><input type="radio" name="desp_choice_${id}" value="pagar" checked onchange="calc()" class="mt-1" style="width:16px;height:16px;accent-color:#ffd700;"><span class="text-xs"><strong>Prioritario (Pagar desperdicio):</strong> Se cobra ancho de <span id="w_cob_${id}" class="font-bold"></span>cm ($<span id="price_con_${id}" class="font-bold"></span>) - Despacho normal</span></label>` +
-                `<label class="flex items-start gap-3 cursor-pointer text-gray-200"><input type="radio" name="desp_choice_${id}" value="esperar" onchange="calc()" class="mt-1" style="width:16px;height:16px;accent-color:#ffd700;"><span class="text-xs"><strong>Espera Agrupación (Sin desperdicio):</strong> Se cobra ancho de <span id="w_exact_${id}" class="font-bold"></span>cm ($<span id="price_sin_${id}" class="font-bold"></span>) - Demora adicional</span></label>` +
-                `</div></div>` +
-                `<textarea id="note_${id}" class="input-premium h-20 mt-4" placeholder="Instrucciones"></textarea>` +
-                `<div class="mt-6"><div class="file-drop-zone relative overflow-hidden" id="drop_${id}">` +
-                `<input type="file" class="absolute inset-0 opacity-0 cursor-pointer z-10" multiple onchange="handleFiles(this, ${id})">` +
-                '<p class="text-sm text-gray-400">Subir archivos de diseño</p></div>' +
-                `<div id="list_${id}" class="text-[10px] mt-2 space-y-1 text-left"></div></div>` +
-                `<div class="mt-6 pt-4 border-t border-white/5 flex justify-between items-center"><span class="text-xs font-bold text-yellow-400/80 uppercase tracking-wider" id="m2_sub_${id}"></span><span class="text-2xl font-black text-yellow-400" id="sub_${id}">$0</span></div></div>`;
-            document.getElementById('productosContainer').insertAdjacentHTML('beforeend', html);
-        }
-
-        function updateProds(id) {
-            var cat = document.getElementById('cat_' + id).value;
-            var s = document.getElementById('prod_' + id);
-            s.innerHTML = '<option value="">Producto...</option>';
-            catalogo.forEach(function (p) { if (p.categoria === cat) s.innerHTML += '<option value="' + p.id + '">' + p.producto + '</option>'; });
-        }
-
-        function ajustarInputs(id) {
-            var p = null; var prodVal = document.getElementById('prod_' + id).value;
-            for (var i = 0; i < catalogo.length; i++) { if (catalogo[i].id === prodVal) { p = catalogo[i]; break; } }
-            if (!p) return;
-            var container = document.getElementById('inputs_container_' + id);
-
-            if (p.categoria.toUpperCase().indexOf('POLIFAN') > -1) {
-                container.innerHTML = `<div class="grid grid-cols-2 gap-4"><select id="sup_${id}" class="input-premium" onchange="calc()">${OPCIONES_POLY.map((s, i) => `<option value="${i}">${s.label}</option>`).join('')}</select><input type="number" id="letras_${id}" placeholder="Cant. Letras" class="input-premium" oninput="calc()"><input type="number" id="q_${id}" value="1" class="input-premium md:col-span-2" oninput="calc()"></div>`;
-            } else if (p.unidad === 'm2') {
-                container.innerHTML = `<div class="grid grid-cols-3 gap-4">` +
-                    `<input type="number" id="w_${id}" placeholder="Ancho cm" class="input-premium" oninput="calc()">` +
-                    `<input type="number" id="h_${id}" placeholder="Largo cm" class="input-premium" oninput="calc()">` +
-                    `<input type="number" id="q_${id}" value="1" class="input-premium" oninput="calc()">` +
-                    `<button type="button" onclick="openPlanner(${id})" class="md:col-span-3 bg-blue-500/20 hover:bg-blue-500/40 text-blue-300 font-bold py-2 px-4 rounded-xl border border-blue-500/30 transition-all text-[10px] uppercase tracking-widest"><i class="fa-solid fa-ruler-combined mr-2"></i> Optimizar Layout Visual</button>` +
-                    `<div class="md:col-span-3 flex items-center gap-3 p-3 bg-white/5 rounded-xl border border-white/10 mt-2">` +
-                    `<input type="checkbox" id="dem_${id}" style="width:20px;height:20px;accent-color:#ffd700;" onchange="calc()">` +
-                    `<label for="dem_${id}" class="text-xs text-yellow-400 font-bold uppercase cursor-pointer">Agregar demasía de refilado (+10cm)</label></div></div>`;
-            } else if (p.unidad.indexOf('ml') > -1) {
-                container.innerHTML = `<div class="grid grid-cols-2 gap-4"><input type="number" id="ml_${id}" placeholder="Metros" class="input-premium" oninput="calc()"><input type="number" id="q_${id}" value="1" class="input-premium" oninput="calc()"></div>`;
-            } else {
-                container.innerHTML = `<input type="number" id="q_${id}" value="1" class="input-premium" oninput="calc()">`;
-            }
-            calc();
-        }
-
-        function handleFiles(input, id) {
-            var files = Array.from(input.files);
-            filesByItem['item_' + id] = filesByItem['item_' + id].concat(files);
-            totalBytes = 0; Object.keys(filesByItem).forEach(function (k) { filesByItem[k].forEach(function (f) { totalBytes += f.size; }); });
-            document.getElementById('list_' + id).innerHTML = filesByItem['item_' + id].map(function (f) { return '<div>✅ ' + f.name + '</div>'; }).join('');
-        }
-
-        function calc() {
-            var total = 0;
-            document.querySelectorAll('[id^="card_"]').forEach(function (card) {
-                var id = card.id.replace('card_', '');
-                var p = null; var prodVal = document.getElementById('prod_' + id).value;
-                for (var i = 0; i < catalogo.length; i++) { if (catalogo[i].id === prodVal) { p = catalogo[i]; break; } }
-                if (!p) return;
-                var qInput = document.getElementById('q_' + id);
-                var q = qInput ? (parseInt(qInput.value) || 1) : 1;
-                var warn = document.getElementById('warn_' + id);
-                let sub = 0;
-
-                var m2Display = document.getElementById('m2_sub_' + id);
-                if (m2Display) m2Display.innerText = "";
-
-                if (p.categoria.toUpperCase().indexOf('POLIFAN') > -1) {
-                    var idx = document.getElementById('sup_' + id).value;
-                    sub = p.precioGremio * OPCIONES_POLY[idx].factor * q;
-                } else if (p.unidad === 'm2') {
-                    var w = parseFloat(document.getElementById('w_' + id).value) || 0;
-                    var h = parseFloat(document.getElementById('h_' + id).value) || 0;
-                    if (w > 0 && h > 0) {
-                        var m2Calc = ((w / 100) * (h / 100) * q).toFixed(2);
-                        if (m2Display) m2Display.innerText = m2Calc + " m²";
-                    }
-                    var demCheck = document.getElementById('dem_' + id).checked;
-                    var wV = demCheck ? (w + 10) : w;
-                    var wCob = wV;
-                    var requiresAcceptance = false;
-
-                    if (p.anchoFijo) {
-                        if (wV > p.anchoFijo) {
-                            wCob = p.anchoFijo;
-                            warn.innerText = `❌ ERROR: Ancho máximo ${p.anchoFijo}cm.`;
-                            warn.style.display = "block"; warn.style.background = "rgba(248, 113, 113, 0.1)"; warn.style.color = "#f87171";
-                        } else {
-                            if (p.anchoFijo - w <= 10) { wCob = w; } else { wCob = p.anchoFijo; }
-                            wCob = Math.max(80, wCob);
-                            if (wCob > w) {
-                                requiresAcceptance = true;
-                                warn.innerText = `⚠️ ANCHO ÚNICO: Se cobrará sobre ${wCob}cm.`;
-                                warn.style.display = "block"; warn.style.background = "rgba(251, 146, 60, 0.1)"; warn.style.color = "#fb923c";
-                            } else {
-                                warn.innerText = `✅ ANCHO ÚNICO: Se cobrará la medida de ${wCob}cm.`;
-                                warn.style.display = "block"; warn.style.background = "rgba(74, 222, 128, 0.1)"; warn.style.color = "#4ade80";
-                            }
-                        }
-                    } else {
-                        var lista = stockPorTipo[p.tipo] || [];
-                        var rollo = lista.find(s => s >= wV);
-                        if (rollo) {
-                            if (rollo - w <= 10) { wCob = w; } else { wCob = rollo; }
-                            wCob = Math.max(80, wCob);
-                            if (wCob > w) {
-                                requiresAcceptance = true;
-                                warn.style.display = "block"; warn.style.background = "rgba(251, 146, 60, 0.1)"; warn.style.color = "#fb923c";
-                                if (w < 80 && wCob === 80) warn.innerText = `⚠️ MÍNIMO DE COBRO: Se cobrará sobre 80cm.`;
-                                else warn.innerText = `⚠️ DESPERDICIO: Se cobrará sobre ${wCob}cm (Usando rollo de ${rollo}cm).`;
-                            } else {
-                                warn.style.display = "block"; warn.style.background = "rgba(74, 222, 128, 0.1)"; warn.style.color = "#4ade80";
-                                warn.innerText = `✅ STOCK OK: Se cobrará la medida de ${wCob}cm.`;
-                            }
-                        } else if (w > 0) {
-                            warn.innerText = "❌ SIN STOCK para este ancho.";
-                            warn.style.display = "block"; warn.style.background = "rgba(248, 113, 113, 0.1)"; warn.style.color = "#f87171";
-                        } else { warn.style.display = "none"; }
-                    }
-
-                    var acceptContainer = document.getElementById('accept_container_' + id);
-                    if (acceptContainer) {
-                        if (requiresAcceptance && w > 0) {
-                            acceptContainer.classList.remove('hidden');
-                            var priceCon = (wCob / 100) * (h / 100) * p.precioGremio * q;
-                            var priceSin = (wV / 100) * (h / 100) * p.precioGremio * q;
-
-                            document.getElementById('w_cob_' + id).innerText = wCob;
-                            document.getElementById('price_con_' + id).innerText = Math.round(priceCon).toLocaleString();
-                            document.getElementById('w_exact_' + id).innerText = wV;
-                            document.getElementById('price_sin_' + id).innerText = Math.round(priceSin).toLocaleString();
-
-                            var choice = document.querySelector(`input[name="desp_choice_${id}"]:checked`);
-                            if (choice && choice.value === 'esperar') {
-                                sub = priceSin;
-                            } else {
-                                sub = priceCon;
-                            }
-                        } else {
-                            acceptContainer.classList.add('hidden');
-                            sub = (wCob / 100) * (h / 100) * p.precioGremio * q;
-                        }
-                    } else {
-                        sub = (wCob / 100) * (h / 100) * p.precioGremio * q;
-                    }
-                } else if (p.unidad.indexOf('ml') > -1) {
-                    sub = (parseFloat(document.getElementById('ml_' + id).value) || 0) * p.precioGremio * q;
-                } else { sub = p.precioGremio * q; }
-                document.getElementById('sub_' + id).innerText = '$' + Math.round(sub).toLocaleString();
-                total += sub;
-            });
-            document.getElementById('totalLabel').innerText = '$' + Math.round(total).toLocaleString();
-        }
-
-        function eliminar(id) { if (document.querySelectorAll('[id^="card_"]').length > 1) { document.getElementById('card_' + id).remove(); calc(); } }
-
-        document.getElementById('cotizadorForm').onsubmit = async (e) => {
-            e.preventDefault();
-            var btn = document.getElementById('btnSubmit');
-            const loggedUser = JSON.parse(localStorage.getItem('mr_user') || '{}');
-            const gremioName = loggedUser.nombre || loggedUser.usuario || document.getElementById('nombreGremio').value;
-            const gremioPhone = loggedUser.telefono || document.getElementById('whatsapp').value;
-
-            if (window.appMode === 'cotizar') {
-                // En modo cotizar, simplemente recargamos la página (reiniciamos)
-                location.reload();
-                return;
-            }
-
-            var canSubmit = true;
-            // No blocks needed as options are preselected
-            canSubmit = true;
-
-            btn.disabled = true; btn.innerHTML = 'ENVIANDO...';
-            var allFiles = []; var details = ""; var totalRaw = 0;
-
-            document.querySelectorAll('[id^="card_"]').forEach(function (card, idx) {
-                var id = card.id.replace('card_', '');
-                var p = null; var prodVal = document.getElementById('prod_' + id).value;
-                for (var i = 0; i < catalogo.length; i++) { if (catalogo[i].id === prodVal) { p = catalogo[i]; break; } }
-                if (!p) return;
-                var q = document.getElementById('q_' + id).value || 1;
-                var note = document.getElementById('note_' + id).value.trim();
-                var subVal = parseInt(document.getElementById('sub_' + id).innerText.replace(/[^0-9]/g, ''));
-                totalRaw += subVal;
-                var dim = "";
-                var m2ItemText = "";
-                if (document.getElementById('w_' + id)) {
-                    var wVal = parseFloat(document.getElementById('w_' + id).value) || 0;
-                    var hVal = parseFloat(document.getElementById('h_' + id).value) || 0;
-                    dim = "(" + wVal + "x" + hVal + "cm)";
-                    if (wVal > 0 && hVal > 0) {
-                        var m2Total = ((wVal / 100) * (hVal / 100) * q).toFixed(2);
-                        m2ItemText = " [" + m2Total + " m²]";
-                    }
-                } else if (document.getElementById('ml_' + id)) {
-                    dim = "(" + document.getElementById('ml_' + id).value + "ml)";
-                }
-
-                var despChoiceText = "";
-                var choice = document.querySelector(`input[name="desp_choice_${id}"]:checked`);
-                if (choice && document.getElementById('accept_container_' + id) && !document.getElementById('accept_container_' + id).classList.contains('hidden')) {
-                    if (choice.value === 'esperar') {
-                        despChoiceText = " [Espera Agrupación - Sin Desperdicio]";
-                    } else {
-                        despChoiceText = " [Prioritario - Con Desperdicio]";
-                    }
-                }
-
-                details += "ITEM " + (idx + 1) + ": " + p.producto + " " + dim + m2ItemText + " x" + q + despChoiceText + (note ? " | " + note : "") + " - $" + subVal.toLocaleString() + "\n";
-                filesByItem['item_' + id].forEach(function (f) { allFiles.push({ filename: 'I' + (idx + 1) + '_' + f.name, mimeType: f.type, base: f }); });
-            });
-
-            var folderId = null;
-            var folderUrl = null;
-
-            try {
-                if (allFiles.length > 0) {
-                    const progressContainer = document.getElementById('uploadProgressContainer');
-                    const statusText = document.getElementById('uploadStatusText');
-                    const progressPercent = document.getElementById('uploadProgressPercent');
-                    const progressBar = document.getElementById('uploadProgressBar');
-
-                    progressContainer.classList.remove('hidden');
-
-                    statusText.innerText = 'CREANDO CARPETA...';
-                    progressPercent.innerText = '0%';
-                    progressBar.style.width = '0%';
-
-                    btn.innerHTML = 'CREANDO CARPETA...';
-                    const folderInfo = await new Promise((resolve, reject) => {
-                        google.script.run
-                            .withSuccessHandler(resolve)
-                            .withFailureHandler(reject)
-                            .createOrderFolder(gremioName);
-                    });
-                    folderId = folderInfo.folderId;
-                    folderUrl = folderInfo.folderUrl;
-
-                    for (var k = 0; k < allFiles.length; k++) {
-                        var f = allFiles[k];
-                        statusText.innerText = `PREPARANDO ARCHIVO ${k + 1}/${allFiles.length}...`;
-                        btn.innerHTML = `PREPARANDO ARCHIVO ${k + 1}/${allFiles.length}...`;
-
-                        const uploadUrl = await new Promise((resolve, reject) => {
-                            google.script.run
-                                .withSuccessHandler(resolve)
-                                .withFailureHandler(reject)
-                                .getResumableUploadUrl(folderId, f.filename, f.mimeType);
-                        });
-
-                        // Subida por GAS proxy (CORS bloquea acceso directo a googleapis.com)
-                        const chunkSize = 1 * 1024 * 1024; // 1MB chunks (~1.33MB en base64, dentro de límites GAS)
-                        const fileSize = f.base.size;
-                        let offset = 0;
-
-                        while (offset < fileSize) {
-                            const end = Math.min(offset + chunkSize, fileSize);
-                            const chunk = f.base.slice(offset, end);
-                            const progress = Math.round((end / fileSize) * 100);
-
-                            statusText.innerText = `SUBIENDO ARCHIVO ${k + 1}/${allFiles.length}`;
-                            progressPercent.innerText = `${progress}%`;
-                            progressBar.style.width = `${progress}%`;
-                            btn.innerHTML = `SUBIENDO ARCHIVO ${k + 1}/${allFiles.length} (${progress}%)...`;
-
-                            // Leer chunk como base64
-                            const base64Chunk = await new Promise((resolve) => {
-                                const reader = new FileReader();
-                                reader.readAsDataURL(chunk);
-                                reader.onload = () => resolve(reader.result.split(',')[1]);
-                            });
-
-                            // Enviar via GAS con reintentos para errores transitorios
-                            let retries = 0;
-                            const maxRetries = 5;
-                            let uploaded = false;
-
-                            while (!uploaded && retries <= maxRetries) {
-                                try {
-                                    const result = await new Promise((resolve, reject) => {
-                                        google.script.run
-                                            .withSuccessHandler(resolve)
-                                            .withFailureHandler(reject)
-                                            .uploadChunkToResumableUrl(uploadUrl, base64Chunk, offset, end - 1, fileSize);
-                                    });
-
-                                    if (result.status === 308 || result.status === 200 || result.status === 201) {
-                                        uploaded = true;
-                                    } else if (result.status >= 500 && retries < maxRetries) {
-                                        retries++;
-                                        statusText.innerText = `REINTENTANDO (${retries}/${maxRetries})...`;
-                                        await new Promise(r => setTimeout(r, 2000 * Math.pow(2, retries - 1)));
-                                    } else {
-                                        throw new Error(`Subida fallida: HTTP ${result.status}`);
-                                    }
-                                } catch (gasErr) {
-                                    if (retries < maxRetries) {
-                                        retries++;
-                                        statusText.innerText = `RECONECTANDO (${retries}/${maxRetries})...`;
-                                        await new Promise(r => setTimeout(r, 3000 * retries));
-                                    } else {
-                                        throw gasErr;
-                                    }
-                                }
-                            }
-                            offset = end;
-                        }
-                    }
-                }
-            } catch (err) {
-                console.error("Error en subida de archivos:", err);
-                alert("Hubo un error subiendo los archivos: " + err.message);
-                document.getElementById('uploadProgressContainer').classList.add('hidden');
-                btn.disabled = false;
-                btn.innerHTML = 'ENVIAR PEDIDO';
-                return;
-            }
-
-            btn.innerHTML = 'ENVIANDO DETALLES...';
-            google.script.run.withSuccessHandler(() => {
-                document.getElementById('mainContent').style.display = "none";
-                document.getElementById('successOverlay').style.display = "flex";
-                setTimeout(() => location.reload(), 4000);
-            }).processOrder(JSON.stringify({
-                gremio: gremioName,
-                whatsapp: gremioPhone,
-                precio: totalRaw, detalles: details,
-                folderId: folderId,
-                folderUrl: folderUrl,
-                plannerLayouts: window.plannerLayouts || {}
-            }));
-        };
-
-        // --- NAVEGACIÓN Y HISTORIAL DE PEDIDOS ---
-        let historyOrders = [];
-
-        function switchMainTab(tab) {
-            const tabNewOrder = document.getElementById('tabNewOrder');
-            const tabHistory = document.getElementById('tabHistory');
-            const tabTools = document.getElementById('tabTools');
-            const newOrderSection = document.getElementById('newOrderSection');
-            const historySection = document.getElementById('historySection');
-            const toolsSection = document.getElementById('toolsSection');
-
-            if (tab === 'new_order') {
-                newOrderSection.classList.remove('hidden');
-                historySection.classList.add('hidden');
-                toolsSection.classList.add('hidden');
-                
-                tabNewOrder.className = "pb-3 px-4 font-bold text-yellow-400 border-b-2 border-yellow-400 focus:outline-none transition-all uppercase tracking-wider text-[11px] cursor-pointer";
-                tabHistory.className = "pb-3 px-4 font-bold text-gray-400 hover:text-white border-b-2 border-transparent focus:outline-none transition-all uppercase tracking-wider text-[11px] cursor-pointer";
-                tabTools.className = "pb-3 px-4 font-bold text-gray-400 hover:text-white border-b-2 border-transparent focus:outline-none transition-all uppercase tracking-wider text-[11px] cursor-pointer";
-            } else if (tab === 'history') {
-                newOrderSection.classList.add('hidden');
-                historySection.classList.remove('hidden');
-                toolsSection.classList.add('hidden');
-                
-                tabNewOrder.className = "pb-3 px-4 font-bold text-gray-400 hover:text-white border-b-2 border-transparent focus:outline-none transition-all uppercase tracking-wider text-[11px] cursor-pointer";
-                tabHistory.className = "pb-3 px-4 font-bold text-yellow-400 border-b-2 border-yellow-400 focus:outline-none transition-all uppercase tracking-wider text-[11px] cursor-pointer";
-                tabTools.className = "pb-3 px-4 font-bold text-gray-400 hover:text-white border-b-2 border-transparent focus:outline-none transition-all uppercase tracking-wider text-[11px] cursor-pointer";
-                
-                loadGremioHistory();
-            } else {
-                newOrderSection.classList.add('hidden');
-                historySection.classList.add('hidden');
-                toolsSection.classList.remove('hidden');
-                
-                tabNewOrder.className = "pb-3 px-4 font-bold text-gray-400 hover:text-white border-b-2 border-transparent focus:outline-none transition-all uppercase tracking-wider text-[11px] cursor-pointer";
-                tabHistory.className = "pb-3 px-4 font-bold text-gray-400 hover:text-white border-b-2 border-transparent focus:outline-none transition-all uppercase tracking-wider text-[11px] cursor-pointer";
-                tabTools.className = "pb-3 px-4 font-bold text-yellow-400 border-b-2 border-yellow-400 focus:outline-none transition-all uppercase tracking-wider text-[11px] cursor-pointer";
-            }
-        }
-
-        function loadGremioHistory() {
-            const listContainer = document.getElementById('gremioHistoryList');
-            listContainer.innerHTML = `
-                <div class="text-center py-12">
-                    <i class="fa-solid fa-spinner fa-spin text-4xl text-yellow-400 mb-4"></i>
-                    <p class="text-sm text-gray-400">Cargando tus pedidos...</p>
-                </div>`;
-
-            const loggedUser = JSON.parse(localStorage.getItem('mr_user') || '{}');
-            const gremioName = loggedUser.nombre || loggedUser.usuario || '';
-
-            if (!gremioName) {
-                listContainer.innerHTML = `<div class="text-center py-12 bg-white/5 border border-white/5 rounded-2xl"><p class="text-sm text-gray-300">No se pudo identificar tu gremio.</p></div>`;
-                return;
-            }
-
-            google.script.run
-                .withSuccessHandler(function(orders) {
-                    historyOrders = orders || [];
-                    if (historyOrders.length === 0) {
-                        listContainer.innerHTML = `
-                            <div class="text-center py-12 bg-white/5 border border-white/5 rounded-2xl">
-                                <i class="fa-solid fa-box-open text-4xl text-gray-600 mb-3"></i>
-                                <p class="text-sm font-bold text-gray-300">No tienes pedidos registrados todavía</p>
-                                <p class="text-xs text-gray-500 mt-1">Los pedidos que envíes aparecerán aquí.</p>
-                            </div>`;
-                        return;
-                    }
-                    renderHistoryOrders(listContainer);
-                })
-                .withFailureHandler(function(err) {
-                    listContainer.innerHTML = `
-                        <div class="text-center py-12 bg-red-500/5 border border-red-500/10 rounded-2xl text-red-400 text-xs">
-                            <i class="fa-solid fa-circle-exclamation text-3xl mb-3"></i>
-                            <p class="font-bold">Error al cargar historial</p>
-                            <p class="text-gray-500 mt-1">${err.message || err}</p>
-                        </div>`;
-                })
-                .getGremioHistory(gremioName);
-        }
-
-        function renderHistoryOrders(listContainer) {
-            const statusLabels = {
-                'Pendiente': '⏳ Pendiente',
-                'Sincronizado': '🔄 Sincronizado',
-                'En Proceso': '🔧 En Proceso',
-                'Terminado': '✅ Terminado',
-                'Entregado': '📦 Entregado',
-                'Cancelado': '🚫 Cancelado'
-            };
-            const statusColors = {
-                'Pendiente': 'bg-yellow-500/10 text-yellow-400 border-yellow-500/30',
-                'Sincronizado': 'bg-blue-500/10 text-blue-400 border-blue-500/30',
-                'En Proceso': 'bg-blue-500/10 text-blue-400 border-blue-500/30',
-                'Terminado': 'bg-green-500/10 text-green-400 border-green-500/30',
-                'Entregado': 'bg-zinc-500/10 text-zinc-400 border-zinc-500/30',
-                'Cancelado': 'bg-red-500/10 text-red-400 border-red-500/30'
-            };
-
-            listContainer.innerHTML = historyOrders.map(function(o, idx) {
-                const statusBadge = `<span class="px-2.5 py-1 rounded-full text-[10px] font-bold border ${statusColors[o.estado] || 'bg-white/10 text-white border-white/20'}">${statusLabels[o.estado] || o.estado}</span>`;
-                const driveLink = o.driveUrl || '';
-                const canModify = o.estado === 'Pendiente' || o.estado === 'Sincronizado';
-
-                return `
-                    <div class="p-5 md:p-6 bg-white/5 border border-white/5 rounded-2xl space-y-4 hover:border-white/10 transition-all text-left">
-                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                            <div>
-                                <div class="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Pedido #${historyOrders.length - idx}</div>
-                                <div class="text-xs text-gray-400 font-bold mt-0.5">📅 ${o.fecha}</div>
-                            </div>
-                            <div class="flex items-center gap-2">
-                                ${statusBadge}
-                            </div>
-                        </div>
-                        
-                        <div class="text-xs bg-black/30 p-4 rounded-xl font-mono text-gray-300 whitespace-pre-line border border-white/5 leading-relaxed">
-                            ${o.detalle || 'Sin descripción'}
-                        </div>
-
-                        <div class="flex flex-wrap items-center justify-between gap-4 pt-2 border-t border-white/5">
-                            <div class="text-lg font-black text-yellow-400">
-                                Total: $${Math.round(o.total || 0).toLocaleString()}
-                            </div>
-                            <div class="flex items-center gap-3">
-                                ${driveLink ? `
-                                    <a href="${driveLink}" target="_blank" class="px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 rounded-lg text-[10px] font-bold uppercase tracking-widest text-blue-400 flex items-center gap-1 transition-all no-underline">
-                                        <i class="fa-solid fa-folder-open"></i> Ver Archivos
-                                    </a>` : ''
-                                }
-                                ${canModify ? `
-                                    <button onclick="openEditModal(${o.row})" class="px-3 py-1.5 bg-yellow-500/10 hover:bg-yellow-500/20 border border-yellow-500/30 rounded-lg text-[10px] font-bold uppercase tracking-widest text-yellow-400 flex items-center gap-1 transition-all cursor-pointer">
-                                        <i class="fa-solid fa-edit"></i> Corregir
-                                    </button>
-                                    <button onclick="cancelGremioOrder(${o.row})" class="px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 rounded-lg text-[10px] font-bold uppercase tracking-widest text-red-400 flex items-center gap-1 transition-all cursor-pointer">
-                                        <i class="fa-solid fa-ban"></i> Cancelar
-                                    </button>` : ''
-                                }
-                            </div>
-                        </div>
-                    </div>`;
-            }).join('');
-        }
-
-        function cancelGremioOrder(row) {
-            if (!confirm('¿Estás seguro de que quieres cancelar este pedido?\n\nEsta acción no se puede deshacer.')) return;
-
-            google.script.run
-                .withSuccessHandler(function() {
-                    alert('✅ Pedido cancelado correctamente.');
-                    loadGremioHistory();
-                })
-                .withFailureHandler(function(err) {
-                    alert('❌ Error: ' + (err.message || err));
-                })
-                .cancelGremioOrderByRow(row);
-        }
-
-        function openEditModal(row) {
-            const o = historyOrders.find(function(x) { return x.row === row; });
-            if (!o) return;
-            document.getElementById('editOrderId').value = row;
-            document.getElementById('editOrderDetails').value = o.detalle || '';
-            document.getElementById('editOrderModal').classList.remove('hidden');
-            document.body.style.overflow = 'hidden';
-        }
-
-        function closeEditModal() {
-            document.getElementById('editOrderModal').classList.add('hidden');
-            document.body.style.overflow = 'auto';
-        }
-
-        function saveEditedOrder() {
-            const row = parseInt(document.getElementById('editOrderId').value);
-            const detalles = document.getElementById('editOrderDetails').value.trim();
-
-            if (!detalles) {
-                alert('⚠️ Escribe el detalle antes de guardar.');
-                return;
-            }
-
-            google.script.run
-                .withSuccessHandler(function() {
-                    alert('✅ Pedido modificado correctamente.');
-                    closeEditModal();
-                    loadGremioHistory();
-                })
-                .withFailureHandler(function(err) {
-                    alert('❌ Error: ' + (err.message || err));
-                })
-                .updateGremioOrderByRow(row, detalles);
-        }
-
-        window.onload = init;
-    </script>
-    <!-- LÓGICA MODULAR DEL PLANNER -->
-
-    <!-- Modal Corregir Pedido -->
-    <div id="editOrderModal" class="fixed inset-0 bg-black/85 backdrop-filter backdrop-blur-sm z-[9999] hidden flex items-center justify-center p-4">
-        <div class="glass-card p-6 md:p-8 max-w-xl w-full space-y-4">
-            <h3 class="text-xl font-black text-yellow-400 uppercase tracking-tighter">Corregir Detalles del Pedido</h3>
-            <p class="text-xs text-gray-400">Puedes corregir las instrucciones o el detalle de este pedido mientras esté en estado pendiente.</p>
-            <input type="hidden" id="editOrderId">
-            <textarea id="editOrderDetails" class="input-premium h-40 font-mono text-xs leading-relaxed" placeholder="Escribe el nuevo detalle..."></textarea>
-            <div class="flex gap-4">
-                <button type="button" onclick="closeEditModal()" class="flex-1 bg-white/5 hover:bg-white/10 text-white font-bold py-3 rounded-xl border border-white/10 transition-all uppercase tracking-widest text-[11px] cursor-pointer">Cancelar</button>
-                <button type="button" onclick="saveEditedOrder()" class="flex-1 btn-premium py-3 transition-all uppercase tracking-widest text-[11px] cursor-pointer">Guardar Cambios</button>
+            <!-- Footer -->
+            <div class="pt-4 border-t border-white/5 text-[11px] text-gray-500 tracking-wider uppercase">
+                MR Letreros &copy; Todos los derechos reservados
             </div>
         </div>
-    </div>
+    </main>
 
 </body>
 

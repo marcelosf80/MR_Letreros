@@ -1,6 +1,18 @@
 // =============== CONFIGURACIÓN ===============
 const DRIVE_FOLDER_NAME = "MR_Letreros_Pedidos";
 
+// ID de la planilla objetivo (opcional). Si se deja vacío usa la planilla activa
+// (la que tiene el script vinculado).
+const TARGET_SPREADSHEET_ID = "";
+function getTargetSpreadsheet() {
+  try {
+    if (TARGET_SPREADSHEET_ID) {
+      return SpreadsheetApp.openById(TARGET_SPREADSHEET_ID);
+    }
+  } catch(e) {}
+  return SpreadsheetApp.getActiveSpreadsheet();
+}
+
 // Buscar hoja de cálculo sin importar mayúsculas/minúsculas o nombres de pestañas extendidos
 function getSheetByNameCaseInsensitive(ss, name) {
   if (!ss) return null;
@@ -32,7 +44,7 @@ function getCatalogData() {
     throw new Error("No se pudo acceder a la hoja de cálculo activa. Vinculá este script a tu planilla de Google Sheets.");
   }
   
-  // 1. Cargar Stock por Tipo (Hoja STOCK: A=Ancho cm, B=Estado, C=Tipo)
+  // 1. Cargar Stock por Tipo (Hoja STOCK opcional: si existe se lee como fallback)
   const sheetStock = getSheetByNameCaseInsensitive(ss, 'STOCK');
   const stockByType = {};
   if (sheetStock) {
@@ -40,7 +52,6 @@ function getCatalogData() {
     for (let i = 1; i < data.length; i++) {
       const ancho = parseFloat(data[i][0]);
       const estado = data[i][1] ? data[i][1].toString().toLowerCase().trim() : "";
-      // Normalización agresiva: minúsculas, sin espacios y sin 's' final para evitar error Vinilo vs Vinilos
       let tipo = data[i][2] ? data[i][2].toString().trim().toLowerCase() : "general";
       tipo = tipo.replace(/s$/, ""); // "vinilos" -> "vinilo"
       
@@ -49,13 +60,9 @@ function getCatalogData() {
         stockByType[tipo].push(ancho);
       }
     }
-    // Ordenar cada lista de stock de menor a mayor
-    Object.keys(stockByType).forEach(function(key) {
-      stockByType[key].sort(function(a, b) { return a - b; });
-    });
   }
 
-  // 2. Cargar Catálogo (Hoja PRECIOS: A=Cat, B=Prod, C=Precio, D=Unidad, E=Tipo, F=Ancho cm)
+  // 2. Cargar Catálogo (Hoja PRECIOS: A=Cat, B=Prod, C=Precio, D=Unidad, E=Tipo, F=Ancho cm o múltiples anchos)
   const sheetPrecios = getSheetByNameCaseInsensitive(ss, 'PRECIOS');
   const catalogResult = [];
   if (sheetPrecios) {
@@ -63,10 +70,35 @@ function getCatalogData() {
     for (let i = 1; i < data.length; i++) {
       if (!data[i][0] || !data[i][1]) continue;
       const precio = parseFloat(data[i][2]) || 0;
-      const anchoRaw = parseFloat(data[i][5]);
       let tipo = data[i][4] ? data[i][4].toString().trim().toLowerCase() : "general";
       tipo = tipo.replace(/s$/, ""); // Normalizar también aquí
-      
+
+      // Extraer todas las medidas de stock disponibles para este material específico
+      // Soporta:
+      // - Columna F con número simple: 134
+      // - Columna F con texto de múltiples medidas: "104, 122, 150" o "104/122/150" o "104 122 150"
+      // - Múltiples columnas consecutivas (Col F: 104, Col G: 122, Col H: 150...)
+      const anchosSet = {};
+      for (let col = 5; col < data[i].length; col++) {
+        const val = data[i][col];
+        if (val === undefined || val === null || val === '') continue;
+
+        if (typeof val === 'number') {
+          if (val > 0) anchosSet[val] = true;
+        } else {
+          const partes = val.toString().split(/[,;/|\s]+/);
+          for (let k = 0; k < partes.length; k++) {
+            const num = parseFloat(partes[k]);
+            if (!isNaN(num) && num > 0) {
+              anchosSet[num] = true;
+            }
+          }
+        }
+      }
+
+      const anchosStock = Object.keys(anchosSet).map(Number).sort(function(a, b) { return a - b; });
+      const anchoFijo = (anchosStock.length === 1) ? anchosStock[0] : null;
+
       catalogResult.push({
         id: 'p_' + i,
         categoria: data[i][0].toString().trim(),
@@ -74,17 +106,193 @@ function getCatalogData() {
         precioGremio: precio,
         unidad: (data[i][3] || 'm2').toString().trim(),
         tipo: tipo,
-        anchoFijo: (!isNaN(anchoRaw) && anchoRaw > 0) ? anchoRaw : null
+        anchoFijo: anchoFijo,
+        anchosStock: anchosStock
       });
+
+      // Si se quita la hoja STOCK, alimentar automáticamente el fallback stockByType por tipo
+      if (anchosStock.length > 0 && tipo) {
+        if (!stockByType[tipo]) stockByType[tipo] = [];
+        anchosStock.forEach(function(ancho) {
+          if (stockByType[tipo].indexOf(ancho) === -1) {
+            stockByType[tipo].push(ancho);
+          }
+        });
+      }
     }
   }
+
+  // Ordenar cada lista de stock de menor a mayor
+  Object.keys(stockByType).forEach(function(key) {
+    stockByType[key].sort(function(a, b) { return a - b; });
+  });
+
   return { catalog: catalogResult, stock: stockByType };
+}
+
+// =============== RECÁLCULO DE PRECIO EN SERVIDOR (ANTI-MANIPULACIÓN) ===============
+// El precio NUNCA se toma del navegador (se puede manipular con el inspector/DevTools):
+// se recalcula acá desde la hoja PRECIOS con la MISMA lógica que muestra Index.html.
+//
+// ⚠️ IMPORTANTE: si cambiás los factores de OPCIONES_POLY en Index.html, actualizá
+// también OPCIONES_POLY_SERVER acá abajo.
+
+const OPCIONES_POLY_SERVER = [
+  { factor: 1.00 }, // 1.20 x 0.60 m (Placa Completa)
+  { factor: 0.88 }, // 1.00 x 0.60 m
+  { factor: 0.73 }, // 0.80 x 0.60 m
+  { factor: 0.58 }, // 0.60 x 0.60 m (Media Placa)
+  { factor: 0.40 }, // 0.40 x 0.60 m
+  { factor: 0.21 }  // 0.20 x 0.60 m
+];
+
+function fmtPesosApp(n) {
+  return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+}
+
+function encontrarProductoApp(catalogo, item) {
+  if (!catalogo) return null;
+  // 1) Por nombre + categoría (semántico): así no se cobra mal aunque la hoja PRECIOS
+  //    haya cambiado de filas entre la carga de la app y el envío del pedido.
+  if (item && item.producto) {
+    const catBusq = String(item.categoria || '').trim().toLowerCase();
+    for (let j = 0; j < catalogo.length; j++) {
+      if (String(catalogo[j].producto) === String(item.producto) &&
+          (!catBusq || String(catalogo[j].categoria).toLowerCase() === catBusq)) {
+        return catalogo[j];
+      }
+    }
+  }
+  // 2) Fallback por id de fila (p_N)
+  if (item && item.prodId) {
+    for (let i = 0; i < catalogo.length; i++) {
+      if (String(catalogo[i].id) === String(item.prodId)) return catalogo[i];
+    }
+  }
+  return null;
+}
+
+// Réplica fiel de la lógica de calc() de Index.html, pero del lado del servidor.
+// Devuelve { sub, error, dim, m2Text, despText } con sub redondeado como mostraba el cliente.
+function calcularPrecioApp(prod, it, stockPorTipo) {
+  const q = (it && it.q) ? (parseInt(it.q, 10) || 1) : 1;
+  const categoria = String(prod.categoria || '').toUpperCase();
+  // OJO: comparaciones idénticas a calc() de Index.html (sin normalizar mayúsculas),
+  // para que el servidor cobre EXACTAMENTE lo mismo que muestra la app.
+  const unidad = String(prod.unidad || '');
+
+  // POLIFAN: precio = precioGremio * factor(opción placa) * cantidad
+  if (categoria.indexOf('POLIFAN') > -1) {
+    let idx = (it && it.polyIdx !== undefined && it.polyIdx !== null) ? parseInt(it.polyIdx, 10) : 0;
+    if (isNaN(idx) || idx < 0 || idx >= OPCIONES_POLY_SERVER.length) idx = 0;
+    return { sub: Math.round(prod.precioGremio * OPCIONES_POLY_SERVER[idx].factor * q), error: null, dim: '', m2Text: '', despText: '' };
+  }
+
+  // Unidad "m2": lógica de anchos / stock / desperdicio / mínimo 80cm
+  if (unidad === 'm2') {
+    const w = (it && it.w) ? parseFloat(it.w) : 0;
+    const h = (it && it.h) ? parseFloat(it.h) : 0;
+    const dem = !!(it && it.dem);
+    const wV = dem ? (w + 10) : w;
+    let wCob = wV;
+    let requiresAcceptance = false;
+
+    const lista = (prod.anchosStock && prod.anchosStock.length > 0)
+      ? prod.anchosStock
+      : (prod.anchoFijo ? [prod.anchoFijo] : ((stockPorTipo && stockPorTipo[prod.tipo]) || []));
+
+    if (lista.length === 1) {
+      const anchoFijo = lista[0];
+      if (wV > anchoFijo) {
+        return { sub: 0, error: 'El ancho (' + w + 'cm' + (dem ? ' +10cm demasía = ' + wV + 'cm' : '') + ') supera el material disponible de ' + anchoFijo + 'cm (' + prod.producto + ').' };
+      }
+      if (w > 0) {
+        wCob = (anchoFijo - w <= 10) ? w : anchoFijo;
+        wCob = Math.max(80, wCob);
+      }
+    } else if (lista.length > 1) {
+      let rollo = null;
+      for (let r = 0; r < lista.length; r++) { if (lista[r] >= wV) { rollo = lista[r]; break; } }
+      if (rollo) {
+        wCob = (rollo - w <= 10) ? w : rollo;
+        wCob = Math.max(80, wCob);
+        if (wCob > w) requiresAcceptance = true;
+      } else if (w > 0) {
+        return { sub: 0, error: 'El ancho (' + w + 'cm' + (dem ? ' +10cm demasía = ' + wV + 'cm' : '') + ') no tiene rollo disponible en stock (' + lista.join(', ') + 'cm) para ' + prod.producto + '.' };
+      }
+    } else {
+      wCob = Math.max(80, wV);
+    }
+
+    const acceptVisible = requiresAcceptance && w > 0;
+    const despEsperar = acceptVisible && it && it.desp === 'esperar';
+    const anchoCobro = despEsperar ? wV : wCob;
+    const sub = (anchoCobro / 100) * (h / 100) * prod.precioGremio * q;
+
+    let dim = '(' + w + 'x' + h + 'cm)';
+    let m2Text = '';
+    if (w > 0 && h > 0) m2Text = ' [' + ((w / 100) * (h / 100) * q).toFixed(2) + ' m²]';
+    let despText = '';
+    if (acceptVisible) despText = despEsperar ? ' [Espera Agrupación - Sin Desperdicio]' : ' [Prioritario - Con Desperdicio]';
+
+    return { sub: Math.round(sub), error: null, dim: dim, m2Text: m2Text, despText: despText };
+  }
+
+  // Unidad "ml" (metro lineal)
+  if (unidad.indexOf('ml') > -1) {
+    const ml = (it && it.ml) ? parseFloat(it.ml) : 0;
+    const sub = ml * prod.precioGremio * q;
+    return { sub: Math.round(sub), error: null, dim: '(' + ml + 'ml)', m2Text: '', despText: '' };
+  }
+
+  // Resto (unidad / pieza)
+  return { sub: Math.round(prod.precioGremio * q), error: null, dim: '', m2Text: '', despText: '' };
 }
 
 // =============== PROCESAR PEDIDO ===============
 function processOrder(jsonString) {
   const order = JSON.parse(jsonString);
   const ss = SpreadsheetApp.getActiveSpreadsheet();
+
+  // ---- SEGURIDAD DE PRECIOS: recalcular SIEMPRE en el servidor ----
+  // El navegador puede manipularse con el inspector, así que el "precio"/"total"
+  // que llegue NUNCA se usa tal cual: se recalcula desde la hoja PRECIOS.
+  const precioEnviado = Number(order.precio) || Number(order.precioEnviado) || 0;
+  if (order.items !== undefined) {
+    if (!Array.isArray(order.items) || order.items.length === 0) {
+      throw new Error('El pedido no tiene ítems para calcular el precio. (Seguridad de precios)');
+    }
+    const catalogoData = getCatalogData();
+    const catalogo = catalogoData.catalog;
+    const stockPorTipo = catalogoData.stock;
+    const lineas = [];
+    let totalServer = 0;
+
+    for (let j = 0; j < order.items.length; j++) {
+      const it = order.items[j] || {};
+      const prod = encontrarProductoApp(catalogo, it);
+      if (!prod) {
+        throw new Error('Producto no encontrado en la planilla PRECIOS: "' + (it.producto || it.prodId || '?') +
+          '". Si se modificaron los precios hace un momento, volvé a abrir la app e intentá de nuevo. (Seguridad de precios)');
+      }
+      const calc = calcularPrecioApp(prod, it, stockPorTipo);
+      if (calc.error) throw new Error(calc.error);
+      lineas.push('ITEM ' + (j + 1) + ': ' + prod.producto + calc.dim + calc.m2Text + ' x' + (parseInt(it.q, 10) || 1) +
+        calc.despText + (it.note ? ' | ' + it.note : '') + ' - $' + fmtPesosApp(calc.sub));
+      totalServer += calc.sub;
+    }
+
+    order.precio = totalServer;
+    order.detalles = lineas.join('\n');
+
+    // Avisar si el navegador mandó un total distinto (posible manipulación)
+    if (precioEnviado > 0 && Math.round(precioEnviado) !== Math.round(totalServer)) {
+      order.detalles += '\n\n⚠️ El total enviado desde el navegador ($' + fmtPesosApp(precioEnviado) +
+        ') no coincidía con el precio del sistema ($' + fmtPesosApp(totalServer) +
+        '). Se guardó el precio del sistema.';
+    }
+  }
+
   var driveUrl = "";
   var subFolder;
   
@@ -114,7 +322,7 @@ function processOrder(jsonString) {
       }
     }
     
-    // Guardar archivo de texto con los detalles del pedido
+    // Guardar archivo de texto con los detalles del pedido (recalculados por el sistema)
     if (order.detalles) {
       subFolder.createFile("Instrucciones_Pedido.txt", order.detalles);
     }
@@ -150,7 +358,7 @@ function processOrder(jsonString) {
   var fecha = Utilities.formatDate(new Date(), "America/Argentina/Buenos_Aires", "dd/MM/yyyy HH:mm");
   sp.appendRow([fecha, order.gremio, order.detalles, order.precio, 'Pendiente', driveUrl, order.whatsapp || '']);
 
-  return { success: true, driveUrl: driveUrl };
+  return { success: true, driveUrl: driveUrl, precio: order.precio };
 }
 
 // =============== HISTORIAL DE PEDIDOS POR GREMIO ===============
@@ -183,10 +391,48 @@ function getGremioHistory(gremioName) {
 }
 
 function cancelGremioOrderByRow(row) {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sh = ss.getSheetByName('PEDIDOS');
+  var ss = getTargetSpreadsheet();
+  var sh = getSheetByNameCaseInsensitive(ss, 'PEDIDOS');
   if (!sh) throw new Error("No se encontró la hoja PEDIDOS");
-  sh.getRange(row, 5).setValue('Cancelado');
+
+  // Leer datos del pedido ANTES de eliminarlo
+  var rowData = sh.getRange(row, 1, 1, 7).getValues()[0];
+  var orderInfo = {
+    fecha: rowData[0] ? rowData[0].toString() : '',
+    gremio: rowData[1] ? rowData[1].toString().trim() : '',
+    detalle: rowData[2] ? rowData[2].toString() : '',
+    total: parseFloat(rowData[3]) || 0,
+    estado: rowData[4] ? rowData[4].toString() : '',
+    driveUrl: rowData[5] ? rowData[5].toString() : '',
+    whatsapp: rowData[6] ? rowData[6].toString() : ''
+  };
+
+  // Obtener URL de Drive para borrar los archivos antes de eliminar la fila
+  if (orderInfo.driveUrl) {
+    var match = orderInfo.driveUrl.match(/folders\/([a-zA-Z0-9_-]+)/i) || orderInfo.driveUrl.match(/id=([a-zA-Z0-9_-]+)/i);
+    if (match) {
+      try {
+        DriveApp.getFolderById(match[1]).setTrashed(true);
+      } catch(e) {}
+    }
+  }
+
+  // Guardar en PropertiesService para que el backend pueda detectar cancelaciones
+  try {
+    var props = PropertiesService.getScriptProperties();
+    var cancelled = JSON.parse(props.getProperty('cancelledOrders') || '[]');
+    cancelled.push({
+      gremio: orderInfo.gremio,
+      detalle: orderInfo.detalle,
+      total: orderInfo.total,
+      whatsapp: orderInfo.whatsapp,
+      driveUrl: orderInfo.driveUrl,
+      cancelledAt: new Date().toISOString()
+    });
+    props.setProperty('cancelledOrders', JSON.stringify(cancelled));
+  } catch(e) {}
+
+  sh.deleteRow(row);
   return { success: true };
 }
 
@@ -202,57 +448,295 @@ function updateGremioOrderByRow(row, newDetails) {
 function getPendingOrders() {
   var ss = getTargetSpreadsheet();
   var pending = [];
+  var allExisting = [];
 
-  // 1. Leer trabajos de la pestaña 'GREMIO'
-  var shGremio = getSheetByNameCaseInsensitive(ss, 'GREMIO');
-  if (shGremio && shGremio.getLastRow() > 1) {
-    var dataG = shGremio.getDataRange().getValues();
-    for (var i = 1; i < dataG.length; i++) {
-      var nombre = dataG[i][0] ? dataG[i][0].toString().trim() : '';
-      if (!nombre || nombre.toLowerCase() === 'nombre' || nombre.toLowerCase() === 'usuario' || nombre.toLowerCase() === 'gremio') continue;
-      
-      var tel = dataG[i][1] ? dataG[i][1].toString().trim() : '';
-      var fecha = dataG[i][2] ? dataG[i][2].toString().trim() : '';
-      var detalle = dataG[i][3] ? dataG[i][3].toString().trim() : 'Trabajo cargado en planilla Gremio';
-      var monto = parseFloat(dataG[i][4]) || 0;
-      var estado = dataG[i][5] ? dataG[i][5].toString().trim() : 'Pendiente';
-
-      pending.push({
-        row: i + 1,
-        sourceSheet: 'GREMIO',
-        gremio: nombre,
-        whatsapp: tel,
-        fecha: fecha,
-        detalle: detalle,
-        total: monto,
-        estado: estado
-      });
-    }
-  }
-
-  // 2. Leer trabajos de la pestaña 'PEDIDOS'
+  // Leer trabajos de la pestaña 'PEDIDOS'
   var shPedidos = getSheetByNameCaseInsensitive(ss, 'PEDIDOS');
   if (shPedidos && shPedidos.getLastRow() > 1) {
     var dataP = shPedidos.getDataRange().getValues();
     for (var j = 1; j < dataP.length; j++) {
+      var rowFecha = dataP[j][0] ? dataP[j][0].toString().trim() : '';
+      var rowGremio = dataP[j][1] ? dataP[j][1].toString().trim() : '';
+      var rowDetalle = dataP[j][2] ? dataP[j][2].toString().trim() : '';
+      var rowTotal = parseFloat(dataP[j][3]) || 0;
       var estadoP = dataP[j][4] ? dataP[j][4].toString().trim() : '';
-      if (estadoP === 'Pendiente' || estadoP === '') {
-        pending.push({
+      var rowDrive = dataP[j][5] ? dataP[j][5].toString().trim() : '';
+      var rowWhatsapp = dataP[j][6] ? dataP[j][6].toString().trim() : '';
+
+      if (rowGremio || rowDetalle || rowTotal > 0) {
+        var orderObj = {
           row: j + 1,
+          fecha: rowFecha,
           sourceSheet: 'PEDIDOS',
-          gremio: dataP[j][1] ? dataP[j][1].toString().trim() : 'Cliente Gremio',
-          detalle: dataP[j][2] ? dataP[j][2].toString().trim() : 'Pedido Web',
-          total: parseFloat(dataP[j][3]) || 0,
-          driveUrl: dataP[j][5] ? dataP[j][5].toString().trim() : '',
-          whatsapp: dataP[j][6] ? dataP[j][6].toString().trim() : '',
-          estado: 'Pendiente'
-        });
-        try { shPedidos.getRange(j + 1, 5).setValue('Sincronizado'); } catch(e) {}
+          gremio: rowGremio || 'Cliente Gremio',
+          detalle: rowDetalle || 'Pedido Web',
+          total: rowTotal,
+          estado: estadoP,
+          driveUrl: rowDrive,
+          whatsapp: rowWhatsapp
+        };
+        allExisting.push(orderObj);
+        // SOLO los pedidos que están explícitamente pendientes o sin estado
+        var estP = estadoP.toLowerCase().trim();
+        if (estP === 'pendiente' || estP === '') {
+          pending.push(orderObj);
+        }
       }
     }
   }
 
-  return pending;
+  // Leer cancelados de PropertiesService de forma segura
+  var cancelled = [];
+  try {
+    var props = PropertiesService.getScriptProperties();
+    var raw = props.getProperty('cancelledOrders');
+    if (raw) {
+      cancelled = JSON.parse(raw);
+      props.deleteProperty('cancelledOrders');
+    }
+  } catch(e) {}
+
+  return {
+    pending: pending,
+    allOrders: allExisting,
+    cancelled: cancelled
+  };
+}
+
+// Confirmar sincronización solo tras persistencia local garantizada (Two-Phase Commit)
+function acknowledgeOrders(rows) {
+  if (!Array.isArray(rows) || rows.length === 0) return { success: true, count: 0 };
+  var ss = getTargetSpreadsheet();
+  var sh = getSheetByNameCaseInsensitive(ss, 'PEDIDOS');
+  if (!sh) return { success: false, error: 'Hoja PEDIDOS no encontrada' };
+  var count = 0;
+  for (var i = 0; i < rows.length; i++) {
+    var r = parseInt(rows[i], 10);
+    if (r > 1 && r <= sh.getLastRow()) {
+      sh.getRange(r, 5).setValue('Sincronizado');
+      count++;
+    }
+  }
+  return { success: true, count: count };
+}
+
+// =============== FUNCIÓN PARA RECARGAR ÚNICAMENTE PEDIDOS SELECCIONADOS / NO CARGADOS ===============
+function recargarPedidosNoCargados() {
+  var ss = getTargetSpreadsheet();
+  var sh = getSheetByNameCaseInsensitive(ss, 'PEDIDOS');
+  if (!sh) throw new Error("No se encontró la hoja PEDIDOS");
+  
+  var ui = null;
+  try { ui = SpreadsheetApp.getUi(); } catch(e) {}
+
+  // 1. Detectar si el usuario tiene filas seleccionadas en la hoja PEDIDOS
+  var selectedRowSet = {};
+  var activeSheet = ss.getActiveSheet();
+  if (activeSheet && activeSheet.getName().toUpperCase() === 'PEDIDOS') {
+    var activeRangeList = activeSheet.getActiveRangeList();
+    if (activeRangeList) {
+      activeRangeList.getRanges().forEach(function(range) {
+        var startRow = range.getRow();
+        var numRows = range.getNumRows();
+        for (var r = 0; r < numRows; r++) {
+          var row = startRow + r;
+          if (row > 1 && row <= sh.getLastRow()) {
+            selectedRowSet[row] = true;
+          }
+        }
+      });
+    }
+  }
+
+  var selectedRows = Object.keys(selectedRowSet).map(Number);
+  var count = 0;
+
+  // CASO A: El usuario seleccionó filas con el mouse (ej. Mariano y Alma Luna)
+  if (selectedRows.length > 0) {
+    for (var k = 0; k < selectedRows.length; k++) {
+      var rNum = selectedRows[k];
+      var estadoActual = sh.getRange(rNum, 5).getValue().toString().trim().toLowerCase();
+      if (estadoActual !== 'cancelado') {
+        sh.getRange(rNum, 5).setValue('Pendiente');
+        count++;
+      }
+    }
+    ss.toast('✅ ' + count + ' pedido(s) seleccionado(s) pasados a "Pendiente".', 'MR Letreros', 5);
+    if (ui) ui.alert('✅ Se marcaron ' + count + ' pedido(s) seleccionado(s) como "Pendiente". En segundos aparecerán en Trabajos.');
+    return { success: true, count: count };
+  }
+
+  // CASO B: Sin selección previa -> revisar ÚNICAMENTE las últimas 25 filas (ayer y hoy) que no estén canceladas
+  var lastRow = sh.getLastRow();
+  if (lastRow <= 1) {
+    if (ui) ui.alert('No hay pedidos en la hoja PEDIDOS.');
+    return { success: true, count: 0 };
+  }
+
+  var startCheck = Math.max(2, lastRow - 24);
+  var numToCheck = lastRow - startCheck + 1;
+  var recentData = sh.getRange(startCheck, 1, numToCheck, 5).getValues();
+
+  var candidateRows = [];
+  for (var i = 0; i < recentData.length; i++) {
+    var rowIdx = startCheck + i;
+    var gremio = recentData[i][1] ? recentData[i][1].toString().trim() : '';
+    var detalle = recentData[i][2] ? recentData[i][2].toString().trim() : '';
+    var total = parseFloat(recentData[i][3]) || 0;
+    var estado = recentData[i][4] ? recentData[i][4].toString().trim().toLowerCase() : '';
+
+    if ((gremio || detalle || total > 0) && estado !== 'cancelado') {
+      // Solo sugerir las que no estén canceladas
+      candidateRows.push(rowIdx);
+    }
+  }
+
+  if (candidateRows.length === 0) {
+    if (ui) ui.alert('No se encontraron pedidos recientes para recargar.');
+    return { success: true, count: 0 };
+  }
+
+  if (ui) {
+    var resp = ui.alert(
+      '🔄 Recargar Pedidos Recientes',
+      'No seleccionaste filas específicas.\n¿Deseas recargar solo los últimos ' + candidateRows.length + ' pedidos recientes (ayer/hoy) a estado "Pendiente"?\n(Recomendado: También podés seleccionar con el cursor las filas específicas antes de pulsar este botón).',
+      ui.ButtonSet.YES_NO
+    );
+    if (resp !== ui.Button.YES) return { success: false, cancelled: true };
+  }
+
+  for (var c = 0; c < candidateRows.length; c++) {
+    sh.getRange(candidateRows[c], 5).setValue('Pendiente');
+    count++;
+  }
+
+  ss.toast('✅ ' + count + ' pedidos recientes pasados a "Pendiente".', 'MR Letreros', 5);
+  if (ui) ui.alert('✅ Se restablecieron ' + count + ' pedidos recientes a "Pendiente". En pocos segundos se sincronizarán con Trabajos.');
+  return { success: true, count: count };
+}
+
+// =============== ELIMINAR PEDIDOS SELECCIONADOS EN LA PLANILLA (ULTRA RÁPIDO) ===============
+function eliminarPedidosSeleccionados() {
+  var ss = getTargetSpreadsheet();
+  var sh = ss.getActiveSheet();
+  
+  if (sh.getName().toUpperCase() !== 'PEDIDOS') {
+    SpreadsheetApp.getUi().alert('⚠️ Por favor selecciona las filas dentro de la pestaña "PEDIDOS".');
+    return;
+  }
+  
+  var activeRangeList = sh.getActiveRangeList();
+  if (!activeRangeList) return;
+  
+  var ranges = activeRangeList.getRanges();
+  var rowSet = {};
+  
+  ranges.forEach(function(range) {
+    var startRow = range.getRow();
+    var numRows = range.getNumRows();
+    for (var r = 0; r < numRows; r++) {
+      var row = startRow + r;
+      if (row > 1) rowSet[row] = true;
+    }
+  });
+  
+  var sortedRows = Object.keys(rowSet).map(function(k) { return parseInt(k, 10); }).sort(function(a, b) { return b - a; });
+  if (sortedRows.length === 0) {
+    SpreadsheetApp.getUi().alert('⚠️ Selecciona al menos una fila con pedido (desde la fila 2).');
+    return;
+  }
+  
+  var ui = SpreadsheetApp.getUi();
+  var resp = ui.alert(
+    '🗑️ Confirmar Eliminación Rápida',
+    '¿Eliminar ' + sortedRows.length + ' pedido(s) seleccionado(s)?',
+    ui.ButtonSet.YES_NO
+  );
+  if (resp !== ui.Button.YES) return;
+  
+  ss.toast('⏳ Eliminando ' + sortedRows.length + ' pedido(s) y limpiando Drive...', 'MR Letreros', 60);
+
+  // 1. Lectura en bloque a memoria (0 llamadas remotas por celda)
+  var allData = sh.getDataRange().getValues();
+  var cancelledData = [];
+  var folderIds = [];
+  
+  sortedRows.forEach(function(row) {
+    var idx = row - 1;
+    if (idx < allData.length) {
+      var rowData = allData[idx];
+      var gremio = rowData[1] || '';
+      var detalle = rowData[2] || '';
+      var total = rowData[3] || 0;
+      var driveUrl = rowData[5] ? rowData[5].toString() : '';
+      
+      if (driveUrl) {
+        var match = driveUrl.match(/folders\/([a-zA-Z0-9_-]+)/i) || driveUrl.match(/id=([a-zA-Z0-9_-]+)/i);
+        if (match) folderIds.push(match[1]);
+      }
+      
+      cancelledData.push({ gremio: gremio, detalle: detalle, total: total, driveUrl: driveUrl, row: row });
+    }
+  });
+  
+  // 2. Agrupar filas contiguas para eliminarlas en bloques (deleteRows) de abajo hacia arriba
+  var blocks = [];
+  var currentBlock = { start: sortedRows[0], count: 1 };
+  
+  for (var i = 1; i < sortedRows.length; i++) {
+    var prev = sortedRows[i - 1];
+    var curr = sortedRows[i];
+    if (curr === prev - 1) {
+      currentBlock.start = curr;
+      currentBlock.count++;
+    } else {
+      blocks.push(currentBlock);
+      currentBlock = { start: curr, count: 1 };
+    }
+  }
+  blocks.push(currentBlock);
+  
+  blocks.forEach(function(b) {
+    try {
+      sh.deleteRows(b.start, b.count);
+    } catch(e) {
+      for (var r = b.start + b.count - 1; r >= b.start; r--) {
+        try { sh.deleteRow(r); } catch(err) {}
+      }
+    }
+  });
+  
+  // 3. Mover carpetas de Drive a la papelera en lote
+  var trashedCount = 0;
+  folderIds.forEach(function(fId) {
+    try {
+      var folder = DriveApp.getFolderById(fId);
+      if (folder) { folder.setTrashed(true); trashedCount++; }
+    } catch(e) {}
+  });
+  
+  // 4. Notificar a PropertiesService para que Node.js reconcilie de inmediato
+  if (cancelledData.length > 0) {
+    try {
+      var props = PropertiesService.getScriptProperties();
+      var existing = JSON.parse(props.getProperty('cancelledOrders') || '[]');
+      props.setProperty('cancelledOrders', JSON.stringify(existing.concat(cancelledData)));
+    } catch(e) {}
+  }
+  
+  ss.toast('⚡ ' + sortedRows.length + ' pedido(s) eliminados correctamente.', 'MR Letreros', 5);
+  ui.alert('⚡ Eliminación completada: ' + sortedRows.length + ' pedido(s) eliminados.');
+}
+
+// Menú en la barra de herramientas de la planilla de Google Sheets
+function onOpen() {
+  try {
+    var ui = SpreadsheetApp.getUi();
+    ui.createMenu('🛠️ MR Letreros')
+      .addItem('🔄 Recargar pedidos seleccionados / recientes', 'recargarPedidosNoCargados')
+      .addItem('🗑️ Eliminar pedidos seleccionados', 'eliminarPedidosSeleccionados')
+      .addToUi();
+  } catch(e) {}
 }
 
 // =============== GESTIÓN Y AUTENTICACIÓN DE GREMIOS EN GOOGLE SHEETS ===============
@@ -410,7 +894,7 @@ function getPreciosData() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var sh = getSheetByNameCaseInsensitive(ss, 'PRECIOS');
   if (!sh) return [];
-  // A: Categoria, B: Producto, C: Precio Gremio, D: Unidad, E: Tipo/Subcategoria, F: Costo/Ancho
+  // A: Categoria, B: Producto, C: Precio Gremio, D: Unidad, E: Tipo/Subcategoria, F: Ancho cm / medidas stock
   var data = sh.getDataRange().getValues();
   var precios = [];
   for (var i = 1; i < data.length; i++) {
@@ -421,7 +905,23 @@ function getPreciosData() {
     var precioGremio = parseFloat(data[i][2]) || 0;
     var unidad = (data[i][3] || 'm2').toString().trim();
     var tipo = data[i][4] ? data[i][4].toString().trim() : '';
-    var costo = parseFloat(data[i][5]) || 0;
+    
+    // Extraer anchos
+    var anchosSet = {};
+    for (var col = 5; col < data[i].length; col++) {
+      var val = data[i][col];
+      if (val === undefined || val === null || val === '') continue;
+      if (typeof val === 'number') {
+        if (val > 0) anchosSet[val] = true;
+      } else {
+        var partes = val.toString().split(/[,;/|\s]+/);
+        for (var k = 0; k < partes.length; k++) {
+          var num = parseFloat(partes[k]);
+          if (!isNaN(num) && num > 0) anchosSet[num] = true;
+        }
+      }
+    }
+    var anchosStock = Object.keys(anchosSet).map(Number).sort(function(a, b) { return a - b; });
 
     precios.push({
       id: 'p_' + i,
@@ -434,7 +934,9 @@ function getPreciosData() {
       unidad: unidad,
       unit: unidad,
       tipo: tipo,
-      costo: costo
+      anchoFijo: anchosStock.length === 1 ? anchosStock[0] : null,
+      anchosStock: anchosStock,
+      costo: anchosStock.length > 0 ? anchosStock[0] : 0
     });
   }
   return precios;
@@ -497,6 +999,12 @@ function doGet(e) {
     var page = e ? e.parameter.page : null;
     
     if (action === 'getPending') return ContentService.createTextOutput(JSON.stringify(getPendingOrders())).setMimeType(ContentService.MimeType.JSON);
+    if (action === 'recargarPedidos') return ContentService.createTextOutput(JSON.stringify(recargarPedidosNoCargados())).setMimeType(ContentService.MimeType.JSON);
+    if (action === 'ackOrders') {
+      var rowsParam = e.parameter.rows;
+      var rows = rowsParam ? JSON.parse(rowsParam) : [];
+      return ContentService.createTextOutput(JSON.stringify(acknowledgeOrders(rows))).setMimeType(ContentService.MimeType.JSON);
+    }
     if (action === 'getGremios') return ContentService.createTextOutput(JSON.stringify(getGremiosList())).setMimeType(ContentService.MimeType.JSON);
     if (action === 'getCostos') return ContentService.createTextOutput(JSON.stringify(getCostosData())).setMimeType(ContentService.MimeType.JSON);
     if (action === 'getPrecios') return ContentService.createTextOutput(JSON.stringify(getPreciosData())).setMimeType(ContentService.MimeType.JSON);
@@ -506,20 +1014,32 @@ function doGet(e) {
       var folderId = e.parameter.folderId;
       return ContentService.createTextOutput(JSON.stringify(getFolderImages(folderId))).setMimeType(ContentService.MimeType.JSON);
     }
+    if (action === 'deleteOrder' || action === 'cancelOrder') {
+      var delParams = {
+        folderId: e.parameter.folderId,
+        folderIds: e.parameter.folderIds,
+        driveUrl: e.parameter.driveUrl,
+        driveUrls: e.parameter.driveUrls,
+        gremio: e.parameter.gremio,
+        total: e.parameter.total
+      };
+      return ContentService.createTextOutput(JSON.stringify(deleteOrCancelOrder(delParams))).setMimeType(ContentService.MimeType.JSON);
+    }
+    if (action === 'getCancelledOrders') {
+      var props = PropertiesService.getScriptProperties();
+      var cancelled = JSON.parse(props.getProperty('cancelledOrders') || '[]');
+      // Limpiar después de leer
+      props.deleteProperty('cancelledOrders');
+      return ContentService.createTextOutput(JSON.stringify({ cancelled: cancelled })).setMimeType(ContentService.MimeType.JSON);
+    }
     
     // Obtener la URL de publicación de la Web App
     var webAppUrl = ScriptApp.getService().getUrl();
     
-    if (page === 'cotizador') {
-      const template = HtmlService.createTemplateFromFile('Index');
-      template.webAppUrl = webAppUrl;
-      return template.evaluate().setTitle('Portal MR Letreros').setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL).addMetaTag('viewport', 'width=device-width, initial-scale=1.0');
-    }
-    
-    // Por defecto renderiza la pantalla de login
-    const template = HtmlService.createTemplateFromFile('login');
+    // Renderizar comunicado oficial (Index.html) directamente
+    const template = HtmlService.createTemplateFromFile('Index');
     template.webAppUrl = webAppUrl;
-    return template.evaluate().setTitle('Acceso Gremio - MR Letreros').setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL).addMetaTag('viewport', 'width=device-width, initial-scale=1.0');
+    return template.evaluate().setTitle('Comunicado Oficial - MR Letreros').setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL).addMetaTag('viewport', 'width=device-width, initial-scale=1.0');
   } catch(err) { return HtmlService.createHtmlOutput("<h1>Error</h1><p>"+err.message+"</p>"); }
 }
 
@@ -643,28 +1163,114 @@ function doPost(e) {
     const postData = JSON.parse(e.postData.contents);
     const action = postData.action;
     
-    if (action === 'cancelOrder') {
-      const driveUrl = postData.driveUrl;
-      const ss = SpreadsheetApp.getActiveSpreadsheet();
-      const sh = ss.getSheetByName('PEDIDOS');
-      if (sh && driveUrl) {
-        const data = sh.getDataRange().getValues();
-        // Buscar fila que coincida con el Drive URL
-        for (let i = 1; i < data.length; i++) {
-          const rowDriveUrl = data[i][5] ? data[i][5].toString().trim() : "";
-          if (rowDriveUrl && (rowDriveUrl.indexOf(driveUrl) > -1 || driveUrl.indexOf(rowDriveUrl) > -1)) {
-            // Cambiar Estado (columna E, que es la 5) a 'Cancelado'
-            sh.getRange(i + 1, 5).setValue('Cancelado');
-            break;
-          }
-        }
-      }
-      return ContentService.createTextOutput(JSON.stringify({ success: true, message: 'Pedido cancelado en Sheets' })).setMimeType(ContentService.MimeType.JSON);
+    if (action === 'deleteOrder' || action === 'cancelOrder') {
+      const result = deleteOrCancelOrder(postData);
+      return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
     }
     
     return ContentService.createTextOutput(JSON.stringify({ success: false, error: 'Accion no valida' })).setMimeType(ContentService.MimeType.JSON);
   } catch (err) {
     return ContentService.createTextOutput(JSON.stringify({ success: false, error: err.message })).setMimeType(ContentService.MimeType.JSON);
   }
+}
+
+// =============== ELIMINAR O CANCELAR PEDIDO DE SHEETS Y DRIVE ===============
+function deleteOrCancelOrder(params) {
+  var results = { success: true, filesTrashed: 0, rowsDeleted: 0, errors: [] };
+  if (!params) return results;
+
+  var ss = getTargetSpreadsheet();
+  var shPedidos = getSheetByNameCaseInsensitive(ss, 'PEDIDOS');
+  
+  var driveUrls = [];
+  if (params.driveUrls && Array.isArray(params.driveUrls)) {
+    driveUrls = params.driveUrls;
+  } else if (params.driveUrl) {
+    driveUrls = params.driveUrl.toString().split(',').map(function(s) { return s.trim(); }).filter(Boolean);
+  }
+  
+  var folderIds = [];
+  if (params.folderIds && Array.isArray(params.folderIds)) {
+    folderIds = params.folderIds;
+  } else if (params.folderId) {
+    folderIds = params.folderId.toString().split(',').map(function(s) { return s.trim(); }).filter(Boolean);
+  }
+  
+  // Extraer folder IDs de cualquier driveUrl
+  driveUrls.forEach(function(url) {
+    var match = url.match(/folders\/([a-zA-Z0-9_-]+)/i) || url.match(/id=([a-zA-Z0-9_-]+)/i);
+    if (match && folderIds.indexOf(match[1]) === -1) {
+      folderIds.push(match[1]);
+    }
+  });
+
+  // 1. Borrar carpetas/archivos de Google Drive (mover a papelera)
+  folderIds.forEach(function(fId) {
+    try {
+      var folder = DriveApp.getFolderById(fId);
+      if (folder) {
+        folder.setTrashed(true);
+        results.filesTrashed++;
+      }
+    } catch(err) {
+      try {
+        var file = DriveApp.getFileById(fId);
+        if (file) {
+          file.setTrashed(true);
+          results.filesTrashed++;
+        }
+      } catch(fileErr) {
+        results.errors.push("Drive ID " + fId + ": " + fileErr.message);
+      }
+    }
+  });
+
+  // 2. Borrar fila(s) de la planilla PEDIDOS
+  if (shPedidos && shPedidos.getLastRow() > 1) {
+    var data = shPedidos.getDataRange().getValues();
+    var gremioSearch = params.gremio ? params.gremio.toString().trim().toLowerCase() : "";
+    var totalSearch = parseFloat(params.total) || 0;
+    
+    // Recorremos de abajo hacia arriba para borrar sin desplazar índices
+    for (var i = data.length - 1; i >= 1; i--) {
+      var rowDrive = data[i][5] ? data[i][5].toString().trim() : "";
+      var rowGremio = data[i][1] ? data[i][1].toString().trim().toLowerCase() : "";
+      var rowTotal = parseFloat(data[i][3]) || 0;
+      
+      var matches = false;
+      
+      // Coincidencia por URL o Folder ID de Drive
+      if (rowDrive) {
+        for (var k = 0; k < folderIds.length; k++) {
+          if (folderIds[k] && rowDrive.indexOf(folderIds[k]) > -1) {
+            matches = true;
+            break;
+          }
+        }
+        if (!matches) {
+          for (var u = 0; u < driveUrls.length; u++) {
+            if (driveUrls[u] && (rowDrive.indexOf(driveUrls[u]) > -1 || driveUrls[u].indexOf(rowDrive) > -1)) {
+              matches = true;
+              break;
+            }
+          }
+        }
+      }
+      
+      // Coincidencia por Gremio y Total si no hubo match por Drive
+      if (!matches && gremioSearch && rowGremio === gremioSearch) {
+        if (totalSearch > 0 && Math.abs(rowTotal - totalSearch) < 1) {
+          matches = true;
+        }
+      }
+      
+      if (matches) {
+        shPedidos.deleteRow(i + 1);
+        results.rowsDeleted++;
+      }
+    }
+  }
+  
+  return results;
 }
 

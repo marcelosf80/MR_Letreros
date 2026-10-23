@@ -1,50 +1,39 @@
 /**
  * Data Manager Extension - Trabajos
  * Extiende el data manager con métodos para gestión de trabajos
- * 
- * @version 1.0.0
+ *
+ * FIX: todos los métodos usan dm.request (agrega Authorization automáticamente)
+ * y los endpoints correctos (/api/gremio/data y /api/clientes/data).
+ *
+ * @version 1.1.0
  */
 
 (function() {
     'use strict';
-    
+
     // Esperar a que el data manager esté disponible
     function initializeWorkDataMethods() {
         if (!window.mrDataManager) {
             setTimeout(initializeWorkDataMethods, 100);
             return;
         }
-        
+
         const dm = window.mrDataManager;
-        
+
         /**
          * Obtiene todos los trabajos
          * @returns {Promise<Object>}
          */
         dm.getWorks = async function() {
             try {
-                const response = await fetch('/api/trabajos', {
-                    method: 'GET',
-                    headers: { 'Content-Type': 'application/json' }
-                });
-                
-                if (!response.ok) {
-                    // Si no existe el archivo, retornar estructura vacía
-                    if (response.status === 404) {
-                        return { works: [], notifications: [] };
-                    }
-                    throw new Error('Error obteniendo trabajos');
-                }
-                
-                const data = await response.json();
+                const data = await dm.request('/api/trabajos');
                 return data || { works: [], notifications: [] };
             } catch (error) {
                 console.error('[DATA-MGR] Error obteniendo trabajos:', error);
-                // Retornar estructura vacía en caso de error
                 return { works: [], notifications: [] };
             }
         };
-        
+
         /**
          * Guarda trabajos
          * @param {Object} data - Datos a guardar
@@ -52,145 +41,84 @@
          */
         dm.saveWorks = async function(data) {
             try {
-                const response = await fetch('/api/trabajos', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data)
-                });
-                
-                if (!response.ok) {
-                    throw new Error('Error guardando trabajos');
-                }
-                
-                return true;
+                const res = await dm.request('/api/trabajos', 'POST', data);
+                return !!(res && res.success);
             } catch (error) {
                 console.error('[DATA-MGR] Error guardando trabajos:', error);
                 throw error;
             }
         };
-        
+
         /**
          * Obtiene cotizaciones de gremio
          * @returns {Promise<Array>}
          */
         dm.getGremioQuotes = async function() {
             try {
-                const response = await fetch('/api/gremio/cotizaciones', {
-                    method: 'GET',
-                    headers: { 'Content-Type': 'application/json' }
-                });
-                
-                if (!response.ok) {
-                    if (response.status === 404) return [];
-                    throw new Error('Error obteniendo cotizaciones gremio');
-                }
-                
-                const data = await response.json();
-                return data || [];
+                const data = await dm.request('/api/gremio/data');
+                return Array.isArray(data) ? data : [];
             } catch (error) {
                 console.error('[DATA-MGR] Error obteniendo cotizaciones gremio:', error);
                 return [];
             }
         };
-        
+
         /**
-         * Guarda cotización de gremio
+         * Guarda cotización de gremio (objeto → se agrega a la lista)
          * @param {Object} quote
          * @returns {Promise<Object>}
          */
         dm.saveGremioQuote = async function(quote) {
             try {
-                const response = await fetch('/api/gremio/cotizaciones', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(quote)
-                });
-                
-                if (!response.ok) {
-                    throw new Error('Error guardando cotización gremio');
-                }
-                
-                return await response.json();
+                return await dm.request('/api/gremio/data', 'POST', quote);
             } catch (error) {
                 console.error('[DATA-MGR] Error guardando cotización gremio:', error);
                 throw error;
             }
         };
-        
+
         /**
          * Obtiene cotizaciones de clientes
          * @returns {Promise<Array>}
          */
         dm.getClientesQuotes = async function() {
             try {
-                const response = await fetch('/api/clientes/cotizaciones', {
-                    method: 'GET',
-                    headers: { 'Content-Type': 'application/json' }
-                });
-                
-                if (!response.ok) {
-                    if (response.status === 404) return [];
-                    throw new Error('Error obteniendo cotizaciones clientes');
-                }
-                
-                const data = await response.json();
-                return data || [];
+                const data = await dm.request('/api/clientes/data');
+                return Array.isArray(data) ? data : [];
             } catch (error) {
                 console.error('[DATA-MGR] Error obteniendo cotizaciones clientes:', error);
                 return [];
             }
         };
-        
+
         /**
-         * Guarda cotización de clientes
+         * Guarda cotización de clientes (objeto → se agrega a la lista)
          * @param {Object} quote
          * @returns {Promise<Object>}
          */
         dm.saveClientesQuote = async function(quote) {
             try {
-                const response = await fetch('/api/clientes/cotizaciones', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(quote)
-                });
-                
-                if (!response.ok) {
-                    throw new Error('Error guardando cotización clientes');
-                }
-                
-                return await response.json();
+                return await dm.request('/api/clientes/data', 'POST', quote);
             } catch (error) {
                 console.error('[DATA-MGR] Error guardando cotización clientes:', error);
                 throw error;
             }
         };
-        
+
         /**
          * Obtiene todos los clientes de la gestión
          * @returns {Promise<Array>}
          */
         dm.getClientes = async function() {
             try {
-                const response = await fetch('/api/clientes', {
-                    method: 'GET',
-                    headers: { 'Content-Type': 'application/json' }
-                });
-                
-                if (!response.ok) {
-                    if (response.status === 404) {
-                        return [];
-                    }
-                    throw new Error('Error obteniendo clientes');
-                }
-                
-                const data = await response.json();
-                return data || [];
+                const data = await dm.request('/api/clientes');
+                return Array.isArray(data) ? data : [];
             } catch (error) {
                 console.error('[DATA-MGR] Error obteniendo clientes:', error);
                 return [];
             }
         };
-        
+
         /**
          * Guarda clientes
          * @param {Array} clientes - Array de clientes
@@ -198,23 +126,14 @@
          */
         dm.saveClientes = async function(clientes) {
             try {
-                const response = await fetch('/api/clientes', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(clientes)
-                });
-                
-                if (!response.ok) {
-                    throw new Error('Error guardando clientes');
-                }
-                
-                return true;
+                const res = await dm.request('/api/clientes', 'POST', clientes);
+                return !!(res && res.success);
             } catch (error) {
                 console.error('[DATA-MGR] Error guardando clientes:', error);
                 return false;
             }
         };
-        
+
         /**
          * Busca clientes por término
          * @param {string} query - Término de búsqueda
@@ -224,20 +143,20 @@
             try {
                 const clientes = await this.getClientes();
                 const q = query.toLowerCase();
-                return clientes.filter(c => 
-                    c.nombre.toLowerCase().includes(q) ||
-                    (c.telefono && c.telefono.includes(q)) ||
-                    (c.email && c.email.toLowerCase().includes(q))
+                return clientes.filter(c =>
+                    String(c.nombre || c.name || '').toLowerCase().includes(q) ||
+                    (c.telefono && String(c.telefono).includes(q)) ||
+                    (c.email && String(c.email).toLowerCase().includes(q))
                 );
             } catch (error) {
                 console.error('[DATA-MGR] Error buscando clientes:', error);
                 return [];
             }
         };
-        
+
         console.log('[DATA-MGR-EXT] ✅ Métodos de trabajos y clientes agregados');
     }
-    
+
     // Iniciar cuando el DOM esté listo
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', initializeWorkDataMethods);

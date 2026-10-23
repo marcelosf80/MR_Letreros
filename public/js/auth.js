@@ -1,5 +1,17 @@
 // auth.js - Manejo de autenticación global
 
+// Helper global de escape para prevenir XSS al insertar datos de usuario en innerHTML
+function escapeHtml(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+window.escapeHtml = escapeHtml;
+
 const AUTH = {
     getToken: () => localStorage.getItem('mr_token'),
     getUser: () => {
@@ -75,8 +87,8 @@ document.addEventListener('DOMContentLoaded', () => {
             .then(data => {
                 if (data.user) {
                     userInfo.innerHTML = `
-                    <div class="sidebar-user-name">${data.user.nombre || data.user.usuario}</div>
-                    <div class="sidebar-user-role">${data.user.rol.toUpperCase()}</div>
+                    <div class="sidebar-user-name">${escapeHtml(data.user.nombre || data.user.usuario)}</div>
+                    <div class="sidebar-user-role">${escapeHtml(String(data.user.rol || '').toUpperCase())}</div>
                 `;
                 }
             })

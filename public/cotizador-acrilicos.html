@@ -18,18 +18,49 @@
     <script src="https://cdn.jsdelivr.net/npm/dxf-parser@1.1.2/dist/dxf-parser.min.js"></script>
     
     <style>
-        :root {
+        :root, :root[data-theme="dark"] {
             --neon-gold: #ffd700;
             --neon-gold-glow: rgba(255, 215, 0, 0.35);
             --bg-glass: rgba(15, 23, 42, 0.75);
             --border-glass: rgba(255, 215, 0, 0.15);
+            --acrilico-bg: #030712;
+            --acrilico-txt: #f3f4f6;
+            --acrilico-gradient: radial-gradient(circle at 80% 10%, #1e1b4b 0%, #030712 60%);
+        }
+
+        :root[data-theme="light"], body.light-theme {
+            --neon-gold: #d97706;
+            --neon-gold-glow: rgba(217, 119, 6, 0.25);
+            --bg-glass: rgba(255, 255, 255, 0.90);
+            --border-glass: rgba(217, 119, 6, 0.25);
+            --acrilico-bg: #f8fafc;
+            --acrilico-txt: #0f172a;
+            --acrilico-gradient: radial-gradient(circle at 80% 10%, #e2e8f0 0%, #f8fafc 60%);
+        }
+
+        :root[data-theme="light"] .bg-slate-950\/60,
+        :root[data-theme="light"] .bg-slate-900,
+        :root[data-theme="light"] .bg-gray-900,
+        :root[data-theme="light"] .bg-gray-800 {
+            background-color: var(--bg-glass) !important;
+            border-color: var(--border-glass) !important;
+        }
+
+        :root[data-theme="light"] .text-white,
+        :root[data-theme="light"] .text-gray-200,
+        :root[data-theme="light"] .text-gray-300 {
+            color: var(--acrilico-txt) !important;
+        }
+
+        :root[data-theme="light"] .text-gray-400 {
+            color: #475569 !important;
         }
 
         body {
-            background-color: #030712;
-            color: #f3f4f6;
+            background-color: var(--acrilico-bg);
+            color: var(--acrilico-txt);
             font-family: 'Outfit', 'Segoe UI', system-ui, -apple-system, sans-serif;
-            background-image: radial-gradient(circle at 80% 10%, #1e1b4b 0%, #030712 60%);
+            background-image: var(--acrilico-gradient);
             background-attachment: fixed;
             min-height: 100vh;
             overflow-x: hidden;

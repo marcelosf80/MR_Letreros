@@ -348,6 +348,7 @@
                             <div class="d-flex justify-content-between align-items-center">
                                 <div>
                                     <strong>${w.clientName || 'Cliente'}</strong>
+                                    ${(w.mergedWorks && w.mergedWorks.length > 0) ? `<span class="badge bg-primary ms-1" style="font-size:0.68rem;">🔗 Unificado (${w.mergedWorks.length + 1} pedidos)</span>` : ''}
                                     <div class="small opacity-50">${w.descripcion || ''}</div>
                                 </div>
                                 <button class="btn btn-secondary btn-small p-1 px-2 ms-2" onclick="abrirEditorFila('${w.id}')" title="Cargar Costos en Formulario">✏️</button>

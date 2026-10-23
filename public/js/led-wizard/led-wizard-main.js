@@ -1537,11 +1537,14 @@ Respondé ÚNICAMENTE con JSON válido sin texto extra ni backticks:
                     }
                 }
                 if (!apiKey) {
-                    apiKey = 'AIzaSyCa0cYZYK3KE6tDsF0omv4Qo2fEyJvK3MI'; // Fallback
+                    // FIX: se eliminó el fallback hardcodeado (clave expuesta en el fuente).
+                    // La key debe venir de /api/config/gemini-key (autenticado) o de window.GEMINI_API_KEY.
+                    alert('⚠️ No hay clave de Gemini configurada. Configurala en el servidor (variables de entorno) para usar el análisis con IA.');
+                    throw new Error('API Key de Gemini no configurada');
                 }
 
-                // 4. Llamar directamente a la API de Gemini 2.0 Flash (Vision)
-                const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+                // 4. Llamar directamente a la API de Gemini (Vision)
+                const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
                 const body = {
                     contents: [{
                         parts: [
@@ -1600,8 +1603,8 @@ Respondé ÚNICAMENTE con JSON válido sin texto extra ni backticks:
                     <div class="stats-card" style="border-left-color:#f97316;">
                         <h3 style="color:#ea580c;margin-top:0;font-size:1rem">⚡ Parámetros calculados por IA</h3>
                         <p style="margin:4px 0"><b>Tipo:</b> ${tipo === 'neon_flex' ? '🌟 Neon Flex' : '💡 Módulos LED'}</p>
-                        <p style="margin:4px 0"><b>Modo:</b> ${modoLabel[ai.modo_distribucion] || ai.modo_distribucion || '—'}</p>
-                        <p style="margin:4px 0"><b>Preset:</b> ${presetBase || '—'}</p>
+                        <p style="margin:4px 0"><b>Modo:</b> ${modoLabel[ai.modo_distribucion] || escapeHtml(ai.modo_distribucion) || '—'}</p>
+                        <p style="margin:4px 0"><b>Preset:</b> ${escapeHtml(presetBase) || '—'}</p>
                         ${tipo !== 'neon_flex' && ai.modW ? `
                         <div class="config-box" style="background:#f8fafc;padding:8px;margin:8px 0;font-size:.82rem">
                             <div class="config-box-title" style="font-size:.72rem;margin-bottom:4px">PARÁMETROS APLICADOS</div>
@@ -1612,8 +1615,8 @@ Respondé ÚNICAMENTE con JSON válido sin texto extra ni backticks:
                                 <span>Voltaje:</span><span style="color:#2563eb"><b>${ai.voltage || 12}V — ${ai.watt_por_modulo}W/mod</b></span>
                             </div>
                         </div>` : ''}
-                        <p style="color:#475569;font-size:.8rem;margin:6px 0">${ai.justificacion || ''}</p>
-                        ${ai.advertencias?.length ? `<p style="color:#d97706;font-size:.78rem">⚠️ ${ai.advertencias.join('<br>')}</p>` : ''}
+                        <p style="color:#475569;font-size:.8rem;margin:6px 0">${escapeHtml(ai.justificacion) || ''}</p>
+                        ${ai.advertencias?.length ? `<p style="color:#d97706;font-size:.78rem">⚠️ ${ai.advertencias.map(a => escapeHtml(a)).join('<br>')}</p>` : ''}
                         <div style="display:flex;gap:6px;margin-top:10px">
                             <button onclick="lw.generarInstalacion(true)" style="flex:1;background:#22c55e;color:#fff;border:none;border-radius:6px;padding:7px;cursor:pointer;font-weight:700;font-size:.85rem">
                                 ⚡ Generar ahora
@@ -2017,12 +2020,12 @@ Respondé ÚNICAMENTE con JSON válido sin texto extra ni backticks:
                                 </div>
                                 <div id="lib-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:10px;max-height:400px;overflow-y:auto">
                                     ${items.length ? items.map(i => `
-                                        <div class="lib-item" onclick="lw.loadAndClose('${i.id}')"
+                                        <div class="lib-item" onclick="lw.loadAndClose('${String(i.id).replace(/[^a-zA-Z0-9_-]/g, '')}')"
                                             style="cursor:pointer;background:#ffffff;border-radius:8px;overflow:hidden;border:1px solid #e2e8f0;box-shadow:0 1px 2px rgba(0,0,0,0.05)"
                                             onmouseover="this.style.borderColor='#4f46e5'" onmouseout="this.style.borderColor='#e2e8f0'">
-                                            <img src="${i.thumbnail}" style="width:100%;height:85px;object-fit:contain;background:#f1f5f9">
+                                            <img src="${escapeHtml(i.thumbnail)}" style="width:100%;height:85px;object-fit:contain;background:#f1f5f9">
                                             <div style="padding:7px">
-                                                <div style="font-weight:600;font-size:.82em;color:#1e293b;">${i.nombre}</div>
+                                                <div style="font-weight:600;font-size:.82em;color:#1e293b;">${escapeHtml(i.nombre)}</div>
                                                 <div style="color:#64748b;font-size:.72em">${i.stats?.modules ?? '?'} módulos</div>
                                             </div>
                                         </div>`).join('')

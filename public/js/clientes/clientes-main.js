@@ -351,9 +351,9 @@ function renderClientSearchList(clients) {
   }
 
   container.innerHTML = clients.map(c => `
-    <div class="client-item" style="padding: 0.8rem; border-bottom: 1px solid #eee; cursor: pointer;" onclick="window.selectClient('${c.id}')">
-      <strong>${c.name}</strong><br>
-      <small style="color: #666;">${c.contact || 'Sin contacto'}</small>
+    <div class="client-item" style="padding: 0.8rem; border-bottom: 1px solid #eee; cursor: pointer;" onclick="window.selectClient('${escapeHtml(c.id)}')">
+      <strong>${escapeHtml(c.name)}</strong><br>
+      <small style="color: #666;">${escapeHtml(c.contact || 'Sin contacto')}</small>
     </div>
   `).join('');
 }
@@ -1031,10 +1031,10 @@ function renderQuoteProducts() {
     <div class="product-card" style="background: rgba(81, 207, 102, 0.05); border: 1px solid rgba(81, 207, 102, 0.2);">
       <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
         <div>
-          <h3 style="margin: 0 0 0.5rem 0; color: #51CF66;">${item.producto}</h3>
-          <p style="margin: 0; color: var(--text-secondary); font-size: 0.9rem;">📁 ${item.categoria}</p>
+          <h3 style="margin: 0 0 0.5rem 0; color: #51CF66;">${escapeHtml(item.producto)}</h3>
+          <p style="margin: 0; color: var(--text-secondary); font-size: 0.9rem;">📁 ${escapeHtml(item.categoria)}</p>
         </div>
-        <button class="btn btn-danger btn-small" onclick="removeProduct('${item.id}')">🗑️</button>
+        <button class="btn btn-danger btn-small" onclick="removeProduct('${escapeHtml(item.id)}')">🗑️</button>
       </div>
       <div style="background: rgba(0, 0, 0, 0.3); padding: 1rem; border-radius: 8px;">
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 0.8rem;">
@@ -1072,12 +1072,12 @@ function renderTerceros() {
     <div class="product-card" style="background: rgba(78, 205, 196, 0.05); border: 1px solid rgba(78, 205, 196, 0.2);">
       <div style="display: flex; justify-content: space-between; align-items: start;">
         <div>
-          <h3 style="margin: 0 0 0.5rem 0; color: #4ECDC4;">${item.nombre}</h3>
-          <p style="margin: 0;">${item.cantidad} ${item.unidad} • ${item.empresa}</p>
+          <h3 style="margin: 0 0 0.5rem 0; color: #4ECDC4;">${escapeHtml(item.nombre)}</h3>
+          <p style="margin: 0;">${escapeHtml(item.cantidad)} ${escapeHtml(item.unidad)} • ${escapeHtml(item.empresa)}</p>
           <p style="margin: 0; color: #FF6B6B;">Costo: $${formatCurrency(item.totalCosto)}</p>
           <p style="margin: 0; color: #51CF66;"><strong>Cobras: $${formatCurrency(item.total)}</strong></p>
         </div>
-        <button class="btn btn-danger btn-small" onclick="removeTercero('${item.id}')">🗑️</button>
+        <button class="btn btn-danger btn-small" onclick="removeTercero('${escapeHtml(item.id)}')">🗑️</button>
       </div>
     </div>
   `).join('');
@@ -1123,13 +1123,15 @@ function calculateTotals() {
     porcentajeDescuento: porcAjuste
   };
 
-  document.getElementById('costoMateriales').textContent = '$' + formatCurrency(costoMateriales);
-  document.getElementById('costoTerceros').textContent = '$' + formatCurrency(costoTerceros);
-  document.getElementById('totalCostos').textContent = '$' + formatCurrency(totalCostos);
-  document.getElementById('subtotal').textContent = '$' + formatCurrency(subtotal);
-  document.getElementById('iva').textContent = '$' + formatCurrency(iva);
-  document.getElementById('total').textContent = '$' + formatCurrency(total);
-  document.getElementById('gananciaNetaDisplay').textContent = '$' + formatCurrency(ganancia);
+  // FIX: null-guard — algunos IDs no existen en clientes.html y esto lanzaba TypeError
+  const setText = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+  setText('costoMateriales', '$' + formatCurrency(costoMateriales));
+  setText('costoTerceros', '$' + formatCurrency(costoTerceros));
+  setText('totalCostos', '$' + formatCurrency(totalCostos));
+  setText('subtotal', '$' + formatCurrency(subtotal));
+  setText('iva', '$' + formatCurrency(iva));
+  setText('total', '$' + formatCurrency(total));
+  setText('gananciaNetaDisplay', '$' + formatCurrency(ganancia));
 
   calcularSaldo();
 }
@@ -1432,12 +1434,11 @@ function generarHTMLDetalleCotizacion(cot) {
                        <span>IVA:</span>
                        <span>$${formatCurrency(cot.iva || 0)}</span>
                     </div>
-                    ${(cot.descuentoEspecial > 0 || cot.porcentajeDescuento > 0) ? `
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; color: #F87171;">
-                       <span>Descuento Especial (${cot.porcentajeDescuento || 0}%):</span>
-                       <span>- $${formatCurrency(cot.descuentoEspecial || 0)}</span>
-                    </div>
-                    ` : ''}
+                    ${(() => { const ajuste = Number(cot.descuentoEspecial) || 0; const porc = Number(cot.porcentajeDescuento) || 0; if (ajuste === 0 && porc === 0) return ''; const esDescuento = ajuste < 0; return `
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; color: ${esDescuento ? '#51CF66' : '#F87171'};">
+                       <span>${esDescuento ? 'Descuento Especial' : 'Recargo Especial'} (${porc}%):</span>
+                       <span>${esDescuento ? '-' : '+'} $${formatCurrency(Math.abs(ajuste))}</span>
+                    </div>`; })()}
                     <div style="display: flex; justify-content: space-between; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.2); font-size: 1.5rem; font-weight: bold; color: #51CF66;">
                        <span>Total Cliente:</span>
                        <span>$${formatCurrency(cot.totalCliente || 0)}</span>
@@ -1487,6 +1488,7 @@ window.aprobarCotizacion = async function (id) {
     }
 
     // ✅ Registrar Venta Total para que aparezca en la lista de Ingresos de Rendimientos
+    // (FIX: antes se registraba además el anticipo como ingreso separado → doble conteo)
     if (montoVentaTotal > 0) {
       const descTag = cotizacion.porcentajeDescuento > 0 ? ` (Desc. ${cotizacion.porcentajeDescuento}%)` : '';
       gastos.push({
@@ -1494,18 +1496,6 @@ window.aprobarCotizacion = async function (id) {
         tipo: 'ingreso',
         descripcion: `Venta Total${descTag} - Coti Cliente #${cotiIdShort} (${cotizacion.cliente.nombre})`,
         monto: montoVentaTotal,
-        fecha: fechaAprobacion,
-        categoria: 'venta_cliente'
-      });
-    }
-
-    // Si hay anticipo, registrarlo por separado si es diferente del total
-    if (montoAnticipo > 0 && montoAnticipo < montoVentaTotal) {
-      gastos.push({
-        id: `ingreso_anticipo_coti_${cotizacion.id}`,
-        tipo: 'ingreso',
-        descripcion: `Anticipo Cliente - Coti #${cotiIdShort} (${cotizacion.cliente.nombre})`,
-        monto: montoAnticipo,
         fecha: fechaAprobacion,
         categoria: 'venta_cliente'
       });

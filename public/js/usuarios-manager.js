@@ -19,14 +19,14 @@ function renderUsers(users) {
     users.forEach(u => {
         const tr = document.createElement('tr');
         tr.innerHTML = `
-            <td>${u.nombre}</td>
-            <td>${u.usuario}</td>
-            <td><span class="role-badge role-${u.rol}">${u.rol}</span></td>
+            <td>${escapeHtml(u.nombre)}</td>
+            <td>${escapeHtml(u.usuario)}</td>
+            <td><span class="role-badge role-${escapeHtml(u.rol)}">${escapeHtml(u.rol)}</span></td>
             <td>${u.activo ? '<span style="color:#4ade80">Activo</span>' : '<span style="color:#f87171">Inactivo</span>'}</td>
             <td class="actions">
-                <button class="btn btn-secondary btn-small" onclick="editUser('${u.id}')">✏️</button>
-                <button class="btn btn-secondary btn-small" onclick="openPwdModal('${u.id}')">🔑</button>
-                <button class="btn btn-danger btn-small" onclick="deleteUser('${u.id}')">🗑️</button>
+                <button class="btn btn-secondary btn-small" onclick="editUser('${escapeHtml(u.id)}')">✏️</button>
+                <button class="btn btn-secondary btn-small" onclick="openPwdModal('${escapeHtml(u.id)}')">🔑</button>
+                <button class="btn btn-danger btn-small" onclick="deleteUser('${escapeHtml(u.id)}')">🗑️</button>
             </td>
         `;
         tbody.appendChild(tr);

@@ -27,7 +27,9 @@ async function handleRemoveBackground() {
         let blob;
 
         // --- ESTRATEGIA 3: API REMOVE.BG (Prioridad) ---
-        const apiKey = 'qdtBJGk3DKk9oDTutZ4WujGC';
+        // FIX: la key estaba hardcodeada y era descargable por cualquiera.
+        // Ahora se obtiene del servidor autenticado (configurada en el backend).
+        const apiKey = window.MR_REMOVEBG_KEY || '';
         if (apiKey) {
             try {
                 if (typeof showStatus === 'function') showStatus('☁️ Procesando con Remove.bg...', 'loading');

@@ -17,15 +17,36 @@
             /* Now handled by maxton-theme.css and base.css */
         }
 
-        :root[data-theme="light"] .text-gray-300,
+        :root[data-theme="light"] .bg-slate-950\/60,
+        :root[data-theme="light"] .bg-gray-900,
+        :root[data-theme="light"] .bg-gray-800,
+        :root[data-theme="light"] .bg-slate-900,
+        :root[data-theme="light"] .bg-black\/50,
+        :root[data-theme="light"] .bg-slate-950 {
+            background-color: var(--bg-surface, #ffffff) !important;
+            border-color: var(--glass-border, rgba(0, 0, 0, 0.1)) !important;
+        }
+
+        :root[data-theme="light"] .text-white,
+        :root[data-theme="light"] .text-gray-200,
+        :root[data-theme="light"] .text-gray-300 {
+            color: var(--txt, #0f172a) !important;
+        }
+
         :root[data-theme="light"] .text-gray-400 {
-            color: var(--txt-2) !important;
+            color: var(--txt-2, #475569) !important;
+        }
+
+        :root[data-theme="light"] .border-slate-900\/60,
+        :root[data-theme="light"] .border-gray-800,
+        :root[data-theme="light"] .border-gray-700 {
+            border-color: var(--glass-border, rgba(0, 0, 0, 0.1)) !important;
         }
 
         :root[data-theme="light"] .bg-\\[\\#333\\] {
-            background-color: var(--bg-surface) !important;
-            color: var(--txt) !important;
-            border-color: var(--glass-border) !important;
+            background-color: var(--bg-surface, #ffffff) !important;
+            color: var(--txt, #0f172a) !important;
+            border-color: var(--glass-border, rgba(0, 0, 0, 0.1)) !important;
         }
 
         .glass-card {

@@ -90,7 +90,7 @@ async function loadDashboardData() {
                     const icon = isPending ? '⏳' : '🔨';
                     const badgeClass = isPending ? 'badge-warning' : 'badge-info';
                     const badgeStyle = "display:inline-flex; align-items:center; gap:6px; padding:4px 12px; border-radius:20px; font-size:0.85rem; font-weight:700; backdrop-filter:blur(4px);";
-                    return `<span class="badge ${badgeClass}" style="${badgeStyle}">${icon} ${w.clientName || 'Cliente'} (#${w.id.substr(-6)})</span>`;
+                    return `<span class="badge ${badgeClass}" style="${badgeStyle}">${icon} ${escapeHtml(w.clientName || 'Cliente')} (#${w.id.substr(-6)})</span>`;
                 }).join(' &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ');
                 
                 marqueeEl.innerHTML = `<div style="display:flex; align-items:center; gap:15px; padding-top:2px;"><span style="font-size:0.85rem; text-transform:uppercase; letter-spacing:1px; color:var(--brand, #6366f1); font-weight:800;">🚀 TRABAJOS ACTIVOS</span> ${text}</div>`;
@@ -203,7 +203,7 @@ function renderDeliveriesTable(works) {
         const detailBtn = `<button style="background:linear-gradient(135deg, #3b82f6, #2563eb); color:#fff; border:none; padding:4px 10px; border-radius:14px; cursor:pointer; font-size:0.73rem; font-weight:600; white-space:nowrap; transition:opacity 0.15s;" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'" onclick="showOrderDetail('${w.id}')">🔍 Detalle</button>`;
 
         tr.innerHTML = `
-            <td style="font-weight:600; font-size:0.8rem;">${w.clientName || 'Cliente'}</td>
+            <td style="font-weight:600; font-size:0.8rem;">${escapeHtml(w.clientName || 'Cliente')}</td>
             <td style="color:var(--txt-2); font-family:monospace; font-size:0.75rem;">#${w.id.substr(-6)}</td>
             <td><span style="${getStatusStyle(w.status)}">${getStatusLabel(w.status)}</span></td>
             <td style="font-weight:600; font-size:0.8rem;">$${formatCurrency(w.total)}</td>
@@ -408,7 +408,7 @@ async function showOrderDetail(workId) {
     <div style="background:#fff;border-radius:16px;width:100%;max-width:640px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
         <div style="background:linear-gradient(135deg,#1a237e,#283593);color:#fff;padding:1.2rem 1.5rem;border-radius:16px 16px 0 0;display:flex;justify-content:space-between;align-items:center;">
             <div>
-                <div style="font-size:1.1rem;font-weight:700;">${w.clientName || 'Cliente'}</div>
+                <div style="font-size:1.1rem;font-weight:700;">${escapeHtml(w.clientName || 'Cliente')}</div>
                 <div style="opacity:0.75;font-size:0.82rem;">Trabajo #${w.id.substr(-6)} &nbsp;·&nbsp; ${w.deliveryDate ? new Date(w.deliveryDate).toLocaleDateString() : 'Sin fecha de entrega'} &nbsp;·&nbsp; ${(w.tipo_cliente || 'gremio').toUpperCase()}</div>
             </div>
             <button onclick="document.getElementById('orderDetailModal').remove()" style="background:rgba(255,255,255,0.2);border:none;color:#fff;border-radius:50%;width:32px;height:32px;cursor:pointer;font-size:1.1rem;line-height:1;">✕</button>
@@ -426,7 +426,7 @@ async function showOrderDetail(workId) {
             ${w.notes && w.notes.length > 0 ? `
             <div style="margin-top:1rem;font-size:0.85rem;color:#555;">
                 <strong>📝 Notas:</strong>
-                ${w.notes.map(n => `<div style="margin-top:4px;padding:6px 10px;background:#fffde7;border-radius:6px;">${n.text || n}</div>`).join('')}
+                ${w.notes.map(n => `<div style="margin-top:4px;padding:6px 10px;background:#fffde7;border-radius:6px;">${escapeHtml(n.text || n)}</div>`).join('')}
             </div>` : ''}
             <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:1.4rem;flex-wrap:wrap;">
                 ${!isPaid ? `<button onclick="markAsPaid('${w.id}');document.getElementById('orderDetailModal').remove()" style="background:#43a047;color:#fff;border:none;padding:9px 20px;border-radius:20px;cursor:pointer;font-size:0.88rem;">💵 Marcar cobrado</button>` : ''}
@@ -509,7 +509,7 @@ async function showOrderDetail(workId) {
         let rows = allItems.map((it, i) => `
             <tr style="border-bottom:1px solid #f0f0f0;">
                 <td style="padding:7px 10px;font-size:0.8rem;"><span style="background:#e3f2fd;color:#1565c0;border-radius:4px;padding:2px 7px;">${it.tipo}</span></td>
-                <td style="padding:7px 10px;font-weight:500;font-size:0.88rem;">${it.nombre}</td>
+                <td style="padding:7px 10px;font-weight:500;font-size:0.88rem;">${escapeHtml(it.nombre)}</td>
                 <td style="padding:7px 10px;color:#666;font-size:0.85rem;text-align:center;">${it.dim || '—'}</td>
                 <td style="padding:7px 10px;text-align:center;font-size:0.85rem;">${it.m2 !== '—' ? it.m2 + ' m²' : it.cant}</td>
                 <td style="padding:7px 10px;text-align:right;font-weight:600;color:#1a237e;">$${formatC(it.precio)}</td>

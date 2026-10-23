@@ -427,13 +427,13 @@ function renderClientSearchList(clients) {
     const esTipoGremio = c.tipo === 'gremio' || !c.tipo;
     return `
     <div class="client-item" style="padding: 0.8rem; border-bottom: 1px solid rgba(255,255,255,0.08); cursor: pointer;" 
-         onclick="window.selectClient('${c.id}')"
+         onclick="window.selectClient('${escapeHtml(c.id)}')"
          onmouseover="this.style.background='rgba(99,102,241,0.15)'"
          onmouseout="this.style.background=''">
-      <strong>${nombre}</strong>
+      <strong>${escapeHtml(nombre)}</strong>
       ${esTipoGremio ? '<span style="font-size:0.7rem; background:rgba(81,207,102,0.2); color:#51CF66; border:1px solid #51CF66; border-radius:10px; padding:1px 6px; margin-left:6px;">GREMIO</span>' : ''}
       <br>
-      <small style="color: #aaa;">${contacto}</small>
+      <small style="color: #aaa;">${escapeHtml(contacto)}</small>
     </div>
   `}).join('');
 }
@@ -1233,10 +1233,10 @@ function renderQuoteProducts() {
     <div class="product-card" style="background: rgba(81, 207, 102, 0.05); border: 1px solid rgba(81, 207, 102, 0.2);">
       <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
         <div>
-          <h3 style="margin: 0 0 0.5rem 0; color: #51CF66;">${item.producto}</h3>
-          <p style="margin: 0; color: var(--text-secondary); font-size: 0.9rem;">📁 ${item.categoria}</p>
+          <h3 style="margin: 0 0 0.5rem 0; color: #51CF66;">${escapeHtml(item.producto)}</h3>
+          <p style="margin: 0; color: var(--text-secondary); font-size: 0.9rem;">📁 ${escapeHtml(item.categoria)}</p>
         </div>
-        <button class="btn btn-danger btn-small" onclick="removeProduct('${item.id}')">🗑️</button>
+        <button class="btn btn-danger btn-small" onclick="removeProduct('${escapeHtml(item.id)}')">🗑️</button>
       </div>
       
       <div style="background: rgba(0, 0, 0, 0.3); padding: 1rem; border-radius: 8px;">
@@ -1639,29 +1639,41 @@ function renderQuotations() {
 
   if (!container) return;
 
-  // Filtrar
-  let filtered = cotizacionesGremio;
-  if (filterName && filterName.trim() !== '') {
+  // Filtrar (fix: filterName no estaba declarado en este scope → ReferenceError en cada load)
+  const filterName = (window.filterName ? String(window.filterName) : '').trim();
+  const filtroEstado = (window.historialFiltroEstado ? String(window.historialFiltroEstado) : 'todos');
+
+  const matchesEstado = (c) => {
+    if (!filtroEstado || filtroEstado === 'todos') return true;
+    const estado = String(c.estado || '').toLowerCase();
+    if (filtroEstado === 'pendiente') {
+      return estado === 'pendiente' || estado === 'pending' || c.approved === false;
+    }
+    if (filtroEstado === 'aprobada') {
+      return estado === 'aprobada' || estado === 'aprobado' || estado === 'approved' || c.approved === true;
+    }
+    return true;
+  };
+
+  let filtered = cotizacionesGremio.filter(matchesEstado);
+
+  if (filterName !== '') {
     const term = filterName.toLowerCase();
-    filtered = cotizacionesGremio.filter(c => c.cliente.nombre.toLowerCase().includes(term));
+    filtered = filtered.filter(c => String((c.cliente && c.cliente.nombre) || '').toLowerCase().includes(term));
 
     // Mostrar mensaje de filtro activo
     const msg = document.getElementById('historyFilterMsg');
     if (msg) {
       msg.style.display = 'block';
-      document.getElementById('filterClientName').textContent = filterName;
+      const nameEl = document.getElementById('filterClientName');
+      if (nameEl) nameEl.textContent = filterName;
     }
   } else {
-    // Si no hay filtro, ordenamos y cortamos a las últimas 10 para no saturar, o mostramos todas?
-    // El usuario dijo "tiene que ser del cliente seleccionado no de todos".
-    // Así que si NO hay selección, podríamos mostrar mensaje vacío o las últimas 5 globales.
-    // Tratemos de mostrar las últimos 5 globales como "Recientes"
-
     const msg = document.getElementById('historyFilterMsg');
     if (msg) msg.style.display = 'none';
 
-    // Mostrar solo 5 recientes si no hay filtro activo
-    filtered = cotizacionesGremio.slice(0, 5);
+    // Mostrar solo 5 recientes si no hay filtro activo (comportamiento original)
+    filtered = filtered.slice(0, 5);
   }
 
   if (filtered.length === 0) {
@@ -1695,7 +1707,7 @@ function renderQuotations() {
       <div class="product-card" style="padding: 1rem; border-left: 4px solid ${estadoColor};">
         <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
           <div>
-            <h3 style="margin: 0; font-size: 1.1rem;">${cot.cliente.nombre}</h3>
+            <h3 style="margin: 0; font-size: 1.1rem;">${escapeHtml((cot.cliente && cot.cliente.nombre) || 'Sin cliente')}</h3>
             <p style="color: var(--text-secondary); font-size: 0.85rem; margin: 0;">${new Date(cot.fecha).toLocaleDateString()}</p>
           </div>
           <div style="text-align: right;">
@@ -2100,12 +2112,11 @@ function generarHTMLDetalleCotizacion(cot) {
                        <span>IVA:</span>
                        <span>$${formatCurrency(cot.iva || 0)}</span>
                     </div>
-                    ${(cot.descuentoEspecial > 0 || cot.porcentajeDescuento > 0) ? `
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; color: #F87171;">
-                           <span>Descuento Especial (${cot.porcentajeDescuento || 0}%):</span>
-                           <span>- $${formatCurrency(cot.descuentoEspecial || 0)}</span>
-                        </div>
-                    ` : ''}
+                    ${(() => { const ajuste = Number(cot.descuentoEspecial) || 0; const porc = Number(cot.porcentajeDescuento) || 0; if (ajuste === 0 && porc === 0) return ''; const esDescuento = ajuste < 0; return `
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; color: ${esDescuento ? '#51CF66' : '#F87171'};">
+                           <span>${esDescuento ? 'Descuento Especial' : 'Recargo Especial'} (${porc}%):</span>
+                           <span>${esDescuento ? '-' : '+'} $${formatCurrency(Math.abs(ajuste))}</span>
+                        </div>`; })()}
                     <div style="display: flex; justify-content: space-between; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.2); font-size: 1.5rem; font-weight: bold; color: #51CF66;">
                        <span>Total Cliente:</span>
                        <span>$${formatCurrency(cot.totalCliente || 0)}</span>

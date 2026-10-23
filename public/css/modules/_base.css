@@ -13,7 +13,7 @@ body, html {
   color: var(--mr-txt-primary) !important;
   font-family: var(--mr-font-body) !important;
   min-height: 100vh;
-  background-image: radial-gradient(circle at 50% -20%, #e2e8f0 0%, #f8fafc 75%) !important;
+  background-image: var(--mr-bg-gradient) !important;
   background-attachment: fixed !important;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;

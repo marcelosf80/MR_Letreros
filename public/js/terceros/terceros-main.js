@@ -272,6 +272,7 @@ const tercerosManager = {
       let clientModified = false;
       let manualModified = false;
       let totalPagado = 0;
+      let totalManualPagado = 0; // Solo lo que NO fue contabilizado en la aprobación
       const detallesJobs = [];
 
       // Marcamos cotizaciones
@@ -299,7 +300,9 @@ const tercerosManager = {
           p.pagado = true;
           p.fechaPago = new Date().toISOString();
           manualModified = true;
-          totalPagado += parseFloat(p.monto) || 0;
+          const montoManual = parseFloat(p.monto) || 0;
+          totalPagado += montoManual;
+          totalManualPagado += montoManual; // Estos SÍ son costo nuevo (no pasaron por aprobación)
           detallesJobs.push(`Manual: ${p.concepto}`);
         }
       });
@@ -308,7 +311,9 @@ const tercerosManager = {
       if (clientModified) await window.mrDataManager.saveClientesCotizaciones(clientQuotes);
       if (manualModified) await window.mrDataManager.saveTercerosPagosManuales(manuales);
 
-      if (totalPagado > 0) {
+      // FIX: el costo de los terceros de cotizaciones ya se registró como egreso al aprobar
+      // (costoTotal incluye terceros). Solo registrar egreso por pagos MANUALES para no duplicar.
+      if (totalManualPagado > 0) {
         try {
           const currentGastos = await window.mrDataManager.getGastos();
           const descripcion = `Pago Tercero: ${empresaName} - DETALLE: ${detallesJobs.join(', ')}`;
@@ -317,7 +322,7 @@ const tercerosManager = {
             tipo: 'egreso',
             categoria: 'costo_venta_terceros',
             descripcion: descripcion.substring(0, 500),
-            monto: totalPagado,
+            monto: totalManualPagado,
             fecha: new Date().toISOString().split('T')[0],
             usuario: (window.AUTH && window.AUTH.user) ? window.AUTH.user.usuario : 'admin'
           });

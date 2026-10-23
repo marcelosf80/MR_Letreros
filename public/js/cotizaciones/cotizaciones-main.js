@@ -237,6 +237,18 @@ window.approveQuote = async function(id, source) {
                 fecha: new Date().toISOString(),
                 categoria: 'venta'
             });
+
+            // FIX: registrar también el egreso del costo (antes faltaba → ganancia inflada)
+            if (costoTotal > 0) {
+                gastos.push({
+                    id: 'gasto_' + Date.now(),
+                    tipo: 'egreso',
+                    descripcion: `Costo Total - ${source} #${tag} (${nombreCliente})`,
+                    monto: costoTotal,
+                    fecha: new Date().toISOString(),
+                    categoria: 'costo_venta_' + source
+                });
+            }
             
             await window.mrDataManager.saveGastos(gastos);
         } catch (err) { console.warn('[APPROVE] Error al registrar finanzas:', err); }

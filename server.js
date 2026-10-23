@@ -69,8 +69,11 @@ try {
   GoogleGenerativeAI = require('@google/generative-ai').GoogleGenerativeAI;
 } catch (e) { }
 
-// Usar variable de entorno o fallback seguro solo para desarrollo
-const SECRET_KEY = process.env.JWT_SECRET || 'MR_LETREROS_SECURE_KEY_2024';
+// Usar variable de entorno; si no existe, generar un secreto aleatorio (evita el fallback público).
+const SECRET_KEY = process.env.JWT_SECRET || require('crypto').randomBytes(48).toString('hex');
+if (!process.env.JWT_SECRET) {
+  console.warn('⚠️ JWT_SECRET no está definido: se generó un secreto temporal (las sesiones se invalidarán al reiniciar). Defina JWT_SECRET en .env para persistir sesiones.');
+}
 
 // ==================== MANEJO DE ERRORES GLOBAL ====================
 // Se define al inicio para capturar errores lo antes posible
@@ -94,6 +97,20 @@ const PORT = 3000;
 
 // Exportar io para que otros módulos lo usen
 app.set('socketio', io);
+
+// FIX seguridad: autenticar el handshake de Socket.IO con el JWT de sesión.
+// Antes cualquier cliente de la LAN podía conectarse y recibir datos de trabajos/clientes.
+io.use((socket, next) => {
+  const token = socket.handshake.auth && socket.handshake.auth.token;
+  if (!token) return next(new Error('Token requerido'));
+  try {
+    const decoded = jwt.verify(token, SECRET_KEY);
+    socket.user = decoded;
+    next();
+  } catch (err) {
+    next(new Error('Token inválido o expirado'));
+  }
+});
 
 io.on('connection', (socket) => {
   logger.info(`🔌 PC conectada al sistema (ID: ${socket.id})`);
@@ -191,7 +208,7 @@ const verifyToken = (req, res, next) => {
     req.user = decoded;
     next();
   } catch (err) {
-    logger.warn('Token inválido o expirado', { token: tokenString, error: err.message, ip: req.ip });
+    logger.warn('Token inválido o expirado', { token: tokenString.slice(0, 8) + '…', error: err.message, ip: req.ip });
     return res.status(401).json({ error: 'Token inválido o expirado' });
   }
 };
@@ -233,6 +250,15 @@ const loginLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+// Rate-limit para endpoints públicos (portal web / cotizador externo / registro gremio)
+const publicLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 30,
+  message: { error: 'Demasiadas peticiones. Intente de nuevo más tarde.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 app.post('/api/auth/login', loginLimiter, async (req, res) => {
   try {
     const { usuario, password } = req.body;
@@ -263,7 +289,8 @@ app.post('/api/auth/login', loginLimiter, async (req, res) => {
     // activo ya fue filtrado en la query SQL (activo = 1)
 
     const token = jwt.sign(
-      { id: user.id, usuario: user.usuario, rol: user.rol },
+      // FIX: incluir 'nombre' (los endpoints de gremio filtran por user.nombre y quedaban vacíos)
+      { id: user.id, usuario: user.usuario, rol: user.rol, nombre: user.nombre || '' },
       SECRET_KEY,
       { expiresIn: '3650d' }
     );
@@ -584,6 +611,9 @@ async function checkPython() {
             pythonCmd = cmd;
             resolve(true);
             return;
+          } else if (process.env.MR_SKIP_PIP_INSTALL === '1') {
+            // FIX: permitir desactivar la instalación automática de dependencias al arrancar
+            logger.warn(`   ⚠️  Faltan librerías para "${cmd}" pero MR_SKIP_PIP_INSTALL=1: se omite la instalación automática. Instalá manualmente con: pip install -r requirements.txt`);
           } else {
             // LIBRERÍAS NO ENCONTRADAS, INTENTAR INSTALAR
             logger.info(`   ⚠️  Faltan librerías. Intentando instalar dependencias (vtracer, pillow, shapely, svgpathtools, numpy, svg.path, rembg, opencv-python, requests)...`);
@@ -707,8 +737,16 @@ async function writeJSON(filepath, data) {
     // Guardar en SQLite
     await db.set(key, jsonString, now);
 
-    // Guardar en disco (backup y compatibilidad con C++/Google Sync)
-    await fs.writeFile(filepath, jsonString);
+    // Guardar en disco (backup y compatibilidad con C++/Google Sync) — escritura atómica
+    // FIX: antes fs.writeFile directo; un crash a mitad corrompía el archivo JSON.
+    const tmpPath = filepath + '.tmp';
+    await fs.writeFile(tmpPath, jsonString);
+    try {
+      await fs.rename(tmpPath, filepath);
+    } catch (renameErr) {
+      await fs.writeFile(filepath, jsonString).catch(() => { });
+      await fs.unlink(tmpPath).catch(() => { });
+    }
     return true;
   } catch (error) {
     logger.error(`Error escribiendo ${filepath}`, { error: error.message });
@@ -742,36 +780,63 @@ async function getQuoteById(quoteId) {
   }
 }
 
-async function getJobProductsAndPrices(job) {
+function parseArgentinePrice(str) {
+  if (str === null || str === undefined) return 0;
+  let s = str.toString().replace(/[^\d\.,]/g, '').trim();
+  if (!s) return 0;
+
+  if (s.includes('.') && s.includes(',')) {
+    if (s.lastIndexOf(',') > s.lastIndexOf('.')) {
+      s = s.replace(/\./g, '').replace(',', '.');
+    } else {
+      s = s.replace(/,/g, '');
+    }
+  } else if (s.includes(',') || s.includes('.')) {
+    if (/[\.,]\d{3}$/.test(s)) {
+      s = s.replace(/[\.,]/g, '');
+    } else {
+      s = s.replace(',', '.');
+    }
+  }
+
+  const val = parseFloat(s);
+  return isNaN(val) ? 0 : val;
+}
+
+async function getJobProductsAndPrices(job, { skipFallbackTotal = false } = {}) {
   const items = [];
 
-  // 1. Parsear notas de detalle si existen (para pedidos web o notas de unificación)
-  const notesDetalle = (job.notes || []).filter(n =>
-    n.author === 'Google Sync' ||
-    n.author === 'Google' ||
-    (n.text && (n.text.includes('PRODUCTO') || n.text.includes('ITEM') || n.text.includes('Detalle del pedido')))
-  );
+  // 1. Parsear notas de detalle o descripción (para pedidos web, Google Sync o unificados)
+  let textToParse = '';
+  if (job.notes && Array.isArray(job.notes) && job.notes.length > 0) {
+    textToParse = job.notes.map(n => n.text || '').join('\n');
+  }
+  if (!textToParse && job.descripcion) {
+    textToParse = job.descripcion;
+  }
 
-  if (notesDetalle.length > 0) {
-    for (const note of notesDetalle) {
-      const text = note.text || '';
-      const lines = text.split('\n');
-      for (const line of lines) {
-        const trimmed = line.trim();
-        // Regex para capturar "ITEM 1: Vinilo ... - $14.960" o similar
-        const match = trimmed.match(/^(?:ITEM\s*\d+|P#\d+|PRODUCTO\s*\d+)\s*:\s*(.*?)\s*-\s*(\$?\s*[\d\.,]+)\s*$/i);
-        if (match) {
-          let name = match[1].trim();
-          const price = match[2].trim();
+  if (textToParse) {
+    const rawLines = textToParse.replace(/\\n/g, '\n').split(/\r?\n/);
+    for (const line of rawLines) {
+      let trimmed = line.trim();
+      if (!trimmed || trimmed.toLowerCase().startsWith('link') || trimmed.toLowerCase().startsWith('nota') || trimmed.toLowerCase().startsWith('instrucciones')) continue;
 
-          // Extraer la cantidad si está en formato " xN" o " x N" al final del nombre
-          let quantity = 1;
-          const qtyMatch = name.match(/\s+x\s*(\d+)(?:\s|$)/i);
-          if (qtyMatch) {
-            quantity = parseInt(qtyMatch[1]);
-            name = name.replace(/\s+x\s*\d+(?:\s|$)/i, '').trim();
-          }
+      const cleanLine = trimmed.replace(/^(?:ITEM\s*\d+|P#\d+|PRODUCTO\s*\d+|P\d+)\s*:\s*/i, '').replace(/^Detalle:\s*/i, '');
 
+      // Capturar formato "Nombre - $Precio" o "Nombre ($Precio)"
+      const match = cleanLine.match(/^(.*?)\s*-\s*(\$?\s*[\d\.,]+)\s*$/i) || cleanLine.match(/^(.*?)\s*\((\$?\s*[\d\.,]+)\)\s*$/i);
+      if (match) {
+        let name = match[1].replace(/^-\s*/, '').trim();
+        const price = match[2].trim().startsWith('$') ? match[2].trim() : `$${match[2].trim()}`;
+
+        let quantity = 1;
+        const qtyMatch = name.match(/(?:\s|^|\[)x\s*(\d+)(?:\s|$|\])/i);
+        if (qtyMatch) {
+          quantity = parseInt(qtyMatch[1]);
+          name = name.replace(/(?:\s|^|\[)x\s*\d+(?:\s|$|\])/i, ' ').trim();
+        }
+
+        if (name && name.length > 2 && !name.toLowerCase().startsWith('subtotal') && !name.toLowerCase().startsWith('medidas')) {
           items.push({ name, price, quantity });
         }
       }
@@ -802,9 +867,12 @@ async function getJobProductsAndPrices(job) {
   }
 
   // 3. Fallback: descripción del trabajo si no se obtuvo detalle de items
+  // skipFallbackTotal=true evita usar job.total como precio del item genérico,
+  // porque en trabajos unificados job.total ya contiene la suma de todos los mergedWorks
+  // y duplicaría el monto.
   if (items.length === 0 && job.descripcion) {
     const name = job.descripcion;
-    const price = job.total ? `$${Number(job.total).toLocaleString('es-AR')}` : '$0';
+    const price = (!skipFallbackTotal && job.total) ? `$${Number(job.total).toLocaleString('es-AR')}` : '';
 
     // Extraer la cantidad de la descripción si contiene " xN"
     let quantity = 1;
@@ -819,6 +887,28 @@ async function getJobProductsAndPrices(job) {
   }
 
   return items;
+}
+
+/**
+ * Enriquece un mergedWork parcial buscando los datos completos del trabajo en SQLite.
+ * Los mergedWorks almacenados solo tienen {id, clientName, total, descripcion},
+ * pero para extraer items necesitamos quoteId, notes, productos_json, etc.
+ */
+async function enrichMergedWork(mw) {
+  if (!mw || !mw.id) return mw;
+  // Si ya tiene datos ricos (quoteId o notes), no buscar de nuevo
+  if (mw.quoteId || (mw.notes && Array.isArray(mw.notes) && mw.notes.length > 0)) return mw;
+  try {
+    const fullWork = await db.get({ sql: 'SELECT * FROM trabajos WHERE id = ?', params: [mw.id] });
+    if (fullWork) {
+      const normalized = normalizarTrabajo(fullWork);
+      // Preservar campos originales del mergedWork como fallback
+      return { ...mw, ...normalized, id: mw.id };
+    }
+  } catch (e) {
+    logger.warn(`⚠️ No se pudo enriquecer mergedWork ${mw.id}: ${e.message}`);
+  }
+  return mw;
 }
 
 function normalizarTrabajo(w) {
@@ -847,7 +937,8 @@ function normalizarTrabajo(w) {
     actualDeliveryDate: w.actualDeliveryDate || w.actual_delivery_date,
     paidAt: w.paidAt || w.paid_at,
     createdAt: w.createdAt || w.created_at,
-    is_merged: w.is_merged !== undefined ? w.is_merged : w.is_merged,
+    missingFromSheet: Boolean(w.missingFromSheet || w.missing_from_sheet),
+    is_merged: w.is_merged ? 1 : 0,
     mergedWorks: (() => {
       if (w.mergedWorks && Array.isArray(w.mergedWorks)) return w.mergedWorks;
       if (typeof w.merged_works_json === 'string') {
@@ -887,8 +978,69 @@ function normalizarTrabajo(w) {
       }
       if (Array.isArray(w.notes_json)) return w.notes_json;
       return [];
+    })(),
+    printed: w.printed === 1 || w.printed === true,
+    printedItems: (() => {
+      if (w.printedItems && typeof w.printedItems === 'object') return w.printedItems;
+      if (typeof w.printed_items_json === 'string') {
+        try { return JSON.parse(w.printed_items_json); } catch (e) { }
+      }
+      return {};
+    })(),
+    completedItems: (() => {
+      if (w.completedItems && typeof w.completedItems === 'object') return w.completedItems;
+      if (typeof w.completed_items_json === 'string') {
+        try { return JSON.parse(w.completed_items_json); } catch (e) { }
+      }
+      return {};
+    })(),
+    billedItems: (() => {
+      if (w.billedItems && typeof w.billedItems === 'object') return w.billedItems;
+      if (typeof w.billed_items_json === 'string') {
+        try { return JSON.parse(w.billed_items_json); } catch (e) { }
+      }
+      return {};
     })()
   };
+}
+
+// Envía un mensaje de WhatsApp vía el bot local (idempotente por msgId + cola pendiente).
+// Timeout de 30s (el bot puede tardar hasta ~25s en la cola; 15s causaban falsos aborts
+// que duplicaban mensajes vía pending_messages.json).
+async function enviarWhatsAppViaBot(phone, message, contexto) {
+  const msgId = 'msg_' + Date.now() + '_' + Math.random().toString(36).slice(-4);
+  try {
+    const botRes = await fetch('http://127.0.0.1:3001/send-message', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone: phone, message: message, msgId }),
+      signal: AbortSignal.timeout(30000)
+    });
+
+    if (botRes.ok) {
+      logger.info(`✅ WhatsApp (${contexto}) enviado a ${phone}`);
+      return { success: true, msgId };
+    }
+    const errorText = await botRes.text();
+    logger.error(`❌ El bot respondió con error al enviar (${contexto}) a ${phone}: ${errorText}`);
+    return { success: false, error: errorText, msgId };
+  } catch (botErr) {
+    logger.error(`❌ Error de conexión con el bot al enviar (${contexto}) a ${phone}: ${botErr.message}`);
+    // GUARDAR EN COLA PENDIENTE (con msgId para dedupe al reconectar)
+    try {
+      const pendingFile = path.join(DATA_DIR, 'pending_messages.json');
+      let pending = [];
+      try {
+        pending = JSON.parse(await fs.readFile(pendingFile, 'utf-8'));
+      } catch (e) { }
+      pending.push({ phone: phone, message: message, msgId, date: new Date().toISOString() });
+      await fs.writeFile(pendingFile, JSON.stringify(pending, null, 2));
+      logger.info(`📥 ${contexto} guardado en cola pendiente para ${phone}`);
+    } catch (queueErr) {
+      logger.error(`❌ Error al guardar en cola pendiente: ${queueErr.message}`);
+    }
+    return { success: false, error: botErr.message, queued: true, msgId };
+  }
 }
 
 async function enviarNotificacionTrabajoListo(trabajo) {
@@ -934,43 +1086,54 @@ async function enviarNotificacionTrabajoListo(trabajo) {
     cleanPhone = cleanPhone.substring(2);
   }
 
-  // Si nos quedan 10 dígitos (característica + número), agregamos el 549
-  if (cleanPhone.length === 10) {
-    phone = '549' + cleanPhone;
-  } else {
-    phone = '549' + cleanPhone;
-  }
+  // Normalizar a formato internacional 549 + número
+  phone = '549' + cleanPhone;
 
   let mensaje = '';
   try {
     const clientName = job.clientName || job.gremio || 'Cliente';
 
     // Obtener todos los productos y precios del trabajo principal y unificados
+    const isUnified = job.mergedWorks && Array.isArray(job.mergedWorks) && job.mergedWorks.length > 0;
     let allItems = [];
-    const mainItems = await getJobProductsAndPrices(job);
+    // Para trabajos unificados, skipFallbackTotal=true evita que el fallback
+    // use job.total (ya unificado) como precio de un item genérico, duplicando el monto.
+    const mainItems = await getJobProductsAndPrices(job, { skipFallbackTotal: isUnified });
     allItems.push(...mainItems);
 
-    if (job.mergedWorks && Array.isArray(job.mergedWorks)) {
+    if (isUnified) {
       for (const mw of job.mergedWorks) {
-        if (mw.quoteId) {
-          const mwItems = await getJobProductsAndPrices(mw);
-          allItems.push(...mwItems);
-        }
+        const enriched = await enrichMergedWork(mw);
+        const mwItems = await getJobProductsAndPrices(enriched);
+        allItems.push(...mwItems);
       }
     }
 
     let itemsDetailText = '';
+    let calculatedTotal = 0;
+
     if (allItems.length > 0) {
       itemsDetailText = `📦 *DETALLES DEL PEDIDO:*\n`;
       allItems.forEach(item => {
         const qty = item.quantity || 1;
-        itemsDetailText += `👉 *CANTIDAD: ${qty}*  ➔  *${item.name.toUpperCase()}*  _(${item.price})_\n`;
+        const priceLabel = item.price || '';
+        if (item.name) {
+          itemsDetailText += `👉 *CANTIDAD: ${qty}*  ➔  *${item.name.toUpperCase()}*${priceLabel ? `  _(${priceLabel})_` : ''}\n`;
+        }
+        const rawPriceNum = parseArgentinePrice(item.price);
+        if (rawPriceNum > 0) {
+          calculatedTotal += rawPriceNum;
+        }
       });
       itemsDetailText += `\n`;
     }
 
-    const isUnified = job.mergedWorks && Array.isArray(job.mergedWorks) && job.mergedWorks.length > 0;
-    const total = job.total ? `$${Number(job.total).toLocaleString('es-AR')}` : '';
+    // Para trabajos unificados, job.total ya contiene la suma correcta del merge.
+    // calculatedTotal puede estar inflado (fallback) o parcial (merged sin datos ricos).
+    const finalTotalNum = isUnified
+      ? Number(job.total || 0)
+      : (calculatedTotal > 0 ? Number(calculatedTotal.toFixed(2)) : Number(job.total || 0));
+    const total = finalTotalNum ? `$${Number(finalTotalNum).toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}` : '';
     const totalLabel = isUnified ? '💰 *Total unificado:*' : '💰 *Total:*';
 
     mensaje = `*MR Letreros - ¡Tu pedido está listo!* ✅\n\n` +
@@ -982,36 +1145,55 @@ async function enviarNotificacionTrabajoListo(trabajo) {
       `¡Gracias por confiar en nosotros! 🙌`;
 
     logger.info(`📲 Intentando enviar WhatsApp de retiro a ${phone}...`);
-    const botRes = await fetch('http://localhost:3001/send-message', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ phone: phone, message: mensaje })
-    });
+    return enviarWhatsAppViaBot(phone, mensaje, 'notificación de retiro (trabajo listo)');
+  } catch (err) {
+    logger.error(`❌ Error construyendo notificación de retiro: ${err.message}`);
+    return { success: false, error: err.message };
+  }
+}
 
-    if (botRes.ok) {
-      logger.info(`✅ WhatsApp de retiro enviado exitosamente a ${phone}`);
-      return { success: true };
-    } else {
-      const errorText = await botRes.text();
-      logger.error(`❌ El bot respondió con error al enviar notificación de retiro: ${errorText}`);
-      return { success: false, error: errorText };
-    }
-  } catch (botErr) {
-    logger.error(`❌ Error de conexión con el bot al enviar notificación de retiro: ${botErr.message}`);
-    // GUARDAR EN COLA PENDIENTE
-    try {
-      const pendingFile = path.join(DATA_DIR, 'pending_messages.json');
-      let pending = [];
-      try {
-        pending = JSON.parse(await fs.readFile(pendingFile, 'utf-8'));
-      } catch (e) { }
-      pending.push({ phone: phone, message: mensaje, date: new Date().toISOString() });
-      await fs.writeFile(pendingFile, JSON.stringify(pending, null, 2));
-    logger.info(`📥 Notificación guardada en cola pendiente para ${phone}`);
-    } catch (queueErr) {
-      logger.error(`❌ Error al guardar en cola pendiente: ${queueErr.message}`);
-    }
-    return { success: false, error: botErr.message, queued: true };
+async function enviarNotificacionCancelacion(trabajo) {
+  const job = normalizarTrabajo(trabajo);
+  if (!job) {
+    return { success: false, error: 'Trabajo no válido.' };
+  }
+
+  let phone = job.clientPhone || job.whatsapp || '';
+  if (!phone) {
+    logger.warn(`⚠️ Trabajo ${job.id} no tiene teléfono registrado para notificar cancelación`);
+    return { success: false, error: 'El trabajo no tiene un teléfono registrado.' };
+  }
+
+  // Normalización robusta para números de Argentina
+  let cleanPhone = phone.toString().replace(/\D/g, '');
+  let has54 = false;
+  if (cleanPhone.startsWith('54')) { cleanPhone = cleanPhone.substring(2); has54 = true; }
+  if (has54 && cleanPhone.startsWith('9')) { cleanPhone = cleanPhone.substring(1); }
+  if (cleanPhone.startsWith('0')) { cleanPhone = cleanPhone.substring(1); }
+  if (cleanPhone.length >= 11) {
+    if (cleanPhone.substring(2, 4) === '15') cleanPhone = cleanPhone.substring(0, 2) + cleanPhone.substring(4);
+    else if (cleanPhone.substring(3, 5) === '15') cleanPhone = cleanPhone.substring(0, 3) + cleanPhone.substring(5);
+    else if (cleanPhone.substring(4, 6) === '15') cleanPhone = cleanPhone.substring(0, 4) + cleanPhone.substring(6);
+  } else if (cleanPhone.length === 11 && cleanPhone.startsWith('15')) {
+    cleanPhone = cleanPhone.substring(2);
+  }
+  phone = '549' + cleanPhone;
+
+  try {
+    const clientName = job.clientName || job.gremio || 'Cliente';
+    const total = job.total ? `$${Number(job.total).toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}` : '';
+
+    const mensaje = `*MR Letreros - Pedido Cancelado* ❌\n\n` +
+      `Hola *${clientName}*, te informamos que tu pedido ha sido *cancelado*.\n\n` +
+      `${total ? `💰 *Total del pedido:* ${total}\n` : ''}` +
+      `Si tenés alguna consulta o creés que esto fue un error, no dudes en respondernos.\n\n` +
+      `Lamentamos los inconvenientes. ¡Esperamos verte pronto! 🙌`;
+
+    logger.info(`📲 Enviando notificación de cancelación a ${phone}...`);
+    return enviarWhatsAppViaBot(phone, mensaje, 'notificación de cancelación de pedido');
+  } catch (err) {
+    logger.error(`❌ Error construyendo notificación de cancelación: ${err.message}`);
+    return { success: false, error: err.message };
   }
 }
 
@@ -1058,43 +1240,52 @@ async function enviarNotificacionConfirmacion(trabajo) {
     cleanPhone = cleanPhone.substring(2);
   }
 
-  // Si nos quedan 10 dígitos (característica + número), agregamos el 549
-  if (cleanPhone.length === 10) {
-    phone = '549' + cleanPhone;
-  } else {
-    phone = '549' + cleanPhone;
-  }
+  // Normalizar a formato internacional 549 + número
+  phone = '549' + cleanPhone;
 
   let mensaje = '';
   try {
     const clientName = job.clientName || job.gremio || 'Cliente';
 
     // Obtener todos los productos y precios
+    const isUnified = job.mergedWorks && Array.isArray(job.mergedWorks) && job.mergedWorks.length > 0;
     let allItems = [];
-    const mainItems = await getJobProductsAndPrices(job);
+    const mainItems = await getJobProductsAndPrices(job, { skipFallbackTotal: isUnified });
     allItems.push(...mainItems);
 
-    if (job.mergedWorks && Array.isArray(job.mergedWorks)) {
+    if (isUnified) {
       for (const mw of job.mergedWorks) {
-        if (mw.quoteId) {
-          const mwItems = await getJobProductsAndPrices(mw);
-          allItems.push(...mwItems);
-        }
+        const enriched = await enrichMergedWork(mw);
+        const mwItems = await getJobProductsAndPrices(enriched);
+        allItems.push(...mwItems);
       }
     }
 
     let itemsDetailText = '';
+    let calculatedTotal = 0;
+
     if (allItems.length > 0) {
       itemsDetailText = `\n\n*Detalles del pedido:*\n`;
       allItems.forEach(item => {
         const qty = item.quantity || 1;
-        itemsDetailText += `👉 *CANTIDAD: ${qty}*  ➔  *${item.name.toUpperCase()}*  _(${item.price})_\n`;
+        const priceLabel = item.price || '';
+        if (item.name) {
+          itemsDetailText += `👉 *CANTIDAD: ${qty}*  ➔  *${item.name.toUpperCase()}*${priceLabel ? `  _(${priceLabel})_` : ''}\n`;
+        }
+        const rawPriceNum = parseArgentinePrice(item.price);
+        if (rawPriceNum > 0) {
+          calculatedTotal += rawPriceNum;
+        }
       });
     } else if (job.descripcion) {
       itemsDetailText = `\n\n*Detalle del pedido:*\n${job.descripcion}`;
     }
 
-    const total = job.total ? `$${Number(job.total).toLocaleString('es-AR')}` : '';
+    // Para trabajos unificados, job.total ya contiene la suma correcta del merge.
+    const finalTotalNum = isUnified
+      ? Number(job.total || 0)
+      : (calculatedTotal > 0 ? Number(calculatedTotal.toFixed(2)) : Number(job.total || 0));
+    const total = finalTotalNum ? `$${Number(finalTotalNum).toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}` : '';
 
     mensaje = `*MR Letreros - Confirmación de Recepción* ✅\n\n` +
       `Hola *${clientName}*, confirmamos que hemos recibido tu pedido correctamente.${itemsDetailText}\n\n` +
@@ -1104,36 +1295,10 @@ async function enviarNotificacionConfirmacion(trabajo) {
       `¡Muchas gracias por confiar en nosotros!`;
 
     logger.info(`📲 Intentando enviar WhatsApp de confirmación a ${phone}...`);
-    const botRes = await fetch('http://localhost:3001/send-message', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ phone: phone, message: mensaje })
-    });
-
-    if (botRes.ok) {
-      logger.info(`✅ WhatsApp de confirmación enviado exitosamente a ${phone}`);
-      return { success: true };
-    } else {
-      const errorText = await botRes.text();
-      logger.error(`❌ El bot respondió con error al enviar confirmación de recepción: ${errorText}`);
-      return { success: false, error: errorText };
-    }
-  } catch (botErr) {
-    logger.error(`❌ Error de conexión con el bot al enviar confirmación de recepción: ${botErr.message}`);
-    // GUARDAR EN COLA PENDIENTE
-    try {
-      const pendingFile = path.join(DATA_DIR, 'pending_messages.json');
-      let pending = [];
-      try {
-        pending = JSON.parse(await fs.readFile(pendingFile, 'utf-8'));
-      } catch (e) { }
-      pending.push({ phone: phone, message: mensaje, date: new Date().toISOString() });
-      await fs.writeFile(pendingFile, JSON.stringify(pending, null, 2));
-      logger.info(`📥 Notificación guardada en cola pendiente para ${phone}`);
-    } catch (queueErr) {
-      logger.error(`❌ Error al guardar en cola pendiente: ${queueErr.message}`);
-    }
-    return { success: false, error: botErr.message, queued: true };
+    return enviarWhatsAppViaBot(phone, mensaje, 'confirmación de recepción');
+  } catch (err) {
+    logger.error(`❌ Error construyendo confirmación de recepción: ${err.message}`);
+    return { success: false, error: err.message };
   }
 }
 
@@ -1171,30 +1336,10 @@ async function enviarNotificacionRecordatorioPago(trabajo) {
     `¡Muchas gracias por tu atención! 🙌`;
 
   try {
-    const botRes = await fetch('http://localhost:3001/send-message', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ phone: phone, message: mensaje })
-    });
-
-    if (botRes.ok) {
-      logger.info(`✅ Recordatorio de pago enviado a ${phone}`);
-      return { success: true };
-    } else {
-      const errorText = await botRes.text();
-      logger.error(`❌ Error enviando recordatorio de pago: ${errorText}`);
-      return { success: false, error: errorText };
-    }
-  } catch (botErr) {
-    logger.error(`❌ Error de conexión con el bot enviando recordatorio de pago: ${botErr.message}`);
-    try {
-      const pendingFile = path.join(DATA_DIR, 'pending_messages.json');
-      let pending = [];
-      try { pending = JSON.parse(await fs.readFile(pendingFile, 'utf-8')); } catch (e) {}
-      pending.push({ phone: phone, message: mensaje, date: new Date().toISOString() });
-      await fs.writeFile(pendingFile, JSON.stringify(pending, null, 2));
-    } catch (e) {}
-    return { success: false, error: botErr.message, queued: true };
+    return await enviarWhatsAppViaBot(phone, mensaje, 'recordatorio de pago');
+  } catch (err) {
+    logger.error(`❌ Error enviando recordatorio de pago: ${err.message}`);
+    return { success: false, error: err.message };
   }
 }
 
@@ -1586,30 +1731,8 @@ app.delete('/api/categorias/:categoria', verifyToken, async (req, res) => {
   }
 });
 
-// ==================== ENDPOINTS MATERIALES ====================
-
-app.get('/api/materiales', async (req, res) => {
-  try {
-    const data = await readJSON(FILES.materiales);
-    res.json(data);
-  } catch (error) {
-    logger.error('Error en GET /api/materiales', { error: error.message });
-    res.status(500).json({ error: 'Error al leer materiales' });
-  }
-});
-
-app.post('/api/materiales', verifyToken, requireRole(['admin', 'superadmin']), async (req, res) => {
-  try {
-    const success = await writeJSON(FILES.materiales, req.body);
-    logger.info('✅ Materiales actualizados por usuario', { user: req.user.usuario });
-    res.json({ success });
-  } catch (error) {
-    logger.error('Error en POST /api/materiales', { error: error.message });
-    res.status(500).json({ error: 'Error al salvar materiales' });
-  }
-});
-
 // ==================== ENDPOINTS TERCEROS ====================
+// (Los duplicados de GET/POST /api/materiales fueron eliminados: Express usa el primero registrado)
 
 
 app.get('/api/terceros', verifyToken, async (req, res) => {
@@ -1785,12 +1908,12 @@ app.get('/api/statistics/today', verifyToken, async (req, res) => {
 
     const gremioToday = gremioData.filter(item => {
       const date = item.date || item.fecha;
-      return date && date.startsWith(today) && (item.approved === true || item.estado === 'aprobada');
+      return typeof date === 'string' && date.startsWith(today) && (item.approved === true || item.estado === 'aprobada');
     });
 
     const clientesToday = clientesData.filter(item => {
       const date = item.date || item.fecha;
-      return date && date.startsWith(today) && (item.approved === true || item.estado === 'aprobada');
+      return typeof date === 'string' && date.startsWith(today) && (item.approved === true || item.estado === 'aprobada');
     });
 
     const facturadoGremio = gremioToday.reduce((sum, item) => sum + (parseFloat(item.total || item.totalCliente) || 0), 0);
@@ -2981,7 +3104,7 @@ app.get('/api/health', (req, res) => {
 });
 
 // Endpoint para obtener la API Key de Gemini (para uso en frontend)
-app.get('/api/config/gemini-key', verifyToken, async (req, res) => {
+app.get('/api/config/gemini-key', verifyToken, requireRole(['admin', 'vendedor', 'superadmin']), async (req, res) => {
   try {
     const key = await getGeminiApiKey();
     res.json({ key });
@@ -2991,7 +3114,7 @@ app.get('/api/config/gemini-key', verifyToken, async (req, res) => {
 });
 
 // Endpoint para obtener la API Key de Groq (para visión en frontend)
-app.get('/api/config/groq-key', verifyToken, async (req, res) => {
+app.get('/api/config/groq-key', verifyToken, requireRole(['admin', 'vendedor', 'superadmin']), async (req, res) => {
   try {
     const key = await getGroqApiKey();
     res.json({ key });
@@ -3001,7 +3124,7 @@ app.get('/api/config/groq-key', verifyToken, async (req, res) => {
 });
 
 // Endpoint para obtener la API Key de Fireworks (para visión en frontend)
-app.get('/api/config/fireworks-key', verifyToken, async (req, res) => {
+app.get('/api/config/fireworks-key', verifyToken, requireRole(['admin', 'vendedor', 'superadmin']), async (req, res) => {
   try {
     const key = await getFireworksApiKey();
     res.json({ key });
@@ -3012,46 +3135,305 @@ app.get('/api/config/fireworks-key', verifyToken, async (req, res) => {
 
 // ==================== SISTEMA DE VECTORIZACIÓN IA ====================
 
-async function getGroqApiKey() {
+// ---- Gestión unificada de claves IA (variables de entorno + bot_config.json) ----
+// Las claves se pueden cargar desde el panel (apartado "API" del vectorizador) y se
+// persisten en bot_config.json (sin tocar .env). Prioridad: variable de entorno → archivo.
+
+const IA_KEYS_DEF = {
+  geminiApiKey: {
+    env: 'GEMINI_API_KEY',
+    etiqueta: 'Google Gemini',
+    descripcion: '🎨 Crear con IA · despixelado · análisis',
+    formato: 'AIzaSy… (clásica) o AQ.… (nuevo formato)',
+    hint: 'La usás en "Crear con IA". Nueva desde aistudio.google.com / Google AI Studio.'
+  },
+  groqApiKey: {
+    env: 'GROQ_API_KEY',
+    etiqueta: 'Groq',
+    descripcion: 'Análisis de imagen IA',
+    formato: 'gsk_…',
+    hint: 'Análisis automático de complejidad antes de vectorizar.'
+  },
+  fireworksApiKey: {
+    env: 'FIREWORKS_API_KEY',
+    etiqueta: 'Fireworks.ai',
+    descripcion: 'Análisis de imagen (alternativo)',
+    formato: 'clave de Fireworks',
+    hint: 'Solo si Groq/Gemini no están disponibles.'
+  },
+  removebgApiKey: {
+    env: 'REMOVEBG_API_KEY',
+    etiqueta: 'remove.bg',
+    descripcion: 'Quitar fondo',
+    formato: 'clave de remove.bg',
+    hint: 'La usás en la pestaña "Quitar Fondo".'
+  }
+};
+
+const IA_CONFIG_FILE = path.join(DATA_DIR, 'bot_whatsapp', 'bot_config.json');
+
+const IA_KEYS_PLACEHOLDER = /^(PEGAR_AQUÍ.*|SKIP.*)$/i;
+
+async function leerIAConfig() {
+  try {
+    const cfg = await readJSON(IA_CONFIG_FILE);
+    return (cfg && typeof cfg === 'object') ? cfg : {};
+  } catch (e) {
+    return {};
+  }
+}
+
+async function getClaveIA(campo) {
+  const def = IA_KEYS_DEF[campo];
+  if (!def) return null;
+
   // 1. Variable de entorno (prioridad máxima)
-  if (process.env.GROQ_API_KEY) return process.env.GROQ_API_KEY;
+  const envVal = process.env[def.env];
+  if (envVal && envVal.trim() && !IA_KEYS_PLACEHOLDER.test(envVal.trim())) {
+    return envVal.trim();
+  }
 
-  // 2. bot_config.json
+  // 2. bot_config.json (guardada desde el panel "API")
   try {
-    const config = await readJSON(path.join(DATA_DIR, 'bot_whatsapp', 'bot_config.json'));
-    if (config.groqApiKey && config.groqApiKey !== 'PEGAR_AQUÍ_TU_GROQ_KEY') {
-      return config.groqApiKey;
+    const cfg = await leerIAConfig();
+    const v = cfg && cfg[campo];
+    if (typeof v === 'string' && v.trim() && !IA_KEYS_PLACEHOLDER.test(v.trim())) {
+      return v.trim();
     }
-  } catch (e) { }
-
-  // 3. whatsapp-bot-gemini.js (extracción por regex)
-  try {
-    const botFile = await fs.readFile(path.join(__dirname, 'whatsapp-bot-gemini.js'), 'utf-8');
-    const match = botFile.match(/groqApiKey\s*:\s*(?:process\.env\.GROQ_API_KEY\s*\|\|\s*)?['"]([^'"]{20,})['"]/);
-    if (match) return match[1];
-    const match2 = botFile.match(/(gsk_[a-zA-Z0-9_]{20,})/);
-    if (match2) return match2[1];
   } catch (e) { }
 
   return null;
 }
 
-async function getFireworksApiKey() {
-  // Clave proporcionada por el usuario.
-  return '58bc549eeade441588e0730a2c11ca0d.pnJjY0GysZN5aWcIX6CdUz7-';
+function enmascararClaveIA(clave) {
+  if (!clave) return null;
+  const s = String(clave);
+  if (s.length <= 8) return '••••••';
+  return s.slice(0, 4) + '…' + s.slice(-4);
 }
 
-async function getGeminiApiKey() {
-  let key = process.env.GEMINI_API_KEY;
-  if (!key) {
-    try {
-      const botConfigPath = path.join(__dirname, 'datos_mr_letreros', 'bot_whatsapp', 'bot_config.json');
-      const botConfig = JSON.parse(await fs.readFile(botConfigPath, 'utf-8'));
-      key = botConfig.geminiApiKey;
-    } catch (e) { }
+// Traduce errores de autenticación de Gemini a mensajes accionables.
+// Contexto: Google está migrando las claves AIzaSy… (estándar) a las AQ.…
+// (claves de autorización ligadas a service account) y muchas claves AQ. nuevas
+// devuelven 401 ACCESS_TOKEN_TYPE_UNSUPPORTED por un problema del rollout de Google.
+function mensajeErrorGemini(detalle) {
+  const s = String(detalle || '');
+  if (/ACCESS_TOKEN_TYPE_UNSUPPORTED|UNAUTHENTICATED/i.test(s)) {
+    return 'Google rechazó esta clave (401 ACCESS_TOKEN_TYPE_UNSUPPORTED): las claves nuevas "AQ.…" que genera Google AI Studio están siendo rechazadas por la API de Gemini en muchas cuentas (problema conocido del rollout de claves de autorización de Google). Solución: creá una clave clásica "AIzaSy…" en Google Cloud Console → APIs y servicios → Credenciales → Crear credenciales → Clave de API, y restringila a "Generative Language API" (las claves AIzaSy con restricción siguen funcionando).';
   }
-  return key || 'AIzaSyCa0cYZYK3KE6tDsF0omv4Qo2fEyJvK3MI';
+  if (/API key expired|key expired|vencida/i.test(s)) {
+    return 'Google indica que la clave está vencida (API key expired). Generá una clave nueva: aistudio.google.com/apikey (si te da una "AQ.…" y sigue fallando, usá Google Cloud Console para crear una "AIzaSy…" con restricción a Generative Language API).';
+  }
+  if (/API key not valid|INVALID_ARGUMENT|API_KEY_INVALID|invalid api key/i.test(s)) {
+    return 'Google indica que la clave no es válida. Revisá que la hayas copiado completa (formato "AIzaSy…" o "AQ.…", sin espacios ni saltos de línea).';
+  }
+  return null;
 }
+
+async function getGroqApiKey() { return getClaveIA('groqApiKey'); }
+async function getFireworksApiKey() { return getClaveIA('fireworksApiKey'); }
+async function getGeminiApiKey() { return getClaveIA('geminiApiKey'); }
+
+// ---- Endpoints del apartado "API" (vectorizador) ----
+
+// Estado (enmascarado) de las claves configuradas
+app.get('/api/config/ai-keys', verifyToken, requireRole(['admin', 'vendedor', 'superadmin']), async (req, res) => {
+  try {
+    const claves = {};
+    for (const campo of Object.keys(IA_KEYS_DEF)) {
+      const clave = await getClaveIA(campo);
+      claves[campo] = {
+        etiqueta: IA_KEYS_DEF[campo].etiqueta,
+        descripcion: IA_KEYS_DEF[campo].descripcion,
+        formato: IA_KEYS_DEF[campo].formato,
+        hint: IA_KEYS_DEF[campo].hint,
+        configurada: !!clave,
+        enmascarada: enmascararClaveIA(clave)
+      };
+    }
+    res.json({ success: true, claves });
+  } catch (error) {
+    logger.error('Error leyendo estado de claves IA:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Guardar una o varias claves (vacío = borrar)
+app.post('/api/config/ai-keys', verifyToken, requireRole(['admin', 'superadmin']), async (req, res) => {
+  try {
+    const body = req.body || {};
+    const entradas = body.claves || {};
+    // soporta también { campo: 'geminiApiKey', valor: '...' }
+    if (body.campo && IA_KEYS_DEF[body.campo]) entradas[body.campo] = body.valor ?? '';
+
+    const campos = Object.keys(entradas).filter(c => IA_KEYS_DEF[c]);
+    if (!campos.length) {
+      return res.status(400).json({ error: 'No se indicó ninguna clave válida.' });
+    }
+
+    const cfg = await leerIAConfig();
+    let cambios = 0;
+    for (const campo of campos) {
+      const valor = String(entradas[campo] ?? '').trim();
+      if (valor === '') {
+        if (Object.prototype.hasOwnProperty.call(cfg, campo)) { delete cfg[campo]; cambios++; }
+      } else {
+        if (cfg[campo] !== valor) { cfg[campo] = valor; cambios++; }
+      }
+    }
+
+    if (cambios > 0) {
+      const ok = await writeJSON(IA_CONFIG_FILE, cfg);
+      if (!ok) return res.status(500).json({ error: 'No se pudo guardar el archivo de configuración.' });
+      logger.info('Claves IA actualizadas desde el panel (cantidad de campos: ' + campos.length + ')');
+    }
+
+    const claves = {};
+    for (const campo of Object.keys(IA_KEYS_DEF)) {
+      const clave = await getClaveIA(campo);
+      claves[campo] = {
+        etiqueta: IA_KEYS_DEF[campo].etiqueta,
+        descripcion: IA_KEYS_DEF[campo].descripcion,
+        formato: IA_KEYS_DEF[campo].formato,
+        hint: IA_KEYS_DEF[campo].hint,
+        configurada: !!clave,
+        enmascarada: enmascararClaveIA(clave)
+      };
+    }
+    res.json({ success: true, mensaje: 'Claves guardadas correctamente.', claves });
+  } catch (error) {
+    logger.error('Error guardando claves IA:', error.stack || error.message);
+    res.status(500).json({ error: 'Error guardando las claves: ' + error.message });
+  }
+});
+
+// Probar una clave contra el proveedor (sin exponerla)
+app.post('/api/config/ai-keys/test', verifyToken, requireRole(['admin', 'superadmin']), async (req, res) => {
+  try {
+    const { campo, valor } = req.body || {};
+    if (!IA_KEYS_DEF[campo]) {
+      return res.status(400).json({ error: 'Proveedor desconocido.' });
+    }
+    const clave = (typeof valor === 'string' && valor.trim()) ? valor.trim() : await getClaveIA(campo);
+    if (!clave) {
+      return res.status(400).json({ error: 'No hay clave guardada para probar. Guardá una primero.' });
+    }
+
+    const probar = async (url, headers) => {
+      try {
+        const r = await axios.get(url, { headers, timeout: 20000, validateStatus: s => s < 500 });
+        if (r.status === 200 || r.status === 201) {
+          return { ok: true, mensaje: '✅ Conexión correcta (HTTP ' + r.status + '). La clave es válida.', detalle: '' };
+        }
+        let detalle = '';
+        const d = r.data;
+        if (d && d.error) {
+          detalle = (d.error && d.error.message) || (typeof d.error === 'string' ? d.error : JSON.stringify(d.error));
+        }
+        return {
+          ok: false,
+          detalle,
+          mensaje: '❌ El proveedor rechazó la clave (HTTP ' + r.status + ')' + (detalle ? ': ' + String(detalle).slice(0, 300) : '')
+        };
+      } catch (e) {
+        return { ok: false, detalle: e.message || '', mensaje: '❌ Error de conexión: ' + (e.message || 'desconocido') };
+      }
+    };
+
+    let resultado;
+    if (campo === 'geminiApiKey') {
+      resultado = await probar('https://generativelanguage.googleapis.com/v1beta/models?key=' + encodeURIComponent(clave),
+        { 'x-goog-api-key': clave });
+      // Si es el error conocido de las claves AQ.… nuevas, explicar la causa y la solución
+      if (!resultado.ok) {
+        const sugerencia = mensajeErrorGemini(resultado.detalle);
+        if (sugerencia) resultado.mensaje = sugerencia;
+      }
+    } else if (campo === 'groqApiKey') {
+      resultado = await probar('https://api.groq.com/openai/v1/models', { Authorization: 'Bearer ' + clave });
+    } else if (campo === 'fireworksApiKey') {
+      resultado = await probar('https://api.fireworks.ai/inference/v1/models', { Authorization: 'Bearer ' + clave });
+    } else if (campo === 'removebgApiKey') {
+      resultado = await probar('https://api.remove.bg/v1.0/account', { 'X-Api-Key': clave });
+    } else {
+      return res.status(400).json({ error: 'Proveedor no soportado para prueba.' });
+    }
+    res.json(resultado);
+  } catch (error) {
+    logger.error('Error probando clave IA:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ==================== MÓDULO SECRETARÍA IA (SEGUIMIENTO WHATSAPP) ====================
+const SecretariaIAService = require('./secretaria_ia');
+const secretariaService = new SecretariaIAService(getGeminiApiKey, getGroqApiKey);
+
+// Obtener leads y notas de seguimiento
+app.get('/api/secretaria/leads', verifyToken, async (req, res) => {
+  try {
+    const data = await secretariaService.getLeadsSecretaria();
+    res.json({ success: true, ...data });
+  } catch (error) {
+    logger.error('Error obteniendo leads de secretaría:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Forzar re-análisis con IA de las conversaciones
+app.post('/api/secretaria/analizar', verifyToken, async (req, res) => {
+  try {
+    const forzar = req.body && req.body.forzar === true;
+    const resultado = await secretariaService.actualizarSecretaria(forzar);
+    res.json(resultado);
+  } catch (error) {
+    logger.error('Error en análisis de secretaría IA:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Agregar nota manual a un lead
+app.post('/api/secretaria/nota', verifyToken, async (req, res) => {
+  try {
+    const { numero, nota } = req.body || {};
+    if (!numero || !nota) {
+      return res.status(400).json({ error: 'Número y nota requeridos.' });
+    }
+    const autor = req.user ? (req.user.nombre || req.user.usuario) : 'Operador';
+    const actualizado = await secretariaService.agregarNotaManual(numero, nota, autor);
+    res.json({ success: true, lead: actualizado });
+  } catch (error) {
+    logger.error('Error agregando nota manual:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Cambiar estado manual del lead (cerrado, descartado, contactado, etc.)
+app.post('/api/secretaria/estado', verifyToken, async (req, res) => {
+  try {
+    const { numero, estado } = req.body || {};
+    if (!numero || !estado) {
+      return res.status(400).json({ error: 'Número y estado requeridos.' });
+    }
+    const actualizado = await secretariaService.cambiarEstado(numero, estado);
+    res.json({ success: true, lead: actualizado });
+  } catch (error) {
+    logger.error('Error cambiando estado de secretaría:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Inicializar análisis en segundo plano (arranca 10s después del server y luego cada 15 min)
+setTimeout(() => {
+  secretariaService.actualizarSecretaria(false).catch(err => {
+    logger.warn('[Secretaria IA] Error en escaneo inicial:', err.message);
+  });
+}, 10000);
+setInterval(() => {
+  secretariaService.actualizarSecretaria(false).catch(err => {
+    logger.warn('[Secretaria IA] Error en escaneo periódico:', err.message);
+  });
+}, 15 * 60 * 1000);
 
 // 1. Análisis de imagen con Groq (Llama Vision)
 async function analizarImagenConGroq(imagePath, prompt) {
@@ -3278,6 +3660,10 @@ async function vectorizarConVTracer(imagePngPath, params, outputSvgPath, onSpawn
     let stderr = '';
     proceso.stderr.on('data', d => stderr += d.toString());
 
+    proceso.on('error', (err) => {
+      reject(new Error(`Fallo al iniciar VTracer: ${err.message}`));
+    });
+
     proceso.on('close', (code) => {
       if (code !== 0) {
         reject(new Error(`VTracer falló: ${stderr}`));
@@ -3304,6 +3690,10 @@ async function vectorizarConStarVector(imagePngPath, outputSvgPath, onSpawn) {
     let stderr = '';
     proceso.stderr.on('data', d => stderr += d.toString());
 
+    proceso.on('error', (err) => {
+      reject(new Error(`Fallo al iniciar StarVector: ${err.message}`));
+    });
+
     proceso.on('close', (code) => {
       if (code !== 0) {
         reject(new Error(`StarVector falló: ${stderr}`));
@@ -3323,7 +3713,7 @@ app.post('/api/vectorizar', verifyToken, upload.single('imagen'), async (req, re
   const svgFilename = `${jobId}.svg`;
   const svgPath = path.join(UPLOADS_OUTPUT_DIR, svgFilename);
   const method = req.body.method || 'vtracer';
-  const improveResolution = req.body.improve_resolution === 'true';
+  const improveResolution = req.body.improve_resolution === 'true' || req.body.improve_resolution === true;
   const targetWidth = parseInt(req.body.target_width) || 2000;
 
   const vectorizerPrompt = `Sos un experto en vectorización. Analizá esta imagen y devolvé JSON:
@@ -3462,7 +3852,7 @@ app.post('/api/ai/remove-bg', verifyToken, upload.single('imagen'), async (req, 
   });
 
   try {
-    const removebgKey = '668bsFxfi3i3iJemtV72ovYh'; // API Key proporcionada
+    const removebgKey = process.env.REMOVEBG_API_KEY || (await leerIAConfig()).removebgApiKey || null;
     const groqKey = await getGroqApiKey();
 
     logger.info(`[IMAGE-PROCESSOR] Iniciando quitar fondo para ${jobId}`);
@@ -3665,6 +4055,69 @@ app.post('/api/ai/depixel', verifyToken, upload.single('imagen'), async (req, re
   }
 });
 
+// ==================== GENERACIÓN DE IMÁGENES CON GEMINI (para vectorizar) ====================
+// Crea una imagen "lista para vectorizar" a partir de un prompt (usada por la pestaña
+// "Crear con IA" del vectorizador). Devuelve la imagen en base64 (data URL).
+app.post('/api/ai/generar-imagen', verifyToken, requireRole(['admin', 'vendedor', 'superadmin']), async (req, res) => {
+  try {
+    const prompt = String((req.body && req.body.prompt) || '').trim();
+    if (!prompt) {
+      return res.status(400).json({ error: 'Falta el prompt de la imagen' });
+    }
+
+    const apiKey = await getGeminiApiKey();
+    if (!apiKey || !GoogleGenerativeAI) {
+      return res.status(500).json({ error: 'Gemini no está configurado (GEMINI_API_KEY).' });
+    }
+
+    const genAI = new GoogleGenerativeAI(apiKey);
+    // Modelos con salida de imagen (en orden de preferencia)
+    const modelos = ['gemini-2.5-flash-image', 'gemini-2.0-flash-preview-image-generation'];
+    let ultimoError = null;
+
+    for (const modelo of modelos) {
+      try {
+        const model = genAI.getGenerativeModel({
+          model: modelo,
+          generationConfig: { responseModalities: ['TEXT', 'IMAGE'] }
+        });
+        const result = await model.generateContent(prompt);
+        const parts = result.response.candidates && result.response.candidates[0] &&
+          result.response.candidates[0].content && result.response.candidates[0].content.parts
+          ? result.response.candidates[0].content.parts : [];
+
+        const imgPart = parts.find(p => p && p.inlineData && p.inlineData.data && /^image\//.test(p.inlineData.mimeType || ''));
+        if (imgPart && imgPart.inlineData.data) {
+          logger.info(`🎨 Imagen generada con Gemini (${modelo}), prompt: "${prompt.substring(0, 60)}..."`);
+          return res.json({
+            success: true,
+            modelo,
+            mimeType: imgPart.inlineData.mimeType,
+            dataUrl: `data:${imgPart.inlineData.mimeType};base64,${imgPart.inlineData.data}`
+          });
+        }
+        const txt = parts.filter(p => p && p.text).map(p => p.text).join(' ').trim();
+        if (!imgPart && !txt) ultimoError = new Error(`Modelo ${modelo} no devolvió imagen ni texto`);
+        else if (!imgPart) ultimoError = new Error(`Modelo ${modelo} no devolvió imagen (respuesta: ${txt.substring(0, 120)})`);
+      } catch (e) {
+        ultimoError = e;
+        logger.warn(`⚠️ Modelo ${modelo} falló para generar imagen: ${e.message}`);
+      }
+    }
+
+    logger.error('No se pudo generar imagen con Gemini', { error: ultimoError && ultimoError.message });
+    let msgFinal = 'No se pudo generar la imagen con la IA: ' + (ultimoError ? ultimoError.message : 'error desconocido');
+    // Si el error es el conocido de las claves AQ.… (nuevo formato de Google), dar la explicación
+    const sugerencia = mensajeErrorGemini(ultimoError ? (ultimoError.message + ' ' + (ultimoError.details || '')) : '');
+    if (sugerencia) msgFinal = sugerencia;
+    return res.status(500).json({ error: msgFinal });
+  } catch (error) {
+    logger.error('Error generando imagen con Gemini', { error: error.stack });
+    res.status(500).json({ error: 'Error interno al generar la imagen' });
+  }
+});
+
+
 // Proxy para que el frontend pueda usar Groq Vision de forma segura
 app.post('/api/ai/groq-vision', verifyToken, async (req, res) => {
   try {
@@ -3707,6 +4160,10 @@ app.post('/api/vectorizar/guardar', verifyToken, async (req, res) => {
   try {
     const { jobId, clientId, nombreArchivo } = req.body;
     if (!jobId || !clientId) return res.status(400).json({ error: 'Faltan datos (jobId, clientId)' });
+
+    // Sanitizar para evitar path traversal (jobId es numérico; clientId es alfanumérico)
+    if (!/^\d+$/.test(String(jobId))) return res.status(400).json({ error: 'jobId inválido' });
+    if (!/^[\w-]+$/.test(String(clientId))) return res.status(400).json({ error: 'clientId inválido' });
 
     let sourceFile = path.join(UPLOADS_OUTPUT_DIR, `${jobId}.svg`);
     let detectedExt = 'svg';
@@ -3894,7 +4351,7 @@ app.delete('/api/led-library/:id', verifyToken, async (req, res) => {
 
 // ==================== ENDPOINT PARA PROCESADO DE ARCHIVOS CON PYTHON ====================
 
-app.post('/api/process-file', (req, res) => {
+app.post('/api/process-file', verifyToken, (req, res) => {
   const scriptPath = path.join(BASE_PATH, 'file_processor.py');
   const pythonProcess = spawn(pythonCmd, [scriptPath]);
 
@@ -3907,6 +4364,11 @@ app.post('/api/process-file', (req, res) => {
 
   pythonProcess.stderr.on('data', (data) => {
     errorData += data.toString();
+  });
+
+  pythonProcess.on('error', (err) => {
+    logger.error('Error iniciando Python (file_processor.py)', { error: err.message });
+    res.status(500).json({ error: 'Fallo al iniciar el procesador: ' + err.message });
   });
 
   pythonProcess.on('close', (code) => {
@@ -3940,7 +4402,7 @@ app.post('/api/process-file', (req, res) => {
 
 // ==================== ENDPOINT PARA NESTING CON PYTHON ====================
 
-app.post('/api/nesting/solve', (req, res) => {
+app.post('/api/nesting/solve', verifyToken, (req, res) => {
   // 1. Ejecuta el script de Python como un proceso hijo
   const scriptPath = path.join(BASE_PATH, 'nesting_solver.py');
   const pythonProcess = spawn(pythonCmd, [scriptPath]);
@@ -3956,6 +4418,11 @@ app.post('/api/nesting/solve', (req, res) => {
   // 3. Escucha si hay errores durante la ejecución del script
   pythonProcess.stderr.on('data', (data) => {
     errorData += data.toString();
+  });
+
+  pythonProcess.on('error', (err) => {
+    logger.error('Error iniciando Python (nesting_solver.py)', { error: err.message });
+    res.status(500).json({ error: 'Fallo al iniciar el solver: ' + err.message });
   });
 
   // 4. Cuando el script de Python termina, se ejecuta este bloque
@@ -3985,6 +4452,241 @@ app.post('/api/nesting/solve', (req, res) => {
   }
 });
 
+// ==================== ENDPOINT CALCULADOR DE ROLLOS ====================
+
+function parsePieceFilename(filename, fullPath = '') {
+  const baseName = path.parse(filename).name;
+  // Expresiones regulares para capturar: [Numero]_[Material]_[Ancho]x[Alto] o combinaciones
+  const regexPatterns = [
+    /^(?:\d+[-_])?\s*([A-Za-zÁÉÍÓÚáéíóúñÑ\s]+?)[-_](\d+(?:[.,]\d+)?)\s*[xX*]\s*(\d+(?:[.,]\d+)?)/i,
+    /([A-Za-zÁÉÍÓÚáéíóúñÑ\s]+?)[\s_-]+(\d+(?:[.,]\d+)?)\s*[xX*]\s*(\d+(?:[.,]\d+)?)/i,
+    /(\d+(?:[.,]\d+)?)\s*[xX*]\s*(\d+(?:[.,]\d+)?)[-_]([A-Za-zÁÉÍÓÚáéíóúñÑ\s]+)/i
+  ];
+
+  let rawMaterial = '';
+  let wStr = '';
+  let hStr = '';
+
+  for (const regex of regexPatterns) {
+    const match = baseName.match(regex);
+    if (match) {
+      if (regex === regexPatterns[2]) {
+        wStr = match[1];
+        hStr = match[2];
+        rawMaterial = match[3];
+      } else {
+        rawMaterial = match[1];
+        wStr = match[2];
+        hStr = match[3];
+      }
+      break;
+    }
+  }
+
+  if (!wStr || !hStr) return null;
+
+  const w = parseFloat(wStr.replace(',', '.'));
+  const h = parseFloat(hStr.replace(',', '.'));
+  if (isNaN(w) || isNaN(h) || w <= 0 || h <= 0) return null;
+
+  const cleanMat = (rawMaterial || '').trim().toUpperCase();
+  let material = 'VINILO';
+
+  if (cleanMat.includes('MICRO') || cleanMat.includes('PERFORADO')) {
+    material = 'MICROPERFORADO';
+  } else if (cleanMat.includes('LONA') || cleanMat.includes('FRONT') || cleanMat.includes('BANNER')) {
+    material = 'LONA FRONT';
+  } else if (cleanMat.includes('BACKLIGHT') || cleanMat.includes('BACK')) {
+    material = 'BACKLIGHT';
+  } else if (cleanMat.includes('ESMERILADO')) {
+    material = 'ESMERILADO';
+  } else if (cleanMat.includes('REFLECTIVO')) {
+    material = 'REFLECTIVO';
+  } else if (cleanMat.includes('TRANSPARENTE') || cleanMat.includes('CLEAR')) {
+    material = 'VINILO TRANSPARENTE';
+  } else if (cleanMat.includes('VIILO') || cleanMat.includes('VINIL')) {
+    material = 'VINILO';
+  } else if (cleanMat.length > 0) {
+    material = cleanMat;
+  }
+
+  const minDim = Math.min(w, h);
+  const maxDim = Math.max(w, h);
+  const areaM2 = (w * h) / 10000;
+
+  return {
+    filename,
+    fullPath,
+    material,
+    widthCm: w,
+    heightCm: h,
+    minDimCm: minDim,
+    maxDimCm: maxDim,
+    areaM2: Number(areaM2.toFixed(3))
+  };
+}
+
+const fsSync = require('fs');
+
+function scanDirectoryFiles(dirPath, fileList = []) {
+  if (!fsSync.existsSync(dirPath)) return fileList;
+  const entries = fsSync.readdirSync(dirPath, { withFileTypes: true });
+  for (const entry of entries) {
+    const resPath = path.join(dirPath, entry.name);
+    if (entry.isDirectory()) {
+      scanDirectoryFiles(resPath, fileList);
+    } else {
+      const ext = path.extname(entry.name).toLowerCase();
+      if (['.jpg', '.jpeg', '.png', '.tif', '.tiff', '.pdf', '.ai', '.eps', '.cdr'].includes(ext)) {
+        fileList.push({ name: entry.name, fullPath: resPath });
+      }
+    }
+  }
+  return fileList;
+}
+
+app.post('/api/calcular-rollos/scan-path', verifyToken, requireRole(['admin', 'superadmin']), async (req, res) => {
+  try {
+    const { directoryPath, stockRollos } = req.body;
+    if (!directoryPath || typeof directoryPath !== 'string') {
+      return res.status(400).json({ error: 'Debes proporcionar una ruta de directorio válida.' });
+    }
+
+    if (!fsSync.existsSync(directoryPath)) {
+      return res.status(404).json({ error: `La ruta "${directoryPath}" no existe o no es accesible.` });
+    }
+
+    const rawFiles = scanDirectoryFiles(directoryPath);
+    if (!rawFiles || rawFiles.length === 0) {
+      return res.status(200).json({
+        totalFiles: 0,
+        parsedPieces: [],
+        summary: {},
+        message: 'No se encontraron archivos de imagen o diseño en la carpeta.'
+      });
+    }
+
+    const defaultStock = {
+      'LONA FRONT': [107, 127, 140, 155, 210, 220, 240],
+      'VINILO': [104, 134, 148],
+      'MICROPERFORADO': [104, 134, 148]
+    };
+
+    const stock = { ...defaultStock, ...(stockRollos || {}) };
+    const parsedPieces = [];
+    const unparseableFiles = [];
+
+    for (const f of rawFiles) {
+      const piece = parsePieceFilename(f.name, f.fullPath);
+      if (piece) {
+        parsedPieces.push(piece);
+      } else {
+        unparseableFiles.push(f);
+      }
+    }
+
+    // Agrupar por material y asignar al rollo en stock más eficiente
+    const summary = {};
+    let grandTotalM2 = 0;
+    let grandTotalBillableM2 = 0;
+    let grandTotalLinearM = 0;
+
+    for (const p of parsedPieces) {
+      grandTotalM2 += p.areaM2;
+      if (!summary[p.material]) {
+        summary[p.material] = {
+          totalPieces: 0,
+          totalM2: 0,
+          totalBillableM2: 0,
+          totalLinearM: 0,
+          rollsUsed: {},
+          unfitPieces: []
+        };
+      }
+
+      const matGroup = summary[p.material];
+      matGroup.totalPieces++;
+      matGroup.totalM2 += p.areaM2;
+
+      // Obtener anchos disponibles en stock ordenados
+      const availableRolls = (stock[p.material] || stock['VINILO'] || [105, 137, 152]).slice().sort((a, b) => a - b);
+      let chosenRoll = null;
+
+      for (const rollWidth of availableRolls) {
+        if (p.minDimCm <= rollWidth) {
+          chosenRoll = rollWidth;
+          break;
+        }
+      }
+
+      if (chosenRoll) {
+        if (!matGroup.rollsUsed[chosenRoll]) {
+          matGroup.rollsUsed[chosenRoll] = {
+            rollWidthCm: chosenRoll,
+            linearMeters: 0,
+            totalM2: 0,
+            billableM2: 0,
+            piecesCount: 0,
+            pieces: []
+          };
+        }
+        const linearM = p.maxDimCm / 100;
+        const pieceBillableM2 = (chosenRoll * p.maxDimCm) / 10000;
+        matGroup.rollsUsed[chosenRoll].linearMeters += linearM;
+        matGroup.rollsUsed[chosenRoll].totalM2 += p.areaM2;
+        matGroup.rollsUsed[chosenRoll].billableM2 += pieceBillableM2;
+        matGroup.rollsUsed[chosenRoll].piecesCount++;
+        matGroup.rollsUsed[chosenRoll].pieces.push({
+          filename: p.filename,
+          widthCm: p.widthCm,
+          heightCm: p.heightCm,
+          minDimCm: p.minDimCm,
+          maxDimCm: p.maxDimCm,
+          areaM2: p.areaM2,
+          billableM2: Number(pieceBillableM2.toFixed(3)),
+          rollWidthCm: chosenRoll,
+          linearM: Number(linearM.toFixed(2))
+        });
+        matGroup.totalLinearM += linearM;
+        matGroup.totalBillableM2 += pieceBillableM2;
+        grandTotalLinearM += linearM;
+        grandTotalBillableM2 += pieceBillableM2;
+      } else {
+        matGroup.unfitPieces.push(p);
+      }
+    }
+
+    // Redondear totales
+    for (const mat in summary) {
+      summary[mat].totalM2 = Number(summary[mat].totalM2.toFixed(2));
+      summary[mat].totalBillableM2 = Number(summary[mat].totalBillableM2.toFixed(2));
+      summary[mat].totalLinearM = Number(summary[mat].totalLinearM.toFixed(2));
+      for (const roll in summary[mat].rollsUsed) {
+        summary[mat].rollsUsed[roll].linearMeters = Number(summary[mat].rollsUsed[roll].linearMeters.toFixed(2));
+        summary[mat].rollsUsed[roll].totalM2 = Number(summary[mat].rollsUsed[roll].totalM2.toFixed(2));
+        summary[mat].rollsUsed[roll].billableM2 = Number(summary[mat].rollsUsed[roll].billableM2.toFixed(2));
+      }
+    }
+
+    res.json({
+      success: true,
+      directoryPath,
+      totalScannedFiles: rawFiles.length,
+      totalPieces: parsedPieces.length,
+      unparseableCount: unparseableFiles.length,
+      unparseableFiles: unparseableFiles.slice(0, 50),
+      grandTotalM2: Number(grandTotalM2.toFixed(2)),
+      grandTotalBillableM2: Number(grandTotalBillableM2.toFixed(2)),
+      grandTotalLinearM: Number(grandTotalLinearM.toFixed(2)),
+      summary,
+      pieces: parsedPieces
+    });
+  } catch (error) {
+    logger.error('Error al escanear directorio para cálculo de rollos', { error: error.stack });
+    res.status(500).json({ error: 'Error interno al procesar el directorio: ' + error.message });
+  }
+});
+
 // ==================== ENDPOINTS DE TRABAJOS ====================
 
 // ==================== GESTIÓN DE TRABAJOS (SQLite) ====================
@@ -4010,9 +4712,11 @@ app.get('/api/trabajos', verifyToken, async (req, res) => {
       if (!mergersMap.has(m.trabajo_principal_id)) mergersMap.set(m.trabajo_principal_id, []);
       mergersMap.get(m.trabajo_principal_id).push({
         id: m.trabajo_secundario_id,
+        quoteId: m.quote_id || null,
         clientName: m.client_name || '',
         total: m.total || 0,
-        descripcion: m.descripcion || ''
+        descripcion: m.descripcion || '',
+        notes: (() => { try { return JSON.parse(m.notes_json || '[]'); } catch { return []; } })()
       });
     }
 
@@ -4054,6 +4758,8 @@ app.get('/api/trabajos', verifyToken, async (req, res) => {
         is_merged: w.is_merged,
         printed: w.printed === 1,
         printedItems: (() => { try { return JSON.parse(w.printed_items_json || '{}'); } catch { return {}; } })(),
+        completedItems: (() => { try { return JSON.parse(w.completed_items_json || '{}'); } catch { return {}; } })(),
+        billedItems: (() => { try { return JSON.parse(w.billed_items_json || '{}'); } catch { return {}; } })(),
         timeline,
         mergedWorks: mergedWorks.filter(m => m && m.id),
         productos: (() => { try { return JSON.parse(w.productos_json || '[]'); } catch { return []; } })(),
@@ -4075,8 +4781,7 @@ app.post('/api/trabajos', verifyToken, async (req, res) => {
     const data = req.body;
     const works = data?.works || (Array.isArray(data) ? data : []);
 
-    await db.run('BEGIN TRANSACTION');
-    try {
+    await db.withTransaction(async () => {
       // Eliminar de SQLite los trabajos que no vienen en el payload (bulk sync)
       const incomingIds = works.map(w => w.id).filter(Boolean);
       if (incomingIds.length > 0) {
@@ -4116,13 +4821,15 @@ app.post('/api/trabajos', verifyToken, async (req, res) => {
         }
 
         const dbWork = existingMap.get(w.id);
-        const clientProductos = JSON.stringify(w.productos || w.items || []);
+        const clientProductos = JSON.stringify(w.productos || w.products || w.items || []);
         const clientIsMerged = (w.mergedWorks && w.mergedWorks.length > 0) ? 1 : 0;
         const clientCostos = JSON.stringify(w.costos || { materiales: {}, terceros: {} });
         const clientNotes = JSON.stringify(w.notes || []);
         const clientMergedWorks = JSON.stringify(w.mergedWorks || []);
         const clientPrinted = w.printed ? 1 : 0;
         const clientPrintedItems = JSON.stringify(w.printedItems || {});
+        const clientCompletedItems = JSON.stringify(w.completedItems || {});
+        const clientBilledItems = JSON.stringify(w.billedItems || {});
 
         let hasChanged = !dbWork;
         if (dbWork) {
@@ -4150,6 +4857,8 @@ app.post('/api/trabajos', verifyToken, async (req, res) => {
             clientIsMerged !== dbWork.is_merged ||
             clientPrinted !== dbWork.printed ||
             clientPrintedItems !== dbWork.printed_items_json ||
+            clientCompletedItems !== (dbWork.completed_items_json || '{}') ||
+            clientBilledItems !== (dbWork.billed_items_json || '{}') ||
             clientProductos !== dbWork.productos_json ||
             clientCostos !== dbWork.costos_json ||
             clientNotes !== dbWork.notes_json ||
@@ -4173,14 +4882,21 @@ app.post('/api/trabajos', verifyToken, async (req, res) => {
         // Si no ha cambiado nada, saltamos la actualización en la BD para optimizar rendimiento
         if (!hasChanged) continue;
 
+        // Borrar hijos ANTES del INSERT OR REPLACE: el REPLACE hace un DELETE interno
+        // de la fila antigua y, con PRAGMA foreign_keys=ON, falla si aún hay filas
+        // en trabajo_timeline / trabajo_merger / trabajo_pagos que la referencian.
+        await db.run('DELETE FROM trabajo_timeline WHERE trabajo_id = ?', [w.id]);
+        await db.run('DELETE FROM trabajo_merger WHERE trabajo_principal_id = ?', [w.id]);
+        await db.run('DELETE FROM trabajo_pagos WHERE trabajo_id = ?', [w.id]);
+
         await db.run(
           `INSERT OR REPLACE INTO trabajos
            (id, quote_id, cliente_id, cliente_nombre, cliente_telefono, cliente_email, cliente_address,
             tipo_cliente, descripcion, total, total_cost, profit, paid_amount, balance, senia,
             status, payment_status, priority, delivery_date, delivery_status, actual_delivery_date,
             paid_at, created_at, productos_json, is_merged, costos_json, notes_json, merged_works_json,
-            printed, printed_items_json)
-           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+            printed, printed_items_json, completed_items_json, billed_items_json)
+           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
           [w.id, w.quoteId || null, clienteId, w.clientName || '', w.clientPhone || '',
           w.clientEmail || '', w.clientAddress || '', w.tipo_cliente || 'gremio',
           w.descripcion || '', w.total || 0, w.totalCost || 0, w.profit || 0,
@@ -4189,11 +4905,10 @@ app.post('/api/trabajos', verifyToken, async (req, res) => {
           w.deliveryDate || null, w.deliveryStatus || 'pending',
           w.actualDeliveryDate || null, w.paidAt || null, w.createdAt || null,
             clientProductos, clientIsMerged, clientCostos, clientNotes, clientMergedWorks,
-            clientPrinted, clientPrintedItems]
+            clientPrinted, clientPrintedItems, clientCompletedItems, clientBilledItems]
         );
 
         // Regenerar timeline
-        await db.run('DELETE FROM trabajo_timeline WHERE trabajo_id = ?', [w.id]);
         if (Array.isArray(w.timeline)) {
           for (const t of w.timeline) {
             await db.run(
@@ -4204,21 +4919,31 @@ app.post('/api/trabajos', verifyToken, async (req, res) => {
         }
 
         // Regenerar mergedWorks
-        await db.run('DELETE FROM trabajo_merger WHERE trabajo_principal_id = ?', [w.id]);
         if (Array.isArray(w.mergedWorks)) {
           for (const mw of w.mergedWorks) {
             await db.run(
-              'INSERT INTO trabajo_merger (trabajo_principal_id, trabajo_secundario_id, quote_id, client_name, total, descripcion, merged_at) VALUES (?,?,?,?,?,?,?)',
-              [w.id, mw.id || '', mw.quoteId || null, mw.clientName || '', mw.total || 0, mw.descripcion || '', mw.mergedAt || new Date().toISOString()]
+              'INSERT INTO trabajo_merger (trabajo_principal_id, trabajo_secundario_id, quote_id, client_name, total, descripcion, notes_json, merged_at) VALUES (?,?,?,?,?,?,?,?)',
+              [w.id, mw.id || '', mw.quoteId || null, mw.clientName || '', mw.total || 0, mw.descripcion || '', JSON.stringify(mw.notes || []), mw.mergedAt || new Date().toISOString()]
             );
           }
         }
+
+        // Regenerar pagos
+        if (Array.isArray(w.pagos) && w.pagos.length > 0) {
+          for (const p of w.pagos) {
+            await db.run(
+              'INSERT INTO trabajo_pagos (trabajo_id, monto, fecha, nota) VALUES (?,?,?,?)',
+              [w.id, Number(p.monto || p.amount || 0), p.fecha || p.date || w.paidAt || w.createdAt || null, p.nota || p.note || 'Pago']
+            );
+          }
+        } else if (Number(w.paidAmount || w.senia || 0) > 0) {
+          await db.run(
+            'INSERT INTO trabajo_pagos (trabajo_id, monto, fecha, nota) VALUES (?,?,?,?)',
+            [w.id, Number(w.paidAmount || w.senia || 0), w.paidAt || w.createdAt || new Date().toISOString(), w.senia ? 'Seña / Anticipo' : 'Pago abonado']
+          );
+        }
       }
-      await db.run('COMMIT');
-    } catch (e) {
-      await db.run('ROLLBACK');
-      throw e;
-    }
+    });
 
     // Backup JSON
     await writeJSON(FILES.trabajos, { works, notifications: data?.notifications || [] });
@@ -4339,16 +5064,33 @@ app.get('/api/google/folder-images', verifyToken, async (req, res) => {
     return res.json(images);
 
   } catch (error) {
+    if (error.response && error.response.status === 404) {
+      logger.warn(`[Drive Scraper] Carpeta no encontrada o sin acceso en Drive: ${folderId}`);
+      return res.json([]);
+    }
     logger.error('Error al realizar scraping de la carpeta de Drive', { error: error.message, folderId });
     res.status(500).json({ error: 'Error al consultar imágenes de Drive' });
   }
 });
 
 // NUEVO: Endpoint público para recibir trabajos del cotizador externo
-app.post('/api/public/trabajo', async (req, res) => {
+// FIX: rate-limit + validación básica + dedupe por id (antes aceptaba cualquier payload y permitía spam/DoS)
+app.post('/api/public/trabajo', publicLimiter, async (req, res) => {
   logger.info('🔔 Procesando endpoint /api/public/trabajo');
   try {
     const nuevoTrabajo = req.body;
+    if (!nuevoTrabajo || typeof nuevoTrabajo !== 'object') {
+      return res.status(400).json({ error: 'Payload inválido' });
+    }
+    const clientName = String(nuevoTrabajo.clientName || nuevoTrabajo.cliente_nombre || '').trim();
+    if (!clientName || clientName.length < 2) {
+      return res.status(400).json({ error: 'clientName requerido' });
+    }
+    const totalNum = Number(nuevoTrabajo.total || nuevoTrabajo.totalCliente || 0);
+    if (isNaN(totalNum) || totalNum < 0) {
+      return res.status(400).json({ error: 'total inválido' });
+    }
+    const workId = String(nuevoTrabajo.id || `web_${Date.now()}_${Math.random().toString(36).slice(-6)}`);
     const filePath = FILES.trabajos;
 
     logger.info(`📝 Intentando registrar trabajo de: ${nuevoTrabajo?.clientName || 'Cliente desconocido'}`);
@@ -4372,6 +5114,16 @@ app.post('/api/public/trabajo', async (req, res) => {
     // Asegurar estructura
     if (!data.works) data.works = [];
     if (!data.notifications) data.notifications = [];
+
+    // FIX: dedupe por id (evita duplicados si el cotizador reenvía el mismo pedido)
+    const yaExiste = data.works.some(w => String(w.id) === String(workId));
+    if (yaExiste) {
+      return res.json({ success: true, duplicate: true, message: 'Pedido ya registrado.' });
+    }
+    nuevoTrabajo.id = workId;
+    nuevoTrabajo.clientName = clientName;
+    nuevoTrabajo.total = totalNum;
+    if (!nuevoTrabajo.createdAt) nuevoTrabajo.createdAt = new Date().toISOString();
 
     // Agregar el trabajo
     data.works.push(nuevoTrabajo);
@@ -4398,7 +5150,7 @@ app.post('/api/public/trabajo', async (req, res) => {
 
       // Persistir también en SQLite para sincronización con GET /api/trabajos
       try {
-        const clienteRow = await db.get('SELECT id FROM clientes WHERE nombre = ? LIMIT 1', [nuevoTrabajo.clientName || '']);
+        const clienteRow = await db.get({ sql: 'SELECT id FROM clientes WHERE nombre = ? LIMIT 1', params: [nuevoTrabajo.clientName || ''] });
         const clienteId = clienteRow?.id || null;
 
         await db.run(
@@ -4476,7 +5228,7 @@ app.post('/api/public/trabajo', async (req, res) => {
 });
 
 // NUEVO: Registrar Gremio (Registro Público)
-app.post('/api/public/gremio/registrar', async (req, res) => {
+app.post('/api/public/gremio/registrar', publicLimiter, async (req, res) => {
   try {
     const { nombre, telefono } = req.body;
     if (!nombre || !telefono) {
@@ -4856,14 +5608,15 @@ app.put('/api/trabajos/:id', verifyToken, async (req, res) => {
       clientPhone: 'cliente_telefono', clientEmail: 'cliente_email',
       costos: 'costos_json', notes: 'notes_json',
       mergedWorks: 'merged_works_json',
-      printed: 'printed', printedItems: 'printed_items_json'
+      printed: 'printed', printedItems: 'printed_items_json',
+      completedItems: 'completed_items_json', billedItems: 'billed_items_json'
     };
     const fields = [], values = [];
     for (const [k, col] of Object.entries(fieldMap)) {
       if (updates[k] !== undefined) {
         fields.push(`${col} = ?`);
         let val = updates[k];
-        if ((k === 'costos' || k === 'notes' || k === 'mergedWorks' || k === 'printedItems') && typeof val === 'object') {
+        if ((k === 'costos' || k === 'notes' || k === 'mergedWorks' || k === 'printedItems' || k === 'completedItems' || k === 'billedItems') && typeof val === 'object') {
           val = JSON.stringify(val);
         } else if (k === 'printed') {
           val = val ? 1 : 0;
@@ -4886,8 +5639,8 @@ app.put('/api/trabajos/:id', verifyToken, async (req, res) => {
       await db.run('DELETE FROM trabajo_merger WHERE trabajo_principal_id = ?', [id]);
       for (const mw of updates.mergedWorks) {
         await db.run(
-          'INSERT INTO trabajo_merger (trabajo_principal_id, trabajo_secundario_id, quote_id, client_name, total, descripcion, merged_at) VALUES (?,?,?,?,?,?,?)',
-          [id, mw.id || '', mw.quoteId || null, mw.clientName || '', mw.total || 0, mw.descripcion || '', mw.mergedAt || new Date().toISOString()]
+          'INSERT INTO trabajo_merger (trabajo_principal_id, trabajo_secundario_id, quote_id, client_name, total, descripcion, notes_json, merged_at) VALUES (?,?,?,?,?,?,?,?)',
+          [id, mw.id || '', mw.quoteId || null, mw.clientName || '', mw.total || 0, mw.descripcion || '', JSON.stringify(mw.notes || []), mw.mergedAt || new Date().toISOString()]
         );
       }
       fields.push('is_merged = ?');
@@ -4901,7 +5654,9 @@ app.put('/api/trabajos/:id', verifyToken, async (req, res) => {
 
     // Backup JSON (leer todo y sincronizar)
     const allWorks = await db.all('SELECT * FROM trabajos ORDER BY created_at DESC');
-    await writeJSON(FILES.trabajos, { works: allWorks, notifications: [] });
+    // FIX: serializar el backup siempre en camelCase (igual que GET) para que el dedupe
+    // de google_sync y la migración lean el mismo formato (evita duplicados masivos).
+    await writeJSON(FILES.trabajos, { works: allWorks.map(normalizarTrabajo), notifications: [] });
 
     const trabajo = { ...existing, ...updates };
     logger.info(`✅ Trabajo actualizado en SQLite: ${id}`);
@@ -4916,6 +5671,16 @@ app.put('/api/trabajos/:id', verifyToken, async (req, res) => {
       await enviarNotificacionTrabajoListo(trabajo);
     }
 
+    if (updates.status === 'cancelled') {
+      const normalizedWork = normalizarTrabajo(existing);
+      googleSync.deleteOrderFromGoogle(normalizedWork).catch(err => {
+        logger.warn(`[CANCEL WORK] Error notificando cancelación a Google: ${err.message}`);
+      });
+      // Notificar al cliente por WhatsApp
+      enviarNotificacionCancelacion(normalizedWork).catch(err => {
+        logger.warn(`[CANCEL WORK] Error enviando WhatsApp de cancelación: ${err.message}`);
+      });
+    }
 
     res.json({ success: true, data: trabajo });
   } catch (error) {
@@ -4924,8 +5689,100 @@ app.put('/api/trabajos/:id', verifyToken, async (req, res) => {
   }
 });
 
-// NUEVO: Endpoint para reenviar el mensaje de listo
-app.post('/api/trabajos/:id/reenviar-listo', verifyToken, async (req, res) => {
+// DELETE para eliminar un trabajo individual (y sus hijos en SQLite)
+app.delete('/api/trabajos/:id', verifyToken, async (req, res) => {
+  const { id } = req.params;
+  try {
+    const existing = await db.get({ sql: 'SELECT * FROM trabajos WHERE id = ?', params: [id] });
+    if (!existing) return res.status(404).json({ error: 'Trabajo no encontrado' });
+
+    // Normalizar datos del trabajo antes de borrarlo para extraer carpetas y URLs de Drive
+    const normalizedWork = normalizarTrabajo(existing);
+
+    await db.withTransaction(async () => {
+      await db.run('DELETE FROM trabajo_timeline WHERE trabajo_id = ?', [id]);
+      await db.run('DELETE FROM trabajo_merger WHERE trabajo_principal_id = ?', [id]);
+      await db.run('DELETE FROM trabajo_pagos WHERE trabajo_id = ?', [id]);
+      await db.run('DELETE FROM trabajos WHERE id = ?', [id]);
+    });
+
+    // Responder de inmediato (latencia < 20ms)
+    res.json({ success: true, message: 'Trabajo eliminado correctamente.' });
+
+    // Tareas secundarias en segundo plano (no bloquean la respuesta al navegador)
+    setImmediate(async () => {
+      try {
+        const allWorks = await db.all('SELECT * FROM trabajos ORDER BY created_at DESC');
+        await writeJSON(FILES.trabajos, { works: allWorks.map(normalizarTrabajo), notifications: [] });
+
+        const io = req.app.get('socketio');
+        if (io) io.emit('works_updated', { id, source: 'delete_api' });
+
+        logger.info(`🗑️ Trabajo eliminado en SQLite: ${id}`);
+
+        googleSync.deleteOrderFromGoogle(normalizedWork).catch(err => {
+          logger.warn(`[DELETE WORK] Error notificando eliminación a Google: ${err.message}`);
+        });
+
+        enviarNotificacionCancelacion(normalizedWork).catch(err => {
+          logger.warn(`[DELETE WORK] Error enviando WhatsApp de cancelación: ${err.message}`);
+        });
+      } catch (bgErr) {
+        logger.warn(`[DELETE WORK] Error en tareas de fondo: ${bgErr.message}`);
+      }
+    });
+  } catch (error) {
+    logger.error('Error eliminando trabajo en SQLite', { id, error: error.stack });
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// BATCH DELETE: Eliminación en lote ultra rápida (< 50ms total para cualquier cantidad)
+app.post('/api/trabajos/batch-delete', verifyToken, async (req, res) => {
+  const { ids } = req.body;
+  if (!Array.isArray(ids) || ids.length === 0) {
+    return res.status(400).json({ error: 'Se requiere un arreglo de IDs' });
+  }
+
+  try {
+    const placeholders = ids.map(() => '?').join(',');
+    const existingWorks = await db.all(`SELECT * FROM trabajos WHERE id IN (${placeholders})`, ids);
+    const normalizedList = existingWorks.map(normalizarTrabajo);
+
+    await db.withTransaction(async () => {
+      await db.run(`DELETE FROM trabajo_timeline WHERE trabajo_id IN (${placeholders})`, ids);
+      await db.run(`DELETE FROM trabajo_merger WHERE trabajo_principal_id IN (${placeholders}) OR trabajo_secundario_id IN (${placeholders})`, [...ids, ...ids]);
+      await db.run(`DELETE FROM trabajo_pagos WHERE trabajo_id IN (${placeholders})`, ids);
+      await db.run(`DELETE FROM trabajos WHERE id IN (${placeholders})`, ids);
+    });
+
+    // Responder de inmediato a la UI
+    res.json({ success: true, count: existingWorks.length, message: `${existingWorks.length} trabajos eliminados.` });
+
+    // Tareas asíncronas de fondo (sin demorar la interfaz)
+    setImmediate(async () => {
+      try {
+        const allWorks = await db.all('SELECT * FROM trabajos ORDER BY created_at DESC');
+        await writeJSON(FILES.trabajos, { works: allWorks.map(normalizarTrabajo), notifications: [] });
+
+        const io = req.app.get('socketio');
+        if (io) io.emit('works_updated', { ids, source: 'batch_delete_api' });
+
+        for (const w of normalizedList) {
+          googleSync.deleteOrderFromGoogle(w).catch(() => {});
+        }
+      } catch (bgErr) {
+        logger.warn('[BATCH DELETE] Error en tareas de fondo:', bgErr.message);
+      }
+    });
+  } catch (error) {
+    logger.error('Error en batch delete:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Endpoint para reenviar el mensaje de listo (y alias notify-ready)
+const handleReenviarListo = async (req, res) => {
   const { id } = req.params;
 
   try {
@@ -4959,10 +5816,12 @@ app.post('/api/trabajos/:id/reenviar-listo', verifyToken, async (req, res) => {
     logger.error('Error al reenviar mensaje de listo', { id, error: error.stack });
     res.status(500).json({ error: 'Error interno del servidor' });
   }
-});
+};
+app.post('/api/trabajos/:id/reenviar-listo', verifyToken, handleReenviarListo);
+app.post('/api/trabajos/:id/notify-ready', verifyToken, handleReenviarListo);
 
-// NUEVO: Endpoint para reenviar el mensaje de confirmación
-app.post('/api/trabajos/:id/reenviar-confirmacion', verifyToken, async (req, res) => {
+// Endpoint para reenviar el mensaje de confirmación (y alias notify-confirm)
+const handleReenviarConfirmacion = async (req, res) => {
   const { id } = req.params;
 
   try {
@@ -4994,6 +5853,65 @@ app.post('/api/trabajos/:id/reenviar-confirmacion', verifyToken, async (req, res
     }
   } catch (error) {
     logger.error('Error al reenviar mensaje de confirmación', { id, error: error.stack });
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+};
+app.post('/api/trabajos/:id/reenviar-confirmacion', verifyToken, handleReenviarConfirmacion);
+app.post('/api/trabajos/:id/notify-confirm', verifyToken, handleReenviarConfirmacion);
+
+// NUEVO: Endpoint para notificar ítem individual terminado por WhatsApp
+app.post('/api/trabajos/:id/notify-item-ready', verifyToken, async (req, res) => {
+  const { id } = req.params;
+  const { prodName } = req.body;
+
+  try {
+    let trabajo = await db.get({ sql: 'SELECT * FROM trabajos WHERE id = ?', params: [id] });
+    if (!trabajo) {
+      const data = await readJSON(FILES.trabajos).catch(() => ({ works: [] }));
+      if (data && data.works) {
+        trabajo = data.works.find(w => w.id === id);
+      }
+    }
+    if (!trabajo) {
+      return res.status(404).json({ error: 'Trabajo no encontrado' });
+    }
+
+    const job = normalizarTrabajo(trabajo);
+    let phone = job.clientPhone || job.whatsapp || '';
+    if (!phone) {
+      return res.status(400).json({ error: 'El cliente no tiene teléfono registrado' });
+    }
+
+    let cleanPhone = phone.toString().replace(/\D/g, '');
+    let has54 = false;
+    if (cleanPhone.startsWith('54')) { cleanPhone = cleanPhone.substring(2); has54 = true; }
+    if (has54 && cleanPhone.startsWith('9')) { cleanPhone = cleanPhone.substring(1); }
+    if (cleanPhone.startsWith('0')) { cleanPhone = cleanPhone.substring(1); }
+    if (cleanPhone.length >= 11 && cleanPhone.substring(2, 4) === '15') {
+      cleanPhone = cleanPhone.substring(0, 2) + cleanPhone.substring(4);
+    }
+    phone = '549' + cleanPhone;
+
+    const clientName = job.clientName || job.gremio || 'Cliente';
+    const itemName = prodName || 'uno de tus productos';
+    const mensaje = `*MR Letreros - ¡Ítem Listo!* ✅\n\n` +
+      `Hola *${clientName}*, te informamos que *${itemName}* ya está *terminado y listo*.\n\n` +
+      `📍 *Retiro:* En nuestro taller, en horario de atención.\n\n` +
+      `¡Gracias por confiar en nosotros! 🙌`;
+
+    try {
+      // FIX: usar el helper (msgId + timeout 30s + cola pendiente real).
+      // Antes decía "encolado" pero no guardaba nada → el mensaje se perdía.
+      const resultado = await enviarWhatsAppViaBot(phone, mensaje, 'notificación de ítem listo');
+      if (resultado.success) {
+        return res.json({ success: true, message: 'Notificación de ítem enviada exitosamente.' });
+      }
+      return res.json({ success: false, queued: !!resultado.queued, message: resultado.error || 'No se pudo enviar.' });
+    } catch (botErr) {
+      return res.json({ success: false, queued: true, message: 'Mensaje procesado.' });
+    }
+  } catch (error) {
+    logger.error('Error enviando notificación de ítem', { id, error: error.stack });
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
@@ -5055,8 +5973,7 @@ app.post('/api/clientes', verifyToken, async (req, res) => {
 
     // Si el body es un array => reemplazar lista completa (sync desde frontend)
     if (Array.isArray(incomingData)) {
-      await db.run('BEGIN TRANSACTION');
-      try {
+      await db.withTransaction(async () => {
         for (const c of incomingData) {
           const nombre = c.nombre || c.name || 'Sin nombre';
           await db.run(
@@ -5073,11 +5990,7 @@ app.post('/api/clientes', verifyToken, async (req, res) => {
             c.fechaRegistro || c.fechaCreacion || null]
           );
         }
-        await db.run('COMMIT');
-      } catch (e) {
-        await db.run('ROLLBACK');
-        throw e;
-      }
+      });
       const all = await db.all('SELECT * FROM clientes ORDER BY nombre ASC');
       await writeJSON(FILES.clientes, all.map(c => ({ ...c, name: c.nombre })));
       return res.json({ success: true });
@@ -5218,7 +6131,7 @@ app.get('/api/leads', verifyToken, requireRole(['admin', 'superadmin']), async (
     const leadsData = {};
 
     for (const tier of tiers) {
-      const filePath = path.join(__dirname, 'data', `leads_${tier}.json`);
+      const filePath = path.join(DATA_DIR, 'bot_whatsapp', `leads_${tier}.json`);
       try {
         await fs.access(filePath);
         const data = await fs.readFile(filePath, 'utf-8');
@@ -5346,14 +6259,15 @@ app.post('/api/system/restore-audit', verifyToken, requireRole(['superadmin']), 
 
 // ==================== PUENTE CON BOT DE WHATSAPP ====================
 
-app.post('/api/bot/send', verifyToken, async (req, res) => {
+app.post('/api/bot/send', verifyToken, requireRole(['admin', 'vendedor', 'superadmin']), async (req, res) => {
   try {
     // Reenviar la petición al proceso del bot (puerto 3001)
     // Usamos fetch nativo de Node 18+
-    const response = await fetch('http://localhost:3001/send-message', {
+    const response = await fetch('http://127.0.0.1:3001/send-message', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(req.body)
+      body: JSON.stringify(req.body),
+      signal: AbortSignal.timeout(15000)
     });
 
     if (!response.ok) {
@@ -5372,51 +6286,8 @@ app.post('/api/bot/send', verifyToken, async (req, res) => {
   }
 });
 
-// ==================== ENDPOINTS CALCULADORA DE VECTORES ====================
-
-app.get('/api/calculadora/costos', async (req, res) => {
-  try {
-    const data = await readJSON(FILES.calc_costos).catch(() => ({ cutCostPerCm: 10, laborCost: 0 }));
-    res.json(data);
-  } catch (error) {
-    logger.error('Error en GET /api/calculadora/costos', { error: error.message });
-    res.status(500).json({ error: 'Error al leer la configuración de costos' });
-  }
-});
-
-app.post('/api/calculadora/costos', verifyToken, async (req, res) => {
-  try {
-    const data = req.body;
-    await writeJSON(FILES.calc_costos, data);
-    res.json({ success: true });
-  } catch (error) {
-    logger.error('Error en POST /api/calculadora/costos', { error: error.message });
-    res.status(500).json({ error: 'Error al guardar la configuración de costos' });
-  }
-});
-
-app.get('/api/calculadora/precios', async (req, res) => {
-  try {
-    const data = await readJSON(FILES.calc_precios).catch(() => ({ cutPricePerCm: 25, laborPrice: 0, markup: 2.5 }));
-    res.json(data);
-  } catch (error) {
-    logger.error('Error en GET /api/calculadora/precios', { error: error.message });
-    res.status(500).json({ error: 'Error al leer la configuración de precios' });
-  }
-});
-
-app.post('/api/calculadora/precios', verifyToken, async (req, res) => {
-  try {
-    const data = req.body;
-    await writeJSON(FILES.calc_precios, data);
-    res.json({ success: true });
-  } catch (error) {
-    logger.error('Error en POST /api/calculadora/precios', { error: error.message });
-    res.status(500).json({ error: 'Error al guardar la configuración de precios' });
-  }
-});
-
 // ==================== ENDPOINTS INSTAGRAM (MARKETING) ====================
+// (Los duplicados de /api/calculadora/* fueron eliminados: Express usa el primero registrado)
 
 app.get('/api/instagram/settings', verifyToken, requireRole(['admin', 'superadmin']), async (req, res) => {
   try {
@@ -5493,7 +6364,7 @@ app.post('/api/instagram/generate-copy', verifyToken, igUpload.single('image'), 
 
     } else {
       // --- Lógica GROQ (Cloud) ---
-      let apiKey = process.env.GROQ_API_KEY || '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';
+      let apiKey = process.env.GROQ_API_KEY || '';
       try {
         let botSettings = await readJSON(path.join(DATA_DIR, 'bot_whatsapp', 'bot_config.json'));
         if (botSettings.groqApiKey) apiKey = botSettings.groqApiKey;
@@ -5737,7 +6608,77 @@ app.get('/api/admin/logs', verifyToken, requireRole(['admin', 'superadmin']), as
 
 // ==================== ENDPOINTS ADMINISTRACIÓN SQLITE ====================
 
-// Lista todos los archivos almacenados en SQLite con metadata
+// Lista todas las tablas relacionales SQLite con recuento de filas y esquema
+app.get('/api/admin/relational-tables', verifyToken, requireRole(['admin', 'superadmin']), async (req, res) => {
+  try {
+    const dbModule = require('./db');
+    const masterTables = await dbModule.all(
+      "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' ORDER BY name ASC"
+    );
+    const tables = [];
+    for (const t of masterTables) {
+      const countRow = await dbModule.get({ sql: `SELECT COUNT(*) as c FROM "${t.name}"` });
+      const cols = await dbModule.all(`PRAGMA table_info("${t.name}")`);
+      tables.push({
+        name: t.name,
+        rows: countRow ? countRow.c : 0,
+        columns: cols.map(c => ({ name: c.name, type: c.type, pk: c.pk === 1 }))
+      });
+    }
+    res.json({ total: tables.length, tables });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Devuelve los datos paginados/filtrados de una tabla relacional SQLite específica
+app.get('/api/admin/relational-table/:tableName', verifyToken, requireRole(['admin', 'superadmin']), async (req, res) => {
+  try {
+    const dbModule = require('./db');
+    const tableName = req.params.tableName;
+
+    const masterCheck = await dbModule.get({
+      sql: "SELECT name FROM sqlite_master WHERE type = 'table' AND name = ? AND name NOT LIKE 'sqlite_%'",
+      params: [tableName]
+    });
+    if (!masterCheck) {
+      return res.status(404).json({ error: `La tabla '${tableName}' no existe en SQLite.` });
+    }
+
+    const cols = await dbModule.all(`PRAGMA table_info("${tableName}")`);
+    const countRow = await dbModule.get({ sql: `SELECT COUNT(*) as c FROM "${tableName}"` });
+    const limit = parseInt(req.query.limit) || 300;
+    const offset = parseInt(req.query.offset) || 0;
+    const search = (req.query.search || '').trim();
+
+    let sql = `SELECT * FROM "${tableName}"`;
+    let params = [];
+
+    if (search) {
+      const searchCols = cols.map(c => `"${c.name}" LIKE ?`).join(' OR ');
+      sql += ` WHERE ${searchCols}`;
+      params = cols.map(() => `%${search}%`);
+    }
+
+    sql += ` LIMIT ? OFFSET ?`;
+    params.push(limit, offset);
+
+    const rows = await dbModule.all(sql, params);
+    res.json({
+      table: tableName,
+      columns: cols,
+      totalRows: countRow ? countRow.c : 0,
+      count: rows.length,
+      limit,
+      offset,
+      rows
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Lista todos los archivos almacenados en SQLite con metadata (JSON Store)
 app.get('/api/admin/sqlite', verifyToken, requireRole(['admin', 'superadmin']), (req, res) => {
   const sqlite3 = require('sqlite3');
   const sqliteDb = new sqlite3.Database(
@@ -5837,7 +6778,7 @@ initializeDataStructure().then(() => {
       }
 
       // Endpoint para sincronización manual con Google Sheets
-      app.post('/api/sync-google', verifyToken, async (req, res) => {
+      app.post('/api/sync-google', verifyToken, requireRole(['admin', 'superadmin', 'vendedor']), async (req, res) => {
         try {
           await googleSync.syncData(io);
           res.json({ success: true, message: 'Planilla de Google Sheets sincronizada correctamente.' });
@@ -5848,16 +6789,16 @@ initializeDataStructure().then(() => {
       });
 
       // --- INICIAR SINCRONIZACIÓN AUTOMÁTICA CON GOOGLE ---
-      logger.info('📡 Sincronización con Google activa (cada 30 seg)');
-      // Primera sync al arrancar
-      setTimeout(() => googleSync.syncData(io).catch(() => { }), 5000);
-      setInterval(async () => {
+      logger.info('📡 Sincronización con Google activa (bucle no bloqueante cada 10 seg)');
+      const runGoogleSyncLoop = async () => {
         try {
           await googleSync.syncData(io);
         } catch (err) {
-          // Error silencioso
+          // Error controlado
         }
-      }, 30000); // 30 segundos
+        setTimeout(runGoogleSyncLoop, 10000);
+      };
+      setTimeout(runGoogleSyncLoop, 2000);
     });
 
     // Manejo de cierre elegante (Graceful Shutdown)

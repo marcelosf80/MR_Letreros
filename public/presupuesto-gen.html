@@ -434,7 +434,7 @@
                         <button class="pg-item-delete" onclick="removeItem(${item.id})" title="Eliminar"><i class="fas fa-trash-alt"></i></button>
                     </div>
                     <div class="pg-item-card-body">
-                        <textarea placeholder="Descripción..." onchange="updateItemField(${item.id}, 'description', this.value)">${item.description}</textarea>
+                        <textarea placeholder="Descripción..." onchange="updateItemField(${item.id}, 'description', this.value)">${escapeHtml(item.description)}</textarea>
                         <div class="pg-item-card-stats">
                             <div class="pg-is-box">
                                 <label>Cant.</label>
@@ -497,7 +497,7 @@
                     const sub = item.qty * item.price;
                     return `<tr>
                         <td>${idx + 1}</td>
-                        <td>${item.description || '<span style="color:#ccc">Sin descripción</span>'}</td>
+                        <td>${escapeHtml(item.description) || '<span style="color:#ccc">Sin descripción</span>'}</td>
                         <td>${item.qty}</td>
                         <td>${currency} ${formatNum(item.price)}</td>
                         <td class="pg-td-right">${currency} ${formatNum(sub)}</td>

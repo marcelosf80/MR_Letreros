@@ -35,6 +35,49 @@
     .cbtn-del { background: #f87171; }
     .cbtn-rot { background: #6366f1; }
     .piece .coords { position: absolute; bottom: -16px; left: 0; font-size: 7px; color: #555; font-weight: 600; white-space: nowrap; }
+
+    /* Resaltado de la pieza recién agregada (auto-acomodo) */
+    .piece.flash-add { border-color: #22c55e !important; box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.55), 0 8px 20px rgba(0,0,0,0.5) !important; }
+
+    /* Ayuda / tutorial del visor */
+    #pHelpPop {
+        position: fixed;
+        top: 78px;
+        right: 24px;
+        width: min(340px, calc(100vw - 48px));
+        z-index: 100040;
+        background: rgba(15, 23, 42, .98);
+        border: 1px solid rgba(255, 215, 0, .35);
+        border-radius: 14px;
+        padding: 14px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, .8);
+        font-size: 12.5px;
+        color: #e2e8f0;
+        line-height: 1.45;
+        display: none;
+        max-height: 80vh;
+        overflow-y: auto;
+    }
+    #pTourBackdrop { position: fixed; inset: 0; z-index: 100050; background: rgba(0,0,0,.4); display: none; cursor: pointer; }
+    #pTourBubble {
+        position: fixed;
+        z-index: 100060;
+        width: min(350px, calc(100vw - 24px));
+        background: #0f172a;
+        border: 1px solid rgba(255, 215, 0, .5);
+        border-radius: 16px;
+        padding: 15px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, .85);
+        color: #e2e8f0;
+        font-size: 13px;
+        line-height: 1.5;
+        display: none;
+    }
+    #pTourBubble .pt-title { font-weight: 900; color: #ffd700; text-transform: uppercase; font-size: 13px; margin-bottom: 6px; }
+    #pTourBubble .pt-txt { margin-bottom: 12px; }
+    #pTourBubble .pt-btns { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    #pTourBubble .pt-btn { border: none; cursor: pointer; border-radius: 10px; padding: 8px 14px; font-weight: 800; font-size: 12px; text-transform: uppercase; }
+    .p-tour-highlight { outline: 3px solid #ffd700 !important; outline-offset: 3px; border-radius: 8px; }
 </style>
 
 <div id="plannerModal">
@@ -44,12 +87,49 @@
             <div class="planner-sidebar flex flex-col">
                 <div class="flex items-center justify-between mb-10">
                     <div>
-                        <h3 class="text-yellow-400 font-black italic tracking-tighter text-2xl uppercase">Visor de Corte</h3>
+                        <h3 class="text-yellow-400 font-black italic tracking-tighter text-2xl uppercase">Visor de Impresión</h3>
                         <p class="text-[9px] text-gray-500 uppercase font-bold tracking-[0.3em]">Optimización de Pedidos</p>
                     </div>
-                    <button type="button" onclick="closePlanner()" class="text-gray-600 hover:text-white transition-colors"><i class="fa-solid fa-circle-xmark text-3xl"></i></button>
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <button type="button" onclick="pToggleHelp()" title="Ayuda / Tutorial"
+                            style="width:34px;height:34px;border-radius:50%;border:1px solid rgba(255,215,0,.4);background:rgba(255,215,0,.08);color:#ffd700;cursor:pointer;font-weight:900;display:flex;align-items:center;justify-content:center;transition:transform .2s;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+                            <i class="fa-solid fa-circle-question"></i>
+                        </button>
+                        <button type="button" onclick="closePlanner()" class="text-gray-600 hover:text-white transition-colors"><i class="fa-solid fa-circle-xmark text-3xl"></i></button>
+                    </div>
                 </div>
-                
+
+                <!-- Ayuda del visor -->
+                <div id="pHelpPop">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                        <b style="color:#ffd700; text-transform:uppercase; font-size:12px;">¿Cómo usar el visor?</b>
+                        <button type="button" onclick="pCloseHelp()" style="background:none;border:none;color:#94a3b8;cursor:pointer;font-size:15px;">✕</button>
+                    </div>
+                    <div style="display:flex; gap:8px; margin-bottom:8px; align-items:flex-start;">
+                        <span style="color:#ffd700; font-weight:900;">1</span><span>Elegí el <b>ancho del material</b> en stock (o uno manual).</span>
+                    </div>
+                    <div style="display:flex; gap:8px; margin-bottom:8px; align-items:flex-start;">
+                        <span style="color:#ffd700; font-weight:900;">2</span><span>Cargá cada <b>pieza</b> (medidas, nombre y cantidad) y tocá <b>AÑADIR AL PLANO</b>: se auto-acomoda.</span>
+                    </div>
+                    <div style="display:flex; gap:8px; margin-bottom:8px; align-items:flex-start;">
+                        <span style="color:#ffd700; font-weight:900;">3</span><span>Arrastrá, <b>girá 90°</b> o borrá piezas para ajustar. Usá <b>Deshacer</b> si te equivocás.</span>
+                    </div>
+                    <div style="display:flex; gap:8px; margin-bottom:8px; align-items:flex-start;">
+                        <span style="color:#ffd700; font-weight:900;">4</span><span>Mirá <b>Metros de impresión</b>, <b>Material usado</b> y <b>Desperdicio</b>. Menos desperdicio = pedido más barato.</span>
+                    </div>
+                    <div style="display:flex; gap:8px; margin-bottom:10px; align-items:flex-start;">
+                        <span style="color:#ffd700; font-weight:900;">5</span><span>Tocá <b>TRANSFERIR A PEDIDO</b> para volcar las medidas al cotizador.</span>
+                    </div>
+                    <button type="button" onclick="pCloseHelp(); setTimeout(function(){ if(window.mrPTour) window.mrPTour.start(); },150)"
+                        style="width:100%;padding:9px;border-radius:10px;border:none;background:linear-gradient(135deg,#ffd700,#ccac00);color:#000;font-weight:900;cursor:pointer;font-size:12px;">▶ VER TUTORIAL PASO A PASO</button>
+                </div>
+
+                <div class="text-[10px] text-gray-400 bg-white/5 border border-white/10 rounded-xl p-3 leading-relaxed mb-6" id="plannerHelp">
+                    <b class="text-yellow-400 block mb-1">💡 ¿Cómo funciona?</b>
+                    1) Elegí el <b>ancho de rollo</b> · 2) Cargá una pieza (medidas, nombre y cantidad) y tocá <b>AÑADIR AL PLANO</b> —
+                    cada pieza se <b>auto-acomoda sola</b> en el rollo · 3) Agregá las demás igual, o arrastrá una pieza para ajustarla ·
+                    4) Cuando el <b>desperdicio</b> sea bajo, tocá <b>TRANSFERIR A PEDIDO</b>.
+                </div>
                 <div class="space-y-8">
                     <div class="planner-stat-card">
                         <label class="text-[9px] text-gray-500 uppercase font-bold tracking-widest block mb-2">Ancho de Rollo en Stock</label>
@@ -89,14 +169,15 @@
                             </div>
                         </div>
                         <div class="flex gap-2">
-                            <button type="button" onclick="addPlannerItem()" class="btn-premium py-4 text-xs font-black shadow-lg shadow-yellow-400/20 flex-1">AÑADIR AL PLANO</button>
-                            <button type="button" onclick="pAutoOrganize()" class="bg-indigo-600 hover:bg-indigo-500 text-white py-4 px-4 rounded-xl text-xs font-black shadow-lg shadow-indigo-500/20 transition-colors" title="Acomodar Automáticamente">
+                            <button type="button" id="btnAddPiece" onclick="addPlannerItem()" class="btn-premium py-4 text-xs font-black shadow-lg shadow-yellow-400/20 flex-1">AÑADIR AL PLANO</button>
+                            <button type="button" onclick="pAutoOrganize()" class="bg-indigo-600 hover:bg-indigo-500 text-white py-4 px-4 rounded-xl text-xs font-black shadow-lg shadow-indigo-500/20 transition-colors" title="Reacomodar Automáticamente">
                                 <i class="fa-solid fa-wand-magic-sparkles"></i>
                             </button>
                         </div>
                         <div class="flex gap-2 mt-2">
                             <button type="button" onclick="pUndo()" class="bg-gray-700 hover:bg-gray-600 text-white py-2 px-3 rounded-xl text-xs font-bold transition-colors" title="Deshacer"><i class="fa-solid fa-rotate-left"></i></button>
                             <button type="button" onclick="pRedo()" class="bg-gray-700 hover:bg-gray-600 text-white py-2 px-3 rounded-xl text-xs font-bold transition-colors" title="Rehacer"><i class="fa-solid fa-rotate-right"></i></button>
+                            <button type="button" onclick="pClearAll()" class="bg-red-800/60 hover:bg-red-700 text-white py-2 px-3 rounded-xl text-xs font-bold transition-colors" title="Quitar todas las piezas"><i class="fa-solid fa-eraser"></i></button>
                             <button type="button" onclick="pCenterAll()" class="bg-blue-600 hover:bg-blue-500 text-white py-2 px-3 flex-1 rounded-xl text-xs font-bold transition-colors" title="Centrar al Rollo"><i class="fa-solid fa-arrows-left-right-to-line"></i> Centrar</button>
                             <button type="button" onclick="pRotateAll()" class="bg-purple-600 hover:bg-purple-500 text-white py-2 px-3 flex-1 rounded-xl text-xs font-bold transition-colors" title="Girar Todas 90°"><i class="fa-solid fa-rotate"></i> Girar 90°</button>
                         </div>
@@ -106,14 +187,25 @@
                 <div class="mt-auto pt-8 border-t border-white/5 space-y-4">
                     <div class="grid grid-cols-2 gap-6">
                         <div>
-                            <p class="text-[9px] text-gray-500 uppercase mb-1 font-bold">M. Lineales</p>
-                            <p class="text-2xl font-black text-white" id="resM">0.00m</p>
+                            <p class="text-[9px] text-gray-500 uppercase mb-1 font-bold">Piezas</p>
+                            <p class="text-2xl font-black text-white" id="resN">0</p>
                         </div>
                         <div>
-                            <p class="text-[9px] text-gray-500 uppercase mb-1 font-bold">Desperdicio</p>
+                            <p class="text-[9px] text-gray-500 uppercase mb-1 font-bold" title="Largo de material que se imprime (rollo de ancho fijo)">Metros de impresión</p>
+                            <p class="text-2xl font-black text-white" id="resM">0.00 m</p>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-6">
+                        <div>
+                            <p class="text-[9px] text-gray-500 uppercase mb-1 font-bold" title="Porcentaje del material que ocupan tus piezas">Material usado</p>
+                            <p class="text-2xl font-black text-emerald-400" id="resU">0%</p>
+                        </div>
+                        <div>
+                            <p class="text-[9px] text-gray-500 uppercase mb-1 font-bold" title="Porcentaje del material que se descarta">Desperdicio</p>
                             <p class="text-2xl font-black text-red-400" id="resW">0%</p>
                         </div>
                     </div>
+                    <p class="text-[10px] text-gray-500 italic leading-relaxed">💡 Acomodá las piezas para que el <b style="color:#4ade80;">material usado</b> sea alto y el <b style="color:#f87171;">desperdicio</b> bajo: tu pedido sale más económico.</p>
                     <button type="button" onclick="applyPlanner()" class="btn-premium py-5 bg-gradient-to-r from-yellow-400 to-yellow-600 border-none text-base shadow-xl shadow-yellow-400/10">TRANSFERIR A PEDIDO</button>
                 </div>
             </div>
@@ -140,7 +232,7 @@
 
 <script>
     /**
-     * LÓGICA DEL VISOR DE CORTE (PLANNER)
+     * LÓGICA DEL VISOR DE IMPRESIÓN (PLANNER)
      * Conectado a los datos de Stock de Google Sheets
      */
     const pScale = 4; // 1cm = 4px
@@ -233,11 +325,11 @@
         }
         
         let rw = 122; // Default
-        if(p && p.anchoFijo) {
-            rw = p.anchoFijo;
-        } else if(p) {
-           let listaStock = stockPorTipo[p.tipo] || [122];
-           rw = listaStock.find(s => s >= w) || listaStock[0] || 122;
+        if (p) {
+            let listaStock = (p.anchosStock && p.anchosStock.length > 0) 
+                ? p.anchosStock 
+                : (p.anchoFijo ? [p.anchoFijo] : (stockPorTipo[p.tipo] || [122]));
+            rw = listaStock.find(s => s >= w) || listaStock[0] || 122;
         }
         
         document.getElementById('plannerRollWidthInput').value = rw;
@@ -254,22 +346,27 @@
     function pRenderRollButtons(p, currentW) {
         let selectEl = document.getElementById('plannerRollSelect');
         selectEl.innerHTML = '';
-        if(p && p.anchoFijo) {
-            selectEl.innerHTML = `<div class="px-3 py-1.5 rounded bg-blue-600/30 text-blue-300 border border-blue-500/50 text-[10px] font-bold">Fijo: ${p.anchoFijo} cm</div>`;
-        } else if(p) {
-           let listaStock = stockPorTipo[p.tipo] || [122];
-           let foundCustom = true;
-           listaStock.forEach(s => {
-               let isSel = (s == currentW);
-               if(isSel) foundCustom = false;
-               let activeClass = isSel ? 'bg-yellow-400 text-black shadow-lg shadow-yellow-400/20 scale-105 border-yellow-400' : 'bg-white/5 text-gray-300 border-white/10 hover:bg-white/10';
-               selectEl.innerHTML += `<button type="button" onclick="pChangeRollSelect(${s})" class="px-3 py-1.5 border rounded-lg text-[10px] font-bold transition-all ${activeClass}">${s} cm</button>`;
-           });
-           
-           let customClass = foundCustom ? 'bg-yellow-400 text-black shadow-lg shadow-yellow-400/20 scale-105 border-yellow-400' : 'bg-white/5 text-gray-300 border-white/10 hover:bg-white/10';
-           selectEl.innerHTML += `<button type="button" onclick="pChangeRollSelect('custom')" class="px-3 py-1.5 border rounded-lg text-[10px] font-bold transition-all ${customClass}" title="Medida Manual"><i class="fa-solid fa-pen"></i></button>`;
-           
-           if(foundCustom) document.getElementById('plannerCustomWidthContainer').style.display = 'flex';
+        if (p) {
+            let listaStock = (p.anchosStock && p.anchosStock.length > 0) 
+                ? p.anchosStock 
+                : (p.anchoFijo ? [p.anchoFijo] : (stockPorTipo[p.tipo] || [122]));
+
+            if (listaStock.length === 1) {
+                selectEl.innerHTML = `<div class="px-3 py-1.5 rounded bg-blue-600/30 text-blue-300 border border-blue-500/50 text-[10px] font-bold">Medida Única: ${listaStock[0]} cm</div>`;
+            } else {
+                let foundCustom = true;
+                listaStock.forEach(s => {
+                    let isSel = (s == currentW);
+                    if (isSel) foundCustom = false;
+                    let activeClass = isSel ? 'bg-yellow-400 text-black shadow-lg shadow-yellow-400/20 scale-105 border-yellow-400' : 'bg-white/5 text-gray-300 border-white/10 hover:bg-white/10';
+                    selectEl.innerHTML += `<button type="button" onclick="pChangeRollSelect(${s})" class="px-3 py-1.5 border rounded-lg text-[10px] font-bold transition-all ${activeClass}">${s} cm</button>`;
+                });
+                
+                let customClass = foundCustom ? 'bg-yellow-400 text-black shadow-lg shadow-yellow-400/20 scale-105 border-yellow-400' : 'bg-white/5 text-gray-300 border-white/10 hover:bg-white/10';
+                selectEl.innerHTML += `<button type="button" onclick="pChangeRollSelect('custom')" class="px-3 py-1.5 border rounded-lg text-[10px] font-bold transition-all ${customClass}" title="Medida Manual"><i class="fa-solid fa-pen"></i></button>`;
+                
+                if (foundCustom) document.getElementById('plannerCustomWidthContainer').style.display = 'flex';
+            }
         }
     }
 
@@ -294,15 +391,26 @@
 
     function pChangeRollWidth() {
         let rw = parseFloat(document.getElementById('plannerRollWidthInput').value) || 122;
-        document.getElementById('pRollInfo').innerText = "ROLLO: " + rw + "cm";
+        const overflowCount = pItems.filter(it => it.w > rw).length;
+        const rollInfo = document.getElementById('pRollInfo');
+        if (rollInfo) {
+            rollInfo.innerHTML = overflowCount > 0
+                ? `ROLLO: ${rw}cm &nbsp;<span style="color:#f87171;">⚠ ${overflowCount} pieza(s) exceden el ancho</span>`
+                : `ROLLO: ${rw}cm`;
+        }
         document.getElementById('plannerContainer').style.width = (rw * pScale) + "px";
         
-        // Evitar que las piezas queden fuera del nuevo ancho
+        // Acomodar piezas dentro del nuevo ancho; marcar en rojo las que no entran
         pItems.forEach(it => {
-            if(it.x + it.w > rw) it.x = rw - it.w;
-            if(it.x < 0) it.x = 0;
             let el = document.getElementById(it.id);
-            if(el) pUpdateStyle(el, it);
+            if (!el) return;
+            const excede = it.w > rw;
+            el.style.borderColor = excede ? '#ef4444' : it.color;
+            if (!excede) {
+                if (it.x + it.w > rw) it.x = rw - it.w;
+                if (it.x < 0) it.x = 0;
+                pUpdateStyle(el, it);
+            }
         });
         
         pUpdateStats();
@@ -319,28 +427,60 @@
         let ref = document.getElementById('pRef').value.trim() || `Pieza ${pItems.length + 1}`;
         let rw = parseFloat(document.getElementById('plannerRollWidthInput').value);
 
-        if(!w || !h) return;
-        if(w > rw && h > rw) { alert("⚠️ La pieza excede el ancho del rollo en ambos sentidos."); return; }
+        if (!w || !h) { alert('Completá el ancho y el largo de la pieza.'); return; }
+        if (q < 1) q = 1;
+        if (w > rw && h > rw) { alert("⚠️ La pieza excede el ancho del rollo en ambos sentidos."); return; }
 
-        for(let i=0; i<q; i++) {
+        // Piezas nuevas (una por unidad pedida) — se acomodan solas al final
+        pUltimasAgregadas = [];
+        for (let i = 0; i < q; i++) {
             let itemColor = pColors[pItems.length % pColors.length];
-            let itemRef = q > 1 ? `${ref} (${i+1}/${q})` : ref;
-            let item = { 
-                id: 'p' + Date.now() + i, 
-                w: w, 
-                h: h, 
-                x: 0, 
-                y: pGetNextY(),
+            let itemRef = q > 1 ? `${ref} (${i + 1}/${q})` : ref;
+            let item = {
+                id: 'p' + Date.now() + i,
+                w: w,
+                h: h,
+                x: 0,
+                y: 0, // la posición final la define el auto-acomodo
                 rotated: false,
                 color: itemColor,
                 ref: itemRef
             };
             pItems.push(item);
             pCreateDOM(item);
+            pUltimasAgregadas.push(item.id);
         }
-        document.getElementById('pRef').value = ''; // Limpiar
-        pUpdateStats();
-        pSaveState();
+        document.getElementById('pRef').value = ''; // Listo para escribir la próxima pieza
+
+        // AUTO-ACOMODO: coloca la(s) pieza(s) nueva(s) en el mejor hueco del rollo
+        // y reorganiza el resto para aprovechar el material.
+        pAutoOrganize();
+        pDestacarNuevas();
+
+        // Feedback: avisar que se agregó y seguir con la próxima
+        const btnAdd = document.getElementById('btnAddPiece');
+        if (btnAdd) {
+            const prev = btnAdd.innerHTML;
+            btnAdd.innerHTML = '✓ AGREGADA · PODÉS SEGUIR';
+            setTimeout(() => { btnAdd.innerHTML = prev; }, 900);
+        }
+        const refInput = document.getElementById('pRef');
+        if (refInput) refInput.focus();
+    }
+
+    // Ids de las piezas recién agregadas (para resaltarlas 1 segundo)
+    let pUltimasAgregadas = [];
+    function pDestacarNuevas() {
+        document.querySelectorAll('.piece.flash-add').forEach(el => el.classList.remove('flash-add'));
+        const set = new Set(pUltimasAgregadas);
+        pUltimasAgregadas = [];
+        pItems.forEach(it => {
+            if (set.has(it.id)) {
+                const el = document.getElementById(it.id);
+                if (el) el.classList.add('flash-add');
+            }
+        });
+        setTimeout(() => { document.querySelectorAll('.piece.flash-add').forEach(el => el.classList.remove('flash-add')); }, 1300);
     }
 
     function pGetNextY() {
@@ -487,52 +627,91 @@
 
     function pRemove(id) { 
         pItems = pItems.filter(i => i.id !== id); 
-        document.getElementById(id).remove(); 
+        const el = document.getElementById(id);
+        if (el) el.remove();
         pUpdateStats(); 
         pSaveState();
     }
 
+    function pClearAll() {
+        if (!pItems.length) return;
+        if (!confirm('¿Quitar TODAS las piezas del plano?')) return;
+        pItems = [];
+        document.getElementById('plannerContainer').querySelectorAll('.piece, .nested-item').forEach(e => e.remove());
+        pHistory = [];
+        pHistoryIndex = -1;
+        pUpdateStats();
+    }
+
     function pAutoOrganize() {
-        if(pItems.length === 0) return;
-        let rw = parseFloat(document.getElementById('plannerRollWidthInput').value);
+        if (pItems.length === 0) return;
+        let rw = parseFloat(document.getElementById('plannerRollWidthInput').value) || 122;
         let sep = parseFloat(document.getElementById('pSep').value) || 0;
-        
-        // Optimizar orientación (hacer que la altura sea menor o igual al ancho para acomodar mejor en filas)
-        pItems.forEach(it => {
-            if (it.h > it.w && it.h <= rw) {
-                let tmp = it.w; it.w = it.h; it.h = tmp;
-                it.rotated = !it.rotated;
+
+        // Packing por filas con rotación para llenar huecos.
+        // Devuelve true si todas las piezas entraron.
+        const pPack = (lista) => {
+            // Ordenar por área (grandes primero)
+            lista.sort((a, b) => (b.w * b.h) - (a.w * a.h));
+            let x = sep, y = sep, rowH = 0;
+            for (const it of lista) {
+                let w = it.w, h = it.h;
+                if (x + w > rw) {
+                    // Si no cabe normal, probar rotada en el hueco de la fila actual
+                    if (h <= rw && (x + h) <= rw && h <= rowH + 0.001) {
+                        w = it.h; h = it.w; // rotar 90°
+                    } else {
+                        y += rowH + sep; x = sep; rowH = 0;
+                    }
+                }
+                if (x + w > rw) {
+                    // Aún no cabe: reintentar rotada si conviene, si no, falla
+                    if (h <= rw && x + h <= rw) { let t = w; w = h; h = t; }
+                    else return null; // pieza más ancha que el rollo
+                }
+                it.x = x; it.y = y; it.w = w; it.h = h;
+                x += w + sep;
+                if (h > rowH) rowH = h;
+            }
+            return true;
+        };
+
+        // Probar dos variantes (piezas tal cual, y todas giradas 90°) y quedarnos
+        // con la que ocupe menos largo de rollo.
+        let opciones = [
+            pItems.map(i => ({ id: i.id, w: i.w, h: i.h })),
+            pItems.map(i => ({ id: i.id, w: i.h, h: i.w }))
+        ];
+        let mejor = null;
+        for (const opt of opciones) {
+            const copia = opt.map(i => ({ ...i }));
+            if (pPack(copia)) {
+                const largo = Math.max(0, ...copia.map(i => i.y + i.h));
+                if (!mejor || largo < mejor.largo) mejor = { copia, largo };
+            }
+        }
+        if (!mejor) {
+            alert('⚠️ No se pudieron acomodar todas las piezas: alguna es más ancha que el rollo (' + rw + 'cm).\nCambiá el ancho del rollo o ajustá las medidas.');
+            return;
+        }
+
+        // Aplicar el mejor resultado a pItems y a la UI
+        mejor.copia.forEach(nuevo => {
+            const it = pItems.find(i => i.id === nuevo.id);
+            if (!it) return;
+            const gira = !(Math.abs(nuevo.w - it.w) < 0.001 && Math.abs(nuevo.h - it.h) < 0.001);
+            it.w = nuevo.w; it.h = nuevo.h; it.x = nuevo.x; it.y = nuevo.y;
+            if (gira) it.rotated = !it.rotated;
+            const el = document.getElementById(it.id);
+            if (el) {
+                pUpdateStyle(el, it);
+                const coordEl = document.getElementById('c_' + it.id);
+                if (coordEl) coordEl.textContent = `x:${Math.round(it.x)} y:${Math.round(it.y)}`;
+                const dim = el.querySelector('.dim-text');
+                if (dim) dim.innerText = `${it.w}x${it.h}`;
             }
         });
 
-        // Ordenar de mayor a menor altura
-        pItems.sort((a, b) => b.h - a.h);
-
-        let currentX = sep;
-        let currentY = sep;
-        let rowHeight = 0;
-
-        pItems.forEach(it => {
-            if (currentX + it.w > rw) {
-                currentY += rowHeight + sep;
-                currentX = sep;
-                rowHeight = 0;
-            }
-            it.x = currentX;
-            it.y = currentY;
-            currentX += it.w + sep;
-            if (it.h > rowHeight) rowHeight = it.h;
-        });
-
-        // Actualizar UI
-        pItems.forEach(it => {
-            let el = document.getElementById(it.id);
-            pUpdateStyle(el, it);
-            let coordEl = document.getElementById('c_' + it.id);
-            if(coordEl) coordEl.textContent = `x:${Math.round(it.x)} y:${Math.round(it.y)}`;
-            el.querySelector('.dim-text').innerText = `${it.w}x${it.h}`;
-        });
-        
         pUpdateStats();
         pSaveState();
     }
@@ -593,22 +772,38 @@
         // pAutoOrganize ya guarda estado
     }
 
+    function pRollLengthCm() {
+        // Largo de material necesario = hasta el borde inferior de la pieza más baja
+        let maxBottom = 0;
+        pItems.forEach(it => { const b = it.y + it.h; if (b > maxBottom) maxBottom = b; });
+        return maxBottom;
+    }
+
     function pUpdateStats() {
-        let maxH = 0; let area = 0;
-        pItems.forEach(it => { if(it.y + it.h > maxH) maxH = it.y + it.h; area += (it.w * it.h); });
-        let rw = parseFloat(document.getElementById('plannerRollWidthInput').value);
-        
-        let realH = (maxH - 20) > 0 ? (maxH - 20) : 0;
-        document.getElementById('resM').innerText = (realH / 100).toFixed(2) + 'm';
-        
-        let efficiency = (rw * realH) > 0 ? (area / (rw * realH)) * 100 : 0;
-        document.getElementById('resW').innerText = Math.round(100 - efficiency) + '%';
-        
-        const calculatedHeight = (maxH * pScale) + 800;
-        const finalHeight = Math.max(2000, calculatedHeight);
-        document.getElementById('plannerContainer').style.minHeight = finalHeight + 'px';
-        
-        pDrawRulers(rw, maxH + 50);
+        let area = 0;
+        pItems.forEach(it => { area += it.w * it.h; });
+        let rw = parseFloat(document.getElementById('plannerRollWidthInput').value) || 122;
+        let rollLenCm = pRollLengthCm();
+        let lenM = rollLenCm / 100;
+
+        // Piezas y largo a cortar
+        const resN = document.getElementById('resN'); if (resN) resN.innerText = pItems.length;
+        const resM = document.getElementById('resM'); if (resM) resM.innerText = lenM.toFixed(2) + ' m';
+
+        // Material usado vs desperdicio (sobre el rectángulo rollo × largo)
+        let matTotal = rw * rollLenCm;
+        let usedPct = matTotal > 0 ? Math.min(100, (area / matTotal) * 100) : 0;
+        const resU = document.getElementById('resU'); if (resU) resU.innerText = Math.round(usedPct) + '%';
+        const resW = document.getElementById('resW'); if (resW) resW.innerText = Math.round(Math.max(0, 100 - usedPct)) + '%';
+
+        // Altura del lienzo = contenido + cola para seguir agregando piezas (60cm)
+        const tailCm = 60;
+        const hPx = Math.max(400, (rollLenCm + tailCm) * pScale);
+        const cont = document.getElementById('plannerContainer');
+        cont.style.height = hPx + 'px';
+        cont.style.minHeight = '0px';
+
+        pDrawRulers(rw, rollLenCm + tailCm);
     }
 
     function pDrawRulers(w, h) {
@@ -659,10 +854,20 @@
     }
 
     function applyPlanner() {
-        let maxH = 0; pItems.forEach(it => { if(it.y + it.h > maxH) maxH = it.y + it.h; });
-        let realH = Math.ceil(maxH - 20);
-        let rw = parseFloat(document.getElementById('plannerRollWidthInput').value);
-        
+        if (pItems.length === 0) {
+            alert('No hay piezas en el plano.\nAgregá al menos una pieza (o tocá ⚡ para auto-ordenar) antes de transferir.');
+            return;
+        }
+        let rw = parseFloat(document.getElementById('plannerRollWidthInput').value) || 122;
+
+        // Guard: ninguna pieza debe salirse del ancho del rollo
+        let fuera = pItems.filter(it => it.w > rw || it.x < 0 || (it.x + it.w) > rw);
+        if (fuera.length > 0) {
+            alert('⚠️ Hay piezas que se salen del ancho del rollo (' + rw + 'cm).\nAcomodalas o elegí un rollo más ancho antes de transferir.');
+            return;
+        }
+
+        let realH = Math.max(1, Math.ceil(pRollLengthCm()));
         document.getElementById('w_' + pId).value = rw;
         document.getElementById('h_' + pId).value = realH;
         document.getElementById('q_' + pId).value = 1;
@@ -674,9 +879,7 @@
         for (let i = 0; i <= realH; i += 10) svg += `<line x1="0" y1="${i}" x2="2" y2="${i}" stroke="#999" stroke-width="0.1"/><text x="3" y="${i + 0.5}" font-size="1.5" fill="#999" font-family="Arial">${i}</text>`;
         
         pItems.forEach(it => {
-            // translate it.y - 20 (porque el area del viewer dejaba un margen, lo quitamos para SVG)
-            let fixY = it.y - 20; if(fixY < 0) fixY = 0;
-            svg += `<g transform="translate(${it.x}, ${fixY})">`;
+            svg += `<g transform="translate(${it.x}, ${it.y})">`;
             svg += `<rect width="${it.w}" height="${it.h}" fill="${it.color}" fill-opacity="0.15" stroke="${it.color}" stroke-width="0.4"/>`;
             svg += `<text x="${it.w/2}" y="${it.h/2 - 1}" font-size="1.5" text-anchor="middle" font-family="Arial" fill="#000" font-weight="bold">${it.ref}</text>`;
             svg += `<text x="${it.w/2}" y="${it.h/2 + 1.5}" font-size="1.2" text-anchor="middle" font-family="Arial" fill="#444">${it.w}x${it.h}</text>`;
@@ -693,4 +896,120 @@
 
         calc(); closePlanner();
     }
+</script>
+<script>
+    // ===== AYUDA / TUTORIAL DEL VISOR DE IMPRESIÓN =====
+    (function () {
+        var LS = 'mr_visor_impresion_tour_v1';
+        var pop = function () { return document.getElementById('pHelpPop'); };
+        var bubble = function () { return document.getElementById('pTourBubble'); };
+        var backdrop = function () { return document.getElementById('pTourBackdrop'); };
+        var high = null;
+
+        window.pToggleHelp = function () {
+            if (!pop()) return;
+            if (pop().style.display === 'block') { pCloseHelp(); }
+            else { pop().style.display = 'block'; }
+        };
+        window.pCloseHelp = function () { if (pop()) pop().style.display = 'none'; };
+
+        function byId(id) { return document.getElementById(id); }
+        function firstBtn(sel) { var b = document.querySelector(sel); return b || null; }
+
+        var steps = [
+            { t: 'Visor de Impresión 👋', x: 'Acá acomodás las piezas de tu trabajo sobre el <b>ancho del material</b> para saber cuántos metros se imprimen y gastar lo mínimo.' },
+            { t: '1 · Ancho del material', x: 'Elegí el ancho del rollo/plancha que está en stock. Si ninguna te sirve, usá el botón ✏️ para poner un ancho manual.', el: function () { return byId('plannerRollSelect') && byId('plannerRollSelect').querySelector('button') ? byId('plannerRollSelect').querySelector('button') : byId('plannerRollWidthInput'); } },
+            { t: '2 · Poné el tamaño', x: 'Escribí el <b>ANCHO</b> y el <b>LARGO</b> de tu pieza en centímetros.', el: function () { return byId('pW'); } },
+            { t: '3 · Nombre y cantidad', x: 'Poné un <b>nombre</b> a la pieza (ej: Logo, Cartel A) y cuántas unidades necesitás.', el: function () { return byId('pRef'); } },
+            { t: '4 · Añadir = se acomoda solo', x: 'Tocá <b>AÑADIR AL PLANO</b>: la pieza se coloca sola en el mejor lugar y se marca en verde.', el: function () { return byId('btnAddPiece'); } },
+            { t: '5 · Ajustar piezas', x: 'Pasá el mouse por una pieza: vas a ver <b>Girar 90°</b> y <b>Eliminar</b>. También podés arrastrarla. Arriba tenés Deshacer, Rehacer, Quitar todas, Centrar y Girar 90°.', el: function () { return firstBtn('[onclick="pClearAll()"]') || byId('btnAddPiece'); } },
+            { t: '6 · ¿Cuánto material?', x: '<b>Metros de impresión</b>: el largo del material que se usa · <b>Material usado</b> y <b>Desperdicio</b>: buscá que el desperdicio sea bajo.', el: function () { return byId('resM'); } },
+            { t: '7 · Terminar', x: 'Cuando quede bien, tocá <b>TRANSFERIR A PEDIDO</b>: las medidas vuelven al cotizador.', el: function () { return firstBtn('[onclick="applyPlanner()"]'); } }
+        ];
+
+        window.mrPTour = {
+            idx: 0,
+            active: false,
+            start: function () {
+                if (this.active || !bubble() || !backdrop()) return;
+                this.active = true; this.idx = 0;
+                bubble().style.display = 'block';
+                backdrop().style.display = 'block';
+                this.show();
+            },
+            end: function () {
+                this.active = false;
+                if (bubble()) bubble().style.display = 'none';
+                if (backdrop()) backdrop().style.display = 'none';
+                this.clearHigh();
+                try { localStorage.setItem(LS, '1'); } catch (e) { }
+                pCloseHelp();
+            },
+            next: function () {
+                if (!this.active) return;
+                this.idx++;
+                if (this.idx >= steps.length) { this.end(); return; }
+                this.show();
+            },
+            show: function () {
+                var s = steps[this.idx];
+                bubble().innerHTML =
+                    '<div class="pt-title">' + s.t + '</div>' +
+                    '<div class="pt-txt">' + s.x + '</div>' +
+                    '<div class="pt-btns">' +
+                    '<button type="button" class="pt-btn" style="background:transparent;color:#94a3b8;border:1px solid #334155;" onclick="window.mrPTour.end()">Saltar</button>' +
+                    '<div style="display:flex;align-items:center;">' +
+                    '<span style="font-size:11px;color:#64748b;letter-spacing:2px;margin-right:8px;">' + dots() + '</span>' +
+                    '<button type="button" class="pt-btn" style="background:linear-gradient(135deg,#ffd700,#ccac00);color:#000;" onclick="window.mrPTour.next()">' + (this.idx === steps.length - 1 ? '✓ Listo' : 'Siguiente →') + '</button>' +
+                    '</div></div>';
+                this.clearHigh();
+                var target = (typeof s.el === 'function') ? s.el() : null;
+                if (target) { target.classList.add('p-tour-highlight'); high = target; }
+                this.place(target);
+            },
+            place: function (target) {
+                var b = bubble();
+                var center = function () {
+                    b.style.top = ''; b.style.bottom = '24px'; b.style.left = '50%'; b.style.right = 'auto'; b.style.transform = 'translateX(-50%)';
+                };
+                if (!target) { center(); return; }
+                try { target.scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch (e) { }
+                setTimeout(function () {
+                    var r = target.getBoundingClientRect();
+                    if (r.width < 4 || r.height < 4) { center(); return; }
+                    var w = b.offsetWidth || 350;
+                    var left = Math.min(Math.max(8, r.left + r.width / 2 - w / 2), (window.innerWidth || 400) - w - 8);
+                    b.style.transform = 'none'; b.style.left = left + 'px'; b.style.right = 'auto';
+                    if (r.top < 300) { b.style.top = (r.bottom + 10) + 'px'; b.style.bottom = 'auto'; }
+                    else { b.style.bottom = (window.innerHeight - r.top + 10) + 'px'; b.style.top = 'auto'; }
+                }, 130);
+            },
+            clearHigh: function () { if (high) { try { high.classList.remove('p-tour-highlight'); } catch (e) { } high = null; } }
+        };
+        function dots() {
+            var d = '';
+            for (var i = 0; i < steps.length; i++) d += (i === window.mrPTour.idx ? '●' : '○');
+            return d;
+        }
+
+        if (backdrop()) backdrop().addEventListener('click', function () { window.mrPTour.next(); });
+
+        // Autoiniciar el tutorial la primera vez que se abre el visor
+        var seen = false;
+        try { seen = localStorage.getItem(LS) === '1'; } catch (e) { }
+        var origOpen = window.openPlanner;
+        window.openPlanner = function (id) {
+            var r = (typeof origOpen === 'function') ? origOpen(id) : undefined;
+            if (!seen) {
+                setTimeout(function () {
+                    var modal = byId('plannerModal');
+                    if (window.mrPTour && !window.mrPTour.active && modal && modal.style.display === 'block') {
+                        window.mrPTour.start();
+                        seen = true;
+                    }
+                }, 700);
+            }
+            return r;
+        };
+    })();
 </script>

@@ -334,7 +334,7 @@ function editCliente(clientId) {
     document.getElementById('clientEmail').value = cliente.email || '';
     document.getElementById('clientDireccion').value = cliente.direccion || '';
     document.getElementById('clientCuit').value = cliente.cuit || '';
-    document.getElementById('clientCondicionIVA').value = cliente.condicionIVA || '';
+    document.getElementById('clientCondicionIVA').value = cliente.condicionIVA || cliente.condicion_iva || '';
     document.getElementById('clientDescuento').value = cliente.descuento || 0;
     document.getElementById('clientEstado').value = cliente.estado || 'activo';
     document.getElementById('clientNotas').value = cliente.notas || '';
@@ -507,7 +507,7 @@ async function viewClientDetails(clientId) {
             <h4>💼 Información Comercial</h4>
             <div class="form-row">
                 <div><strong>CUIT/DNI:</strong> ${cliente.cuit || 'No especificado'}</div>
-                <div><strong>Condición IVA:</strong> ${cliente.condicionIVA || 'No especificada'}</div>
+                <div><strong>Condición IVA:</strong> ${escapeHtml(cliente.condicionIVA || cliente.condicion_iva || 'No especificada')}</div>
             </div>
             <div class="form-row" style="margin-top: 0.5rem;">
                 <div><strong>Descuento:</strong> ${cliente.descuento || 0}%</div>

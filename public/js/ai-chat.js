@@ -102,16 +102,17 @@ class AIChat {
         }
     }
 
-    addMessage(sender, html) {
+    addMessage(sender, text) {
         const div = document.createElement('div');
         div.className = `chat-message ${sender}`;
-        div.innerHTML = html;
+        // FIX XSS: el contenido es texto plano (mensaje del usuario / respuesta del LLM)
+        div.innerHTML = escapeHtml(text);
         this.messagesContainer.appendChild(div);
         this.messagesContainer.scrollTop = this.messagesContainer.scrollHeight;
         
         // Guardar solo los últimos 50 mensajes para no saturar localStorage
         if (sender !== 'system') { // No guardar mensajes de sistema/typing
-            this.chatHistory.push({ sender, html, timestamp: new Date().toISOString() });
+            this.chatHistory.push({ sender, html: text, timestamp: new Date().toISOString() });
             if (this.chatHistory.length > 50) this.chatHistory.shift();
             this.saveChatHistory();
         }
@@ -126,7 +127,7 @@ class AIChat {
                     // Recrear visualmente sin guardar de nuevo
                     const div = document.createElement('div');
                     div.className = `chat-message ${msg.sender}`;
-                    div.innerHTML = msg.html;
+                    div.innerHTML = escapeHtml(msg.html);
                     this.messagesContainer.appendChild(div);
                 });
                 this.messagesContainer.scrollTop = this.messagesContainer.scrollHeight;

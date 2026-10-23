@@ -26,6 +26,13 @@ const axios = require('axios');
 const notifier = require('node-notifier'); // Nueva dependencia para notificaciones de Windows
 const TelefonoArgentino = require('telefono-argentino'); // Librería para identificar localidades
 
+// Servidor HTTP y Express para el Bot de WhatsApp
+const app = express();
+app.use(cors());
+app.use(express.json());
+const server = http.createServer(app);
+const io = new Server(server, { cors: { origin: "*" } });
+
 // Cargar base de datos de localidades (ENACOM)
 let localizacionesDB = null;
 try {
@@ -115,8 +122,10 @@ process.on('unhandledRejection', async (reason, promise) => {
 // ══════════════════════════════════════════════════════════════════════
 
 const CONFIG = {
-  // Tu API Key de Groq
-  groqApiKey: process.env.GROQ_API_KEY || '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',
+  // Claves API de proveedores
+  groqApiKey: process.env.GROQ_API_KEY || '',
+  openrouterApiKey: process.env.OPENROUTER_API_KEY || '',
+  openrouterModel: 'google/gemini-2.0-flash-exp:free',
 
   // ⚠️ REEMPLAZA ESTOS NÚMEROS con los de tus vendedores (formato: 549...)
   vendedores: [
@@ -130,7 +139,6 @@ const CONFIG = {
   leadsHotFile: path.join(__dirname, 'datos_mr_letreros', 'bot_whatsapp', 'leads_hot.json'),
   leadsWarmFile: path.join(__dirname, 'datos_mr_letreros', 'bot_whatsapp', 'leads_warm.json'),
   leadsColdFile: path.join(__dirname, 'datos_mr_letreros', 'bot_whatsapp', 'leads_cold.json'),
-  // ✅ Archivo de precios reales del negocio
   preciosFile: path.join(__dirname, 'datos_mr_letreros', 'gremio_precios_db.json'),
   tercerosFile: path.join(__dirname, 'datos_mr_letreros', 'gremio_terceros.json'),
   finalesFile: path.join(__dirname, 'datos_mr_letreros', 'gremio_precios_finales.json'),
@@ -138,16 +146,16 @@ const CONFIG = {
   imagesDir: path.join(__dirname, 'datos_mr_letreros', 'bot_whatsapp', 'imagenes'),
   configFile: path.join(__dirname, 'datos_mr_letreros', 'bot_whatsapp', 'bot_config.json'),
   learningsFile: path.join(__dirname, 'datos_mr_letreros', 'bot_whatsapp', 'aprendizajes.json'),
-  maxLearnings: 50, // Máximo de reglas aprendidas (FIFO)
+  maxLearnings: 50,
 
   // Parámetros de conversación
-  maxTurnos: 4,           // Máximo 4 intercambios antes de derivar a vendedor
-  scoreMinCaliente: 60,   // Score mínimo para lead caliente
-  inactivityTimeout: 15 * 60 * 1000, // 15 minutos
-  operatorTimeout: 10 * 60 * 1000, // 10 minutos para que el operador responda
-  botEnabled: true,       // Estado del bot
-  pricingMode: 'cliente',  // Modo de precios (cliente/gremio)
-  aiProvider: 'groq',      // PROVEEDOR PRIMARIO: Groq Cloud
+  maxTurnos: 4,
+  scoreMinCaliente: 60,
+  inactivityTimeout: 15 * 60 * 1000,
+  operatorTimeout: 10 * 60 * 1000,
+  botEnabled: true,
+  pricingMode: 'cliente',
+  aiProvider: 'groq',
   ollamaModel: 'gemma4:e4b',
   ollamaVisionModel: 'gemma4:e4b',
 
@@ -174,6 +182,9 @@ let currentBotStatus = { message: 'Iniciando sistema...', color: '#9E9E9E' };
 let conversacionesActivas = loadJSON(CONFIG.conversationsFile);
 // Bloqueo para evitar procesamiento duplicado de mensajes simultáneos
 const procesandoNumeros = new Set();
+// Cola FIFO por número: si llega un mensaje mientras se procesa el anterior, se encola
+// en lugar de descartarse (evita pérdida de mensajes en ráfagas).
+const colaPorNumero = new Map();
 try {
   if (fs.existsSync(CONFIG.configFile)) {
     const saved = JSON.parse(fs.readFileSync(CONFIG.configFile, 'utf-8'));
@@ -316,14 +327,32 @@ let aiClient;
 let aiModelAvailable = true;
 
 function inicializarIA() {
-  const useOllama = CONFIG.aiProvider === 'ollama';
+  const provider = (CONFIG.aiProvider || 'groq').toLowerCase();
 
-  if (useOllama) {
+  if (provider === 'ollama') {
     aiClient = new OpenAI({
       baseURL: 'http://localhost:11434/v1',
       apiKey: 'ollama',
     });
     console.log(`🤖 Ollama (Local) inicializado para el Bot: ${CONFIG.ollamaModel || 'llama3.1'}`);
+  } else if (provider === 'gemini') {
+    const geminiKey = CONFIG.geminiApiKey || process.env.GEMINI_API_KEY;
+    aiClient = new OpenAI({
+      baseURL: 'https://generativelanguage.googleapis.com/v1beta/openai/',
+      apiKey: geminiKey || 'AIzaSyDemoKey',
+      timeout: 15000,
+      maxRetries: 2
+    });
+    console.log(`🌐 Google Gemini API inicializado para el Bot (gemini-2.0-flash)`);
+  } else if (provider === 'openrouter') {
+    const openrouterKey = CONFIG.openrouterApiKey || process.env.OPENROUTER_API_KEY;
+    aiClient = new OpenAI({
+      baseURL: 'https://openrouter.ai/api/v1',
+      apiKey: openrouterKey || 'openrouter-demo-key',
+      timeout: 15000,
+      maxRetries: 2
+    });
+    console.log(`🌐 OpenRouter API inicializado para el Bot`);
   } else {
     aiClient = new OpenAI({
       baseURL: 'https://api.groq.com/openai/v1',
@@ -331,21 +360,73 @@ function inicializarIA() {
       timeout: 15000,
       maxRetries: 2
     });
-    console.log(`🌐 Groq Cloud inicializado para el Bot: Llama 4 Scout`);
+    console.log(`🌐 Groq Cloud inicializado para el Bot (Llama 3.3 70B Versatile)`);
   }
 
   // Test de conectividad
   (async () => {
     try {
-      const modelName = useOllama ? (CONFIG.ollamaModel || 'llama3.1') : 'meta-llama/llama-4-scout-17b-16e-instruct';
-      await aiClient.chat.completions.create({
-        model: modelName,
-        messages: [{ role: 'user', content: 'Responder solo ok' }],
-        max_tokens: 5
-      });
-      console.log(`✅ IA (${CONFIG.aiProvider || 'groq'}) conectada y funcionando correctamente.`);
+      if (provider === 'groq') {
+        const groqCandidates = ['openai/gpt-oss-120b', 'llama-3.1-8b-instant', 'llama-3.3-70b-versatile', 'llama3-70b-8192'];
+        for (const candidate of groqCandidates) {
+          try {
+            await aiClient.chat.completions.create({
+              model: candidate,
+              messages: [{ role: 'user', content: 'Responder solo ok' }],
+              max_tokens: 5
+            });
+            console.log(`✅ Groq conectado exitosamente con el modelo: ${candidate}`);
+            CONFIG.groqModel = candidate;
+            aiModelAvailable = true;
+            return;
+          } catch (eCandidate) { }
+        }
+      } else if (provider === 'ollama') {
+        const modelName = CONFIG.ollamaModel || 'llama3.1';
+        await aiClient.chat.completions.create({
+          model: modelName,
+          messages: [{ role: 'user', content: 'Responder solo ok' }],
+          max_tokens: 5
+        });
+        console.log(`✅ Ollama conectado exitosamente (${modelName}).`);
+        aiModelAvailable = true;
+        return;
+      } else if (provider === 'openrouter') {
+        const candidateModels = [
+          CONFIG.openrouterModel || 'google/gemini-2.0-flash-exp:free',
+          'meta-llama/llama-3.3-70b-instruct',
+          'google/gemini-flash-1.5',
+          'deepseek/deepseek-chat'
+        ];
+        for (const modelCandidate of candidateModels) {
+          try {
+            await aiClient.chat.completions.create({
+              model: modelCandidate,
+              messages: [{ role: 'user', content: 'Responder solo ok' }],
+              max_tokens: 5
+            });
+            console.log(`✅ OpenRouter conectado exitosamente con el modelo: ${modelCandidate}`);
+            CONFIG.openrouterModel = modelCandidate;
+            aiModelAvailable = true;
+            return;
+          } catch(eCandidate) { }
+        }
+      } else if (provider === 'gemini') {
+        const geminiCandidates = ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-2.5-flash'];
+        for (const modelCandidate of geminiCandidates) {
+          try {
+            const genAI = new GoogleGenerativeAI(CONFIG.geminiApiKey);
+            const model = genAI.getGenerativeModel({ model: modelCandidate });
+            await model.generateContent('ok');
+            console.log(`✅ Google Gemini conectado exitosamente (${modelCandidate}).`);
+            CONFIG.geminiModel = modelCandidate;
+            aiModelAvailable = true;
+            return;
+          } catch (eG) { }
+        }
+      }
     } catch (testErr) {
-      console.error(`❌ IA (${CONFIG.aiProvider || 'groq'}) NO RESPONDE:`, testErr.message);
+      console.error(`❌ IA (${provider}) NO RESPONDE (${testErr.message}).`);
       aiModelAvailable = false;
     }
   })();
@@ -542,7 +623,17 @@ function cargarCatalogoParaIA() {
  * @returns {string} Texto formateado con las reglas aprendidas.
  */
 function cargarAprendizajesParaIA() {
-  return '';
+  try {
+    if (!fs.existsSync(CONFIG.learningsFile)) return '(Sin aprendizajes todavía. El bot aprenderá de los operadores.)';
+    const aprendizajes = JSON.parse(fs.readFileSync(CONFIG.learningsFile, 'utf-8'));
+    if (!Array.isArray(aprendizajes) || aprendizajes.length === 0) return '(Sin aprendizajes todavía.)';
+
+    return aprendizajes.map((a, i) => {
+      return `${i + 1}. ${a.regla}${a.contexto ? ` (Contexto: ${a.contexto})` : ''}`;
+    }).join('\n');
+  } catch (e) {
+    return '(Error cargando aprendizajes)';
+  }
 }
 
 /**
@@ -551,8 +642,123 @@ function cargarAprendizajesParaIA() {
  * @param {string} nombreCliente - Nombre del cliente.
  */
 async function extraerAprendizajes(historial, nombreCliente) {
-  // Función de aprendizaje deshabilitada
-  return;
+  try {
+    // Solo extraer si hubo mensajes del operador
+    const mensajesOperador = historial.filter(h => h.rol === 'operador');
+    if (mensajesOperador.length < 2) {
+      log('ℹ️ Menos de 2 mensajes del operador, no se extraen aprendizajes.');
+      return;
+    }
+
+    // Construir la conversación para análisis
+    const conversacionTexto = historial.map(h => {
+      const emoji = h.rol === 'cliente' ? '👤 Cliente' : h.rol === 'operador' ? '👨‍💼 Operador humano' : '🤖 Bot';
+      return `${emoji}: ${h.mensaje}`;
+    }).join('\n');
+
+    const promptExtraccion = `Analiza esta conversación REAL entre un operador experto de MR Letreros (negocio de gráfica y señalética) y un cliente.
+El operador es un vendedor humano experimentado. Tu tarea es extraer REGLAS y PATRONES útiles de cómo atendió.
+
+CONVERSACIÓN:
+${conversacionTexto}
+
+EXTRAE las reglas de venta y atención que usó el operador. Enfocate en:
+1. ¿Qué preguntas hizo para entender al cliente?
+2. ¿Cómo manejó objeciones o dudas?
+3. ¿Qué información técnica ofreció?
+4. ¿Cómo cerró la venta o derivó?
+5. ¿Qué productos recomendó y por qué?
+6. ¿Rechazó algún pedido? ¿Por qué? (ej: "no vendemos ese tipo de letreros")
+
+Responde SOLO con un JSON array de objetos:
+[
+  { "regla": "Descripción clara de la regla", "contexto": "Situación donde aplica", "confianza": "alta|media|baja" }
+]
+
+Máximo 5 reglas. Solo reglas CONCRETAS y ACCIONABLES que el bot pueda usar. No incluyas reglas genéricas como "ser amable".`;
+
+    const provider = (CONFIG.aiProvider || 'groq').toLowerCase();
+    let modelToUse = CONFIG.groqModel || 'llama-3.3-70b-versatile';
+    if (provider === 'ollama') modelToUse = CONFIG.ollamaModel || 'llama3.1';
+    else if (provider === 'gemini') modelToUse = CONFIG.geminiModel || 'gemini-2.0-flash';
+    else if (provider === 'openrouter') modelToUse = CONFIG.openrouterModel || 'google/gemini-2.0-flash-exp:free';
+
+    const completion = await aiClient.chat.completions.create({
+      model: modelToUse,
+      messages: [
+        { role: 'system', content: 'Eres un analista de ventas. Responde SOLO con JSON válido, sin texto adicional ni backticks.' },
+        { role: 'user', content: promptExtraccion }
+      ],
+      max_tokens: 800,
+      temperature: 0.3,
+      response_format: provider === 'ollama' ? undefined : { type: 'json_object' }
+    });
+
+    const responseText = completion.choices[0].message.content.trim()
+      .replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+
+    // Parsear respuesta - puede ser array directo o objeto con array
+    let nuevasReglas;
+    const parsed = JSON.parse(responseText);
+    if (Array.isArray(parsed)) {
+      nuevasReglas = parsed;
+    } else if (parsed.reglas && Array.isArray(parsed.reglas)) {
+      nuevasReglas = parsed.reglas;
+    } else {
+      // Intentar extraer array del JSON
+      const arrMatch = responseText.match(/\[[\s\S]*\]/);
+      nuevasReglas = arrMatch ? JSON.parse(arrMatch[0]) : [];
+    }
+
+    if (!nuevasReglas || nuevasReglas.length === 0) {
+      log('ℹ️ No se extrajeron reglas de esta conversación.');
+      return;
+    }
+
+    // Agregar metadata
+    nuevasReglas.forEach(r => {
+      r.fecha = new Date().toISOString().split('T')[0];
+      r.cliente = nombreCliente;
+    });
+
+    // Cargar aprendizajes existentes y agregar los nuevos
+    let aprendizajes = [];
+    try {
+      if (fs.existsSync(CONFIG.learningsFile)) {
+        aprendizajes = JSON.parse(fs.readFileSync(CONFIG.learningsFile, 'utf-8'));
+      }
+    } catch (e) { aprendizajes = []; }
+
+    // Filtrar reglas duplicadas (comparar texto similar)
+    const reglasExistentes = aprendizajes.map(a => a.regla.toLowerCase());
+    const reglasNuevasUnicas = nuevasReglas.filter(r => {
+      const reglaLower = r.regla.toLowerCase();
+      return !reglasExistentes.some(existente => {
+        // Si más del 70% de las palabras coinciden, es duplicada
+        const palabrasNueva = reglaLower.split(/\s+/);
+        const coincidencias = palabrasNueva.filter(p => existente.includes(p)).length;
+        return coincidencias / palabrasNueva.length > 0.7;
+      });
+    });
+
+    if (reglasNuevasUnicas.length === 0) {
+      log('ℹ️ Las reglas extraídas ya existían. No se agregaron duplicados.');
+      return;
+    }
+
+    aprendizajes.push(...reglasNuevasUnicas);
+
+    // Mantener máximo (FIFO - descartar las más viejas)
+    if (aprendizajes.length > CONFIG.maxLearnings) {
+      aprendizajes = aprendizajes.slice(aprendizajes.length - CONFIG.maxLearnings);
+    }
+
+    fs.writeFileSync(CONFIG.learningsFile, JSON.stringify(aprendizajes, null, 2));
+    log(`🧠 ¡Aprendizaje exitoso! Se extrajeron ${reglasNuevasUnicas.length} nuevas reglas de la conversación con ${nombreCliente}.`);
+
+  } catch (err) {
+    log(`❌ Error al extraer aprendizajes: ${err.message}`);
+  }
 }
 
 function cargarImagenesParaIA() {
@@ -640,6 +846,125 @@ function formatearNumero(numero) {
 }
 
 /**
+ * Detecta si un chatId es un LID (Linked ID) de WhatsApp en vez de un número de teléfono.
+ * Los LIDs se usan desde 2024+ por la arquitectura multi-dispositivo de WhatsApp (14+ dígitos).
+ * @param {string} chatId - El ID del chat (ej: "186122575577273@lid" o "5493426000000@c.us")
+ * @returns {boolean}
+ */
+function esLID(chatId) {
+  const str = String(chatId);
+  return str.includes('@lid') || (str.replace(/\D/g, '').length >= 14 && !str.replace(/\D/g, '').startsWith('549'));
+}
+
+/**
+ * Resuelve el número de teléfono real a partir de un chatId (soporta LIDs de WhatsApp).
+ * Utiliza getContactLidAndPhone / enforceLidAndPnRetrieval del cliente de WhatsApp Web.
+ * @param {string} chatIdOriginal 
+ * @returns {Promise<{numero: string, chatId: string}>}
+ */
+async function resolverNumeroDeChatId(chatIdOriginal) {
+  if (!chatIdOriginal) return { numero: '', chatId: '' };
+  const strChatId = String(chatIdOriginal).trim();
+  const esIdLid = esLID(strChatId);
+
+  if (!esIdLid) {
+    const rawDigits = strChatId.replace(/\D/g, '');
+    return {
+      numero: formatearNumero(strChatId),
+      chatId: strChatId.includes('@') ? strChatId : `${rawDigits}@c.us`
+    };
+  }
+
+  const jidLid = strChatId.includes('@') ? strChatId : `${strChatId.replace(/\D/g, '')}@lid`;
+
+  // 1. Método Principal Oficial: getContactLidAndPhone (ejecuta enforceLidAndPnRetrieval en WhatsApp Web)
+  try {
+    if (typeof client.getContactLidAndPhone === 'function') {
+      const results = await client.getContactLidAndPhone([jidLid]);
+      if (Array.isArray(results) && results.length > 0 && results[0]?.pn) {
+        const pnRaw = results[0].pn;
+        const pnNum = String(pnRaw).replace(/\D/g, '');
+        // El número telefónico real tiene 13 dígitos o menos (o empieza con 54)
+        if (pnNum && (pnNum.length <= 13 || pnNum.startsWith('54'))) {
+          const numeroReal = formatearNumero(pnNum);
+          log(`📱 LID ${jidLid} resuelto con getContactLidAndPhone → Teléfono Real: ${numeroReal}`);
+          return {
+            numero: numeroReal,
+            chatId: jidLid
+          };
+        }
+      }
+    }
+  } catch (err) {
+    log(`⚠️ getContactLidAndPhone error para ${jidLid}: ${err.message}`);
+  }
+
+  // 2. Método Alternativo Directo: consultar store interno de WhatsApp Web vía pupPage
+  try {
+    if (client.pupPage) {
+      const pnDirect = await client.pupPage.evaluate(async (userId) => {
+        try {
+          const { phone } = await window.WWebJS.enforceLidAndPnRetrieval(userId);
+          return phone?._serialized || phone?.user || null;
+        } catch (e) {
+          try {
+            const wid = window.require('WAWebWidFactory').createWid(userId);
+            const pn = window.require('WAWebApiContact').getPhoneNumber(wid);
+            return pn?._serialized || pn?.user || null;
+          } catch (e2) {
+            return null;
+          }
+        }
+      }, jidLid);
+
+      if (pnDirect) {
+        const pnNum = String(pnDirect).replace(/\D/g, '');
+        if (pnNum && (pnNum.length <= 13 || pnNum.startsWith('54'))) {
+          const numeroReal = formatearNumero(pnNum);
+          log(`📱 LID ${jidLid} resuelto con pupPage.evaluate → Teléfono Real: ${numeroReal}`);
+          return {
+            numero: numeroReal,
+            chatId: jidLid
+          };
+        }
+      }
+    }
+  } catch (err) { }
+
+  // 3. Fallback con getFormattedNumber
+  try {
+    const contacto = await client.getContactById(jidLid);
+    if (contacto && typeof contacto.getFormattedNumber === 'function') {
+      const formatted = await contacto.getFormattedNumber();
+      const numFormatted = String(formatted || '').replace(/\D/g, '');
+      if (numFormatted && (numFormatted.length <= 13 || numFormatted.startsWith('54'))) {
+        const numeroReal = formatearNumero(numFormatted);
+        log(`📱 LID ${jidLid} resuelto con getFormattedNumber → ${numeroReal}`);
+        return {
+          numero: numeroReal,
+          chatId: jidLid
+        };
+      }
+    }
+  } catch (e) { }
+
+  // 4. Fallback final: usar el LID si no se pudo resolver
+  return {
+    numero: formatearNumero(strChatId),
+    chatId: jidLid
+  };
+}
+
+/**
+ * Resuelve el número de teléfono real de un mensaje entrante de WhatsApp.
+ * @param {object} message - El objeto de mensaje de whatsapp-web.js
+ * @returns {Promise<{numero: string, chatId: string}>}
+ */
+async function resolverNumeroReal(message) {
+  return await resolverNumeroDeChatId(message.from);
+}
+
+/**
  * Crea un registro de cliente en clientes.json si no existe.
  * Se llama cuando un lead acepta un presupuesto.
  * @param {object} conversacion - El objeto de la conversación activa.
@@ -699,16 +1024,19 @@ async function crearClienteDesdeLead(conversacion, numero) {
 // SERVIDOR PANEL DE CONTROL (SOCKET.IO)
 // ══════════════════════════════════════════════════════════════════════
 
-const app = express();
-app.use(cors());
-app.use(express.json());
-const server = http.createServer(app);
-const io = new Server(server, { cors: { origin: "*" } });
+// Copia de CONFIG sin secretos (claves API, tokens) para emitir al panel
+function configPublico() {
+  const copia = { ...CONFIG };
+  Object.keys(copia).forEach(k => {
+    if (/(apikey|api_key|token|secret|password|credential)/i.test(k)) delete copia[k];
+  });
+  return copia;
+}
 
 io.on('connection', (socket) => {
   socket.emit('log', '🔌 Panel conectado al cerebro de Gemini');
   socket.emit('status', currentBotStatus);
-  socket.emit('config-data', CONFIG);
+  socket.emit('config-data', configPublico());
   socket.emit('holiday-data', { manual: CONFIG.businessHours?.holidays || [], fetched: fetchedHolidays });
 
   // Permitir cambiar configuración desde la web
@@ -742,15 +1070,16 @@ io.on('connection', (socket) => {
     } catch (e) { console.error('Error guardando config:', e); }
 
     socket.emit('config-saved', { success: true, message: 'Configuración actualizada en memoria.' });
-    io.emit('config-data', CONFIG); // Actualizar a todos
+    io.emit('config-data', configPublico()); // Actualizar a todos (sin secretos)
     log(`⚙️ Configuración actualizada: Bot ${CONFIG.botEnabled ? 'ON' : 'OFF'}, Prompt: ${path.basename(CONFIG.promptsFile)}`);
   });
 
   // Enviar lista de precios si se solicita
   socket.on('refresh-prices', () => {
     try {
-      if (fs.existsSync(CONFIG.pricesFile)) {
-        const data = JSON.parse(fs.readFileSync(CONFIG.pricesFile, 'utf-8'));
+      const precioFile = CONFIG.preciosFile || CONFIG.pricesFile; // Fix: el atributo real es preciosFile
+      if (fs.existsSync(precioFile)) {
+        const data = JSON.parse(fs.readFileSync(precioFile, 'utf-8'));
         let items = [];
         if (Array.isArray(data)) items = data;
         else if (data[CONFIG.pricingMode]) items = data[CONFIG.pricingMode];
@@ -785,41 +1114,38 @@ io.on('connection', (socket) => {
 const messageQueue = [];
 let isProcessingQueue = false;
 
-// Función para reiniciar el cliente sin matar el proceso
-let isRestarting = false;
-async function restartClient() {
-  if (isRestarting) return;
-  isRestarting = true;
-  console.log('🔄 Iniciando reinicio seguro del cliente WhatsApp...');
-  try {
-    await client.destroy();
-  } catch (e) {
-    console.log('⚠️ Error destruyendo cliente (ignorable):', e.message);
-  }
-  setTimeout(() => {
-    client.initialize().then(() => {
-      console.log('✅ Cliente WhatsApp reinicializado con éxito.');
-      isRestarting = false;
-    }).catch(e => {
-      console.error('❌ Error al reinicializar:', e);
-      isRestarting = false;
-    });
-  }, 3000);
-}
+// (restartClient se define al final del archivo — la versión viva; evita duplicados)
 
-// Resuelve el JID real de WhatsApp (útil para números argentinos con o sin '9')
+// Resuelve el JID real de WhatsApp (útil para números argentinos con o sin '9' y LIDs)
 async function resolveChatId(chatIdOrPhone) {
+  if (!chatIdOrPhone) return '';
+  const str = String(chatIdOrPhone);
+  if (str.includes('@lid')) {
+    return str;
+  }
+  const cleanPhone = formatearNumero(str);
+  if (conversacionesActivas[cleanPhone]?.chatId) {
+    return conversacionesActivas[cleanPhone].chatId;
+  }
+
   try {
-    const rawNumber = String(chatIdOrPhone).split('@')[0].replace(/\D/g, '');
-    const numberId = await client.getNumberId(rawNumber);
+    const rawNumber = str.split('@')[0].replace(/\D/g, '');
+    const numberId = await Promise.race([
+      client.getNumberId(rawNumber),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout validando número en WhatsApp')), 2000))
+    ]);
     if (numberId) {
       return numberId._serialized;
     }
   } catch (err) {
     console.warn(`⚠️ Error al resolver número con getNumberId: ${err.message}`);
   }
-  return chatIdOrPhone.includes('@') ? chatIdOrPhone : `${chatIdOrPhone}@c.us`;
+  return str.includes('@') ? str : `${cleanPhone}@c.us`;
 }
+
+// Idempotencia de mensajes: ids ya enviados (evita duplicados entre el servidor,
+// la cola pendiente y los reintentos).
+const mensajesEnviadosIds = new Set();
 
 async function processMessageQueue() {
   if (isProcessingQueue || messageQueue.length === 0) return;
@@ -832,13 +1158,20 @@ async function processMessageQueue() {
       continue;
     }
 
-    const { chatId, message, resolve, reject, retries = 0 } = messageQueue[0];
+    const { chatId, message, msgId, resolve, reject, retries = 0 } = messageQueue[0];
     try {
       console.log(`🤖 [API] Resolviendo número para chatId: ${chatId}...`);
       const targetChatId = await resolveChatId(chatId);
       console.log(`🤖 [API] Enviando a targetChatId: ${targetChatId} (En cola: ${messageQueue.length})`);
-      await client.sendMessage(targetChatId, message);
+      await Promise.race([
+        client.sendMessage(targetChatId, message),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout al enviar mensaje por WhatsApp')), 15000))
+      ]);
       console.log(`✅ [API] Mensaje enviado a ${targetChatId}: "${message.substring(0, 50)}..."`);
+      if (msgId) {
+        mensajesEnviadosIds.add(msgId); // idempotencia: no reenviar
+        if (mensajesEnviadosIds.size > 2000) mensajesEnviadosIds.clear();
+      }
       messageQueue.shift(); // Remover de la cola si es exitoso
       resolve({ success: true });
     } catch (error) {
@@ -859,25 +1192,41 @@ async function processMessageQueue() {
           reject(new Error('No se pudo enviar el mensaje después de reiniciar.'));
         }
       } else {
-        // Otro error distinto, descartar
+        // Otro error distinto, descartar de la cola y rechazar
         messageQueue.shift();
         reject(error);
       }
     }
 
-    // Pausa entre mensajes para no saturar
-    await new Promise(r => setTimeout(r, 2000));
+    // Pausa mínima entre mensajes
+    await new Promise(r => setTimeout(r, 300));
   }
 
   isProcessingQueue = false;
 }
 
+// ➤ ENDPOINT API: Estado del bot
+app.get('/status', (req, res) => {
+  res.json({
+    status: currentBotStatus,
+    isReady: (currentBotStatus?.message || '').includes('Listo') || (currentBotStatus?.message || '').includes('Conectado'),
+    queueLength: messageQueue.length
+  });
+});
+
 // ➤ ENDPOINT API: Enviar mensaje desde el sistema (Asistente IA)
 app.post('/send-message', async (req, res) => {
-  const { phone, message } = req.body;
+  const { phone, message, msgId } = req.body;
 
   if (!phone || !message) {
     return res.status(400).json({ error: 'Faltan datos (phone, message)' });
+  }
+
+  // FIX idempotencia: si este msgId YA se envió con éxito, no reenviar.
+  // (El id se agrega al set recién cuando processMessageQueue confirma el envío,
+  //  así un reintento de un envío fallido sí vuelve a intentarse.)
+  if (msgId && mensajesEnviadosIds.has(msgId)) {
+    return res.json({ success: true, duplicate: true, msgId });
   }
 
   try {
@@ -913,20 +1262,19 @@ app.post('/send-message', async (req, res) => {
     }
 
     // Asegurar formato internacional argentino: 549 + código de área + número
-    let num;
-    if (cleanNum.length === 10) {
-      num = '549' + cleanNum;
-    } else {
-      num = '549' + cleanNum;
-    }
+    // (la cola normaliza después con getNumberId vía resolveChatId)
+    const num = '549' + cleanNum;
 
     const chatId = `${num}@c.us`;
 
-    // Añadir a la cola y esperar resolución
-    const result = await new Promise((resolve, reject) => {
-      messageQueue.push({ chatId, message, resolve, reject, retries: 0 });
-      processMessageQueue();
-    });
+    // Añadir a la cola y esperar resolución (con timeout total de 25 segundos)
+    const result = await Promise.race([
+      new Promise((resolve, reject) => {
+        messageQueue.push({ chatId, message, msgId, resolve, reject, retries: 0 });
+        processMessageQueue();
+      }),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout general en cola del bot')), 25000))
+    ]);
 
     res.json(result);
   } catch (error) {
@@ -934,8 +1282,11 @@ app.post('/send-message', async (req, res) => {
   }
 });
 
-server.listen(3001, () => {
-  console.log('🔌 Panel de control disponible en http://localhost:3001');
+// Bindear solo a localhost: el panel se accede desde esta misma PC. Esto impide
+// que cualquier equipo de la red (o una página web maliciosa) se conecte al panel
+// del bot, cambie el prompt, apague el bot o robe las API keys.
+server.listen(3001, '127.0.0.1', () => {
+  console.log('🔌 Panel de control disponible en http://localhost:3001 (solo local)');
 });
 
 // ══════════════════════════════════════════════════════════════════════
@@ -1017,8 +1368,12 @@ async function analizarConIA(mensajeCliente, historial = [], etiquetas = [], con
     .replace('{{TIPO_CLIENTE}}', tipoClienteActual);
 
   try {
-    const useOllama = CONFIG.aiProvider === 'ollama';
-    const modelToUse = useOllama ? (CONFIG.ollamaModel || 'gemma4:e4b') : 'meta-llama/llama-4-scout-17b-16e-instruct';
+    const provider = (CONFIG.aiProvider || 'groq').toLowerCase();
+    const useOllama = provider === 'ollama'; // Fix: variable fuera de scope rompía toda la IA
+    let modelToUse = CONFIG.groqModel || 'llama-3.3-70b-versatile';
+    if (provider === 'ollama') modelToUse = CONFIG.ollamaModel || 'llama3.1';
+    else if (provider === 'gemini') modelToUse = CONFIG.geminiModel || 'gemini-2.0-flash';
+    else if (provider === 'openrouter') modelToUse = CONFIG.openrouterModel || 'google/gemini-2.0-flash-exp:free';
 
     const completion = await Promise.race([
       aiClient.chat.completions.create({
@@ -1031,7 +1386,7 @@ async function analizarConIA(mensajeCliente, historial = [], etiquetas = [], con
         temperature: 0.7,
         response_format: useOllama ? undefined : { type: 'json_object' }
       }),
-      new Promise((_, reject) => setTimeout(() => reject(new Error('AI_TIMEOUT')), useOllama ? 120000 : 120000))
+      new Promise((_, reject) => setTimeout(() => reject(new Error('AI_TIMEOUT')), 120000))
     ]);
 
     const responseText = completion.choices[0].message.content.trim();
@@ -1060,7 +1415,8 @@ async function analizarConIA(mensajeCliente, historial = [], etiquetas = [], con
         analisis.reply ||
         null;
     }
-    if (analisis.score == null) analisis.score = 5;
+    // Clamp del score (0-30) para evitar valores inválidos de la IA
+    analisis.score = Math.max(0, Math.min(30, Number(analisis.score) || 5));
 
     if (!analisis.siguientePregunta) {
       log(`⚠️  Groq no generó respuesta. JSON completo: ${JSON.stringify(analisis).substring(0, 200)}`);
@@ -1181,11 +1537,134 @@ client.on('qr', (qr) => {
   io.emit('status', currentBotStatus);
 });
 
+async function migrarConversacionesLIDExistentes() {
+  log('🔄 Iniciando verificación y migración de LIDs a números telefónicos reales...');
+
+  // 1. Migrar conversations.json
+  try {
+    const convs = loadJSON(CONFIG.conversationsFile);
+    let modificado = false;
+    for (const [key, data] of Object.entries(convs)) {
+      if (!data) continue;
+      const esClaveLID = esLID(key);
+      if (esClaveLID) {
+        try {
+          const res = await resolverNumeroDeChatId(`${key}@lid`);
+          if (res.numero && res.numero !== key && (res.numero.length <= 13 || res.numero.startsWith('54'))) {
+            let nombreContacto = data.nombre || res.numero;
+            try {
+              const contacto = await client.getContactById(res.chatId || `${key}@lid`);
+              if (contacto && (contacto.pushname || contacto.name)) {
+                nombreContacto = contacto.pushname || contacto.name;
+              }
+            } catch (e) { }
+
+            log(`🔄 [Conversations] Migrando LID ${key} → Teléfono Real: ${res.numero} (${nombreContacto})`);
+            convs[res.numero] = {
+              ...data,
+              numero: res.numero,
+              chatId: res.chatId || `${key}@lid`,
+              nombre: nombreContacto
+            };
+            delete convs[key];
+            modificado = true;
+          }
+        } catch (e) {
+          log(`⚠️ No se pudo resolver LID en conversations ${key}: ${e.message}`);
+        }
+      }
+    }
+    if (modificado) {
+      conversacionesActivas = convs;
+      saveJSON(CONFIG.conversationsFile, conversacionesActivas);
+      log('✅ Migración de conversations.json finalizada');
+    }
+  } catch (err) {
+    log(`⚠️ Error en migración de conversations.json: ${err.message}`);
+  }
+
+  // 2. Migrar secretaria_leads.json
+  try {
+    const secretariaFile = path.join(__dirname, 'datos_mr_letreros', 'secretaria_leads.json');
+    if (fs.existsSync(secretariaFile)) {
+      const leads = JSON.parse(fs.readFileSync(secretariaFile, 'utf-8'));
+      let modificadoLeads = false;
+      for (const [id, lead] of Object.entries(leads)) {
+        if (!lead) continue;
+        const numActual = String(lead.numero || id);
+        if (esLID(numActual)) {
+          try {
+            const res = await resolverNumeroDeChatId(`${numActual}@lid`);
+            if (res.numero && res.numero !== numActual && (res.numero.length <= 13 || res.numero.startsWith('54'))) {
+              let nombreContacto = lead.nombre || res.numero;
+              try {
+                const contacto = await client.getContactById(res.chatId || `${numActual}@lid`);
+                if (contacto && (contacto.pushname || contacto.name)) {
+                  nombreContacto = contacto.pushname || contacto.name;
+                }
+              } catch (e) { }
+
+              log(`🔄 [Secretaria] Migrando Lead LID ${numActual} → Teléfono Real: ${res.numero} (${nombreContacto})`);
+              leads[res.numero] = {
+                ...lead,
+                id: res.numero,
+                numero: res.numero,
+                chatId: res.chatId || `${numActual}@lid`,
+                nombre: nombreContacto
+              };
+              delete leads[id];
+              modificadoLeads = true;
+            }
+          } catch (e) {
+            log(`⚠️ Error resolviendo lead de secretaria ${id}: ${e.message}`);
+          }
+        }
+      }
+      if (modificadoLeads) {
+        fs.writeFileSync(secretariaFile, JSON.stringify(leads, null, 2), 'utf-8');
+        log('✅ Migración de secretaria_leads.json finalizada exitosamente');
+      }
+    }
+  } catch (err) {
+    log(`⚠️ Error en migración de secretaria_leads.json: ${err.message}`);
+  }
+
+  // 3. Migrar leads_hot.json y leads_warm.json
+  for (const archivoLeads of [CONFIG.leadsHotFile, CONFIG.leadsWarmFile]) {
+    try {
+      if (fs.existsSync(archivoLeads)) {
+        const leads = JSON.parse(fs.readFileSync(archivoLeads, 'utf-8'));
+        let modificado = false;
+        for (const [id, lead] of Object.entries(leads)) {
+          if (!lead || !lead.numero) continue;
+          const numActual = String(lead.numero);
+          if (esLID(numActual)) {
+            try {
+              const res = await resolverNumeroDeChatId(`${numActual}@lid`);
+              if (res.numero && res.numero !== numActual && (res.numero.length <= 13 || res.numero.startsWith('54'))) {
+                lead.numero = res.numero;
+                lead.chatId = res.chatId || `${numActual}@lid`;
+                modificado = true;
+              }
+            } catch (e) { }
+          }
+        }
+        if (modificado) {
+          fs.writeFileSync(archivoLeads, JSON.stringify(leads, null, 2), 'utf-8');
+        }
+      }
+    } catch (e) { }
+  }
+}
+
 client.on('ready', () => {
   log('✅ Bot de WhatsApp con Groq AI (Llama 4 Scout) conectado!');
   currentBotStatus = { message: '✅ Bot Conectado y Listo', color: '#4CAF50' };
   io.emit('ready');
   io.emit('status', currentBotStatus);
+
+  // Ejecutar migración de LIDs existentes para corregir números en conversations.json
+  migrarConversacionesLIDExistentes();
 
   // Procesar mensajes pendientes que fallaron cuando el bot estaba offline
   try {
@@ -1193,30 +1672,46 @@ client.on('ready', () => {
     if (fs.existsSync(pendingFile)) {
       const pending = JSON.parse(fs.readFileSync(pendingFile, 'utf-8'));
       if (Array.isArray(pending) && pending.length > 0) {
-        log(`🔄 Procesando ${pending.length} mensajes pendientes (offline queue)...`);
-        pending.forEach(item => {
-          if (item.phone && item.message) {
-            let num = String(item.phone).replace(/\D/g, '');
-            if (num.startsWith('0054')) num = num.substring(4);
-            if (num.startsWith('0')) num = num.substring(1);
-            if (num.startsWith('15')) num = num.substring(2);
-            if (!num.startsWith('54')) num = '549' + num;
-            else if (num.startsWith('54') && !num.startsWith('549')) num = '549' + num.substring(2);
+        // FIX: no reenviar mensajes cuyo msgId ya se envió (idempotencia)
+        const aEncolar = pending.filter(p => !p.msgId || !mensajesEnviadosIds.has(p.msgId));
+        if (aEncolar.length > 0) {
+          log(`🔄 Procesando ${aEncolar.length} mensajes pendientes (offline queue)...`);
+          aEncolar.forEach(item => {
+            if (item.phone && item.message) {
+              let num = String(item.phone).replace(/\D/g, '');
+              if (num.startsWith('0054')) num = num.substring(4);
+              if (num.startsWith('0')) num = num.substring(1);
+              if (num.startsWith('15')) num = num.substring(2);
+              if (!num.startsWith('54')) num = '549' + num;
+              else if (num.startsWith('54') && !num.startsWith('549')) num = '549' + num.substring(2);
 
-            const chatId = `${num}@c.us`;
-            // Añadir a la cola que creamos previamente
-            messageQueue.push({
-              chatId,
-              message: item.message,
-              resolve: () => { },
-              reject: (err) => log(`❌ Falló envío pendiente: ${err.message}`),
-              retries: 0
-            });
-          }
-        });
-        // Limpiar el archivo
-        fs.writeFileSync(pendingFile, JSON.stringify([], null, 2));
-        processMessageQueue();
+              const chatId = `${num}@c.us`;
+              messageQueue.push({
+                chatId,
+                message: item.message,
+                msgId: item.msgId,
+                resolve: () => { },
+                reject: (err) => log(`❌ Falló envío pendiente: ${err.message}`),
+                retries: 0
+              });
+            }
+          });
+          // Limpiar solo lo que ya se envió; lo fallido queda para el próximo intento
+          processMessageQueue().finally(() => {
+            try {
+              const actuales = JSON.parse(fs.readFileSync(pendingFile, 'utf-8'));
+              const quedan = Array.isArray(actuales)
+                ? actuales.filter(p => p.msgId && !mensajesEnviadosIds.has(p.msgId))
+                : [];
+              if (quedan.length !== actuales.length) {
+                fs.writeFileSync(pendingFile, JSON.stringify(quedan, null, 2));
+              }
+            } catch (e) { }
+          });
+        } else {
+          // Todos ya enviados → limpiar el archivo
+          fs.writeFileSync(pendingFile, JSON.stringify([], null, 2));
+        }
       }
     }
   } catch (e) {
@@ -1234,12 +1729,17 @@ client.on('auth_failure', (msg) => {
   console.error('❌ Error de autenticación:', msg);
   currentBotStatus = { message: 'Error de autenticación', color: '#F44336' };
   io.emit('status', currentBotStatus);
+  // Reintentar más tarde: la sesión puede haberse recuperado o requerir re-escaneo de QR
+  setTimeout(() => { log('🔄 Reintentando autenticación...'); restartClient(); }, 15000);
 });
 
 client.on('disconnected', (reason) => {
   log(`⚠️ Bot desconectado: ${reason}`);
   currentBotStatus = { message: 'Desconectado', color: '#F44336' };
   io.emit('status', currentBotStatus);
+  // Reconexión automática con backoff
+  log('🔄 Intentando reconectar WhatsApp en 10 segundos...');
+  setTimeout(() => restartClient(), 10000);
 });
 
 // ══════════════════════════════════════════════════════════════════════
@@ -1381,9 +1881,10 @@ async function procesarComandoOperador(message) {
       return true;
     }
 
-    // 🧠 Extraer aprendizajes ANTES de liberar (DESACTIVADO)
+    // 🧠 Extraer aprendizajes ANTES de liberar
     if (conv.modoOperador && conv.historial.some(h => h.rol === 'operador')) {
-      // Aprendizaje desactivado
+      log(`🧠 Extrayendo aprendizajes de la conversación con ${conv.nombre}...`);
+      extraerAprendizajes(conv.historial, conv.nombre).catch(e => log(`⚠️ ${e.message}`));
     }
 
     conv.modoOperador = false;
@@ -1433,9 +1934,10 @@ async function procesarComandoOperador(message) {
     leads[leadData.id] = leadData;
     saveJSON(leadsFile, leads);
 
-    // 🧠 Extraer aprendizajes ANTES de cerrar (DESACTIVADO)
+    // 🧠 Extraer aprendizajes ANTES de cerrar
     if (conv.historial.some(h => h.rol === 'operador')) {
-      // Aprendizaje desactivado
+      log(`🧠 Extrayendo aprendizajes de la conversación cerrada con ${conv.nombre}...`);
+      extraerAprendizajes(conv.historial, conv.nombre).catch(e => log(`⚠️ ${e.message}`));
     }
 
     delete convs[numTarget];
@@ -1457,16 +1959,43 @@ async function procesarComandoOperador(message) {
 // LÓGICA PRINCIPAL DEL BOT
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+// Wrapper con cola FIFO por número: serializa mensajes del mismo cliente y agrega guard fromMe
 async function procesarMensaje(message) {
   if (CONFIG.botEnabled === false) return;
+  if (message.fromMe) return; // Anti-bucle: nunca procesar mensajes propios
   if (message.from.includes('@g.us')) return;
   if (message.from === 'status@broadcast') return;
 
-  const numero = formatearNumero(message.from);
+  // Usar chatId original (puede ser LID) como clave de cola para evitar procesamiento paralelo
+  const chatIdCola = String(message.from).split('@')[0];
 
-  // ANTI-DUPLICADOS: Si ya estamos procesando este número, ignorar este evento
-  if (procesandoNumeros.has(numero)) return;
-  procesandoNumeros.add(numero);
+  // Si ya hay un procesamiento en curso para este chat, encolar y salir
+  if (procesandoNumeros.has(chatIdCola)) {
+    if (!colaPorNumero.has(chatIdCola)) colaPorNumero.set(chatIdCola, []);
+    colaPorNumero.get(chatIdCola).push(message);
+    return;
+  }
+  procesandoNumeros.add(chatIdCola);
+
+  try {
+    await procesarMensajeInterno(message);
+  } finally {
+    procesandoNumeros.delete(chatIdCola);
+    // Procesar el siguiente mensaje encolado de este chat
+    const pendientes = colaPorNumero.get(chatIdCola);
+    if (pendientes && pendientes.length > 0) {
+      colaPorNumero.set(chatIdCola, pendientes.slice(1));
+      setImmediate(() => procesarMensaje(pendientes[0]));
+    } else {
+      colaPorNumero.delete(chatIdCola);
+    }
+  }
+}
+
+async function procesarMensajeInterno(message) {
+  // Resolver número real (maneja LIDs de WhatsApp)
+  const { numero, chatId } = await resolverNumeroReal(message);
+
 
   try {
     let texto = message.body ? message.body.trim() : "";
@@ -1490,6 +2019,12 @@ async function procesarMensaje(message) {
       // Ignorar si falla la notificación
     }
 
+    // Comandos de operador SIEMPRE se procesan (incluso en horario comercial)
+    const fueComando = await procesarComandoOperador(message);
+    if (fueComando) {
+      return;
+    }
+
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // PASO 0.1: VERIFICACIÓN DE HORARIO DE ATENCIÓN HUMANA
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -1504,6 +2039,8 @@ async function procesarMensaje(message) {
         } catch (e) { }
 
         conversacionesActivas[numero] = {
+          numero: numero,
+          chatId: chatId,
           nombre: nombreSombra,
           historial: [],
           scoreAcumulado: 0,
@@ -1514,12 +2051,14 @@ async function procesarMensaje(message) {
           ultimoMensaje: new Date().toISOString(),
           shadowMode: true
         };
+      } else {
+        if (!conversacionesActivas[numero].chatId) conversacionesActivas[numero].chatId = chatId;
+        if (!conversacionesActivas[numero].numero) conversacionesActivas[numero].numero = numero;
       }
 
       conversacionesActivas[numero].historial.push({ rol: 'cliente', mensaje: texto });
       conversacionesActivas[numero].ultimoMensaje = new Date().toISOString();
       saveJSON(CONFIG.conversationsFile, conversacionesActivas);
-      procesandoNumeros.delete(numero);
       return;
     }
 
@@ -1540,14 +2079,6 @@ async function procesarMensaje(message) {
     }
 
     if (!texto && !contextExtra) {
-      procesandoNumeros.delete(numero);
-      return;
-    }
-
-    // Primero verificar si es comando de operador
-    const fueComando = await procesarComandoOperador(message);
-    if (fueComando) {
-      procesandoNumeros.delete(numero);
       return;
     }
 
@@ -1573,6 +2104,8 @@ async function procesarMensaje(message) {
       // Registrar en historial para que el operador vea qué escribió, pero sin responder
       if (!conversacionesActivas[numero]) {
         conversacionesActivas[numero] = {
+          numero: numero,
+          chatId: chatId,
           nombre: nombreContacto,
           historial: [],
           scoreAcumulado: 0,
@@ -1580,11 +2113,12 @@ async function procesarMensaje(message) {
           modoOperador: true, // Forzar modo operador para que el bot no intente hablar luego
           ultimoMensaje: new Date().toISOString()
         };
+      } else {
+        if (!conversacionesActivas[numero].chatId) conversacionesActivas[numero].chatId = chatId;
+        if (!conversacionesActivas[numero].numero) conversacionesActivas[numero].numero = numero;
       }
       conversacionesActivas[numero].historial.push({ rol: 'cliente', mensaje: texto });
       saveJSON(CONFIG.conversationsFile, conversacionesActivas);
-
-      procesandoNumeros.delete(numero);
       return;
     }
 
@@ -1602,6 +2136,8 @@ async function procesarMensaje(message) {
         await responder(message, respuestaDireccion);
         if (!conv) {
           conversacionesActivas[numero] = {
+            numero: numero,
+            chatId: chatId,
             nombre: nombreContacto,
             historial: [],
             scoreAcumulado: 0,
@@ -1614,6 +2150,8 @@ async function procesarMensaje(message) {
           };
           conv = conversacionesActivas[numero];
         } else {
+          conv.chatId = chatId;
+          conv.numero = numero;
           conv.modoOperador = true;
           conv.fueraDeHorarioNotificado = true;
           conv.ultimoMensaje = new Date().toISOString();
@@ -1629,6 +2167,8 @@ async function procesarMensaje(message) {
 
         if (!conv) {
           conversacionesActivas[numero] = {
+            numero: numero,
+            chatId: chatId,
             nombre: nombreContacto,
             historial: [],
             scoreAcumulado: 0,
@@ -1641,6 +2181,8 @@ async function procesarMensaje(message) {
           };
           conv = conversacionesActivas[numero];
         } else {
+          conv.chatId = chatId;
+          conv.numero = numero;
           conv.modoOperador = true;
           conv.fueraDeHorarioNotificado = true;
           conv.ultimoMensaje = new Date().toISOString();
@@ -1652,11 +2194,12 @@ async function procesarMensaje(message) {
         saveJSON(CONFIG.conversationsFile, conversacionesActivas);
       } else {
         // Ya fue notificado de fuera de horario. Guardar en el historial en silencio.
+        if (!conv.chatId) conv.chatId = chatId;
+        if (!conv.numero) conv.numero = numero;
         conv.historial.push({ rol: 'cliente', mensaje: texto });
         conv.ultimoMensaje = new Date().toISOString();
         saveJSON(CONFIG.conversationsFile, conversacionesActivas);
       }
-      procesandoNumeros.delete(numero);
       return;
     }
 
@@ -1664,6 +2207,8 @@ async function procesarMensaje(message) {
       // ES UNA CONVERSACIÓN NUEVA
       log(`✨ Nueva conversación de ${nombreContacto} (${numero})`);
       conversacionesActivas[numero] = {
+        numero: numero,
+        chatId: chatId,
         nombre: nombreContacto,
         historial: [],
         scoreAcumulado: 0,
@@ -1685,9 +2230,10 @@ async function procesarMensaje(message) {
       conv.historial.push({ rol: 'bot', mensaje: saludo });
     } else {
       // CONVERSACIÓN EXISTENTE
+      if (!conv.chatId) conv.chatId = chatId;
+      if (!conv.numero) conv.numero = numero;
+
       if (conv.modoOperador) {
-        // ... (lógica de operador omitida por brevedad en el chunk, pero mantenida en memoria)
-        procesandoNumeros.delete(numero);
         return;
       }
 
@@ -1729,7 +2275,7 @@ async function procesarMensaje(message) {
       // Notificar a vendedores
       for (const vendedorNumero of CONFIG.vendedores) {
         try {
-          const chatVendedor = await client.getChatById(`${vendedorNumero}@c.us`);
+          const chatVendedor = await client.getChatById(await resolveChatId(vendedorNumero));
           await chatVendedor.sendMessage(
             `📋 *CONSULTA DERIVADA (${CONFIG.maxTurnos} preguntas completadas)*\n\n` +
             `👤 *Cliente:* ${nombreContacto}\n` +
@@ -1743,7 +2289,6 @@ async function procesarMensaje(message) {
           console.error(`❌ Error notificando vendedor:`, err.message);
         }
       }
-      procesandoNumeros.delete(numero);
       return;
     }
 
@@ -1770,14 +2315,18 @@ async function procesarMensaje(message) {
       .replace('PRESUPUESTO_ACEPTADO', '').trim();
 
     // Enviar respuesta (con imagen si corresponde)
-    if (analisis.imagen) {
-      const imagePath = path.join(CONFIG.imagesDir, analisis.imagen);
-      if (fs.existsSync(imagePath)) {
+    if (analisis.imagen && typeof analisis.imagen === 'string') {
+      // Seguridad: solo basenames dentro de imagesDir (evita path traversal tipo "../../server.js")
+      const imagenNombre = path.basename(analisis.imagen);
+      const imagePath = path.join(CONFIG.imagesDir, imagenNombre);
+      let esArchivoValido = false;
+      try { esArchivoValido = fs.existsSync(imagePath) && fs.statSync(imagePath).isFile(); } catch (e) { }
+      if (esArchivoValido) {
         try {
           const media = MessageMedia.fromFilePath(imagePath);
           // Enviar imagen con el texto como descripción
           await client.sendMessage(message.from, media, { caption: respuestaFinal });
-          log(`📸 Imagen enviada: ${analisis.imagen}`);
+          log(`📸 Imagen enviada: ${imagenNombre}`);
         } catch (e) {
           log(`❌ Error enviando imagen: ${e.message}`);
           await responder(message, respuestaFinal);
@@ -1809,7 +2358,7 @@ async function procesarMensaje(message) {
       // Notificar a todos los vendedores
       for (const vendedorNumero of CONFIG.vendedores) {
         try {
-          const chatVendedor = await client.getChatById(`${vendedorNumero}@c.us`);
+          const chatVendedor = await client.getChatById(await resolveChatId(vendedorNumero));
           await chatVendedor.sendMessage(
             `✅ *PRESUPUESTO ACEPTADO — Tomar ahora*
 
@@ -1859,7 +2408,7 @@ async function procesarMensaje(message) {
 
       for (const vendedorNumero of CONFIG.vendedores) {
         try {
-          const chatVendedor = await client.getChatById(`${vendedorNumero}@c.us`);
+          const chatVendedor = await client.getChatById(await resolveChatId(vendedorNumero));
           await chatVendedor.sendMessage(
             `🔥 *LEAD CALIENTE — Intervenir ahora*\n\n` +
             `👤 *Cliente:* ${nombreContacto}\n` +
@@ -1882,7 +2431,7 @@ async function procesarMensaje(message) {
 
       for (const vendedorNumero of CONFIG.vendedores) {
         try {
-          const chatVendedor = await client.getChatById(`${vendedorNumero}@c.us`);
+          const chatVendedor = await client.getChatById(await resolveChatId(vendedorNumero));
           await chatVendedor.sendMessage(
             `🟡 *Lead Tibio — Seguimiento sugerido*\n\n` +
             `👤 ${nombreContacto} | 📞 ${numero}\n` +
@@ -1898,8 +2447,6 @@ async function procesarMensaje(message) {
     saveJSON(CONFIG.conversationsFile, conversacionesActivas);
   } catch (err) {
     log(`❌ Error procesando mensaje de ${numero}: ${err.message}`);
-  } finally {
-    procesandoNumeros.delete(numero);
   }
 }
 
@@ -1923,8 +2470,8 @@ async function limpiezaAutomaticaYAprendizaje() {
       log(`🧠 Aprendizaje automático: Procesando conversación inactiva de ${conv.nombre}...`);
 
       try {
-        // 1. Extraer aprendizajes (DESACTIVADO)
-        // await extraerAprendizajes(conv.historial, conv.nombre);
+        // 1. Extraer aprendizajes de lo que escribió el humano
+        await extraerAprendizajes(conv.historial, conv.nombre);
 
         // 2. Guardar como lead (si tiene score)
         const tier = calcularTier(conv.scoreAcumulado);
@@ -1970,12 +2517,34 @@ setInterval(limpiezaAutomaticaYAprendizaje, 30 * 60 * 1000);
 client.on('message', procesarMensaje);
 
 // Escuchar mensajes creados (Enviados por el bot o por el humano desde el celular)
-client.on('message_create', (message) => {
+client.on('message_create', async (message) => {
   if (!message.fromMe) return;
 
   // 1. Si el OPERADOR responde a un cliente, capturamos su mensaje y reiniciamos timer
   if (message.to !== message.from) {
-    const numDestino = formatearNumero(message.to);
+    let numDestino = formatearNumero(message.to);
+    let chatIdDestino = message.to;
+
+    // Buscar si ya existe la conversación por chatId si message.to es un LID
+    if (esLID(message.to) || !conversacionesActivas[numDestino]) {
+      for (const [keyNum, convData] of Object.entries(conversacionesActivas)) {
+        if (convData.chatId === message.to || (convData.chatId && convData.chatId.split('@')[0] === String(message.to).split('@')[0])) {
+          numDestino = keyNum;
+          chatIdDestino = convData.chatId;
+          break;
+        }
+      }
+    }
+
+    // Si sigue sin encontrarse y es LID, intentar resolver con client.getContactById
+    if (esLID(message.to) && !conversacionesActivas[numDestino]) {
+      try {
+        const contactTo = await client.getContactById(message.to);
+        if (contactTo && contactTo.number) {
+          numDestino = formatearNumero(contactTo.number);
+        }
+      } catch (e) { }
+    }
 
     // Si NO existe la conversación pero es horario comercial, la creamos (Modo Sombra)
     const enHorarioComercial = isWithinBusinessHours();
@@ -1984,6 +2553,8 @@ client.on('message_create', (message) => {
       if (!conversacionesActivas[numDestino]) {
         // Crear conv de emergencia para detectar aprendizaje
         conversacionesActivas[numDestino] = {
+          numero: numDestino,
+          chatId: chatIdDestino,
           nombre: numDestino, // Fallback si no lo conocemos
           historial: [],
           scoreAcumulado: 0,
@@ -1994,6 +2565,9 @@ client.on('message_create', (message) => {
           ultimoMensaje: new Date().toISOString(),
           shadowMode: enHorarioComercial
         };
+      } else {
+        if (!conversacionesActivas[numDestino].chatId) conversacionesActivas[numDestino].chatId = chatIdDestino;
+        if (!conversacionesActivas[numDestino].numero) conversacionesActivas[numDestino].numero = numDestino;
       }
 
       // 🧠 Guardar mensaje del operador en el historial para aprendizaje
@@ -2035,6 +2609,7 @@ setInterval(syncHolidays, 24 * 60 * 60 * 1000); // Re-sincronizar cada 24hs
 
 // Función de inicio robusta con reintento y limpieza de sesión
 let isInitializing = false;
+let isRestarting = false; // FIX: declarado (la cola espera mientras el cliente se reinicia)
 async function startClient() {
   if (isInitializing) return;
   isInitializing = true;
@@ -2042,8 +2617,10 @@ async function startClient() {
   try {
     await client.initialize();
     isInitializing = false;
+    isRestarting = false;
   } catch (err) {
     isInitializing = false;
+    isRestarting = false;
     console.error('❌ Error fatal al inicializar cliente:', err.message);
 
     // Limpieza profunda antes del reintento para evitar bloqueo de sesión
@@ -2062,6 +2639,7 @@ startClient();
 
 async function restartClient() {
   if (isInitializing) return;
+  isRestarting = true;
   console.log('\n🔄 Iniciando reinicio de emergencia del cliente por caída de Frame...');
   try {
     await client.destroy();

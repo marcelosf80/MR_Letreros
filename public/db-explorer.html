@@ -25,8 +25,8 @@
         .db-header {
             background: linear-gradient(135deg, var(--db-accent) 0%, #2563eb 100%);
             border-radius: 16px;
-            padding: 2rem;
-            margin-bottom: 1.5rem;
+            padding: 1.75rem 2rem;
+            margin-bottom: 1.25rem;
             position: relative;
             overflow: hidden;
         }
@@ -50,16 +50,52 @@
         }
 
         .db-header .subtitle {
-            color: rgba(255,255,255,0.75);
+            color: rgba(255,255,255,0.85);
             font-size: 0.9rem;
             margin-top: 0.25rem;
+        }
+
+        .db-mode-nav {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1.25rem;
+            background: var(--bg-secondary);
+            padding: 6px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            width: fit-content;
+        }
+
+        .db-mode-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            padding: 0.5rem 1.25rem;
+            border-radius: 8px;
+            font-size: 0.88rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .db-mode-btn:hover {
+            color: var(--text-primary);
+        }
+
+        .db-mode-btn.active {
+            background: var(--db-accent);
+            color: white;
+            box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
         }
 
         .db-stat-card {
             background: var(--bg-secondary);
             border: 1px solid var(--border-color);
             border-radius: 12px;
-            padding: 1.25rem 1.5rem;
+            padding: 1rem 1.25rem;
             display: flex;
             align-items: center;
             gap: 1rem;
@@ -72,26 +108,26 @@
         }
 
         .db-stat-icon {
-            width: 48px;
-            height: 48px;
+            width: 44px;
+            height: 44px;
             background: var(--db-accent-glow);
             border-radius: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.4rem;
+            font-size: 1.3rem;
             flex-shrink: 0;
         }
 
         .db-stat-label {
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             color: var(--text-secondary);
             text-transform: uppercase;
             letter-spacing: 0.05em;
         }
 
         .db-stat-value {
-            font-size: 1.6rem;
+            font-size: 1.4rem;
             font-weight: 700;
             color: var(--text-primary);
             line-height: 1.2;
@@ -100,10 +136,10 @@
         /* Panel split */
         .db-panel {
             display: grid;
-            grid-template-columns: 340px 1fr;
+            grid-template-columns: 320px 1fr;
             gap: 1.25rem;
-            height: calc(100vh - 280px);
-            min-height: 500px;
+            height: calc(100vh - 310px);
+            min-height: 520px;
         }
 
         .db-list-panel, .db-detail-panel {
@@ -116,10 +152,10 @@
         }
 
         .db-panel-header {
-            padding: 1rem 1.25rem;
+            padding: 0.9rem 1.25rem;
             border-bottom: 1px solid var(--border-color);
             font-weight: 600;
-            font-size: 0.95rem;
+            font-size: 0.92rem;
             display: flex;
             align-items: center;
             gap: 0.6rem;
@@ -138,9 +174,9 @@
             background: var(--bg-primary);
             border: 1px solid var(--border-color);
             border-radius: 8px;
-            padding: 0.5rem 0.75rem;
+            padding: 0.55rem 0.8rem;
             color: var(--text-primary);
-            font-size: 0.875rem;
+            font-size: 0.85rem;
             outline: none;
             transition: border-color 0.2s;
         }
@@ -179,36 +215,36 @@
         }
 
         .db-file-name {
-            font-size: 0.8rem;
-            font-weight: 500;
+            font-size: 0.85rem;
+            font-weight: 600;
             color: var(--text-primary);
             word-break: break-all;
             line-height: 1.3;
         }
 
         .db-file-meta {
-            font-size: 0.7rem;
+            font-size: 0.72rem;
             color: var(--text-secondary);
             margin-top: 2px;
         }
 
         .db-file-size {
             margin-left: auto;
-            font-size: 0.7rem;
+            font-size: 0.72rem;
             color: var(--db-accent-light);
             font-weight: 600;
             white-space: nowrap;
             flex-shrink: 0;
         }
 
-        /* Detail panel */
+        /* Detail toolbar */
         .db-detail-toolbar {
-            padding: 0.75rem 1rem;
+            padding: 0.65rem 1rem;
             border-bottom: 1px solid var(--border-color);
             background: var(--bg-primary);
             display: flex;
             align-items: center;
-            gap: 0.5rem;
+            gap: 0.6rem;
             flex-shrink: 0;
             flex-wrap: wrap;
         }
@@ -217,6 +253,7 @@
             flex: 1;
             overflow: auto;
             padding: 1rem;
+            position: relative;
         }
 
         .db-detail-empty {
@@ -234,61 +271,91 @@
             opacity: 0.4;
         }
 
-        /* JSON viewer */
-        .json-tree {
-            font-family: 'Fira Code', 'Courier New', monospace;
-            font-size: 0.82rem;
-            line-height: 1.7;
+        /* Data Grid Table */
+        .db-table-wrapper {
+            max-height: 100%;
+            overflow: auto;
         }
 
-        /* Table view */
         .db-table {
             width: 100%;
-            border-collapse: collapse;
-            font-size: 0.82rem;
+            border-collapse: separate;
+            border-spacing: 0;
+            font-size: 0.81rem;
         }
 
         .db-table th {
             background: var(--bg-primary);
-            padding: 0.5rem 0.75rem;
+            padding: 0.6rem 0.8rem;
             text-align: left;
             font-size: 0.7rem;
             text-transform: uppercase;
             letter-spacing: 0.05em;
             color: var(--text-secondary);
-            border-bottom: 1px solid var(--border-color);
+            border-bottom: 2px solid var(--border-color);
             position: sticky;
             top: 0;
-            z-index: 1;
+            z-index: 10;
+            white-space: nowrap;
+        }
+
+        .db-table th .col-type {
+            font-size: 0.62rem;
+            color: var(--db-accent-light);
+            font-weight: normal;
+            display: block;
         }
 
         .db-table td {
-            padding: 0.5rem 0.75rem;
-            border-bottom: 1px solid rgba(var(--border-color-rgb, 255,255,255), 0.05);
+            padding: 0.55rem 0.8rem;
+            border-bottom: 1px solid var(--border-color);
             color: var(--text-primary);
-            max-width: 320px;
+            max-width: 280px;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
+            vertical-align: middle;
         }
 
         .db-table tr:hover td {
             background: var(--db-row-hover);
         }
 
+        .pk-badge {
+            background: rgba(245, 158, 11, 0.2);
+            color: #f59e0b;
+            font-size: 0.6rem;
+            padding: 1px 4px;
+            border-radius: 3px;
+            margin-left: 4px;
+        }
+
+        .status-pill {
+            font-size: 0.7rem;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-weight: 600;
+            display: inline-block;
+        }
+
+        .status-completed { background: rgba(16, 185, 129, 0.15); color: #10b981; }
+        .status-in_progress { background: rgba(59, 130, 246, 0.15); color: #3b82f6; }
+        .status-pending { background: rgba(245, 158, 11, 0.15); color: #f59e0b; }
+        .status-cancelled { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
+
         /* Badges */
         .badge-count {
             background: var(--db-accent);
             color: white;
-            font-size: 0.65rem;
-            padding: 2px 7px;
+            font-size: 0.7rem;
+            padding: 2px 8px;
             border-radius: 20px;
             font-weight: 600;
         }
 
         .badge-type {
             font-size: 0.65rem;
-            padding: 2px 7px;
+            padding: 2px 6px;
             border-radius: 4px;
             font-weight: 600;
         }
@@ -297,12 +364,11 @@
         .badge-object { background: rgba(245,158,11,0.15); color: #f59e0b; }
         .badge-other { background: rgba(99,102,241,0.15); color: #6366f1; }
 
-        /* Btn group */
         .db-view-btn {
             background: var(--bg-primary);
             border: 1px solid var(--border-color);
             color: var(--text-secondary);
-            padding: 0.3rem 0.7rem;
+            padding: 0.3rem 0.75rem;
             border-radius: 6px;
             font-size: 0.78rem;
             cursor: pointer;
@@ -324,24 +390,12 @@
             font-size: 0.78rem;
             cursor: pointer;
             transition: all 0.2s;
-            margin-left: auto;
         }
 
         .btn-refresh:hover {
             border-color: var(--db-accent);
             color: var(--db-accent-light);
         }
-
-        .spinner-sm {
-            width: 16px;
-            height: 16px;
-            border: 2px solid rgba(255,255,255,0.3);
-            border-top-color: white;
-            border-radius: 50%;
-            animation: spin 0.6s linear infinite;
-        }
-
-        @keyframes spin { to { transform: rotate(360deg); } }
 
         pre.json-pre {
             background: var(--bg-primary);
@@ -389,80 +443,79 @@
                 <div class="d-flex align-items-center gap-3">
                     <div>
                         <h1>🗄️ Explorador de Base de Datos</h1>
-                        <p class="subtitle mb-0">SQLite · <code style="opacity:.8">datos_mr_letreros/mr_letreros.db</code></p>
+                        <p class="subtitle mb-0">SQLite Relacional + Respaldos JSON Store · <code style="opacity:.9;color:#fff">mr_letreros.db</code></p>
                     </div>
-                    <button class="btn-refresh ms-auto" onclick="loadFileList()" id="btnRefreshAll" style="color:white;border-color:rgba(255,255,255,.4)">
+                    <button class="btn-refresh ms-auto" onclick="refreshCurrentView()" id="btnRefreshAll" style="color:white;border-color:rgba(255,255,255,.4)">
                         🔄 Actualizar
                     </button>
                 </div>
             </div>
 
-            <!-- Stat cards -->
-            <div class="row g-3 mb-3" id="statCards">
-                <div class="col-auto">
+            <!-- Tabs: Relacional vs JSON Store -->
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                <div class="db-mode-nav">
+                    <button class="db-mode-btn active" id="tabRelational" onclick="switchMode('relational')">
+                        🗃️ Tablas Relacionales (SQLite)
+                    </button>
+                    <button class="db-mode-btn" id="tabJsonStore" onclick="switchMode('jsonstore')">
+                        📁 Respaldos JSON (JSON Store)
+                    </button>
+                </div>
+
+                <div class="d-flex gap-2">
+                    <div class="db-stat-card">
+                        <div class="db-stat-icon" id="statIcon">📊</div>
+                        <div>
+                            <div class="db-stat-label" id="stat1Label">Tablas SQLite</div>
+                            <div class="db-stat-value" id="stat1Value">—</div>
+                        </div>
+                    </div>
                     <div class="db-stat-card">
                         <div class="db-stat-icon">📋</div>
                         <div>
-                            <div class="db-stat-label">Tablas / Archivos</div>
-                            <div class="db-stat-value" id="statTotal">—</div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-auto">
-                    <div class="db-stat-card">
-                        <div class="db-stat-icon">💾</div>
-                        <div>
-                            <div class="db-stat-label">Tamaño Total</div>
-                            <div class="db-stat-value" id="statSize">—</div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-auto">
-                    <div class="db-stat-card">
-                        <div class="db-stat-icon">🕐</div>
-                        <div>
-                            <div class="db-stat-label">Última Actualización</div>
-                            <div class="db-stat-value" id="statLastUpdate" style="font-size:1rem">—</div>
+                            <div class="db-stat-label" id="stat2Label">Filas Totales</div>
+                            <div class="db-stat-value" id="stat2Value">—</div>
                         </div>
                     </div>
                 </div>
             </div>
 
             <!-- Main panel -->
-            <div class="db-panel">
-                <!-- File list -->
+            <div class="db-panel mt-2">
+                <!-- File/Table list panel -->
                 <div class="db-list-panel">
                     <div class="db-panel-header">
-                        🗂️ Colecciones
-                        <span class="badge-count ms-auto" id="fileCount">0</span>
+                        <span id="sidebarPanelTitle">🗃️ Tablas Relacionales</span>
+                        <span class="badge-count ms-auto" id="listCount">0</span>
                     </div>
                     <div class="db-search">
-                        <input type="text" id="searchInput" placeholder="🔍 Filtrar archivos..." oninput="filterFiles(this.value)">
+                        <input type="text" id="searchInput" placeholder="🔍 Filtrar tablas..." oninput="filterList(this.value)">
                     </div>
-                    <div class="db-file-list" id="fileList">
+                    <div class="db-file-list" id="itemList">
                         <div class="db-detail-empty" style="height:200px">
                             <div class="loading-pulse"><span></span><span></span><span></span></div>
-                            <small>Cargando...</small>
+                            <small>Cargando datos...</small>
                         </div>
                     </div>
                 </div>
 
-                <!-- Detail view -->
+                <!-- Detail view panel -->
                 <div class="db-detail-panel">
-                    <div class="db-panel-header" id="detailTitle">
-                        📄 Seleccioná un archivo para ver su contenido
+                    <div class="db-panel-header d-flex align-items-center justify-content-between" id="detailTitle">
+                        📄 Seleccioná una tabla para explorar sus registros
                     </div>
                     <div class="db-detail-toolbar" id="detailToolbar" style="display:none!important">
-                        <button class="db-view-btn active" id="btnTable" onclick="switchView('table')">📊 Tabla</button>
-                        <button class="db-view-btn" id="btnJson" onclick="switchView('json')">{ } JSON</button>
-                        <span class="ms-2" id="detailMeta" style="font-size:.78rem;color:var(--text-secondary)"></span>
+                        <button class="db-view-btn active" id="btnTable" onclick="switchView('table')">📊 Grid de Datos</button>
+                        <button class="db-view-btn" id="btnJson" onclick="switchView('json')">{ } JSON Raw</button>
+                        <input type="text" id="tableRowSearch" class="form-control form-control-sm ms-2" placeholder="🔍 Buscar en filas..." style="width:200px;background:var(--bg-secondary);color:var(--text-primary);border-color:var(--border-color)" onkeyup="handleRowSearch(event)">
+                        <span class="ms-auto" id="detailMeta" style="font-size:.78rem;color:var(--text-secondary)"></span>
                         <button class="btn-refresh" onclick="reloadDetail()">🔄</button>
                     </div>
                     <div class="db-detail-content" id="detailContent">
                         <div class="db-detail-empty">
                             <div class="db-empty-icon">🗄️</div>
-                            <strong>Base de Datos SQLite</strong>
-                            <small>Seleccioná un archivo de la lista para explorar sus datos</small>
+                            <strong>Explorador SQLite MR Letreros</strong>
+                            <small>Seleccioná una tabla relacional o archivo JSON de la columna izquierda para explorar su contenido en vivo.</small>
                         </div>
                     </div>
                 </div>
@@ -471,12 +524,36 @@
         </div>
     </div>
 
+    <!-- Modal Ver Fila JSON -->
+    <div class="modal fade" id="rowModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content" style="background:var(--bg-secondary);border:1px solid var(--border-color);color:var(--text-primary)">
+                <div class="modal-header border-bottom border-secondary">
+                    <h5 class="modal-title" id="rowModalTitle">📄 Detalle del Registro</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <pre class="json-pre" id="rowModalContent"></pre>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="js/shared/sidebar-universal.js"></script>
     <script>
-        let allFiles = [];
-        let currentKey = null;
-        let currentData = null;
+        function escapeHtml(str) {
+            if (str === null || str === undefined) return '';
+            return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        }
+
+        let currentMode = 'relational'; // 'relational' | 'jsonstore'
+        let relationalTables = [];
+        let jsonStoreFiles = [];
+        let currentSelectedKey = null;
+        let currentTableData = null;
         let currentView = 'table';
+        let rowSearchQuery = '';
 
         async function apiGet(url) {
             const token = localStorage.getItem('mr_token');
@@ -486,57 +563,123 @@
         }
 
         function formatBytes(bytes) {
-            if (bytes < 1024) return bytes + ' B';
+            if (!bytes || bytes < 1024) return (bytes || 0) + ' B';
             if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
             return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
         }
 
-        function getFileIcon(key) {
-            if (key.includes('clientes')) return '👥';
-            if (key.includes('trabajos')) return '🔨';
-            if (key.includes('precios')) return '💰';
-            if (key.includes('costos')) return '📊';
-            if (key.includes('materiales')) return '📦';
-            if (key.includes('terceros')) return '🚚';
-            if (key.includes('gastos')) return '💳';
-            if (key.includes('usuarios')) return '🔐';
-            if (key.includes('tareas')) return '✅';
-            if (key.includes('led')) return '💡';
-            if (key.includes('calculadora')) return '🧮';
-            if (key.includes('instagram')) return '📸';
-            return '📄';
+        function getTableIcon(name) {
+            if (name.includes('trabajo')) return '🔨';
+            if (name.includes('cliente')) return '👥';
+            if (name.includes('precio')) return '💰';
+            if (name.includes('material')) return '📦';
+            if (name.includes('tercero')) return '🚚';
+            if (name.includes('gasto')) return '💳';
+            if (name.includes('usuario')) return '🔐';
+            if (name.includes('tarea')) return '✅';
+            if (name.includes('json_store')) return '📁';
+            return '📊';
         }
 
-        async function loadFileList() {
-            try {
-                const data = await apiGet('/api/admin/sqlite');
-                allFiles = data.registros || [];
+        async function switchMode(mode) {
+            currentMode = mode;
+            document.getElementById('tabRelational').classList.toggle('active', mode === 'relational');
+            document.getElementById('tabJsonStore').classList.toggle('active', mode === 'jsonstore');
 
-                const totalBytes = allFiles.reduce((s, r) => s + r.bytes, 0);
-                document.getElementById('statTotal').textContent = allFiles.length;
-                document.getElementById('statSize').textContent = formatBytes(totalBytes);
-                document.getElementById('statLastUpdate').textContent = allFiles[0]?.ultima_actualizacion || '—';
-                document.getElementById('fileCount').textContent = allFiles.length;
+            document.getElementById('searchInput').value = '';
+            rowSearchQuery = '';
+            document.getElementById('tableRowSearch').value = '';
 
-                renderFileList(allFiles);
-            } catch (e) {
-                document.getElementById('fileList').innerHTML =
-                    `<div class="p-3 text-danger small">❌ Error: ${e.message}</div>`;
+            if (mode === 'relational') {
+                document.getElementById('sidebarPanelTitle').textContent = '🗃️ Tablas Relacionales';
+                document.getElementById('statIcon').textContent = '📊';
+                document.getElementById('stat1Label').textContent = 'Tablas SQLite';
+                await loadRelationalTables();
+            } else {
+                document.getElementById('sidebarPanelTitle').textContent = '📁 Archivos JSON Store';
+                document.getElementById('statIcon').textContent = '💾';
+                document.getElementById('stat1Label').textContent = 'Archivos JSON';
+                await loadJsonStoreFiles();
             }
         }
 
-        function renderFileList(files) {
-            const el = document.getElementById('fileList');
+        function refreshCurrentView() {
+            switchMode(currentMode);
+        }
+
+        async function loadRelationalTables() {
+            try {
+                const data = await apiGet('/api/admin/relational-tables');
+                relationalTables = data.tables || [];
+
+                const totalRows = relationalTables.reduce((s, t) => s + t.rows, 0);
+                document.getElementById('stat1Value').textContent = relationalTables.length;
+                document.getElementById('stat2Value').textContent = totalRows.toLocaleString();
+                document.getElementById('listCount').textContent = relationalTables.length;
+
+                renderRelationalList(relationalTables);
+
+                if (relationalTables.length > 0 && !currentSelectedKey) {
+                    loadTableDetail(relationalTables[0].name);
+                }
+            } catch (e) {
+                document.getElementById('itemList').innerHTML = `<div class="p-3 text-danger small">❌ Error: ${e.message}</div>`;
+            }
+        }
+
+        function renderRelationalList(tables) {
+            const el = document.getElementById('itemList');
+            if (!tables.length) {
+                el.innerHTML = '<div class="p-3 text-secondary small text-center">No se encontraron tablas.</div>';
+                return;
+            }
+            el.innerHTML = tables.map(t => {
+                const active = t.name === currentSelectedKey ? 'active' : '';
+                return `
+                <div class="db-file-item ${active}" onclick="loadTableDetail('${t.name}')" id="item-${t.name}">
+                    <div class="db-file-icon">${getTableIcon(t.name)}</div>
+                    <div style="flex:1;min-width:0">
+                        <div class="db-file-name">${t.name}</div>
+                        <div class="db-file-meta">${t.columns.length} columnas</div>
+                    </div>
+                    <div class="db-file-size">${t.rows} filas</div>
+                </div>`;
+            }).join('');
+        }
+
+        async function loadJsonStoreFiles() {
+            try {
+                const data = await apiGet('/api/admin/sqlite');
+                jsonStoreFiles = data.registros || [];
+
+                const totalBytes = jsonStoreFiles.reduce((s, r) => s + r.bytes, 0);
+                document.getElementById('stat1Value').textContent = jsonStoreFiles.length;
+                document.getElementById('stat2Value').textContent = formatBytes(totalBytes);
+                document.getElementById('listCount').textContent = jsonStoreFiles.length;
+
+                renderJsonStoreList(jsonStoreFiles);
+
+                if (jsonStoreFiles.length > 0 && (!currentSelectedKey || !currentSelectedKey.includes('.json'))) {
+                    loadJsonStoreDetail(jsonStoreFiles[0].key);
+                }
+            } catch (e) {
+                document.getElementById('itemList').innerHTML = `<div class="p-3 text-danger small">❌ Error: ${e.message}</div>`;
+            }
+        }
+
+        function renderJsonStoreList(files) {
+            const el = document.getElementById('itemList');
             if (!files.length) {
-                el.innerHTML = '<div class="p-3 text-secondary small text-center">Sin resultados</div>';
+                el.innerHTML = '<div class="p-3 text-secondary small text-center">Sin archivos</div>';
                 return;
             }
             el.innerHTML = files.map(f => {
                 const name = f.key.split('/').pop();
-                const active = f.key === currentKey ? 'active' : '';
+                const active = f.key === currentSelectedKey ? 'active' : '';
+                const cleanId = 'item-' + f.key.replace(/\//g,'-').replace(/\./g,'_');
                 return `
-                <div class="db-file-item ${active}" onclick="loadDetail('${f.key}')" id="item-${f.key.replace(/\//g,'-').replace(/\./g,'_')}">
-                    <div class="db-file-icon">${getFileIcon(f.key)}</div>
+                <div class="db-file-item ${active}" onclick="loadJsonStoreDetail('${f.key}')" id="${cleanId}">
+                    <div class="db-file-icon">${getTableIcon(name)}</div>
                     <div style="flex:1;min-width:0">
                         <div class="db-file-name">${name}</div>
                         <div class="db-file-meta">${f.ultima_actualizacion || ''}</div>
@@ -546,46 +689,93 @@
             }).join('');
         }
 
-        function filterFiles(query) {
+        function filterList(query) {
             const q = query.toLowerCase();
-            const filtered = allFiles.filter(f => f.key.toLowerCase().includes(q));
-            document.getElementById('fileCount').textContent = filtered.length;
-            renderFileList(filtered);
+            if (currentMode === 'relational') {
+                const filtered = relationalTables.filter(t => t.name.toLowerCase().includes(q));
+                document.getElementById('listCount').textContent = filtered.length;
+                renderRelationalList(filtered);
+            } else {
+                const filtered = jsonStoreFiles.filter(f => f.key.toLowerCase().includes(q));
+                document.getElementById('listCount').textContent = filtered.length;
+                renderJsonStoreList(filtered);
+            }
         }
 
-        async function loadDetail(key) {
-            currentKey = key;
-            document.getElementById('detailTitle').textContent = '⏳ Cargando ' + key.split('/').pop() + '...';
+        async function loadTableDetail(tableName) {
+            currentSelectedKey = tableName;
+            document.getElementById('detailTitle').textContent = `⏳ Cargando tabla '${tableName}'...`;
             document.getElementById('detailToolbar').style.removeProperty('display');
             document.getElementById('detailContent').innerHTML =
                 '<div class="db-detail-empty"><div class="loading-pulse"><span></span><span></span><span></span></div></div>';
 
-            // highlight active
             document.querySelectorAll('.db-file-item').forEach(el => el.classList.remove('active'));
-            const id = 'item-' + key.replace(/\//g,'-').replace(/\./g,'_');
-            document.getElementById(id)?.classList.add('active');
+            document.getElementById('item-' + tableName)?.classList.add('active');
 
             try {
-                const result = await apiGet('/api/admin/sqlite/' + key);
-                currentData = result;
-                document.getElementById('detailTitle').textContent =
-                    getFileIcon(key) + ' ' + key.split('/').pop();
+                const url = `/api/admin/relational-table/${tableName}?search=${encodeURIComponent(rowSearchQuery)}`;
+                const result = await apiGet(url);
+                currentTableData = result;
 
-                const type = Array.isArray(result.data) ? 'array' :
-                             (typeof result.data === 'object' ? 'object' : 'otro');
-                const typeBadge = `<span class="badge-type badge-${type === 'array' ? 'array' : type === 'object' ? 'object' : 'other'}">${type === 'array' ? 'Array' : type === 'object' ? 'Objeto' : 'Texto'}</span>`;
+                document.getElementById('detailTitle').innerHTML =
+                    `<span>${getTableIcon(tableName)} Tabla <strong>${tableName}</strong></span>`;
                 document.getElementById('detailMeta').innerHTML =
-                    `${typeBadge} &nbsp; <strong>${result.registros}</strong> registro(s) &nbsp; · &nbsp; ${result.ultima_actualizacion}`;
+                    `<strong>${result.totalRows}</strong> fila(s) totales &nbsp;·&nbsp; ${result.columns.length} cols`;
 
                 renderView(currentView);
             } catch (e) {
                 document.getElementById('detailContent').innerHTML =
-                    `<div class="p-3 text-danger small">❌ ${e.message}</div>`;
+                    `<div class="p-3 text-danger small">❌ Error: ${e.message}</div>`;
+            }
+        }
+
+        async function loadJsonStoreDetail(key) {
+            currentSelectedKey = key;
+            const fileName = key.split('/').pop();
+            document.getElementById('detailTitle').textContent = `⏳ Cargando ${fileName}...`;
+            document.getElementById('detailToolbar').style.removeProperty('display');
+            document.getElementById('detailContent').innerHTML =
+                '<div class="db-detail-empty"><div class="loading-pulse"><span></span><span></span><span></span></div></div>';
+
+            document.querySelectorAll('.db-file-item').forEach(el => el.classList.remove('active'));
+            const cleanId = 'item-' + key.replace(/\//g,'-').replace(/\./g,'_');
+            document.getElementById(cleanId)?.classList.add('active');
+
+            try {
+                const result = await apiGet('/api/admin/sqlite/' + key);
+                currentTableData = {
+                    isJsonStore: true,
+                    data: result.data,
+                    registros: result.registros,
+                    ultima_actualizacion: result.ultima_actualizacion
+                };
+
+                document.getElementById('detailTitle').innerHTML =
+                    `<span>${getTableIcon(fileName)} Archivo <strong>${fileName}</strong></span>`;
+                document.getElementById('detailMeta').innerHTML =
+                    `<strong>${result.registros}</strong> registro(s) &nbsp;·&nbsp; ${result.ultima_actualizacion}`;
+
+                renderView(currentView);
+            } catch (e) {
+                document.getElementById('detailContent').innerHTML =
+                    `<div class="p-3 text-danger small">❌ Error: ${e.message}</div>`;
             }
         }
 
         function reloadDetail() {
-            if (currentKey) loadDetail(currentKey);
+            if (!currentSelectedKey) return;
+            if (currentMode === 'relational') {
+                loadTableDetail(currentSelectedKey);
+            } else {
+                loadJsonStoreDetail(currentSelectedKey);
+            }
+        }
+
+        function handleRowSearch(e) {
+            rowSearchQuery = e.target.value;
+            if (e.key === 'Enter' || rowSearchQuery === '') {
+                reloadDetail();
+            }
         }
 
         function switchView(view) {
@@ -596,13 +786,21 @@
         }
 
         function renderView(view) {
-            if (!currentData) return;
-            if (view === 'json') renderJson();
-            else renderTable();
+            if (!currentTableData) return;
+            if (view === 'json') {
+                renderJsonView();
+            } else {
+                if (currentTableData.isJsonStore) {
+                    renderJsonStoreTableView();
+                } else {
+                    renderRelationalTableView();
+                }
+            }
         }
 
-        function renderJson() {
-            const formatted = JSON.stringify(currentData.data, null, 2);
+        function renderJsonView() {
+            const rawData = currentTableData.isJsonStore ? currentTableData.data : currentTableData.rows;
+            const formatted = JSON.stringify(rawData, null, 2);
             const highlighted = formatted
                 .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
                 .replace(/"([^"]+)":/g, '<span class="key">"$1"</span>:')
@@ -614,29 +812,73 @@
                 `<pre class="json-pre"><code>${highlighted}</code></pre>`;
         }
 
-        function renderTable() {
-            const data = currentData?.data;
+        function renderRelationalTableView() {
+            const cols = currentTableData.columns || [];
+            const rows = currentTableData.rows || [];
+
+            if (!rows.length) {
+                document.getElementById('detailContent').innerHTML =
+                    `<div class="db-detail-empty">
+                        <div class="db-empty-icon">📭</div>
+                        <strong>Tabla sin registros</strong>
+                        <small>No hay filas almacenadas en la tabla ${currentTableData.table}.</small>
+                    </div>`;
+                return;
+            }
+
+            let html = `
+            <div class="db-table-wrapper">
+                <table class="db-table">
+                    <thead>
+                        <tr>
+                            <th style="width:40px">#</th>
+                            ${cols.map(c => `
+                                <th>
+                                    ${escapeHtml(c.name)} ${c.pk ? '<span class="pk-badge">PK</span>' : ''}
+                                    <span class="col-type">${escapeHtml(c.type)}</span>
+                                </th>
+                            `).join('')}
+                            <th style="width:60px;text-align:center">Ver</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rows.map((row, idx) => `
+                            <tr>
+                                <td class="text-secondary font-monospace" style="font-size:.72rem">${idx + 1}</td>
+                                ${cols.map(c => {
+                                    const val = row[c.name];
+                                    return `<td>${formatCellValue(c.name, val, row)}</td>`;
+                                }).join('')}
+                                <td text-align="center">
+                                    <button class="btn btn-xs btn-outline-purple p-1" style="font-size:.7rem;padding:2px 6px!important" onclick="openRowModal(${idx})">
+                                        🔍
+                                    </button>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>`;
+
+            document.getElementById('detailContent').innerHTML = html;
+        }
+
+        function renderJsonStoreTableView() {
+            const data = currentTableData.data;
             if (!data) return;
 
             if (Array.isArray(data) && data.length > 0) {
-                const keys = [...new Set(data.flatMap(o => typeof o === 'object' ? Object.keys(o) : []))].slice(0, 15);
-                const rows = data.slice(0, 200);
+                const keys = [...new Set(data.flatMap(o => typeof o === 'object' && o !== null ? Object.keys(o) : []))].slice(0, 15);
+                const rows = data.slice(0, 300);
                 const html = `
-                <table class="db-table">
-                    <thead><tr>${keys.map(k => `<th>${k}</th>`).join('')}</tr></thead>
-                    <tbody>${rows.map(row => `
-                        <tr>${keys.map(k => {
-                            const v = row?.[k];
-                            const display = v === null ? '<span class="null">null</span>'
-                                : v === undefined ? ''
-                                : typeof v === 'object' ? `<span class="badge-type badge-object">{…}</span>`
-                                : String(v).length > 60 ? String(v).substring(0, 60) + '…'
-                                : String(v);
-                            return `<td title="${typeof v === 'string' ? v.replace(/"/g,'&quot;') : ''}">${display}</td>`;
-                        }).join('')}</tr>
-                    `).join('')}</tbody>
-                </table>
-                ${data.length > 200 ? `<p class="text-secondary small p-2">Mostrando 200 de ${data.length} registros. Usá la vista JSON para ver todos.</p>` : ''}`;
+                <div class="db-table-wrapper">
+                    <table class="db-table">
+                        <thead><tr>${keys.map(k => `<th>${escapeHtml(k)}</th>`).join('')}</tr></thead>
+                        <tbody>${rows.map((row, idx) => `
+                            <tr>${keys.map(k => `<td>${formatCellValue(k, row?.[k], row)}</td>`).join('')}</tr>
+                        `).join('')}</tbody>
+                    </table>
+                </div>`;
                 document.getElementById('detailContent').innerHTML = html;
             } else if (typeof data === 'object' && data !== null) {
                 const entries = Object.entries(data);
@@ -645,23 +887,77 @@
                     <thead><tr><th>Clave</th><th>Valor</th><th>Tipo</th></tr></thead>
                     <tbody>${entries.map(([k, v]) => `
                         <tr>
-                            <td class="key" style="font-family:monospace">${k}</td>
-                            <td>${typeof v === 'object' ? JSON.stringify(v).substring(0, 80) + '…' : String(v)}</td>
+                            <td class="key font-monospace">${escapeHtml(k)}</td>
+                            <td>${typeof v === 'object' ? escapeHtml(JSON.stringify(v).substring(0, 100)) + '…' : escapeHtml(String(v))}</td>
                             <td><span class="badge-type ${typeof v === 'object' ? 'badge-object' : 'badge-other'}">${typeof v}</span></td>
                         </tr>
                     `).join('')}</tbody>
                 </table>`;
                 document.getElementById('detailContent').innerHTML = html;
-            } else {
-                document.getElementById('detailContent').innerHTML =
-                    `<div class="p-3 text-secondary small">Datos no tabulables. Usá la vista JSON.</div>`;
             }
         }
 
-        // Inicializar
+        function formatCellValue(colName, val, row) {
+            if (val === null || val === undefined) return '<span class="null">null</span>';
+
+            // Especial para missing_from_sheet
+            if (colName === 'missing_from_sheet' && (val === 1 || val === true)) {
+                return `<span class="badge bg-danger" style="font-size:.68rem">⚠️ Eliminado de Planilla</span>`;
+            }
+
+            // Status badges
+            if (colName === 'status' || colName === 'estado') {
+                const s = String(val).toLowerCase();
+                const labelMap = {
+                    'pending': '⏳ Pendiente',
+                    'in_progress': '⚙️ En Proceso',
+                    'completed': '✅ Completado',
+                    'cancelled': '🚫 Cancelado'
+                };
+                const displayLabel = labelMap[s] || escapeHtml(val);
+                return `<span class="status-pill status-${s}">${displayLabel}</span>`;
+            }
+
+            // Precios / Montos
+            if (['total', 'total_cost', 'profit', 'paid_amount', 'balance', 'monto', 'precio_gremio', 'precio_cliente'].includes(colName) && typeof val === 'number') {
+                return `<strong>$ ${val.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</strong>`;
+            }
+
+            // Detectar strings JSON
+            if (typeof val === 'string' && (val.startsWith('{') || val.startsWith('['))) {
+                try {
+                    const parsed = JSON.parse(val);
+                    const isArr = Array.isArray(parsed);
+                    const count = isArr ? parsed.length : Object.keys(parsed).length;
+                    return `<span class="badge-type ${isArr ? 'badge-array' : 'badge-object'}" title="${escapeHtml(val.replace(/"/g, '&quot;'))}">${isArr ? '[' + count + ' items]' : '{' + count + ' campos}'}</span>`;
+                } catch (e) {}
+            }
+
+            // Objetos directo
+            if (typeof val === 'object') {
+                return `<span class="badge-type badge-object">{…}</span>`;
+            }
+
+            const str = String(val);
+            if (str.length > 50) {
+                return `<span title="${escapeHtml(str.replace(/"/g, '&quot;'))}">${escapeHtml(str.substring(0, 50))}…</span>`;
+            }
+            return escapeHtml(str);
+        }
+
+        function openRowModal(rowIdx) {
+            if (!currentTableData || !currentTableData.rows) return;
+            const rowData = currentTableData.rows[rowIdx];
+            document.getElementById('rowModalTitle').textContent = `📄 Fila ${rowIdx + 1} — ${currentTableData.table}`;
+            document.getElementById('rowModalContent').textContent = JSON.stringify(rowData, null, 2);
+            const modal = new bootstrap.Modal(document.getElementById('rowModal'));
+            modal.show();
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
-            loadFileList();
+            switchMode('relational');
         });
     </script>
 </body>
+
 </html>

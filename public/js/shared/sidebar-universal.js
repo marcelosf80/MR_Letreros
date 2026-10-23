@@ -62,6 +62,13 @@
         section: 'Gestión',
         items: [
           {
+            id: 'secretaria',
+            icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="sb-icon-gradient"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><line x1="9" y1="10" x2="15" y2="10"/><line x1="12" y1="7" x2="12" y2="13"/></svg>`,
+            label: 'Secretaría IA',
+            desc: 'Seguimiento WhatsApp',
+            url: 'secretaria.html'
+          },
+          {
             id: 'clientes-gestion',
             icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="sb-icon-gradient"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`,
             label: 'Base de Clientes',
@@ -177,6 +184,13 @@
             url: 'chatbot-admin.html'
           },
           {
+            id: 'asistente',
+            icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="sb-icon-gradient"><path d="M12 2a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2 2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z"/><path d="M4 11v2a8 8 0 0 0 16 0v-2"/><rect x="4" y="8" width="16" height="12" rx="4"/><line x1="9" y1="13" x2="9.01" y2="13"/><line x1="15" y1="13" x2="15.01" y2="13"/></svg>`,
+            label: 'Chat Asistente IA',
+            desc: 'Consultas y asistente general',
+            url: 'asistente.html'
+          },
+          {
             id: 'vectorizador',
             icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="sb-icon-gradient"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/></svg>`,
             label: 'Herramientas IA',
@@ -189,6 +203,13 @@
             label: 'Nesting Polifan',
             desc: 'Optimización de planchas',
             url: 'nesting-polifan.html'
+          },
+          {
+            id: 'calculador-rollos',
+            icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="sb-icon-gradient"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M7 15h0M2 9.5h20M7 4v16"/></svg>`,
+            label: 'Calculador Rollos',
+            desc: 'Metros de lona y vinilo',
+            url: 'calculador-rollos.html'
           },
           {
             id: 'calculador-vectores',
@@ -531,13 +552,17 @@
         // Fetch Trabajos
         const resTrabajos = await fetch('/api/trabajos', { headers: { 'Authorization': `Bearer ${token}` } });
         if (resTrabajos.ok) {
-            const trabajos = await resTrabajos.json();
-            if (trabajos && trabajos.length > 0) {
+            const trabajosResp = await resTrabajos.json();
+            // Fix: la API devuelve { works: [...] }, no un array directo
+            const trabajos = (trabajosResp && Array.isArray(trabajosResp.works)) ? trabajosResp.works
+                : (Array.isArray(trabajosResp) ? trabajosResp : []);
+            if (trabajos.length > 0) {
                 let pendientes = 0;
                 let enProceso = 0;
                 trabajos.forEach(t => {
-                    if(t.estado === 'pendiente') pendientes++;
-                    if(t.estado === 'en_proceso') enProceso++;
+                    // Fix: el campo real es 'status' (no 'estado') con valores pending/in_progress
+                    if (t.status === 'pending') pendientes++;
+                    if (t.status === 'in_progress') enProceso++;
                 });
 
                 const descTrabajos = document.getElementById('nav-desc-trabajos');
@@ -580,7 +605,8 @@
     }
 
     function setupSocket() {
-      const socket = io();
+      // FIX: enviar el token de sesión en el handshake (el servidor ahora lo exige)
+      const socket = io({ auth: { token: localStorage.getItem('mr_token') || '' } });
       window.mrSocket = socket; // Expose globally for other modules
       
       // Dispatch an event to let other scripts know socket is ready
@@ -594,27 +620,54 @@
         Notification.requestPermission();
       }
 
+      function playNotificationSound() {
+        try {
+          const audio = new Audio('/sounds/notification.mp3');
+          audio.play().catch(() => {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(587.33, ctx.currentTime);
+            osc.frequency.setValueAtTime(880, ctx.currentTime + 0.15);
+            gain.gain.setValueAtTime(0.1, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start();
+            osc.stop(ctx.currentTime + 0.5);
+          });
+        } catch(e) {}
+      }
+
       // Escuchar nuevos pedidos
       socket.on('new_order', (data) => {
         console.log('📦 Nuevo pedido recibido:', data);
         
+        // Emitir evento interno para sincronizar componentes de la vista actual
+        window.dispatchEvent(new CustomEvent('new_order_received', { detail: data }));
+
         // Mostrar notificación de navegador
         if (Notification.permission === 'granted') {
-          const notification = new Notification(data.title, {
-            body: data.message,
-            icon: '/img/logo_negro.png',
-            tag: data.workId // Evitar duplicados
-          });
+          try {
+            const notification = new Notification(data.title || '📦 Nuevo Pedido Gremio', {
+              body: data.message || 'Se ha recibido un nuevo pedido',
+              icon: '/img/logo_negro.png',
+              tag: data.workId || Date.now()
+            });
 
-          notification.onclick = () => {
-            window.location.href = 'trabajos.html';
-            window.focus();
-          };
+            notification.onclick = () => {
+              window.location.href = 'trabajos.html';
+              window.focus();
+            };
+          } catch(e) {}
         }
 
-        // También reproducir sonido si estamos en el dashboard
-        const audio = new Audio('/sounds/notification.mp3');
-        audio.play().catch(e => console.log('Bloqueo de audio por navegador'));
+        playNotificationSound();
+      });
+
+      socket.on('works_updated', (data) => {
+        window.dispatchEvent(new CustomEvent('works_updated_signal', { detail: data }));
       });
     }
   }

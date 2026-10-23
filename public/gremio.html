@@ -375,6 +375,7 @@
     <script>
       // ── Filtro de historial ──
       let historialFiltroEstado = 'todos';
+      window.historialFiltroEstado = historialFiltroEstado; // exponer para gremio-main.js
       let historialFiltroNombre = '';
 
       window.filterHistoryByClient = function(value) {
@@ -392,6 +393,7 @@
 
       window.setHistorialFilter = function(estado, el) {
         historialFiltroEstado = estado;
+        window.historialFiltroEstado = estado;
         document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
         el.classList.add('active');
         applyHistorialFilters();
@@ -400,6 +402,7 @@
       window.clearHistorialFilter = function() {
         historialFiltroNombre = '';
         historialFiltroEstado = 'todos';
+        window.historialFiltroEstado = 'todos';
         document.getElementById('historialSearch').value = '';
         document.getElementById('historyFilterMsg').style.display = 'none';
         document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));

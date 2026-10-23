@@ -45,3 +45,10 @@ models/*.pth
 # Directorio de build C++
 mr_letreros_cpp/build/
 
+# Backups y temporales de desarrollo
+*.bak*
+*.backup
+scratch/
+tests/
+uploads/tareas/
+logs/

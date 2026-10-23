@@ -53,13 +53,20 @@ async function runNesting() {
 
         if (progressText) progressText.innerText = 'Optimizando en servidor... (100%)';
         // 3. Procesar el resultado de Python para que `drawResults` lo entienda
+        // (compatibilidad: formato nuevo {bins, unplaced_parts} y viejo [bin,...])
+        const binsData = Array.isArray(nestingResult) ? nestingResult : (nestingResult.bins || []);
+        const unplaced = (nestingResult && nestingResult.unplaced_parts) || [];
+        if (unplaced.length > 0 && window.alert) {
+            window.alert(`⚠️ ${unplaced.length} pieza(s) no entraron en ninguna placa:\n${unplaced.map(u => u.id).join(', ')}`);
+        }
+
         const packerResult = {
             bins: [],
             sheetW: sheetW,
             sheetH: sheetH
         };
         
-        nestingResult.forEach(binData => {
+        binsData.forEach(binData => {
             const newBin = { id: binData.bin_id, parts: [] };
             binData.parts.forEach(placedPartData => {
                 const originalPart = globalParts.find(p => p.id === placedPartData.id);

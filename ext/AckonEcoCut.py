@@ -6,7 +6,7 @@ import cspsubdiv
 import cubicsuperpath 
 import simplepath 
 import simpletransform 
-from itertools import count, izip 
+from itertools import count
 import os
 import re
 import simpletransform 
@@ -478,7 +478,7 @@ def point_path_squared_distance(point, path):
 
     nearest_index = 0
     nearest_distance = squared_distance(point, path[0])
-    for (idx, path_point) in izip(count(1), path[1:]):
+    for (idx, path_point) in zip(count(1), path[1:]):
         dist = squared_distance(point, path_point)
         if dist < nearest_distance:
             nearest_index = idx
@@ -942,7 +942,7 @@ def compute_paths_distance(path1, path2):
     index_path1 = 0
     (paths_distance, index_path2) = point_path_squared_distance(path1[index_path1], path2)
 
-    for (idx1, point) in izip(count(1), path1[1:]):
+    for (idx1, point) in zip(count(1), path1[1:]):
         (distance, idx2) = point_path_squared_distance(point, path2)
         if distance < paths_distance:
             paths_distance = distance
@@ -991,7 +991,7 @@ class PathsJoiner(object):
             self.path,
             self.remaining_paths[0])
 
-        for (path_idx, path) in izip(count(1), self.remaining_paths[1:]):
+        for (path_idx, path) in zip(count(1), self.remaining_paths[1:]):
             (dist, idx1, idx2) = compute_paths_distance(self.path, path)
             if dist < path_distance:
                 path_distance = dist

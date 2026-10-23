@@ -68,6 +68,20 @@
             border-left: 4px solid #FF9800;
         }
 
+        .work-card.multi-item-card {
+            border: 2px solid #f59e0b !important;
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.18) 0%, rgba(168, 85, 247, 0.12) 100%) !important;
+            box-shadow: 0 0 16px rgba(245, 158, 11, 0.25), inset 0 0 30px rgba(245, 158, 11, 0.06) !important;
+        }
+
+        .work-card.multi-item-card .work-header {
+            border-bottom-color: rgba(245, 158, 11, 0.3) !important;
+        }
+
+        .work-card.multi-item-card .work-client {
+            color: #fbbf24 !important;
+        }
+
         @keyframes pulse {
 
             0%,

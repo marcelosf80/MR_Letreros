@@ -39,6 +39,29 @@ if (btnStopSim) {
     });
 }
 
+// Secuencia de corte ordenada por cercanía (TSP simple). Falta global:
+// sin esta función, runSimulation/generate3DPath lanzaban ReferenceError.
+function getOptimizedSequence(bin) {
+    const sequence = [];
+    const parts = (bin && Array.isArray(bin.parts)) ? bin.parts.slice() : [];
+    let currentPos = { x: 0, y: 0 };
+    while (parts.length > 0) {
+        let nearestIdx = -1;
+        let minDist = Infinity;
+        for (let i = 0; i < parts.length; i++) {
+            const p = parts[i];
+            const cx = (p.fit && p.fit.x) || 0;
+            const cy = (p.fit && p.fit.y) || 0;
+            const d = (cx - currentPos.x) ** 2 + (cy - currentPos.y) ** 2;
+            if (d < minDist) { minDist = d; nearestIdx = i; }
+        }
+        const part = parts.splice(nearestIdx, 1)[0];
+        if (part && part.element) sequence.push({ parentPart: part, element: part.element });
+        if (part) currentPos = { x: (part.fit && part.fit.x) || 0, y: (part.fit && part.fit.y) || 0 };
+    }
+    return sequence;
+}
+
 function runSimulation(bin, ctx, width, height, scale) {
     // Detener simulación anterior si existe
     if (simulationState.active) {
@@ -95,7 +118,7 @@ function runSimulation(bin, ctx, width, height, scale) {
         points = optimizePathStart(points, currentPos);
 
         if (points.length > 0) {
-            const travelPath = getSafeTravelPath(currentPos, points[0], bin.width * scale, bin.height * scale);
+            const travelPath = getSafeTravelPath(currentPos, points[0], (bin.width || 200) * scale, (bin.height || 200) * scale);
             let lastP = currentPos;
 
             travelPath.forEach(p => {
@@ -358,7 +381,7 @@ function generate3DPath(bin) {
             finalX = part.fit.x + relX;
             finalY = part.fit.y + relY;
         }
-        return new THREE.Vector3(finalX, bin.height - finalY, 0); 
+        return new THREE.Vector3(finalX, ((bin && bin.height) || 200) - finalY, 0); 
     };
 
     sequence.forEach(item => {

@@ -1,5 +1,5 @@
 /**
- * MÃ“DULO DE GESTIÃ“N DE CLIENTES
+ * MÓDULO DE GESTIÓN DE CLIENTES
  * Sistema completo CRUD para gestionar clientes de Gremio y Clientes Finales
  */
 
@@ -10,7 +10,7 @@ let clientesFiltrados = [];
 let editingClientId = null;
 let currentSort = 'nombre';
 
-// FunciÃ³n de formato de moneda
+// Función de formato de moneda
 function formatCurrencyAR(num, decimals = 2) {
     if (num === null || num === undefined || isNaN(num)) {
         return '0,00';
@@ -21,93 +21,86 @@ function formatCurrencyAR(num, decimals = 2) {
     }).format(num);
 }
 
-// ==================== INICIALIZACIÃ“N ====================
+// ==================== INICIALIZACIÓN ====================
 
-document.addEventListener('DOMContentLoaded', async function() {
-    console.log('[CLIENTES-GESTION] ðŸš€ Inicializando mÃ³dulo...');
-    
+document.addEventListener('DOMContentLoaded', async function () {
+    console.log('[CLIENTES-GESTION] 🚀 Inicializando módulo...');
+
     // Configurar eventos
     setupEventListeners();
-    
+
     // Cargar clientes
     await loadClientes();
-    
-    console.log('[CLIENTES-GESTION] âœ… MÃ³dulo listo');
+
+    console.log('[CLIENTES-GESTION] ✅ Módulo listo');
 });
 
 function setupEventListeners() {
     // Modal handlers
-    const btnClose = document.getElementById('btnCloseClient');
-    if (btnClose) btnClose.addEventListener('click', closeClientModal);
-    
-    const btnCancel = document.getElementById('btnCancelClient');
-    if (btnCancel) btnCancel.addEventListener('click', closeClientModal);
-    
-    const btnSave = document.getElementById('btnSaveClient');
-    if (btnSave) btnSave.addEventListener('click', saveCliente);
-    
-    // Click fuera del modal para cerrar
-    const clientModal = document.getElementById('clientModal');
-    if (clientModal) clientModal.addEventListener('click', function(e) { if (e.target === this) closeClientModal(); });
-    
-    const detailsModal = document.getElementById('detailsModal');
-    if (detailsModal) detailsModal.addEventListener('click', function(e) { if (e.target === this) closeDetailsModal(); });
+    document.getElementById('btnCloseClient').addEventListener('click', closeClientModal);
+    document.getElementById('btnCancelClient').addEventListener('click', closeClientModal);
+    document.getElementById('btnSaveClient').addEventListener('click', saveCliente);
 
-    // BÃºsqueda en tiempo real
-    const searchInput = document.getElementById('searchInput');
-    if (searchInput) {
-        searchInput.addEventListener('input', filterClientes);
-    }
+    // Click fuera del modal para cerrar
+    document.getElementById('clientModal').addEventListener('click', function (e) {
+        if (e.target === this) closeClientModal();
+    });
+
+    document.getElementById('detailsModal').addEventListener('click', function (e) {
+        if (e.target === this) closeDetailsModal();
+    });
+
+    // Logout Logic
+    document.body.addEventListener('click', e => {
+        if (e.target.closest('#btn-logout, .btn-logout-sidebar')) {
+            e.preventDefault();
+            if(confirm('¿Cerrar sesión de forma segura?')) {
+                localStorage.removeItem('mr_token');
+                window.location.href = 'login.html';
+            }
+        }
+    });
 }
 
 // ==================== CARGAR CLIENTES ====================
 
 async function loadClientes() {
     try {
-        console.log('[CLIENTES-GESTION] ðŸ”— Conectando con base de datos unificada (clientes.json)...');
-        
+        console.log('[CLIENTES-GESTION] 🔗 Conectando con base de datos unificada (clientes.json)...');
+
         const token = localStorage.getItem('mr_token');
         if (!token) {
-            console.warn('[CLIENTES-GESTION] No hay token, no se pueden cargar clientes.');
-            alert('âš ï¸� No has iniciado sesiÃ³n. Por favor, ingresa nuevamente.');
-            window.location.href = '/login.html'; // Redirigir si es necesario
+            console.warn('[CLIENTES-GESTION] No hay token.');
             return;
         }
-        
+
         // Cargar desde API (que lee datos_mr_letreros/clientes.json)
         const response = await (window.AUTH ? window.AUTH.fetch('/api/clientes') : fetch('/api/clientes', {
             headers: {
-                'Authorization': `Bearer ${token}`
+                'Authorization': `Bearer ${localStorage.getItem('mr_token')}`
             }
         }));
         if (!response.ok) {
             throw new Error('Error al cargar clientes');
         }
-        
+
         const data = await response.json();
         todosLosClientes = Array.isArray(data) ? data : (data.clientes || []);
-        console.log('[CLIENTES-GESTION] âœ… Clientes cargados:', todosLosClientes.length);
-        
-        // 1. Renderizar INMEDIATAMENTE (sin esperar facturaciÃ³n)
-        filterClientes();
-        updateStatistics();
 
-        // Calcular facturaciÃ³n desde trabajos
+        console.log('[CLIENTES-GESTION] ✅ Clientes cargados:', todosLosClientes.length);
+
+        // Calcular facturación desde trabajos
         await calcularFacturacion();
-        
+
         // Aplicar filtros
         filterClientes();
-        
-        // Actualizar estadÃ­sticas
+
+        // Actualizar estadísticas
         updateStatistics();
-        
+
     } catch (error) {
-        console.error('[CLIENTES-GESTION] â�Œ Error cargando clientes:', error);
+        console.error('[CLIENTES-GESTION] ❌ Error cargando clientes:', error);
         todosLosClientes = [];
-        const container = document.getElementById('clientesList');
-        if (container) {
-            container.innerHTML = `<div class="empty-state"><p>â�Œ Error de conexiÃ³n: ${error.message}</p></div>`;
-        }
         renderClientes();
     }
 }
@@ -116,12 +109,12 @@ async function calcularFacturacion() {
     try {
         let trabajos = [];
         
-        // 1. Intentar obtener trabajos (Soporte hÃ­brido: mrDataManager o Fetch directo)
+        // 1. Intentar obtener trabajos (Soporte híbrido)
         if (window.mrDataManager && typeof window.mrDataManager.getWorks === 'function') {
             const worksData = await window.mrDataManager.getWorks();
             trabajos = worksData.works || [];
         } else {
-            // Fallback si no estÃ¡ cargado el manager
+            // Fallback: Fetch directo a API
             const res = await fetch('/api/trabajos', {
                 headers: { 'Authorization': `Bearer ${localStorage.getItem('mr_token')}` }
             });
@@ -130,48 +123,42 @@ async function calcularFacturacion() {
                 trabajos = data.works || [];
             }
         }
-        
+
+
         if (!Array.isArray(todosLosClientes)) return;
-        
-        // La importación de clientes ahora la maneja el backend directamente desde Google Sheets
-        
+
         todosLosClientes = todosLosClientes.map(cliente => {
             // Buscar trabajos de este cliente
             const trabajosCliente = trabajos.filter(t => {
-                const nombreTrabajo = (t.clientName || t.cliente || '').trim().toLowerCase();
-                const nombreCliente = (cliente.nombre || '').trim().toLowerCase();
-                return nombreTrabajo !== '' && nombreTrabajo === nombreCliente;
+                const nombreTrabajo = (t.clientName || t.cliente || '').toLowerCase();
+                const nombreCliente = (cliente.nombre || '').toLowerCase();
+                return nombreTrabajo.includes(nombreCliente) || nombreCliente.includes(nombreTrabajo);
             });
-            
+
             // Calcular totales
-            const totalFacturado = trabajosCliente.reduce((sum, t) => sum + (parseFloat(t.total || t.totalFinal || 0)), 0);
+            const totalFacturado = trabajosCliente.reduce((sum, t) => sum + (parseFloat(t.totalFinal || t.total || 0)), 0);
             const cantidadTrabajos = trabajosCliente.length;
-            
+
             return {
                 ...cliente,
                 totalFacturado,
                 cantidadTrabajos,
-                ultimoTrabajo: trabajosCliente.length > 0 ? (trabajosCliente[trabajosCliente.length - 1].createdAt || trabajosCliente[trabajosCliente.length - 1].fecha) : null
+                ultimoTrabajo: trabajosCliente.length > 0 ? trabajosCliente[trabajosCliente.length - 1].fecha : null
             };
         });
     } catch (error) {
-        console.warn('[CLIENTES-GESTION] Advertencia en cÃ¡lculo de facturaciÃ³n (los clientes se mostrarÃ¡n igual):', error);
+        console.warn('[CLIENTES-GESTION] Advertencia en cálculo de facturación:', error);
     }
 }
 
-// ==================== FILTRAR Y ORDENAR ====================
-
+// ==================
 function filterClientes() {
-    const searchInput = document.getElementById('searchInput');
-    const typeInput = document.getElementById('filterType');
-    const statusInput = document.getElementById('filterStatus');
-
-    const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
-    const filterType = typeInput ? typeInput.value : 'todos';
-    const filterStatus = statusInput ? statusInput.value : 'todos';
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    const filterType = document.getElementById('filterType').value;
+    const filterStatus = document.getElementById('filterStatus').value;
     
     clientesFiltrados = todosLosClientes.filter(cliente => {
-        // Filtro de bÃºsqueda
+        // Filtro de búsqueda
         const matchSearch = !searchTerm || 
             (cliente.nombre || '').toLowerCase().includes(searchTerm) ||
             (cliente.telefono || '').toLowerCase().includes(searchTerm) ||
@@ -186,10 +173,11 @@ function filterClientes() {
         
         return matchSearch && matchType && matchStatus;
     });
-    
+
+
     // Aplicar ordenamiento actual
     sortClientesArray(currentSort);
-    
+
     // Renderizar
     renderClientes();
 }
@@ -202,7 +190,7 @@ function sortClientes(tipo) {
 
 function sortClientesArray(tipo) {
     clientesFiltrados.sort((a, b) => {
-        switch(tipo) {
+        switch (tipo) {
             case 'nombre':
                 return (a.nombre || '').localeCompare(b.nombre || '');
             case 'fecha':
@@ -222,60 +210,59 @@ function sortClientesArray(tipo) {
 function renderClientes() {
     const container = document.getElementById('clientesList');
     const countElement = document.getElementById('clientesCount');
-    if (!container) return;
-    
+
     countElement.textContent = clientesFiltrados.length;
-    
+
     if (clientesFiltrados.length === 0) {
         container.innerHTML = `
             <div class="empty-state">
-                <div class="empty-state-icon">ðŸ”�</div>
+                <div class="empty-state-icon">🔍</div>
                 <p>No se encontraron clientes con los filtros aplicados</p>
                 <button class="btn btn-secondary" onclick="clearFilters()">Limpiar Filtros</button>
             </div>
         `;
         return;
     }
-    
+
     container.innerHTML = clientesFiltrados.map(cliente => `
         <div class="client-card">
             <div class="client-header">
                 <div>
                     <span class="client-type ${cliente.tipo || 'cliente'}">
-                        ${cliente.tipo === 'gremio' ? 'ðŸŸ¢ GREMIO' : 'ðŸ”µ CLIENTE'}
+                        ${cliente.tipo === 'gremio' ? '🟢 GREMIO' : '🔵 CLIENTE'}
                     </span>
                     <div class="client-name">${cliente.nombre || 'Sin nombre'}</div>
                 </div>
                 <div style="text-align: right;">
-                    ${cliente.estado === 'inactivo' ? '<span style="color: #FFC107;">â�¸ï¸� Inactivo</span>' : '<span style="color: #51CF66;">âœ… Activo</span>'}
+                    ${cliente.estado === 'inactivo' ? '<span style="color: #FFC107;">⏸️ Inactivo</span>' : '<span style="color: #51CF66;">✅ Activo</span>'}
                 </div>
             </div>
             
             <div class="client-info">
                 ${cliente.telefono ? `
                     <div class="client-info-item">
-                        <span>ðŸ“±</span>
+                        <span>📱</span>
                         <span>${cliente.telefono}</span>
                     </div>
                 ` : ''}
                 
                 ${cliente.email ? `
                     <div class="client-info-item">
-                        <span>ðŸ“§</span>
+                        <span>📧</span>
                         <span>${cliente.email}</span>
                     </div>
                 ` : ''}
                 
                 ${cliente.direccion ? `
                     <div class="client-info-item">
-                        <span>ðŸ“�</span>
+                        <span>📍</span>
                         <span>${cliente.direccion}</span>
                     </div>
                 ` : ''}
                 
                 ${cliente.cuit ? `
                     <div class="client-info-item">
-                        <span>ðŸ†”</span>
+                        <span>🆔</span>
                         <span>${cliente.cuit}</span>
                     </div>
                 ` : ''}
@@ -294,16 +281,16 @@ function renderClientes() {
                     ${cliente.ultimoTrabajo ? `
                         <div class="client-stat">
                             <div class="client-stat-value" style="font-size: 1rem;">${new Date(cliente.ultimoTrabajo).toLocaleDateString('es-AR')}</div>
-                            <div class="client-stat-label">Ãšltimo trabajo</div>
+                            <div class="client-stat-label">Último trabajo</div>
                         </div>
                     ` : ''}
                 </div>
             ` : ''}
             
             <div class="client-actions">
-                <button class="btn btn-primary btn-small" onclick="viewClientDetails('${cliente.id}')">ðŸ‘�ï¸� Ver Detalles</button>
-                <button class="btn btn-secondary btn-small" onclick="editCliente('${cliente.id}')">âœ�ï¸� Editar</button>
-                <button class="btn btn-danger btn-small" onclick="deleteCliente('${cliente.id}', '${cliente.nombre}')">ðŸ—‘ï¸� Eliminar</button>
+                <button class="btn btn-primary btn-small" onclick="viewClientDetails('${cliente.id}')">👁️ Ver Detalles</button>
+                <button class="btn btn-secondary btn-small" onclick="editCliente('${cliente.id}')">✏️ Editar</button>
+                <button class="btn btn-danger btn-small" onclick="deleteCliente('${cliente.id}', '${cliente.nombre}')">🗑️ Eliminar</button>
             </div>
         </div>
     `).join('');
@@ -313,25 +300,19 @@ function updateStatistics() {
     const total = todosLosClientes.length;
     const gremio = todosLosClientes.filter(c => c.tipo === 'gremio').length;
     const clientes = todosLosClientes.filter(c => c.tipo === 'cliente').length;
-    const activos = todosLosClientes.filter(c => (c.estado || 'activo') === 'activo').length;
-    // VIP si tiene descuento > 0 o muchas compras
-    const vip = todosLosClientes.filter(c => (c.descuento > 0) || (c.cantidadTrabajos > 5)).length;
-    
     const totalFact = todosLosClientes.reduce((sum, c) => sum + (c.totalFacturado || 0), 0);
-    
-    if(document.getElementById('totalClientes')) document.getElementById('totalClientes').textContent = total;
-    if(document.getElementById('totalGremio')) document.getElementById('totalGremio').textContent = gremio;
-    if(document.getElementById('totalClientesFinales')) document.getElementById('totalClientesFinales').textContent = clientes;
-    if(document.getElementById('totalActivos')) document.getElementById('totalActivos').textContent = activos;
-    if(document.getElementById('totalVIP')) document.getElementById('totalVIP').textContent = vip;
-    if(document.getElementById('totalFacturacion')) document.getElementById('totalFacturacion').textContent = '$' + formatCurrencyAR(totalFact);
+
+    document.getElementById('totalClientes').textContent = total;
+    document.getElementById('totalGremio').textContent = gremio;
+    document.getElementById('totalClientesFinales').textContent = clientes;
+    document.getElementById('totalFacturacion').textContent = '$' + formatCurrencyAR(totalFact);
 }
 
 // ==================== MODAL AGREGAR/EDITAR ====================
 
 function openAddClientModal() {
     editingClientId = null;
-    document.getElementById('modalTitle').textContent = 'âž• Nuevo Cliente';
+    document.getElementById('modalTitle').textContent = '➕ Nuevo Cliente';
     clearClientForm();
     document.getElementById('clientModal').classList.add('active');
 }
@@ -339,13 +320,13 @@ function openAddClientModal() {
 function editCliente(clientId) {
     const cliente = todosLosClientes.find(c => c.id === clientId);
     if (!cliente) {
-        alert('â�Œ Cliente no encontrado');
+        alert('❌ Cliente no encontrado');
         return;
     }
-    
+
     editingClientId = clientId;
-    document.getElementById('modalTitle').textContent = 'âœ�ï¸� Editar Cliente';
-    
+    document.getElementById('modalTitle').textContent = '✏️ Editar Cliente';
+
     // Llenar formulario
     document.getElementById('clientTipo').value = cliente.tipo || 'cliente';
     document.getElementById('clientNombre').value = cliente.nombre || '';
@@ -353,11 +334,11 @@ function editCliente(clientId) {
     document.getElementById('clientEmail').value = cliente.email || '';
     document.getElementById('clientDireccion').value = cliente.direccion || '';
     document.getElementById('clientCuit').value = cliente.cuit || '';
-    document.getElementById('clientCondicionIVA').value = cliente.condicionIVA || '';
+    document.getElementById('clientCondicionIVA').value = cliente.condicionIVA || cliente.condicion_iva || '';
     document.getElementById('clientDescuento').value = cliente.descuento || 0;
     document.getElementById('clientEstado').value = cliente.estado || 'activo';
     document.getElementById('clientNotas').value = cliente.notas || '';
-    
+
     document.getElementById('clientModal').classList.add('active');
 }
 
@@ -382,12 +363,12 @@ function clearClientForm() {
 
 async function saveCliente() {
     const nombre = document.getElementById('clientNombre').value.trim();
-    
+
     if (!nombre) {
-        alert('âš ï¸� El nombre es obligatorio');
+        alert('⚠️ El nombre es obligatorio');
         return;
     }
-    
+
     const clienteData = {
         id: editingClientId || Date.now().toString(),
         tipo: document.getElementById('clientTipo').value,
@@ -400,156 +381,149 @@ async function saveCliente() {
         descuento: parseFloat(document.getElementById('clientDescuento').value) || 0,
         estado: document.getElementById('clientEstado').value,
         notas: document.getElementById('clientNotas').value.trim(),
-        fechaCreacion: editingClientId ? 
-            (todosLosClientes.find(c => c.id === editingClientId)?.fechaCreacion) : 
+        fechaCreacion: editingClientId ?
+            (todosLosClientes.find(c => c.id === editingClientId)?.fechaCreacion) :
             new Date().toISOString(),
         fechaModificacion: new Date().toISOString()
     };
-    
+
     try {
         let updatedClientes;
-        
+
         if (editingClientId) {
             // Actualizar existente
-            updatedClientes = todosLosClientes.map(c => 
-                c.id === editingClientId ? {...c, ...clienteData} : c
+            updatedClientes = todosLosClientes.map(c =>
+                c.id === editingClientId ? { ...c, ...clienteData } : c
             );
         } else {
             // Agregar nuevo
             updatedClientes = [...todosLosClientes, clienteData];
         }
-        
+
         // Guardar en servidor
-        const response = await (window.AUTH ? window.AUTH.fetch('/api/clientes', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(updatedClientes)
-        }) : fetch('/api/clientes', {
+        const response = await fetch('/api/clientes', {
             method: 'POST',
             headers: { 
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${localStorage.getItem('mr_token')}`
             },
             body: JSON.stringify(updatedClientes)
-        }));
-        
+        });
+
         if (!response.ok) {
             throw new Error('Error al guardar cliente');
         }
-        
-        alert(editingClientId ? 'âœ… Cliente actualizado correctamente' : 'âœ… Cliente creado correctamente');
-        
+
+        alert(editingClientId ? '✅ Cliente actualizado correctamente' : '✅ Cliente creado correctamente');
+
         closeClientModal();
         await loadClientes();
-        
+
     } catch (error) {
         console.error('[CLIENTES-GESTION] Error guardando cliente:', error);
-        alert('â�Œ Error al guardar el cliente');
+        alert('❌ Error al guardar el cliente');
     }
 }
 
 // ==================== ELIMINAR ====================
 
 async function deleteCliente(clientId, clientName) {
-    if (!confirm(`Â¿EstÃ¡s seguro de que quieres eliminar a "${clientName}"?\n\nâš ï¸� Esta acciÃ³n no se puede deshacer.`)) {
+    if (!confirm(`¿Estás seguro de que quieres eliminar a "${clientName}"?\n\n⚠️ Esta acción no se puede deshacer.`)) {
         return;
     }
-    
+
     try {
         const updatedClientes = todosLosClientes.filter(c => c.id !== clientId);
-        
-        const response = await (window.AUTH ? window.AUTH.fetch('/api/clientes', {
+
+        const response = await fetch('/api/clientes', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(updatedClientes)
-        }) : fetch('/api/clientes', {
-            method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${localStorage.getItem('mr_token')}`
-            },
-            body: JSON.stringify(updatedClientes)
-        }));
-        
+        });
+
         if (!response.ok) {
             throw new Error('Error al eliminar cliente');
         }
-        
-        alert('âœ… Cliente eliminado correctamente');
+
+        alert('✅ Cliente eliminado correctamente');
         await loadClientes();
-        
+
     } catch (error) {
         console.error('[CLIENTES-GESTION] Error eliminando cliente:', error);
-        alert('â�async function viewClientDetails(clientId) {
+        alert('❌ Error al eliminar el cliente');
+    }
+}
+
+// ==================== VER DETALLES ====================
+
+async function viewClientDetails(clientId) {
     const cliente = todosLosClientes.find(c => c.id === clientId);
     if (!cliente) {
-        alert('â�Œ Cliente no encontrado');
+        alert('❌ Cliente no encontrado');
         return;
     }
-    
+
     // Obtener trabajos del cliente
     let trabajosCliente = [];
     try {
-        const todosTrabajosRes = await fetch('/api/trabajos', {
-            headers: { 'Authorization': `Bearer ${localStorage.getItem('mr_token')}` }
-        });
+        const todosTrabajosRes = await fetch('/api/trabajos');
         const todosTrabajosData = await todosTrabajosRes.json();
-        const todosTrabajosArray = todosTrabajosData.works || [];
-        
+        const todosTrabajosArray = Array.isArray(todosTrabajosData) ? todosTrabajosData : [];
+
         trabajosCliente = todosTrabajosArray.filter(t => {
-            const nombreTrabajo = (t.clientName || t.cliente || '').trim().toLowerCase();
-            const nombreCliente = (cliente.nombre || '').trim().toLowerCase();
-            return nombreTrabajo !== '' && nombreTrabajo === nombreCliente;
+            const nombreTrabajo = (t.clientName || t.cliente || '').toLowerCase();
+            const nombreCliente = (cliente.nombre || '').toLowerCase();
+            return nombreTrabajo.includes(nombreCliente) || nombreCliente.includes(nombreTrabajo);
         });
     } catch (error) {
         console.error('Error cargando trabajos:', error);
     }
-    
+
     const detailsContent = `
         <div class="highlight-box">
             <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
                 <div>
                     <h3 style="margin: 0;">${cliente.nombre}</h3>
-                    <span class="client-type ${cliente.tipo}">${cliente.tipo === 'gremio' ? 'ðŸŸ¢ GREMIO' : 'ðŸ”µ CLIENTE'}</span>
+                    <span class="client-type ${cliente.tipo}">${cliente.tipo === 'gremio' ? '🟢 GREMIO' : '🔵 CLIENTE'}</span>
                 </div>
                 <div>
-                    ${cliente.estado === 'activo' ? '<span style="color: #51CF66;">âœ… Activo</span>' : '<span style="color: #FFC107;">â�¸ï¸� Inactivo</span>'}
+                    ${cliente.estado === 'activo' ? '<span style="color: #51CF66;">✅ Activo</span>' : '<span style="color: #FFC107;">⏸️ Inactivo</span>'}
                 </div>
             </div>
         </div>
         
         <div class="highlight-box">
-            <h4>ðŸ“ž InformaciÃ³n de Contacto</h4>
+            <h4>📞 Información de Contacto</h4>
             <div class="form-row">
-                <div><strong>TelÃ©fono:</strong> ${cliente.telefono || 'No especificado'}</div>
+                <div><strong>Teléfono:</strong> ${cliente.telefono || 'No especificado'}</div>
                 <div><strong>Email:</strong> ${cliente.email || 'No especificado'}</div>
             </div>
             <div style="margin-top: 0.5rem;">
-                <strong>DirecciÃ³n:</strong> ${cliente.direccion || 'No especificada'}
+                <strong>Dirección:</strong> ${cliente.direccion || 'No especificada'}
             </div>
         </div>
         
         <div class="highlight-box">
-            <h4>ðŸ’¼ InformaciÃ³n Comercial</h4>
+            <h4>💼 Información Comercial</h4>
             <div class="form-row">
                 <div><strong>CUIT/DNI:</strong> ${cliente.cuit || 'No especificado'}</div>
-                <div><strong>CondiciÃ³n IVA:</strong> ${cliente.condicionIVA || 'No especificada'}</div>
+                <div><strong>Condición IVA:</strong> ${escapeHtml(cliente.condicionIVA || cliente.condicion_iva || 'No especificada')}</div>
             </div>
             <div class="form-row" style="margin-top: 0.5rem;">
                 <div><strong>Descuento:</strong> ${cliente.descuento || 0}%</div>
-                <div><strong>Registrado:</strong> ${cliente.fechaCreacion ? new Date(cliente.fechaCreacion).toLocaleDateString('es-AR') : 'No especificada'}</div>
+                <div><strong>Registrado:</strong> ${new Date(cliente.fechaCreacion).toLocaleDateString('es-AR')}</div>
             </div>
         </div>
         
         ${cliente.notas ? `
             <div class="highlight-box">
-                <h4>ðŸ“� Notas</h4>
-                <p style="color: rgba(255,255,255,0.8);">${cliente.notas}</p>
+                <h4>📝 Notas</h4>
+                <p style="color: #475569;">${cliente.notas}</p>
             </div>
         ` : ''}
         
         <div class="highlight-box">
-            <h4>ðŸ“Š EstadÃ­sticas</h4>
+            <h4>📊 Estadísticas</h4>
             <div class="stats-grid">
                 <div class="stat-card">
                     <div class="stat-value">${cliente.cantidadTrabajos || 0}</div>
@@ -570,35 +544,24 @@ async function deleteCliente(clientId, clientName) {
         
         ${trabajosCliente.length > 0 ? `
             <div class="highlight-box">
-                <h4>ðŸ“‹ Ãšltimos Trabajos</h4>
+                <h4>📋 Últimos Trabajos</h4>
                 ${trabajosCliente.slice(-5).reverse().map(trabajo => `
-                    <div style="padding: 0.75rem; background: rgba(0,0,0,0.2); border-radius: 8px; margin-bottom: 0.5rem;">
+                    <div style="padding: 0.75rem; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 0.5rem;">
                         <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-                            <strong>${trabajo.descripcion || trabajo.description || 'Trabajo sin descripciÃ³n'}</strong>
-                            <span style="color: #51CF66;">$${formatCurrencyAR(trabajo.total || trabajo.totalFinal || 0)}</span>
+                            <strong>${trabajo.description || 'Trabajo sin descripción'}</strong>
+                            <span style="color: #16a34a; font-weight: 600;">$${formatCurrencyAR(trabajo.totalFinal || trabajo.total || 0)}</span>
                         </div>
-                        <div style="font-size: 0.85rem; color: rgba(255,255,255,0.6);">
-                            ðŸ“… ${new Date(trabajo.createdAt || trabajo.fecha || trabajo.createdAt).toLocaleDateString('es-AR')}
-                            ${(trabajo.status || trabajo.estado) ? ` â€¢ Estado: ${trabajo.status || trabajo.estado}` : ''}
-                        </div>
-                    </div>
-                `).join('')}
-            </div>
-        ` : ''}
-    `;
-    
-    document.getElementById('detailsTitle').innerHTML = `ðŸ‘¤ ${cliente.nombre}`;
-    document.getElementById('detailsContent').innerHTML = detailsContent;
-    document.getElementById('detailsModal').classList.add('active');
-}stado}` : ''}
+                        <div style="font-size: 0.85rem; color: #64748b;">
+                            📅 ${new Date(trabajo.fecha).toLocaleDateString('es-AR')}
+                            ${trabajo.estado ? ` • Estado: ${trabajo.estado}` : ''}
                         </div>
                     </div>
                 `).join('')}
             </div>
         ` : ''}
     `;
-    
-    document.getElementById('detailsTitle').innerHTML = `ðŸ‘¤ ${cliente.nombre}`;
+
+    document.getElementById('detailsTitle').innerHTML = `👤 ${cliente.nombre}`;
     document.getElementById('detailsContent').innerHTML = detailsContent;
     document.getElementById('detailsModal').classList.add('active');
 }
@@ -626,6 +589,5 @@ window.loadClientes = loadClientes;
 window.filterClientes = filterClientes;
 window.sortClientes = sortClientes;
 window.clearFilters = clearFilters;
-window.buscarClientes = filterClientes; // Conectar botÃ³n buscar
 
-console.log('[CLIENTES-GESTION] ðŸ“¦ MÃ³dulo cargado');
+console.log('[CLIENTES-GESTION] 📦 Módulo cargado');

@@ -1,6 +1,7 @@
 import sys
 import json
 import math
+import re
 from xml.etree import ElementTree as ET
 from io import StringIO
 # Asegúrate de haber instalado esta librería con: pip install svg.path
@@ -154,6 +155,89 @@ def scale_path(path, scale):
             segment.radius *= scale
     return path
 
+# --- Soporte de transformaciones SVG (FIX: antes se ignoraban por completo,
+#      por lo que SVGs reales de Illustrator/Inkscape salían mal ubicados) ---
+
+def _mul_matrix(m1, m2):
+    # m1 * m2 (primero se aplica m2, luego m1)
+    a, b, c, d, e, f = m1
+    g, h, i, j, k, l = m2
+    return [a*g + c*i, b*g + d*i, a*h + c*j, b*h + d*j, a*k + c*l + e, b*k + d*l + f]
+
+def parse_svg_transform(transform_str):
+    m = [1, 0, 0, 1, 0, 0]
+    if not transform_str:
+        return m
+    for match in re.finditer(r'([a-zA-Z]+)\s*\(([^)]*)\)', transform_str):
+        name = match.group(1).strip()
+        args = [float(x) for x in re.findall(r'[-+]?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?', match.group(2))]
+        t = [1, 0, 0, 1, 0, 0]
+        if name == 'matrix' and len(args) >= 6:
+            t = args[:6]
+        elif name == 'translate':
+            tx = args[0] if len(args) > 0 else 0
+            ty = args[1] if len(args) > 1 else 0
+            t = [1, 0, 0, 1, tx, ty]
+        elif name == 'scale':
+            sx = args[0] if len(args) > 0 else 1
+            sy = args[1] if len(args) > 1 else sx
+            t = [sx, 0, 0, sy, 0, 0]
+        elif name == 'rotate':
+            ang = math.radians(args[0]) if len(args) > 0 else 0
+            cx = args[1] if len(args) > 1 else 0
+            cy = args[2] if len(args) > 2 else 0
+            cos_a, sin_a = math.cos(ang), math.sin(ang)
+            t = [cos_a, sin_a, -sin_a, cos_a,
+                 cx - cx*cos_a + cy*sin_a, cy - cx*sin_a - cy*cos_a]
+        elif name == 'skewX':
+            tan_a = math.tan(math.radians(args[0])) if args else 0
+            t = [1, 0, tan_a, 1, 0, 0]
+        elif name == 'skewY':
+            tan_a = math.tan(math.radians(args[0])) if args else 0
+            t = [1, tan_a, 0, 1, 0, 0]
+        else:
+            continue
+        m = _mul_matrix(m, t)
+    return m
+
+def _apply_matrix(m, x, y):
+    a, b, c, d, e, f = m
+    return (a*x + c*y + e, b*x + d*y + f)
+
+def apply_transform_to_path(path_obj, m):
+    if not m or (m[0] == 1 and m[1] == 0 and m[2] == 0 and m[3] == 1 and m[4] == 0 and m[5] == 0):
+        return path_obj
+    def tp(p):
+        x, y = _apply_matrix(m, p.real, p.imag)
+        return complex(x, y)
+    for seg in path_obj:
+        seg.start = tp(seg.start)
+        seg.end = tp(seg.end)
+        if isinstance(seg, CubicBezier):
+            seg.control1 = tp(seg.control1)
+            seg.control2 = tp(seg.control2)
+        elif isinstance(seg, QuadraticBezier):
+            seg.control = tp(seg.control)
+        elif isinstance(seg, Arc):
+            # Arcos: se transforman los extremos; el radio no se re-deriva bajo
+            # transformaciones no uniformes (limitación documentada, no rompe el flujo).
+            pass
+    return path_obj
+
+def accumulated_transform(el, parent_map):
+    # Acumula transform de ancestros + propio (raíz → hoja): efectivo = R·C·L
+    chain = []
+    node = el
+    while node is not None:
+        chain.append(node.get('transform'))
+        node = parent_map.get(node)
+    chain.reverse()
+    m = [1, 0, 0, 1, 0, 0]
+    for t in chain:
+        if t:
+            m = _mul_matrix(m, parse_svg_transform(t))
+    return m
+
 # --- Función Principal de Procesamiento ---
 
 def process_svg(svg_string, options):
@@ -180,13 +264,29 @@ def process_svg(svg_string, options):
                           root.findall(f".//{{{ns}}}polygon") + \
                           root.findall(f".//{{{ns}}}polyline") + \
                           root.findall(f".//{{{ns}}}line")
-    
+
+    # FIX: mapa de padres para acumular transforms y para descartar elementos
+    # dentro de <defs>/<clipPath>/<mask>/<symbol> (no se renderizan → piezas fantasma).
+    parent_map = {child: parent for parent in root.iter() for child in parent}
+    def dentro_de_no_renderizable(el):
+        node = parent_map.get(el)
+        while node is not None:
+            tag = node.tag.rsplit('}', 1)[-1].lower()
+            if tag in ('defs', 'clippath', 'mask', 'symbol', 'pattern'):
+                return True
+            node = parent_map.get(node)
+        return False
+
     simple_shapes = []
     for el in elements_to_process:
+        if dentro_de_no_renderizable(el):
+            continue
         d = shape_to_path_d(el)
         if not d: continue
         
         path_obj = parse_path(d)
+        # FIX: aplicar transform acumulado (elemento + ancestros <g>) ANTES del escalado
+        apply_transform_to_path(path_obj, accumulated_transform(el, parent_map))
         scale_path(path_obj, scale_factor)
         bbox, points = get_bbox_and_points(path_obj)
         

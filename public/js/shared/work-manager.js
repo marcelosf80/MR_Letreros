@@ -98,12 +98,22 @@ class WorkManager {
     }
 
     /**
-     * Obtiene todos los trabajos
+     * Obtiene todos los trabajos (carga desde el servidor si no hay caché)
      * @param {Object} filters - Filtros opcionales
-     * @returns {Array}
+     * @returns {Promise<Array>}
      */
-    getWorks(filters = {}) {
-        let filtered = [...this.works];
+    async getWorks(filters = {}) {
+        // FIX: antes devolvía [] siempre (this.works vacío); ahora carga desde la API
+        if ((!this.works || this.works.length === 0) && window.mrDataManager) {
+            try {
+                const data = await window.mrDataManager.request('/api/trabajos');
+                this.works = (data && data.works) || [];
+            } catch (e) {
+                console.error('[WORK-MANAGER] Error cargando trabajos:', e);
+            }
+        }
+
+        let filtered = [...(this.works || [])];
 
         if (filters.status) {
             filtered = filtered.filter(w => w.status === filters.status);
@@ -116,9 +126,7 @@ class WorkManager {
         }
         if (filters.clientName) {
             const search = filters.clientName.toLowerCase();
-            filtered = filtered.filter(w => 
-                w.clientName.toLowerCase().includes(search)
-            );
+            filtered = filtered.filter(w => String(w.clientName || '').toLowerCase().includes(search));
         }
 
         filtered.sort((a, b) => {
@@ -127,7 +135,7 @@ class WorkManager {
             if (aCompleted !== bCompleted) {
                 return aCompleted - bCompleted;
             }
-            return new Date(b.createdAt) - new Date(a.createdAt);
+            return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
         });
 
         return filtered;
@@ -374,10 +382,10 @@ class WorkManager {
         notifEl.className = `screen-notification notification-${notification.type}`;
         notifEl.innerHTML = `
             <div class="notification-header">
-                <strong>${this.getNotificationIcon(notification.type)} ${notification.title}</strong>
+                <strong>${this.getNotificationIcon(notification.type)} ${escapeHtml(notification.title)}</strong>
                 <button class="notification-close" onclick="this.parentElement.parentElement.remove()">×</button>
             </div>
-            <div class="notification-body">${notification.message}</div>
+            <div class="notification-body">${escapeHtml(notification.message)}</div>
         `;
 
         // Estilos inline

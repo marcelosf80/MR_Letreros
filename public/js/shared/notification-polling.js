@@ -95,9 +95,9 @@
                 <div data-notif-id="${n.id}" class="notif-item-premium" style="padding:14px 16px;border-radius:12px;margin-bottom:8px;background:${n.read ? 'transparent' : 'var(--bg-mid, rgba(0,0,0,0.05))'};border-left:4px solid ${n.read ? 'transparent' : 'var(--bs-primary, #ffd700)'};cursor:pointer;transition:all 0.2s;display:flex;flex-direction:column;gap:6px;" 
                      onclick="window.location.href='trabajos.html'">
                     <div style="font-weight:${n.read ? '600' : '800'};font-size:14px;color:var(--txt);display:flex;align-items:center;gap:6px;">
-                        ${n.read ? '' : '<span style="width:8px;height:8px;background:var(--bs-primary, #ffd700);border-radius:50%;display:inline-block;box-shadow:0 0 8px var(--bs-primary, #ffd700);"></span>'}${n.title || 'Nuevo Pedido'}
+                        ${n.read ? '' : '<span style="width:8px;height:8px;background:var(--bs-primary, #ffd700);border-radius:50%;display:inline-block;box-shadow:0 0 8px var(--bs-primary, #ffd700);"></span>'}${escapeHtml(n.title || 'Nuevo Pedido')}
                     </div>
-                    <div style="font-size:13px;color:var(--txt-2);line-height:1.4;">${n.message || ''}</div>
+                    <div style="font-size:13px;color:var(--txt-2);line-height:1.4;">${escapeHtml(n.message || '')}</div>
                     <div style="font-size:11px;color:var(--txt-3, #999);font-weight:500;text-transform:uppercase;letter-spacing:0.5px;"><i class="fa-regular fa-clock" style="margin-right:4px;"></i>${timeAgo}</div>
                 </div>
             `;

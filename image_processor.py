@@ -19,12 +19,14 @@ def remove_bg_cloud(input_path, output_path, api_key):
     """
     try:
         print(f"Enviando imagen a remove.bg...")
-        response = requests.post(
-            'https://api.remove.bg/v1.0/removebg',
-            files={'image_file': open(input_path, 'rb')},
-            data={'size': 'auto'},
-            headers={'X-Api-Key': api_key},
-        )
+        with open(input_path, 'rb') as f:
+            response = requests.post(
+                'https://api.remove.bg/v1.0/removebg',
+                files={'image_file': f},
+                data={'size': 'auto'},
+                headers={'X-Api-Key': api_key},
+                timeout=60,  # FIX: sin timeout la petición podía colgar para siempre
+            )
         if response.status_code == requests.codes.ok:
             with open(output_path, 'wb') as out:
                 out.write(response.content)

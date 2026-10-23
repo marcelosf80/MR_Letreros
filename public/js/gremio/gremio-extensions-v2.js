@@ -416,7 +416,8 @@ window.addSharedTercero = function() {
         costo: tercero.costo,
         precio: tercero.precio,
         totalCosto: sharedDims.totalM2 * tercero.costo,
-        total: sharedDims.totalM2 * tercero.costo,
+        // FIX: cobrar al cliente el PRECIO (no el costo) → antes margen cero
+        total: sharedDims.totalM2 * (tercero.precio || tercero.costo),
         margenPorUnidad: (tercero.precio - tercero.costo)
     };
 

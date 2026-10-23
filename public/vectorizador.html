@@ -28,8 +28,13 @@
             <div class="tool-tab" id="tab-vectorar" onclick="setMode('vectorizar')">Vectorizar</div>
             <div class="tool-tab" id="tab-bg" onclick="setMode('remove_bg')">Quitar Fondo</div>
             <div class="tool-tab" id="tab-depixel" onclick="setMode('depixel')">Despixelar</div>
+            <div class="tool-tab" id="tab-generar" onclick="setMode('generar')">🎨 Crear con IA</div>
         </div>
         <div style="display: flex; align-items: center; gap: 10px;">
+            <button onclick="openApiConfig()" id="apiConfigBtn" title="Configurar claves de API (Gemini, Groq, etc.)"
+                style="background: rgba(99,102,241,0.12); border: 1px solid rgba(99,102,241,0.35); color: var(--primary); border-radius: 10px; padding: 8px 14px; font-size: 0.8rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 7px; font-family: var(--font-display); letter-spacing: 1px;">
+                <i class="fas fa-key"></i> API
+            </button>
             <span
                 style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); font-family: var(--font-display); letter-spacing: 2px;">MR
                 LETREROS v2.0</span>
@@ -268,6 +273,36 @@
                 </div>
             </div>
 
+            <!-- CREAR IMAGEN CON IA (para vectorizar) -->
+            <div id="generar-options" style="display: none;">
+                <div class="option-group">
+                    <label class="option-label">🤖 CREAR IMAGEN CON IA (LISTA PARA VECTORIZAR)</label>
+                    <p style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.5; margin: 0 0 12px;">
+                        Describí la idea o usá el <b style="color: var(--primary);">prompt vectorial</b> recomendado:
+                        la IA genera un diseño en <b>blanco y negro de alto contraste</b>, sin fondo, ideal para
+                        convertir a SVG.
+                    </p>
+                    <textarea id="genPrompt" rows="9"
+                        style="width: 100%; padding: 12px 14px; border: 1px solid var(--surface-border); background: rgba(0,0,0,0.3); color: white; border-radius: 10px; font-size: 0.85rem; line-height: 1.45; resize: vertical;"></textarea>
+                    <div style="display: flex; gap: 8px; margin-top: 12px;">
+                        <button type="button" onclick="setVectorPrompt()" class="select-btn"
+                            style="flex: 1; padding: 12px 6px; font-size: 0.8rem;" title="Restaurar el prompt vectorial recomendado">
+                            🔄 Prompt vectorial
+                        </button>
+                        <button type="button" onclick="generarImagen()" class="btn-action"
+                            style="flex: 2; padding: 12px 8px; font-size: 0.85rem;">
+                            ✨ Generar imagen
+                        </button>
+                    </div>
+                    <div id="genMsg" style="margin-top: 10px; font-size: 0.85rem; color: var(--success); line-height: 1.5;"></div>
+                    <div id="genKeyStatus" style="margin-top: 10px; font-size: 0.78rem; line-height: 1.5;"></div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 10px; line-height: 1.5;">
+                        Al terminar, la imagen se carga automáticamente en el área de trabajo. Pasá a la pestaña
+                        <b>Vectorizar</b> y tocá "Vectorizar Imagen" para convertirla a SVG (puede tardar 20-60 s).
+                    </div>
+                </div>
+            </div>
+
             <button class="btn-action" id="processBtn" onclick="processImage()" disabled
                 style="opacity: 0.6; margin-top: 30px;">
                 <span id="btnText">Procesar Imagen</span> <i class="fas fa-arrow-right" style="margin-left: 8px;"></i>
@@ -296,6 +331,44 @@
         </div>
     </div>
 
+    <!-- Modal Configuración de Claves API -->
+    <div id="apiModal" class="modal">
+        <div class="modal-content" style="max-width: 680px; width: 94%; padding: 26px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <h3 style="font-family: var(--font-display); color: white; margin: 0;"><i class="fas fa-key"></i>
+                    Claves de API — Herramientas IA</h3>
+                <button onclick="closeApiConfig()"
+                    style="background: none; border: none; color: var(--text-muted); font-size: 1.4rem; cursor: pointer;"
+                    title="Cerrar">&times;</button>
+            </div>
+            <p style="font-size: 0.82rem; color: var(--text-muted); line-height: 1.5; margin: 0 0 16px;">
+                Las claves se guardan <b style="color: #e2e8f0;">solo en el servidor</b> (archivo
+                <code style="background: rgba(255,255,255,0.08); padding: 1px 5px; border-radius: 4px;">bot_config.json</code>),
+                nunca en el navegador. Si te aparece <b style="color: #fca5a5;">"token vencido"</b> al crear con IA,
+                pegá acá la clave de Google Gemini y tocá <b>Guardar</b>.
+            </p>
+            <div
+                style="background: rgba(56,189,248,0.08); border: 1px solid rgba(56,189,248,0.25); border-radius: 10px; padding: 10px 13px; font-size: 0.78rem; color: #bae6fd; line-height: 1.5; margin-bottom: 14px;">
+                <b>⚠️ Claves nuevas <code>AQ.…</code> vs clásicas <code>AIzaSy…</code>:</b> Google está migrando las
+                claves de Gemini y las nuevas que genera AI Studio (<code>AQ.…</code>) están siendo rechazadas por la API
+                en muchas cuentas (error <code>401 ACCESS_TOKEN_TYPE_UNSUPPORTED</code>, un problema del rollout de
+                Google, no de tu sistema). Si la prueba devuelve ese error, creá una clave clásica en
+                <b style="color:#e2e8f0;">console.cloud.google.com → APIs y servicios → Credenciales → Crear credenciales → Clave de API</b>
+                y restringila a <b>"Generative Language API"</b>. Esa clave <code>AIzaSy…</code> con restricción sigue funcionando.
+            </div>
+            <div id="apiBanner" style="display: none; background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.3); color: #fde68a; padding: 10px 14px; border-radius: 10px; font-size: 0.82rem; margin-bottom: 14px;"></div>
+            <div id="apiMsg" style="font-size: 0.85rem; margin-bottom: 12px; color: var(--success); min-height: 0;"></div>
+            <div id="apiFields"></div>
+            <div style="margin-top: 18px; display: flex; justify-content: flex-end; gap: 10px; align-items: center;">
+                <span id="apiHint" style="font-size: 0.72rem; color: var(--text-muted); flex: 1;"></span>
+                <button onclick="closeApiConfig()" class="select-btn" style="padding: 10px 22px;">Cerrar</button>
+                <button onclick="guardarApiKeys()" id="apiSaveBtn" class="btn-action" style="padding: 10px 24px; font-size: 0.85rem;">
+                    <i class="fas fa-save"></i> Guardar claves
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script>
         let currentJobId = null;
         let allClients = [];
@@ -308,6 +381,41 @@
         let upscaleMethod = 'ultra_anime';
         let dimensionMode = 'pixel';
         let vectorMethod = 'vtracer';
+
+        // Escape seguro (por si no viene definido globalmente)
+        if (typeof window.escapeHtml !== 'function') {
+            window.escapeHtml = function (s) {
+                s = String(s == null ? '' : s);
+                return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+            };
+        }
+
+        // Prompt recomendado para generar una imagen lista para vectorizar
+        const VECTOR_PROMPT = `Crea una ilustración en estilo vectorial, minimalista y de alto contraste, diseñada específicamente para ser vectorizada posteriormente.
+Usar un solo color: negro sólido (#000000).
+Fondo completamente blanco (#FFFFFF).
+Sin colores adicionales.
+Sin degradados.
+Sin sombras.
+Sin transparencias.
+Sin texturas.
+Sin efectos 3D.
+Sin brillos.
+Sin ruido ni grano.
+Utilizar formas sólidas, limpias y bien definidas.
+Líneas y contornos nítidos.
+Evitar detalles extremadamente pequeños o complejos.
+Mantener todos los elementos claramente separados y reconocibles.
+Utilizar una composición simple, equilibrada y con buena definición.
+Bordes limpios y suaves, adecuados para convertir mediante Image Trace / Calco de imagen.
+La imagen debe parecer un diseño de serigrafía, stencil o logotipo vectorial.
+Alta resolución.
+No incluir mockups, fondos decorativos ni elementos adicionales.`;
+
+        function setVectorPrompt() {
+            const ta = document.getElementById('genPrompt');
+            if (ta) { ta.value = VECTOR_PROMPT; ta.focus(); }
+        }
 
         function setVectorMethod(method) {
             vectorMethod = method;
@@ -332,6 +440,9 @@
         document.addEventListener('DOMContentLoaded', () => {
             setMode('upscale');
             initClickHandlers();
+            // Precargar el prompt vectorial recomendado la primera vez
+            const ta = document.getElementById('genPrompt');
+            if (ta && !ta.value.trim()) setVectorPrompt();
         });
 
         function initClickHandlers() {
@@ -402,6 +513,7 @@
             if (mode === 'vectorizar') tabId = 'tab-vectorar';
             else if (mode === 'remove_bg') tabId = 'tab-bg';
             else if (mode === 'depixel') tabId = 'tab-depixel';
+            else if (mode === 'generar') tabId = 'tab-generar';
 
             const selectedTab = document.getElementById(tabId);
             if (selectedTab) selectedTab.classList.add('active');
@@ -409,6 +521,10 @@
             document.getElementById('upscale-options').style.display = mode === 'upscale' ? 'block' : 'none';
             document.getElementById('vector-options').style.display = mode === 'vectorizar' ? 'block' : 'none';
             document.getElementById('depixel-options').style.display = mode === 'depixel' ? 'block' : 'none';
+            document.getElementById('generar-options').style.display = mode === 'generar' ? 'block' : 'none';
+
+            // En el modo "Crear con IA" no se usa el botón de procesar imagen subida
+            if (processBtn) processBtn.style.display = mode === 'generar' ? 'none' : '';
 
             let icon = 'fa-wand-magic-sparkles';
             let titleText = 'Opciones de Ampliación';
@@ -426,6 +542,10 @@
                 icon = 'fa-magic';
                 titleText = 'Despixelar Imagen';
                 btnText = 'Despixelar';
+            } else if (mode === 'generar') {
+                icon = 'fa-wand-sparkles';
+                titleText = 'Crear con IA';
+                btnText = 'Generar Imagen';
             }
 
             document.getElementById('sideTitle').innerHTML = `<i class="fa-solid ${icon}"></i> ${titleText}`;
@@ -560,10 +680,12 @@
                     postActions.style.display = 'flex';
 
                     if (data.analisis) {
+                        const aTipo = escapeHtml(data.analisis.tipo || '');
+                        const aCompl = escapeHtml(data.analisis.complejidad || '');
                         document.getElementById('analysisResult').innerHTML = `
                             <strong><i class="fas fa-robot"></i> Análisis IA completado:</strong><br><br>
-                            <span style="color: white;">${data.analisis.descripcion}</span><br><br>
-                            <span style="color: var(--text-muted); font-size: 0.85rem;">Tipo: ${data.analisis.tipo} | Complejidad: ${data.analisis.complejidad}</span>
+                            <span style="color: white;">${escapeHtml(data.analisis.descripcion || '')}</span><br><br>
+                            <span style="color: var(--text-muted); font-size: 0.85rem;">Tipo: ${aTipo} | Complejidad: ${aCompl}</span>
                         `;
                     }
 
@@ -599,6 +721,42 @@
             }
         }
 
+        // 🎨 GENERAR IMAGEN CON IA (lista para vectorizar)
+        async function generarImagen() {
+            const ta = document.getElementById('genPrompt');
+            const prompt = ta ? ta.value.trim() : '';
+            const msg = document.getElementById('genMsg');
+            if (msg) msg.innerHTML = '';
+            if (prompt.length < 10) { alert('Escribí un prompt más descriptivo (o usá "🔄 Prompt vectorial").'); return; }
+
+            loader.style.display = 'flex';
+            document.getElementById('loadingText').innerText = '🎨 Generando imagen con IA... puede tardar entre 20 y 60 segundos.';
+
+            try {
+                const token = localStorage.getItem('mr_token') || localStorage.getItem('token');
+                const res = await fetch('/api/ai/generar-imagen', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({ prompt })
+                });
+                const data = await res.json();
+                if (!data.success) { alert('Error al generar: ' + (data.error || 'sin respuesta de la IA')); return; }
+
+                // Convertir el dataUrl en un archivo y cargarlo como imagen de trabajo
+                const blob = await (await fetch(data.dataUrl)).blob();
+                const file = new File([blob], 'ia_vectorizable_' + Date.now() + '.png', { type: (blob.type || 'image/png') });
+                handleFileSelect(file);
+
+                if (msg) msg.innerHTML = '✅ Imagen generada y cargada. Ahora pasá a la pestaña <b>Vectorizar</b> y tocá <b>"Vectorizar Imagen"</b>.';
+                setTimeout(() => { if (currentMode === 'generar') setMode('vectorizar'); }, 300);
+            } catch (err) {
+                console.error(err);
+                alert('Error de conexión al generar la imagen. ¿Está configurada la clave de Gemini? Tocá el botón "API" (arriba a la derecha) para cargarla o probarla.');
+            } finally {
+                loader.style.display = 'none';
+            }
+        }
+
         // --- Clientes ---
         async function openClientModal() {
             if (!currentJobId) return;
@@ -622,18 +780,21 @@
 
         function renderClients(clients) {
             const container = document.getElementById('clientList');
-            container.innerHTML = clients.map(c => `
-                <div class="client-item" onclick="saveToClient('${c.id}', '${c.nombre || c.name}')" style="padding: 15px; border-bottom: 1px solid var(--surface-border); cursor: pointer; transition: background 0.2s;">
-                    <strong style="color: white;">${c.nombre || c.name}</strong><br>
-                    <small style="color: var(--text-muted);">${c.telefono || ''}</small>
-                </div>
-            `).join('');
+            container.innerHTML = (clients || []).map(c => {
+                const nombre = c.nombre || c.name || 'Sin nombre';
+                const tel = c.telefono || '';
+                return `<div class="client-item" data-cid="${escapeHtml(String(c.id))}" data-cname="${escapeHtml(nombre)}" style="padding: 15px; border-bottom: 1px solid var(--surface-border); cursor: pointer; transition: background 0.2s;">
+                    <strong style="color: white;">${escapeHtml(nombre)}</strong><br>
+                    <small style="color: var(--text-muted);">${escapeHtml(tel)}</small>
+                </div>`;
+            }).join('');
 
-            // Add hover effects dynamically
-            document.querySelectorAll('.client-item').forEach(item => {
-                item.addEventListener('mouseenter', () => item.style.background = 'rgba(99, 102, 241, 0.1)');
-                item.addEventListener('mouseleave', () => item.style.background = 'transparent');
-            });
+            // Delegación de eventos (evita romper el HTML por nombres con comillas/HTML)
+            container.onclick = (e) => {
+                const item = e.target.closest('.client-item');
+                if (!item) return;
+                saveToClient(item.dataset.cid, item.dataset.cname);
+            };
         }
 
         document.getElementById('clientSearchInput').oninput = (e) => {
@@ -662,6 +823,211 @@
                 }
             } catch (e) { alert('Error al guardar'); }
         }
+
+        // ==================== APARTADO "API" (claves del sistema) ====================
+        const API_KEY_FIELDS = [
+            { campo: 'geminiApiKey', etiqueta: 'Google Gemini', desc: '🎨 Crear con IA · Despixelar · Análisis IA', formato: 'AIzaSy… o AQ.…' },
+            { campo: 'groqApiKey', etiqueta: 'Groq', desc: 'Análisis de imagen IA', formato: 'gsk_…' },
+            { campo: 'fireworksApiKey', etiqueta: 'Fireworks.ai', desc: 'Análisis de imagen (alternativo)', formato: 'clave de Fireworks' },
+            { campo: 'removebgApiKey', etiqueta: 'remove.bg', desc: 'Quitar fondo de imágenes', formato: 'clave de remove.bg' }
+        ];
+        let apiKeysState = {};
+        let apiAdminMode = false;
+
+        function esAdminIA() {
+            try {
+                const u = JSON.parse(localStorage.getItem('mr_user') || '{}');
+                const rol = String(u.rol || '').toLowerCase();
+                return rol === 'admin' || rol === 'superadmin';
+            } catch (e) { return false; }
+        }
+
+        async function openApiConfig() {
+            document.getElementById('apiModal').style.display = 'flex';
+            document.getElementById('apiModal').style.alignItems = 'center';
+            document.getElementById('apiModal').style.justifyContent = 'center';
+            const msg = document.getElementById('apiMsg');
+            const banner = document.getElementById('apiBanner');
+            const hint = document.getElementById('apiHint');
+            msg.innerHTML = '<span style="color: var(--text-muted);">Cargando estado de las claves…</span>';
+            banner.style.display = 'none';
+            hint.innerHTML = '';
+
+            apiAdminMode = esAdminIA();
+            if (!apiAdminMode) {
+                banner.style.display = 'block';
+                banner.innerHTML = '⚠️ Solo un usuario <b>administrador</b> puede ver o modificar las claves. Las funciones de IA siguen disponibles para vos.';
+                document.getElementById('apiSaveBtn').style.display = 'none';
+                hint.innerHTML = 'Modo lectura (solo administradores editan).';
+            } else {
+                document.getElementById('apiSaveBtn').style.display = '';
+            }
+            try {
+                await loadApiKeysStatus();
+            } catch (e) { }
+        }
+
+        function closeApiConfig() {
+            document.getElementById('apiModal').style.display = 'none';
+            refreshGenKeyStatus();
+        }
+
+        async function loadApiKeysStatus() {
+            const token = localStorage.getItem('mr_token') || localStorage.getItem('token');
+            const res = await fetch('/api/config/ai-keys', { headers: { 'Authorization': `Bearer ${token}` } });
+            if (res.status === 403) {
+                apiKeysState = {};
+                renderApiFields();
+                return;
+            }
+            const data = await res.json();
+            apiKeysState = (data && data.claves) || {};
+            renderApiFields();
+            const msg = document.getElementById('apiMsg');
+            if (msg) msg.innerHTML = '';
+            refreshGenKeyStatus();
+        }
+
+        function renderApiFields() {
+            const container = document.getElementById('apiFields');
+            if (!container) return;
+
+            const rows = API_KEY_FIELDS.map(f => {
+                const st = apiKeysState[f.campo] || { configurada: false, enmascarada: null };
+                const chip = st.configurada
+                    ? `<span style="background: rgba(16,185,129,0.12); border: 1px solid rgba(16,185,129,0.35); color: #6ee7b7; padding: 3px 10px; border-radius: 20px; font-size: 0.7rem; font-weight: 700; white-space: nowrap;">✓ Configurada${st.enmascarada ? ' · ' + escapeHtml(st.enmascarada) : ''}</span>`
+                    : `<span style="background: rgba(100,116,139,0.12); border: 1px solid rgba(100,116,139,0.35); color: #94a3b8; padding: 3px 10px; border-radius: 20px; font-size: 0.7rem; font-weight: 700; white-space: nowrap;">✗ No configurada</span>`;
+
+                const disabled = !apiAdminMode ? ' disabled' : '';
+                return `<div style="border: 1px solid var(--surface-border); border-radius: 12px; padding: 14px; background: rgba(0,0,0,0.15); margin-bottom: 12px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 10px;">
+                        <div>
+                            <strong style="color: white; font-size: 0.9rem;">${escapeHtml(f.etiqueta)}</strong>
+                            <div style="font-size: 0.75rem; color: var(--text-muted);">${escapeHtml(f.desc)} · formato: ${escapeHtml(f.formato)}</div>
+                        </div>
+                        ${chip}
+                    </div>
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                        <input type="password" id="apiInp_${f.campo}" autocomplete="new-password"
+                            placeholder="${st.configurada ? 'Pegá una clave nueva para reemplazar…' : 'Pegá la API Key…'}"
+                            ${disabled}
+                            style="flex: 1; min-width: 200px; padding: 11px 13px; border: 1px solid var(--surface-border); background: rgba(0,0,0,0.3); color: white; border-radius: 10px; font-size: 0.82rem; font-family: monospace;">
+                        <button type="button" class="select-btn" onclick="toggleApiInpVisibility('${f.campo}')" title="Mostrar / ocultar" ${disabled}
+                            style="padding: 10px 13px; font-size: 0.85rem;">👁</button>
+                        <button type="button" class="select-btn" onclick="probarApiKey('${f.campo}')" title="Probar la conexión con esta clave" ${disabled}
+                            style="padding: 10px 15px; font-size: 0.8rem;"><i class="fas fa-plug"></i> Probar</button>
+                    </div>
+                    <div id="apiTest_${f.campo}" style="font-size: 0.78rem; margin-top: 8px; line-height: 1.4;"></div>
+                </div>`;
+            }).join('');
+
+            container.innerHTML = rows;
+        }
+
+        function toggleApiInpVisibility(campo) {
+            const inp = document.getElementById('apiInp_' + campo);
+            if (!inp) return;
+            inp.type = inp.type === 'password' ? 'text' : 'password';
+        }
+
+        async function probarApiKey(campo) {
+            const testDiv = document.getElementById('apiTest_' + campo);
+            const inp = document.getElementById('apiInp_' + campo);
+            if (!testDiv) return;
+            const valor = (inp && inp.value.trim()) || undefined;
+            if (!valor && !(apiKeysState[campo] && apiKeysState[campo].configurada)) {
+                testDiv.innerHTML = '<span style="color: #fca5a5;">Primero pegá una clave para poder probarla.</span>';
+                return;
+            }
+            testDiv.innerHTML = '<span style="color: var(--text-muted);">Probando conexión…</span>';
+            try {
+                const token = localStorage.getItem('mr_token') || localStorage.getItem('token');
+                const res = await fetch('/api/config/ai-keys/test', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({ campo, valor })
+                });
+                const data = await res.json();
+                if (res.status === 403) {
+                    testDiv.innerHTML = '<span style="color: #fca5a5;">Solo administradores pueden probar claves.</span>';
+                    return;
+                }
+                testDiv.innerHTML = `<span style="color: ${data.success ? 'var(--success)' : '#fca5a5'};">${escapeHtml(data.mensaje || (data.success ? 'Conexión correcta' : data.error || 'Error desconocido'))}</span>`;
+            } catch (err) {
+                testDiv.innerHTML = '<span style="color: #fca5a5;">Error de conexión al probar la clave.</span>';
+            }
+        }
+
+        async function guardarApiKeys() {
+            if (!apiAdminMode) return;
+            const claves = {};
+            for (const f of API_KEY_FIELDS) {
+                const inp = document.getElementById('apiInp_' + f.campo);
+                const v = (inp && inp.value || '').trim();
+                if (v) claves[f.campo] = v;
+            }
+            if (!Object.keys(claves).length) {
+                document.getElementById('apiMsg').innerHTML = '<span style="color: #fca5a5;">No hay ninguna clave nueva para guardar.</span>';
+                return;
+            }
+            document.getElementById('apiMsg').innerHTML = '<span style="color: var(--text-muted);">Guardando…</span>';
+            try {
+                const token = localStorage.getItem('mr_token') || localStorage.getItem('token');
+                const res = await fetch('/api/config/ai-keys', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({ claves })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    document.getElementById('apiMsg').innerHTML = `✅ ${escapeHtml(data.mensaje || 'Claves guardadas.')}`;
+                    apiKeysState = data.claves || apiKeysState;
+                    // Limpiar los campos guardados
+                    for (const f of API_KEY_FIELDS) {
+                        const inp = document.getElementById('apiInp_' + f.campo);
+                        if (inp) inp.value = '';
+                    }
+                    renderApiFields();
+                    refreshGenKeyStatus();
+                } else {
+                    document.getElementById('apiMsg').innerHTML = `<span style="color: #fca5a5;">Error: ${escapeHtml(data.error || 'no se pudo guardar')}</span>`;
+                }
+            } catch (err) {
+                document.getElementById('apiMsg').innerHTML = '<span style="color: #fca5a5;">Error de conexión al guardar.</span>';
+            }
+        }
+
+        // Cerrar modal haciendo clic afuera
+        document.getElementById('apiModal').addEventListener('click', (e) => {
+            if (e.target && e.target.id === 'apiModal') closeApiConfig();
+        });
+
+        // Muestra si la clave de Gemini está configurada en la pestaña "Crear con IA"
+        async function refreshGenKeyStatus() {
+            const el = document.getElementById('genKeyStatus');
+            if (!el) return;
+            try {
+                const token = localStorage.getItem('mr_token') || localStorage.getItem('token');
+                const res = await fetch('/api/config/ai-keys', { headers: { 'Authorization': `Bearer ${token}` } });
+                const data = await res.json();
+                const g = data && data.claves && data.claves.geminiApiKey;
+                const esAdmin = esAdminIA();
+                if (g && g.configurada) {
+                    el.innerHTML = `<span style="color: #6ee7b7;"><i class="fas fa-check-circle"></i> Google Gemini configurado (${escapeHtml(g.enmascarada || '')}) — listo para generar.</span>`;
+                } else if (esAdmin) {
+                    el.innerHTML = `<span style="color: #fca5a5;"><i class="fas fa-exclamation-triangle"></i> Falta la clave de Google Gemini para generar imágenes. <a href="#" onclick="openApiConfig(); return false;" style="color: #fca5a5; font-weight: 700; text-decoration: underline;">Configurarla ahora (botón API)</a></span>`;
+                } else {
+                    el.innerHTML = `<span style="color: #fca5a5;"><i class="fas fa-exclamation-triangle"></i> La clave de Google Gemini aún no está configurada. Pedile al administrador que la cargue (botón ⚙️ API).</span>`;
+                }
+            } catch (e) {
+                el.innerHTML = '<span style="color: var(--text-muted);">No se pudo consultar el estado de la API.</span>';
+            }
+        }
+
+        // Cargar estado de la clave al iniciar la página
+        document.addEventListener('DOMContentLoaded', () => {
+            refreshGenKeyStatus();
+        });
     </script>
 </body>
 

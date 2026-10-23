@@ -96,11 +96,22 @@ class Bin:
         return False
 
 def solve_nesting(parts_data, sheet_w, sheet_h, gap, allow_rotation=True):
-    parts = [Part(p['id'], p['w'], p['h']) for p in parts_data]
+    parts = []
+    for p in parts_data:
+        try:
+            w = float(p['w']); h = float(p['h'])
+        except (TypeError, ValueError, KeyError):
+            continue
+        # Validación básica de entrada (evita piezas inválidas)
+        if not (w > 0 and h > 0) or not (w == w and h == h):  # w==w detecta NaN
+            print(f"Advertencia: Pieza {p.get('id', '?')} con dimensiones inválidas ({w}x{h}), ignorada.", file=sys.stderr)
+            continue
+        parts.append(Part(p['id'], w, h))
     # Ordenar por lado más largo (Heurística estándar)
     parts.sort(key=lambda p: max(p.w, p.h), reverse=True)
 
     bins = []
+    unplaced_parts = []
 
     for part in parts:
         placed = False
@@ -114,7 +125,9 @@ def solve_nesting(parts_data, sheet_w, sheet_h, gap, allow_rotation=True):
             if new_bin.try_fit(part, allow_rotation):
                 bins.append(new_bin)
             else:
-                print(f"Advertencia: Pieza {part.id} es demasiado grande para la placa.")
+                # FIX: a stderr, no a stdout (contamina el JSON que el servidor parsea)
+                print(f"Advertencia: Pieza {part.id} es demasiado grande para la placa.", file=sys.stderr)
+                unplaced_parts.append({'id': part.id, 'w': part.w, 'h': part.h})
 
     # Generar resultado JSON
     results = []
@@ -130,7 +143,7 @@ def solve_nesting(parts_data, sheet_w, sheet_h, gap, allow_rotation=True):
             })
         results.append({'bin_id': bin.id, 'parts': bin_parts})
     
-    return json.dumps(results, indent=2)
+    return json.dumps({'bins': results, 'unplaced_parts': unplaced_parts}, indent=2)
 
 if __name__ == "__main__":
     try:

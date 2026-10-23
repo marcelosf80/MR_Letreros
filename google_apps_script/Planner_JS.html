@@ -93,11 +93,11 @@
         }
         
         let rw = 122; // Default
-        if(p && p.anchoFijo) {
-            rw = p.anchoFijo;
-        } else if(p) {
-           let listaStock = stockPorTipo[p.tipo] || [122];
-           rw = listaStock.find(s => s >= w) || listaStock[0] || 122;
+        if (p) {
+            let listaStock = (p.anchosStock && p.anchosStock.length > 0) 
+                ? p.anchosStock 
+                : (p.anchoFijo ? [p.anchoFijo] : (stockPorTipo[p.tipo] || [122]));
+            rw = listaStock.find(s => s >= w) || listaStock[0] || 122;
         }
         
         document.getElementById('plannerRollWidthInput').value = rw;
@@ -114,22 +114,27 @@
     function pRenderRollButtons(p, currentW) {
         let selectEl = document.getElementById('plannerRollSelect');
         selectEl.innerHTML = '';
-        if(p && p.anchoFijo) {
-            selectEl.innerHTML = `<div class="px-3 py-1.5 rounded bg-blue-600/30 text-blue-300 border border-blue-500/50 text-[10px] font-bold">Fijo: ${p.anchoFijo} cm</div>`;
-        } else if(p) {
-           let listaStock = stockPorTipo[p.tipo] || [122];
-           let foundCustom = true;
-           listaStock.forEach(s => {
-               let isSel = (s == currentW);
-               if(isSel) foundCustom = false;
-               let activeClass = isSel ? 'bg-yellow-400 text-black shadow-lg shadow-yellow-400/20 scale-105 border-yellow-400' : 'bg-white/5 text-gray-300 border-white/10 hover:bg-white/10';
-               selectEl.innerHTML += `<button type="button" onclick="pChangeRollSelect(${s})" class="px-3 py-1.5 border rounded-lg text-[10px] font-bold transition-all ${activeClass}">${s} cm</button>`;
-           });
-           
-           let customClass = foundCustom ? 'bg-yellow-400 text-black shadow-lg shadow-yellow-400/20 scale-105 border-yellow-400' : 'bg-white/5 text-gray-300 border-white/10 hover:bg-white/10';
-           selectEl.innerHTML += `<button type="button" onclick="pChangeRollSelect('custom')" class="px-3 py-1.5 border rounded-lg text-[10px] font-bold transition-all ${customClass}" title="Medida Manual"><i class="fa-solid fa-pen"></i></button>`;
-           
-           if(foundCustom) document.getElementById('plannerCustomWidthContainer').style.display = 'flex';
+        if (p) {
+            let listaStock = (p.anchosStock && p.anchosStock.length > 0) 
+                ? p.anchosStock 
+                : (p.anchoFijo ? [p.anchoFijo] : (stockPorTipo[p.tipo] || [122]));
+
+            if (listaStock.length === 1) {
+                selectEl.innerHTML = `<div class="px-3 py-1.5 rounded bg-blue-600/30 text-blue-300 border border-blue-500/50 text-[10px] font-bold">Medida Única: ${listaStock[0]} cm</div>`;
+            } else {
+                let foundCustom = true;
+                listaStock.forEach(s => {
+                    let isSel = (s == currentW);
+                    if (isSel) foundCustom = false;
+                    let activeClass = isSel ? 'bg-yellow-400 text-black shadow-lg shadow-yellow-400/20 scale-105 border-yellow-400' : 'bg-white/5 text-gray-300 border-white/10 hover:bg-white/10';
+                    selectEl.innerHTML += `<button type="button" onclick="pChangeRollSelect(${s})" class="px-3 py-1.5 border rounded-lg text-[10px] font-bold transition-all ${activeClass}">${s} cm</button>`;
+                });
+                
+                let customClass = foundCustom ? 'bg-yellow-400 text-black shadow-lg shadow-yellow-400/20 scale-105 border-yellow-400' : 'bg-white/5 text-gray-300 border-white/10 hover:bg-white/10';
+                selectEl.innerHTML += `<button type="button" onclick="pChangeRollSelect('custom')" class="px-3 py-1.5 border rounded-lg text-[10px] font-bold transition-all ${customClass}" title="Medida Manual"><i class="fa-solid fa-pen"></i></button>`;
+                
+                if (foundCustom) document.getElementById('plannerCustomWidthContainer').style.display = 'flex';
+            }
         }
     }
 

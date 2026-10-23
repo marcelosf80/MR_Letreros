@@ -300,7 +300,14 @@
             for (var i = 0; i < catalogo.length; i++) { if (catalogo[i].id === prodVal) { p = catalogo[i]; break; } }
             if (!p) return;
             var container = document.getElementById('inputs_container_' + id);
-            
+            var esLona = (p.categoria + ' ' + p.producto + ' ' + (p.tipo || '')).toLowerCase().indexOf('lona') > -1;
+            var lonaWarningHtml = esLona ? (
+                `<div class="md:col-span-3 flex items-start gap-2.5 p-3 bg-amber-500/15 border border-amber-500/30 rounded-xl text-amber-200 text-xs mt-1">` +
+                `<i class="fa-solid fa-triangle-exclamation text-amber-400 text-sm mt-0.5"></i>` +
+                `<div><strong class="text-amber-300">¡Aviso para Lonas!</strong> Si la lona es <u>para tensar</u> en bastidor o estructura, recordá tildar la opción de <strong>Demasía (+10cm)</strong> para no quedarte corto de material.</div>` +
+                `</div>`
+            ) : '';
+
             if (p.categoria.toUpperCase().indexOf('POLIFAN') > -1) {
                 container.innerHTML = `<div class="grid grid-cols-2 gap-4"><select id="sup_${id}" class="input-premium" onchange="calc()">${OPCIONES_POLY.map((s,i)=>`<option value="${i}">${s.label}</option>`).join('')}</select><input type="number" id="letras_${id}" placeholder="Cant. Letras" class="input-premium" oninput="calc()"><input type="number" id="q_${id}" value="1" class="input-premium md:col-span-2" oninput="calc()"></div>`;
             } else if (p.unidad === 'm2') {
@@ -309,9 +316,10 @@
                     `<input type="number" id="h_${id}" placeholder="Largo cm" class="input-premium" oninput="calc()">` +
                     `<input type="number" id="q_${id}" value="1" class="input-premium" oninput="calc()">` +
                     `<button type="button" onclick="openPlanner(${id})" class="md:col-span-3 bg-blue-500/20 hover:bg-blue-500/40 text-blue-300 font-bold py-2 px-4 rounded-xl border border-blue-500/30 transition-all text-[10px] uppercase tracking-widest"><i class="fa-solid fa-ruler-combined mr-2"></i> Optimizar Layout Visual</button>` +
+                    lonaWarningHtml +
                     `<div class="md:col-span-3 flex items-center gap-3 p-3 bg-white/5 rounded-xl border border-white/10 mt-2">` +
                     `<input type="checkbox" id="dem_${id}" style="width:20px;height:20px;accent-color:#ffd700;" onchange="calc()">` +
-                    `<label for="dem_${id}" class="text-xs text-yellow-400 font-bold uppercase cursor-pointer">Agregar demasía de refilado (+10cm)</label></div></div>`;
+                    `<label for="dem_${id}" class="text-xs text-yellow-400 font-bold uppercase cursor-pointer">Agregar demasía de refilado / tensado (+10cm)</label></div></div>`;
             } else if (p.unidad.indexOf('ml') > -1) {
                 container.innerHTML = `<div class="grid grid-cols-2 gap-4"><input type="number" id="ml_${id}" placeholder="Metros" class="input-premium" oninput="calc()"><input type="number" id="q_${id}" value="1" class="input-premium" oninput="calc()"></div>`;
             } else {

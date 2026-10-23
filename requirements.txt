@@ -10,13 +10,12 @@ torchvision
 cython
 basicsr>=1.4.2
 realesrgan>=0.3.0
-transformers
-accelerate
-git+https://github.com/joanrod/star-vector.git
-omegaconf
-fairscale
-sentencepiece
-beautifulsoup4
-webcolors
 svgpathtools
-cairosvg
+# FIX: dependencias que faltaban y rompían `pip install -r requirements.txt`
+svg.path
+gradio_client
+shapely
+fastapi
+uvicorn
+pydantic
+python-multipart

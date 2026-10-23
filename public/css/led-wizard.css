@@ -36,13 +36,13 @@ body.led-wizard-page .main-content {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: #ffffff;
-    border: 1px solid rgba(0, 0, 0, 0.08);
+    background: var(--card-bg, var(--mx-card-bg, var(--bg-surface, #ffffff)));
+    border: 1px solid var(--border-subtle, var(--glass-border, rgba(0, 0, 0, 0.08)));
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     padding: 10px 16px;
     border-radius: 12px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+    box-shadow: var(--shadow-sm, 0 4px 20px rgba(0, 0, 0, 0.05));
 }
 
 .tool-group {
@@ -52,9 +52,9 @@ body.led-wizard-page .main-content {
 }
 
 .tool-group button, .dropdown button {
-    background: #f1f5f9;
-    color: #0f172a;
-    border: 1px solid #cbd5e1;
+    background: var(--bg-mid, var(--bg-input, #f1f5f9));
+    color: var(--txt, #0f172a);
+    border: 1px solid var(--border-subtle, var(--glass-border, #cbd5e1));
     padding: 8px 14px;
     border-radius: 8px;
     font-size: 0.85rem;
@@ -67,8 +67,8 @@ body.led-wizard-page .main-content {
 }
 
 .tool-group button:hover, .dropdown button:hover {
-    background: #e2e8f0;
-    border-color: #94a3b8;
+    background: var(--glass-hover, #e2e8f0);
+    border-color: var(--primary-accent, #94a3b8);
     transform: translateY(-1px);
 }
 
@@ -92,8 +92,8 @@ body.led-wizard-page .main-content {
 .side-panel {
     width: 320px;
     flex-shrink: 0;
-    background: #ffffff;
-    border: 1px solid rgba(0, 0, 0, 0.08);
+    background: var(--card-bg, var(--mx-card-bg, var(--bg-surface, #ffffff)));
+    border: 1px solid var(--border-subtle, var(--glass-border, rgba(0, 0, 0, 0.08)));
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     border-radius: 12px;
@@ -102,7 +102,8 @@ body.led-wizard-page .main-content {
     flex-direction: column;
     gap: 12px;
     overflow-y: auto;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+    box-shadow: var(--shadow-sm, 0 4px 20px rgba(0, 0, 0, 0.05));
+    color: var(--txt, #0f172a);
 }
 
 .side-panel::-webkit-scrollbar {
@@ -122,10 +123,10 @@ body.led-wizard-page .main-content {
 .side-panel h4 {
     font-size: 0.95rem;
     font-weight: 700;
-    color: #0f172a;
+    color: var(--txt, #0f172a);
     margin: 0;
     padding-bottom: 6px;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+    border-bottom: 1px solid var(--border-subtle, var(--glass-border, rgba(0, 0, 0, 0.08)));
     display: flex;
     align-items: center;
     gap: 8px;
@@ -133,8 +134,8 @@ body.led-wizard-page .main-content {
 
 .canvas-holder {
     flex: 1;
-    background: #f8fafc;
-    border: 1px solid #cbd5e1;
+    background: var(--bg-void, #f8fafc);
+    border: 1px solid var(--border-subtle, var(--glass-border, #cbd5e1));
     border-radius: 12px;
     position: relative;
     overflow: hidden;
@@ -154,13 +155,13 @@ body.led-wizard-page .main-content {
     justify-content: flex-start;
     align-items: center;
     gap: 20px;
-    background: rgba(24, 24, 27, 0.85);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--card-bg, var(--mx-card-bg, rgba(24, 24, 27, 0.85)));
+    border: 1px solid var(--border-subtle, var(--glass-border, rgba(255, 255, 255, 0.08)));
     backdrop-filter: blur(8px);
     padding: 8px 16px;
     border-radius: 8px;
     font-size: 0.75rem;
-    color: #a1a1aa;
+    color: var(--txt-muted, #a1a1aa);
 }
 
 .statusbar span {
@@ -191,13 +192,13 @@ body.led-wizard-page .main-content {
 .form-label {
     font-size: 0.78rem;
     font-weight: 600;
-    color: #a1a1aa;
+    color: var(--txt-2, #a1a1aa);
 }
 
 .form-select, .form-input {
-    background: rgba(0, 0, 0, 0.2);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    color: #ffffff;
+    background: var(--bg-input, rgba(0, 0, 0, 0.2));
+    border: 1px solid var(--border-subtle, var(--glass-border, rgba(255, 255, 255, 0.1)));
+    color: var(--txt, #ffffff);
     padding: 8px 12px;
     border-radius: 6px;
     font-size: 0.82rem;
@@ -211,8 +212,8 @@ body.led-wizard-page .main-content {
 }
 
 .config-box {
-    background: rgba(255, 255, 255, 0.02);
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    background: var(--card-bg, var(--bg-surface, rgba(255, 255, 255, 0.02)));
+    border: 1px solid var(--border-subtle, var(--glass-border, rgba(255, 255, 255, 0.05)));
     border-radius: 8px;
     padding: 10px;
     margin-bottom: 12px;
@@ -238,9 +239,9 @@ body.led-wizard-page .main-content {
     position: absolute;
     top: 100%;
     left: 0;
-    background: #18181b;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+    background: var(--card-bg, var(--bg-deep, #18181b));
+    border: 1px solid var(--border-subtle, var(--glass-border, rgba(255, 255, 255, 0.08)));
+    box-shadow: var(--shadow-md, 0 10px 25px rgba(0, 0, 0, 0.5));
     z-index: 1000;
     border-radius: 8px;
     margin-top: 4px;
@@ -253,7 +254,7 @@ body.led-wizard-page .main-content {
 }
 
 .dropdown-menu a {
-    color: #a1a1aa;
+    color: var(--txt-2, #a1a1aa);
     padding: 10px 16px;
     text-decoration: none;
     display: block;
@@ -263,8 +264,8 @@ body.led-wizard-page .main-content {
 }
 
 .dropdown-menu a:hover {
-    background: rgba(255, 255, 255, 0.05);
-    color: #ffffff;
+    background: var(--glass-hover, rgba(255, 255, 255, 0.05));
+    color: var(--txt, #ffffff);
 }
 
 /* Layer list */
@@ -276,10 +277,11 @@ body.led-wizard-page .main-content {
     margin-bottom: 4px;
     border-radius: 6px;
     transition: all 0.2s ease;
+    color: var(--txt, #ffffff);
 }
 
 .layer-item:hover {
-    background: rgba(255, 255, 255, 0.05);
+    background: var(--glass-hover, rgba(255, 255, 255, 0.05));
 }
 
 /* Zoom control buttons in statusbar */

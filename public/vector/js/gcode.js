@@ -264,7 +264,9 @@ async function downloadGCodePython(bin) {
     };
 
     try {
-        const response = await fetch('http://localhost:5000/generate-gcode', {
+        // FIX: URL configurable (antes hardcodeada a localhost:5000, fallaba en producción)
+        const GCODE_API_URL = window.GCODE_API_URL || 'http://localhost:5000/generate-gcode';
+        const response = await fetch(GCODE_API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ parts: partsData, settings: settings })
